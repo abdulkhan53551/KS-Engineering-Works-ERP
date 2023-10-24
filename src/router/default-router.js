@@ -5,6 +5,11 @@ import Index from '../views/dashboard/index'
 import UserProfile from '../views/dashboard/app/user-profile';
 import UserAdd from '../views/dashboard/app/user-add';
 import UserList from '../views/dashboard/app/user-list';
+
+// Customer
+import CustomerAdd from '../views/dashboard/customer/customer-add';
+import CustomerList from '../views/dashboard/customer/customer-list';
+
 // import userProfileEdit from '../views/dashboard/app/user-privacy-setting';
 // widget
 import Widgetbasic from '../views/dashboard/widget/widgetbasic';
@@ -89,6 +94,14 @@ export const DefaultRouter = [
             {
                 path: 'dashboard/app/user-list',
                 element: <UserList />
+            },
+            {
+                path: 'dashboard/customer-add',
+                element: <CustomerAdd />
+            },
+            {
+                path: 'dashboard/customer-list',
+                element: <CustomerList />
             },
             {
                 path: 'dashboard/admin/admin',
