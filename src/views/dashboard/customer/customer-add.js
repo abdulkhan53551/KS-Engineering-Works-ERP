@@ -1,8 +1,26 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import {Row,Col,Image,Form,Button} from 'react-bootstrap'
 import Card from '../../../components/Card'
+import { requestMethod } from '../../../utilities/api/constants'
+import { serverCall } from '../../../utilities/api'
 
 const CustomerAdd =() =>{
+   useEffect(() => {
+      console.log('====================================');
+      console.log('Use effec called ...');
+      testApiCall();
+      console.log('====================================');
+   }, [])
+   
+   const testApiCall = async () => {
+      console.log('Test API Call');
+      // url_params = numberDetails.msisdn
+         //  let palatroResult = await serverCall(endPoints.FOR_YOU_RECHARGE + url_params, requestMethod.GET, {}, headers)
+         const headers = {};
+          const result = await serverCall('https://jsonplaceholder.typicode.com/users', requestMethod.GET, {}, headers);
+          console.log('Result => ', result);
+
+   }
   return(
       <>
         <div>
