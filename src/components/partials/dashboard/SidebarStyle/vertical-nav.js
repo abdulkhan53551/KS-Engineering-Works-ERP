@@ -1,24 +1,24 @@
-import React, {useState, useContext,memo,Fragment} from 'react'
-import { Link, useLocation} from 'react-router-dom'
-import {Accordion, useAccordionButton, AccordionContext} from 'react-bootstrap'
+import React, { useState, useContext, memo, Fragment } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Accordion, useAccordionButton, AccordionContext } from 'react-bootstrap'
 
 
 function CustomToggle({ children, eventKey, onClick }) {
 
     const { activeEventKey } = useContext(AccordionContext);
 
-    const decoratedOnClick = useAccordionButton(eventKey, (active) => onClick({state: !active, eventKey: eventKey}));
+    const decoratedOnClick = useAccordionButton(eventKey, (active) => onClick({ state: !active, eventKey: eventKey }));
 
     const isCurrentEventKey = activeEventKey === eventKey;
-  
+
     return (
-      <Link to="#" aria-expanded={isCurrentEventKey ? 'true' : 'false'} className="nav-link" role="button" onClick={(e) => {
-        decoratedOnClick(isCurrentEventKey)
-      }}>
-        {children}
-      </Link>
+        <Link to="#" aria-expanded={isCurrentEventKey ? 'true' : 'false'} className="nav-link" role="button" onClick={(e) => {
+            decoratedOnClick(isCurrentEventKey)
+        }}>
+            {children}
+        </Link>
     );
-  }
+}
 
 const VerticalNav = memo((props) => {
     const [activeMenu, setActiveMenu] = useState(false)
@@ -26,7 +26,7 @@ const VerticalNav = memo((props) => {
     //location
     let location = useLocation();
     return (
-       <Fragment>
+        <Fragment>
             <Accordion as="ul" className="navbar-nav iq-main-menu">
                 <li className="nav-item static-item">
                     <Link className="nav-link static-item disabled" to="#" tabIndex="-1">
@@ -35,7 +35,7 @@ const VerticalNav = memo((props) => {
                     </Link>
                 </li>
                 <li className={`${location.pathname === '/dashboard' ? 'active' : ''} nav-item `}>
-                    <Link className={`${location.pathname === '/dashboard' ? 'active' : ''} nav-link `} aria-current="page" to="/dashboard" onClick={() => {}}>
+                    <Link className={`${location.pathname === '/dashboard' ? 'active' : ''} nav-link `} aria-current="page" to="/dashboard" onClick={() => { }}>
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.4" d="M16.0756 2H19.4616C20.8639 2 22.0001 3.14585 22.0001 4.55996V7.97452C22.0001 9.38864 20.8639 10.5345 19.4616 10.5345H16.0756C14.6734 10.5345 13.5371 9.38864 13.5371 7.97452V4.55996C13.5371 3.14585 14.6734 2 16.0756 2Z" fill="currentColor"></path>
@@ -47,7 +47,7 @@ const VerticalNav = memo((props) => {
                 </li>
                 <Accordion.Item as="li" eventKey="horizontal-menu" bsPrefix={`nav-item ${active === 'menustyle' ? 'active' : ''} `} onClick={() => setActive('menustyle')}  >
                     <CustomToggle eventKey="horizontal-menu" onClick={(activeKey) => setActiveMenu(activeKey)}>
-                    <i className="icon">
+                        <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.4" d="M10.0833 15.958H3.50777C2.67555 15.958 2 16.6217 2 17.4393C2 18.2559 2.67555 18.9207 3.50777 18.9207H10.0833C10.9155 18.9207 11.5911 18.2559 11.5911 17.4393C11.5911 16.6217 10.9155 15.958 10.0833 15.958Z" fill="currentColor"></path>
                                 <path opacity="0.4" d="M22.0001 6.37867C22.0001 5.56214 21.3246 4.89844 20.4934 4.89844H13.9179C13.0857 4.89844 12.4102 5.56214 12.4102 6.37867C12.4102 7.1963 13.0857 7.86 13.9179 7.86H20.4934C21.3246 7.86 22.0001 7.1963 22.0001 6.37867Z" fill="currentColor"></path>
@@ -63,13 +63,13 @@ const VerticalNav = memo((props) => {
                         </i>
                     </CustomToggle>
                     <Accordion.Collapse eventKey="horizontal-menu" >
-                        <ul  className="sub-nav">
+                        <ul className="sub-nav">
                             <li className="nav-item">
                                 <Link className={`${location.pathname === '/horizontal' ? 'active' : ''} nav-link`} to="/horizontal">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -82,7 +82,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -91,15 +91,15 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname === '/dual-compact' ? 'active' : ''} nav-link`}  to="/dual-compact">
+                                <Link className={`${location.pathname === '/dual-compact' ? 'active' : ''} nav-link`} to="/dual-compact">
                                     <i className="icon svg-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
-                                    <i className="sidenav-mini-icon"> D </i>                   
+                                    <i className="sidenav-mini-icon"> D </i>
                                     <span className="item-name">Dual Compact</span>
                                 </Link>
                             </li>
@@ -108,7 +108,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -121,7 +121,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -135,16 +135,16 @@ const VerticalNav = memo((props) => {
                 <li className="nav-item">
                     <Link className={`${location.pathname === '/' ? 'active' : ''} nav-link `} aria-current="page" target="blank" to="/">
                         <i className="icon">
-                        <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M21.9964 8.37513H17.7618C15.7911 8.37859 14.1947 9.93514 14.1911 11.8566C14.1884 13.7823 15.7867 15.3458 17.7618 15.3484H22V15.6543C22 19.0136 19.9636 21 16.5173 21H7.48356C4.03644 21 2 19.0136 2 15.6543V8.33786C2 4.97862 4.03644 3 7.48356 3H16.5138C19.96 3 21.9964 4.97862 21.9964 8.33786V8.37513ZM6.73956 8.36733H12.3796H12.3831H12.3902C12.8124 8.36559 13.1538 8.03019 13.152 7.61765C13.1502 7.20598 12.8053 6.87318 12.3831 6.87491H6.73956C6.32 6.87664 5.97956 7.20858 5.97778 7.61852C5.976 8.03019 6.31733 8.36559 6.73956 8.36733Z" fill="currentColor"></path>
-                            <path opacity="0.4" d="M16.0374 12.2966C16.2465 13.2478 17.0805 13.917 18.0326 13.8996H21.2825C21.6787 13.8996 22 13.5715 22 13.166V10.6344C21.9991 10.2297 21.6787 9.90077 21.2825 9.8999H17.9561C16.8731 9.90338 15.9983 10.8024 16 11.9102C16 12.0398 16.0128 12.1695 16.0374 12.2966Z" fill="currentColor"></path>
-                            <circle cx="18" cy="11.8999" r="1" fill="currentColor"></circle>
-                        </svg>
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fillRule="evenodd" clipRule="evenodd" d="M21.9964 8.37513H17.7618C15.7911 8.37859 14.1947 9.93514 14.1911 11.8566C14.1884 13.7823 15.7867 15.3458 17.7618 15.3484H22V15.6543C22 19.0136 19.9636 21 16.5173 21H7.48356C4.03644 21 2 19.0136 2 15.6543V8.33786C2 4.97862 4.03644 3 7.48356 3H16.5138C19.96 3 21.9964 4.97862 21.9964 8.33786V8.37513ZM6.73956 8.36733H12.3796H12.3831H12.3902C12.8124 8.36559 13.1538 8.03019 13.152 7.61765C13.1502 7.20598 12.8053 6.87318 12.3831 6.87491H6.73956C6.32 6.87664 5.97956 7.20858 5.97778 7.61852C5.976 8.03019 6.31733 8.36559 6.73956 8.36733Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M16.0374 12.2966C16.2465 13.2478 17.0805 13.917 18.0326 13.8996H21.2825C21.6787 13.8996 22 13.5715 22 13.166V10.6344C21.9991 10.2297 21.6787 9.90077 21.2825 9.8999H17.9561C16.8731 9.90338 15.9983 10.8024 16 11.9102C16 12.0398 16.0128 12.1695 16.0374 12.2966Z" fill="currentColor"></path>
+                                <circle cx="18" cy="11.8999" r="1" fill="currentColor"></circle>
+                            </svg>
                         </i>
                         <span className="item-name">Design System<span className="badge rounded-pill bg-success ms-3">UI</span></span>
                     </Link>
                 </li>
-                <li><hr className="hr-horizontal"/></li>
+                <li><hr className="hr-horizontal" /></li>
                 <li className="nav-item static-item">
                     <Link className="nav-link static-item disabled" to="#" tabIndex="-1">
                         <span className="default-icon">Pages</span>
@@ -152,7 +152,7 @@ const VerticalNav = memo((props) => {
                     </Link>
                 </li>
                 <Accordion.Item as="li" eventKey="sidebar-special" bsPrefix={`nav-item ${active === 'special' ? 'active' : ''} `} onClick={() => setActive('special')}>
-                <CustomToggle eventKey="sidebar-special" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                    <CustomToggle eventKey="sidebar-special" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.4" d="M13.3051 5.88243V6.06547C12.8144 6.05584 12.3237 6.05584 11.8331 6.05584V5.89206C11.8331 5.22733 11.2737 4.68784 10.6064 4.68784H9.63482C8.52589 4.68784 7.62305 3.80152 7.62305 2.72254C7.62305 2.32755 7.95671 2 8.35906 2C8.77123 2 9.09508 2.32755 9.09508 2.72254C9.09508 3.01155 9.34042 3.24276 9.63482 3.24276H10.6064C12.0882 3.2524 13.2953 4.43736 13.3051 5.88243Z" fill="currentColor"></path>
@@ -170,15 +170,15 @@ const VerticalNav = memo((props) => {
                         <ul className="sub-nav">
                             <li className="nav-item">
                                 <Link className={`${location.pathname === '/dashboard/special-pages/billing' ? 'active' : ''} nav-link`} to="/dashboard/special-pages/billing">
-                                <i className="icon">
+                                    <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
-                                <i className="sidenav-mini-icon"> B </i>
-                                <span className="item-name">Billing</span>
+                                    <i className="sidenav-mini-icon"> B </i>
+                                    <span className="item-name">Billing</span>
                                 </Link>
                             </li>
                             <li className="nav-item">
@@ -186,7 +186,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -195,14 +195,14 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname === '/dashboard/special-pages/kanban' ? 'active' : '' } nav-link`} to="/dashboard/special-pages/kanban">
+                                <Link className={`${location.pathname === '/dashboard/special-pages/kanban' ? 'active' : ''} nav-link`} to="/dashboard/special-pages/kanban">
                                     <i className="icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
-                                                <g>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
                                                 <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
-                                                </g>
-                                            </svg>
-                                        </i>
+                                            </g>
+                                        </svg>
+                                    </i>
                                     <i className="sidenav-mini-icon"> K </i>
                                     <span className="item-name">kanban</span>
                                 </Link>
@@ -212,7 +212,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -221,25 +221,25 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                            <Link className={`${location.pathname === '/dashboard/special-pages/rtl-support' ? 'active' : ''} nav-link`} to="/dashboard/special-pages/rtl-support">
-                                <i className="icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
-                                        <g>
-                                        <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
-                                        </g>
-                                    </svg>
-                                </i>
-                                <i className="sidenav-mini-icon"> RS </i>
-                                <span className="item-name">RTL Support</span>
-                            </Link>
-                        </li>
+                                <Link className={`${location.pathname === '/dashboard/special-pages/rtl-support' ? 'active' : ''} nav-link`} to="/dashboard/special-pages/rtl-support">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <i className="sidenav-mini-icon"> RS </i>
+                                    <span className="item-name">RTL Support</span>
+                                </Link>
+                            </li>
 
                             <li className="nav-item">
                                 <Link className={`${location.pathname === '/dashboard/special-pages/timeline' ? 'active' : ''} nav-link`} to="/dashboard/special-pages/timeline">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -250,7 +250,7 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
-                <Accordion.Item as="li" className={`${activeMenu === '0' ? 'active' : ''}`} eventKey="sidebar-auth"  bsPrefix={`nav-item ${active === 'auth' ? 'active' : ''} `} onClick={() => setActive('auth')}>
+                <Accordion.Item as="li" className={`${activeMenu === '0' ? 'active' : ''}`} eventKey="sidebar-auth" bsPrefix={`nav-item ${active === 'auth' ? 'active' : ''} `} onClick={() => setActive('auth')}>
                     <CustomToggle eventKey="sidebar-auth" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -272,7 +272,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -281,11 +281,11 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname === '/auth/sign-up' ? 'active' : '' } nav-link`} to="/auth/sign-up">
+                                <Link className={`${location.pathname === '/auth/sign-up' ? 'active' : ''} nav-link`} to="/auth/sign-up">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -298,7 +298,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -311,7 +311,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -324,7 +324,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -361,7 +361,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -374,7 +374,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -387,7 +387,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -420,7 +420,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -432,7 +432,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -444,7 +444,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -455,17 +455,67 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
                 <li className="nav-item">
-                <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
+                    <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
-                            <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
+                                <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
                             </svg>
                         </i>
                         <span className="item-name">Admin</span>
                     </Link>
                 </li>
-                <li><hr className="hr-horizontal"/></li>
+                <Accordion.Item as="li" eventKey="sidebar-customer" bsPrefix={`nav-item ${active === 'customer' ? 'active' : ''} `} onClick={() => setActive('customer')}>
+                    <CustomToggle eventKey="sidebar-customer" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                        <i className="icon">
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.9488 14.54C8.49884 14.54 5.58789 15.1038 5.58789 17.2795C5.58789 19.4562 8.51765 20.0001 11.9488 20.0001C15.3988 20.0001 18.3098 19.4364 18.3098 17.2606C18.3098 15.084 15.38 14.54 11.9488 14.54Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M11.949 12.467C14.2851 12.467 16.1583 10.5831 16.1583 8.23351C16.1583 5.88306 14.2851 4 11.949 4C9.61293 4 7.73975 5.88306 7.73975 8.23351C7.73975 10.5831 9.61293 12.467 11.949 12.467Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M21.0881 9.21923C21.6925 6.84176 19.9205 4.70654 17.664 4.70654C17.4187 4.70654 17.1841 4.73356 16.9549 4.77949C16.9244 4.78669 16.8904 4.802 16.8725 4.82902C16.8519 4.86324 16.8671 4.90917 16.8895 4.93889C17.5673 5.89528 17.9568 7.0597 17.9568 8.30967C17.9568 9.50741 17.5996 10.6241 16.9728 11.5508C16.9083 11.6462 16.9656 11.775 17.0793 11.7948C17.2369 11.8227 17.3981 11.8371 17.5629 11.8416C19.2059 11.8849 20.6807 10.8213 21.0881 9.21923Z" fill="currentColor"></path>
+                                <path d="M22.8094 14.817C22.5086 14.1722 21.7824 13.73 20.6783 13.513C20.1572 13.3851 18.747 13.205 17.4352 13.2293C17.4155 13.232 17.4048 13.2455 17.403 13.2545C17.4003 13.2671 17.4057 13.2887 17.4316 13.3022C18.0378 13.6039 20.3811 14.916 20.0865 17.6834C20.074 17.8032 20.1698 17.9068 20.2888 17.8888C20.8655 17.8059 22.3492 17.4853 22.8094 16.4866C23.0637 15.9589 23.0637 15.3456 22.8094 14.817Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M7.04459 4.77973C6.81626 4.7329 6.58077 4.70679 6.33543 4.70679C4.07901 4.70679 2.30701 6.84201 2.9123 9.21947C3.31882 10.8216 4.79355 11.8851 6.43661 11.8419C6.60136 11.8374 6.76343 11.8221 6.92013 11.7951C7.03384 11.7753 7.09115 11.6465 7.02668 11.551C6.3999 10.6234 6.04263 9.50765 6.04263 8.30991C6.04263 7.05904 6.43303 5.89462 7.11085 4.93913C7.13234 4.90941 7.14845 4.86348 7.12696 4.82926C7.10906 4.80135 7.07593 4.78694 7.04459 4.77973Z" fill="currentColor"></path>
+                                <path d="M3.32156 13.5127C2.21752 13.7297 1.49225 14.1719 1.19139 14.8167C0.936203 15.3453 0.936203 15.9586 1.19139 16.4872C1.65163 17.4851 3.13531 17.8066 3.71195 17.8885C3.83104 17.9065 3.92595 17.8038 3.91342 17.6832C3.61883 14.9167 5.9621 13.6046 6.56918 13.3029C6.59425 13.2885 6.59962 13.2677 6.59694 13.2542C6.59515 13.2452 6.5853 13.2317 6.5656 13.2299C5.25294 13.2047 3.84358 13.3848 3.32156 13.5127Z" fill="currentColor"></path>
+                            </svg>
+                        </i>
+                        <span className="item-name">Customer</span>
+                        <i className="right-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </i>
+                    </CustomToggle>
+                    <Accordion.Collapse eventKey="sidebar-customer">
+                        <ul className="sub-nav">
+                            <li className="nav-item">
+                                <Link className={`${location.pathname === '/dashboard/customer-add' ? 'active' : ''} nav-link`} to="/dashboard/customer-add">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <i className="sidenav-mini-icon"> E </i>
+                                    <span className="item-name">Add Customer</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname === '/dashboard/customer-list' ? 'active' : ''} nav-link`} to="/dashboard/customer-list">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <i className="sidenav-mini-icon"> U </i>
+                                    <span className="item-name">Customer List</span>
+                                </Link>
+                            </li>
+                        </ul>
+                    </Accordion.Collapse>
+                </Accordion.Item>
+                <li><hr className="hr-horizontal" /></li>
                 <li className="nav-item static-item">
                     <Link className="nav-link static-item disabled" to="#" tabIndex="-1">
                         <span className="default-icon">Elements</span>
@@ -475,11 +525,11 @@ const VerticalNav = memo((props) => {
                 <li className="nav-item">
                     <Link className="nav-link" to="/">
                         <i className="icon">
-                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">                                
-                                <path opacity="0.4" d="M2 11.0786C2.05 13.4166 2.19 17.4156 2.21 17.8566C2.281 18.7996 2.642 19.7526 3.204 20.4246C3.986 21.3676 4.949 21.7886 6.292 21.7886C8.148 21.7986 10.194 21.7986 12.181 21.7986C14.176 21.7986 16.112 21.7986 17.747 21.7886C19.071 21.7886 20.064 21.3566 20.836 20.4246C21.398 19.7526 21.759 18.7896 21.81 17.8566C21.83 17.4856 21.93 13.1446 21.99 11.0786H2Z" fill="currentColor"></path>                                
-                                <path d="M11.2451 15.3843V16.6783C11.2451 17.0923 11.5811 17.4283 11.9951 17.4283C12.4091 17.4283 12.7451 17.0923 12.7451 16.6783V15.3843C12.7451 14.9703 12.4091 14.6343 11.9951 14.6343C11.5811 14.6343 11.2451 14.9703 11.2451 15.3843Z" fill="currentColor"></path>                                
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.4" d="M2 11.0786C2.05 13.4166 2.19 17.4156 2.21 17.8566C2.281 18.7996 2.642 19.7526 3.204 20.4246C3.986 21.3676 4.949 21.7886 6.292 21.7886C8.148 21.7986 10.194 21.7986 12.181 21.7986C14.176 21.7986 16.112 21.7986 17.747 21.7886C19.071 21.7886 20.064 21.3566 20.836 20.4246C21.398 19.7526 21.759 18.7896 21.81 17.8566C21.83 17.4856 21.93 13.1446 21.99 11.0786H2Z" fill="currentColor"></path>
+                                <path d="M11.2451 15.3843V16.6783C11.2451 17.0923 11.5811 17.4283 11.9951 17.4283C12.4091 17.4283 12.7451 17.0923 12.7451 16.6783V15.3843C12.7451 14.9703 12.4091 14.6343 11.9951 14.6343C11.5811 14.6343 11.2451 14.9703 11.2451 15.3843Z" fill="currentColor"></path>
                                 <path fillRule="evenodd" clipRule="evenodd" d="M10.211 14.5565C10.111 14.9195 9.762 15.1515 9.384 15.1015C6.833 14.7455 4.395 13.8405 2.337 12.4815C2.126 12.3435 2 12.1075 2 11.8555V8.38949C2 6.28949 3.712 4.58149 5.817 4.58149H7.784C7.972 3.12949 9.202 2.00049 10.704 2.00049H13.286C14.787 2.00049 16.018 3.12949 16.206 4.58149H18.183C20.282 4.58149 21.99 6.28949 21.99 8.38949V11.8555C21.99 12.1075 21.863 12.3425 21.654 12.4815C19.592 13.8465 17.144 14.7555 14.576 15.1105C14.541 15.1155 14.507 15.1175 14.473 15.1175C14.134 15.1175 13.831 14.8885 13.746 14.5525C13.544 13.7565 12.821 13.1995 11.99 13.1995C11.148 13.1995 10.433 13.7445 10.211 14.5565ZM13.286 3.50049H10.704C10.031 3.50049 9.469 3.96049 9.301 4.58149H14.688C14.52 3.96049 13.958 3.50049 13.286 3.50049Z" fill="currentColor"></path>
-                            </svg> 
+                            </svg>
                         </i>
                         <span className="item-name">Components</span>
                     </Link>
@@ -506,7 +556,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -519,7 +569,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -532,7 +582,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -544,7 +594,7 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-maps" bsPrefix={`nav-item ${active === 'maps' ? 'active' : ''} `} onClick={() => setActive('maps')} >
-                <CustomToggle eventKey="sidebar-maps" active={activeMenu === 'sidebar-maps' ? true : false} onClick={(activeKey) => setActiveMenu(activeKey)}>
+                    <CustomToggle eventKey="sidebar-maps" active={activeMenu === 'sidebar-maps' ? true : false} onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M8.53162 2.93677C10.7165 1.66727 13.402 1.68946 15.5664 2.99489C17.7095 4.32691 19.012 6.70418 18.9998 9.26144C18.95 11.8019 17.5533 14.19 15.8075 16.0361C14.7998 17.1064 13.6726 18.0528 12.4488 18.856C12.3228 18.9289 12.1848 18.9777 12.0415 19C11.9036 18.9941 11.7693 18.9534 11.6508 18.8814C9.78243 17.6746 8.14334 16.134 6.81233 14.334C5.69859 12.8314 5.06584 11.016 5 9.13442C4.99856 6.57225 6.34677 4.20627 8.53162 2.93677ZM9.79416 10.1948C10.1617 11.1008 11.0292 11.6918 11.9916 11.6918C12.6221 11.6964 13.2282 11.4438 13.6748 10.9905C14.1214 10.5371 14.3715 9.92064 14.3692 9.27838C14.3726 8.29804 13.7955 7.41231 12.9073 7.03477C12.0191 6.65723 10.995 6.86235 10.3133 7.55435C9.63159 8.24635 9.42664 9.28872 9.79416 10.1948Z" fill="currentColor"></path>
@@ -565,7 +615,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -575,10 +625,10 @@ const VerticalNav = memo((props) => {
                             </li>
                             <li className="nav-item">
                                 <Link className={`${location.pathname === '/dashboard/map/vector' ? 'active' : ''} nav-link`} to="/dashboard/map/vector">
-                                <i className="icon">
+                                    <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -590,7 +640,7 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-form" bsPrefix={`nav-item ${active === 'form' ? 'active' : ''} `} onClick={() => setActive('form')}>
-                 <CustomToggle eventKey="sidebar-form" active={activeMenu === 'sidebar-form' ? true : false} onClick={(activeKey) => setActiveMenu(activeKey)}>
+                    <CustomToggle eventKey="sidebar-form" active={activeMenu === 'sidebar-form' ? true : false} onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.4" d="M16.191 2H7.81C4.77 2 3 3.78 3 6.83V17.16C3 20.26 4.77 22 7.81 22H16.191C19.28 22 21 20.26 21 17.16V6.83C21 3.78 19.28 2 16.191 2Z" fill="currentColor"></path>
@@ -608,15 +658,15 @@ const VerticalNav = memo((props) => {
                         <ul className="sub-nav">
                             <li className="nav-item">
                                 <Link className={`${location.pathname === '/dashboard/form/form-element' ? 'active' : ''} nav-link`} to="/dashboard/form/form-element">
-                                <i className="icon">
+                                    <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
-                                <i className="sidenav-mini-icon"> E </i>
-                                <span className="item-name">Elements</span>
+                                    <i className="sidenav-mini-icon"> E </i>
+                                    <span className="item-name">Elements</span>
                                 </Link>
                             </li>
                             <li className="nav-item">
@@ -624,7 +674,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -637,7 +687,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -649,11 +699,11 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-table" bsPrefix={`nav-item ${active === 'table' ? 'active' : ''} `} onClick={() => setActive('table')}>
-                 <CustomToggle eventKey="sidebar-table" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                    <CustomToggle eventKey="sidebar-table" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M2 5C2 4.44772 2.44772 4 3 4H8.66667H21C21.5523 4 22 4.44772 22 5V8H15.3333H8.66667H2V5Z" fill="currentColor" stroke="currentColor"/>
-                                <path d="M6 8H2V11M6 8V20M6 8H14M6 20H3C2.44772 20 2 19.5523 2 19V11M6 20H14M14 8H22V11M14 8V20M14 20H21C21.5523 20 22 19.5523 22 19V11M2 11H22M2 14H22M2 17H22M10 8V20M18 8V20" stroke="currentColor"/>
+                                <path d="M2 5C2 4.44772 2.44772 4 3 4H8.66667H21C21.5523 4 22 4.44772 22 5V8H15.3333H8.66667H2V5Z" fill="currentColor" stroke="currentColor" />
+                                <path d="M6 8H2V11M6 8V20M6 8H14M6 20H3C2.44772 20 2 19.5523 2 19V11M6 20H14M14 8H22V11M14 8V20M14 20H21C21.5523 20 22 19.5523 22 19V11M2 11H22M2 14H22M2 17H22M10 8V20M18 8V20" stroke="currentColor" />
                             </svg>
                         </i>
                         <span className="item-name">Table</span>
@@ -666,11 +716,11 @@ const VerticalNav = memo((props) => {
                     <Accordion.Collapse eventKey="sidebar-table">
                         <ul className="sub-nav">
                             <li className="nav-item">
-                                <Link className={`${location.pathname === '/dashboard/table/bootstrap-table' ? 'active' :''} nav-link`} to="/dashboard/table/bootstrap-table">
+                                <Link className={`${location.pathname === '/dashboard/table/bootstrap-table' ? 'active' : ''} nav-link`} to="/dashboard/table/bootstrap-table">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -683,7 +733,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -695,11 +745,11 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-icons" bsPrefix={`nav-item mb-5 ${active === 'icons' ? 'active' : ''} `} onClick={() => setActive('icons')}>
-                <CustomToggle eventKey="sidebar-icons" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                    <CustomToggle eventKey="sidebar-icons" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 10.5378C8 9.43327 8.89543 8.53784 10 8.53784H11.3333C12.4379 8.53784 13.3333 9.43327 13.3333 10.5378V19.8285C13.3333 20.9331 14.2288 21.8285 15.3333 21.8285H16C16 21.8285 12.7624 23.323 10.6667 22.9361C10.1372 22.8384 9.52234 22.5913 9.01654 22.3553C8.37357 22.0553 8 21.3927 8 20.6832V10.5378Z" fill="currentColor"/>
-                                <rect opacity="0.4" x="8" y="1" width="5" height="5" rx="2.5" fill="currentColor"/>
+                                <path d="M8 10.5378C8 9.43327 8.89543 8.53784 10 8.53784H11.3333C12.4379 8.53784 13.3333 9.43327 13.3333 10.5378V19.8285C13.3333 20.9331 14.2288 21.8285 15.3333 21.8285H16C16 21.8285 12.7624 23.323 10.6667 22.9361C10.1372 22.8384 9.52234 22.5913 9.01654 22.3553C8.37357 22.0553 8 21.3927 8 20.6832V10.5378Z" fill="currentColor" />
+                                <rect opacity="0.4" x="8" y="1" width="5" height="5" rx="2.5" fill="currentColor" />
                             </svg>
                         </i>
                         <span className="item-name">Icons</span>
@@ -716,7 +766,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -729,7 +779,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -742,7 +792,7 @@ const VerticalNav = memo((props) => {
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
-                                            <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
                                             </g>
                                         </svg>
                                     </i>
@@ -754,7 +804,7 @@ const VerticalNav = memo((props) => {
                     </Accordion.Collapse>
                 </Accordion.Item>
             </Accordion>
-       </Fragment>
+        </Fragment>
     )
 })
 
