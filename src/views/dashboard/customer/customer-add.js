@@ -5,6 +5,7 @@ import { requestMethod } from '../../../utilities/api/constants'
 import { serverCall } from '../../../utilities/api'
 import { useDispatch, useSelector } from 'react-redux'
 import { successCustomerAdd } from './action'
+import { testCustomerApi } from './dispatcher'
 
 const CustomerAdd =() =>{
    const dispatch = useDispatch();
@@ -13,21 +14,12 @@ const CustomerAdd =() =>{
    console.log('customerAddData => ', customerAddData);
 
    useEffect(() => {
-      console.log('====================================');
-      console.log('Use effec called ...');
       testApiCall();
-      console.log('====================================');
    }, [])
    
    const testApiCall = async () => {
       console.log('Test API Call');
-      // url_params = numberDetails.msisdn
-         //  let palatroResult = await serverCall(endPoints.FOR_YOU_RECHARGE + url_params, requestMethod.GET, {}, headers)
-         const headers = {};
-          const result = await serverCall('https://jsonplaceholder.typicode.com/users', requestMethod.GET, {}, headers);
-          console.log('Result => ', result);
-         dispatch(successCustomerAdd(result));
-
+      dispatch(testCustomerApi());
    }
   return(
       <>
