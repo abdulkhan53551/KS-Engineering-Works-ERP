@@ -9,8 +9,10 @@
 
 import { configureStore } from '@reduxjs/toolkit';
 import settingReducer from './setting/reducers';
+import customerReducer from './../views/dashboard/customer/reducer';
 export const store = configureStore({
   reducer: {
-    setting: settingReducer
+    setting: settingReducer,
+    customer: customerReducer,
   }
 });

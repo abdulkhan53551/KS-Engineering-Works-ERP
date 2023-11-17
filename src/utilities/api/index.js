@@ -63,7 +63,7 @@ export const serverCall = async (url, method, data, additionalHeader, selectedUs
                 let responseTimeInSeconds = (((EndTime - startTime) / 1000) % 60).toFixed(2);
 
                 if (response.status === 200) {
-                    resolve({ success: true, data: response.data, message: '', requestObject, responseTimeInSeconds, screenName })
+                    resolve({ success: true, data: response.data, message: response.data.message ?? null, requestObject, responseTimeInSeconds, screenName })
                 } else {
                     resolve({ success: false, data: {}, message: '', requestObject, responseTimeInSeconds, screenName })
                 }
