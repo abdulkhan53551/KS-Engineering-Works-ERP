@@ -19,31 +19,38 @@ const CustomerAdd =() =>{
 
    const initForm = {
       firstName: '',
-      lastName: ''
+      lastName: '',
+      city: '',
+      email: '',
+      file: ''
    }
 
    const initFormError = {
-      firstName: 'Please choose a First Name.', 
-      lastName: 'Please choose a Last Name'
+      firstName: 'Please enter a First Name.', 
+      lastName: 'Please enter a Last Name',
+      city: 'Please select city',
+      email: '',
+      invalidEmail: 'Email is invalid',
+      file: '',
+      fileTypeInvalid: 'Invalid file type. Only PNG and JPEG are allowed.'
    }
 
-
-   const [validated, setValidated] = useState(false);
    const [formData, setFormData] = useState(initForm);
    const [formErrors, setFormErrors] = useState({});
    const [isFormSubmit, setIsFormSubmit] = useState(false);
    const [isEditMode, setIsEditMode] = useState(false);
+   const [required, setRequired] = useState({email: false, file: false});
    
    const handleSubmit = (event) => {
       console.log('======= handle submit => ', );
       event.preventDefault();
       const form = event.currentTarget;
       
-      if (form.checkValidity()) {
+      // File type input does not contain any error
+      if (!formErrors.file && form.checkValidity()) {
             setFormData(prev => emptyObject(prev))
             setFormErrors(prev => emptyObject(prev))
             setIsFormSubmit(true)
-            setValidated(false)
 
             setTimeout(() => {
                setIsFormSubmit(false)
@@ -53,25 +60,7 @@ const CustomerAdd =() =>{
          event.stopPropagation();
          setFormErrors(validateForm(formData))
       }
-      
-      setValidated(true);
-
-
-      // event.preventDefault();
-      const isFormValid = Object.values(formData).every((error) => !error);
-
-      // console.log('isFormValid => ', isFormValid);
-
-      // if (isFormValid) {
-      //    setFormData(prev => emptyObject(prev))
-      //    setFormErrors(prev => emptyObject(prev))
-      //    setIsFormSubmit(true)
-      // } else {
-         
-      // }
    };
-
-   // console.log('customerAddData => ', customerAddData);
 
    useEffect(() => {
       console.log('id => ', id);
@@ -82,12 +71,6 @@ const CustomerAdd =() =>{
 
       return () => setIsEditMode(false)
    }, [id])
-
-   // useEffect(() => {
-   //    if (isFormSubmit) {
-   //       setIsFormSubmit(prev => !prev)
-   //    }
-   // }, [isFormSubmit])
    
    const testApiCall = async () => {
       console.log('Test API Call');
@@ -97,7 +80,7 @@ const CustomerAdd =() =>{
    const validateForm = (form) => {
       const updatedErrors = {};
       Object.entries(form).forEach(([key, value]) => {
-        updatedErrors[key] = value.trim() === '' ? initFormError[key] : '';
+         updatedErrors[key] = validateField(key, value)
       });
 
       return updatedErrors
@@ -105,25 +88,50 @@ const CustomerAdd =() =>{
 
    const handleChange = (e) => {
       const { name, value } = e.target;
-      setFormData({ ...formData, [name]: value });
+      let errorMsg = ''
+
+      setFormData({ ...formData, [name]: value.trim() ? value : '' });
+      errorMsg = validateField(name, value)
+      setFormErrors({ ...formErrors, [name]: errorMsg });
+      handleOnEmailChange(name, value)
    };
+
+   const handleOnEmailChange = (fieldName, value) => {
+      if (fieldName == 'email') {
+         if (value.trim()) {
+            setRequired(prev => ({...prev, email: true}))
+         } else {
+            setRequired(prev => ({...prev, email: false}))
+         }
+      }
+   }
 
    const handleBlur = (e) => {
       const { name, value } = e.target;
-      setFormErrors({
-         ...formErrors,
-         [name]: value.trim() === '' ? initFormError[name] : ''
-      });
-   };
-   
-   const handleFocus = (e) => {
-      const { name, value } = e.target;
-      setFormErrors(prev => ({
-         ...formErrors,
-         [name]: ''
-      }));
+      let errorMsg = ''
+      errorMsg = validateField(name, value)
+      setFormErrors({ ...formErrors, [name]: errorMsg });
    };
 
+   // Validate form field
+   const validateField = (fieldName = '', value = '') => {
+      // Regular expression for basic email validation
+      const emailPattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      let errorMsg = ''
+
+      if (fieldName) {
+         if (typeof value === 'string' && !value.trim()) {
+            errorMsg = initFormError[fieldName]
+         } else if (fieldName == 'email' &&  !emailPattern.test(value)) {
+            errorMsg = initFormError.invalidEmail
+         } else if (fieldName == 'file') {
+            errorMsg = validateFile(formData.file)
+         }
+      }
+
+      return errorMsg
+   }
+   
    function emptyObject(obj) {
       let newObj = {};
       for (let prop in obj) {
@@ -139,11 +147,42 @@ const CustomerAdd =() =>{
       }
       return newObj;
   }
+
+   const validateFile = (files) => {
+      // Allowed file types (MIME types)
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      const file = files[0]; // Get the first selected file
+      let errorMsg = ''
+
+      if (file) {
+         // Check if the file's type is in the allowed types
+         if (!allowedTypes.includes(file.type)) {
+            errorMsg = initFormError.fileTypeInvalid
+         }
+      } else {
+         setRequired(prev => ({...prev, file: false}))
+         errorMsg = initFormError.file
+      }
+
+      return errorMsg
+   }
+
+   // File change handler
+   const handleFileChange = (e) => {
+      setRequired(prev => ({...prev, file: true}))
+
+      const files = e.target.files; // Get the first selected file
+      let errorMsg = ''
+
+      setFormData({ ...formData, file: files });
+      errorMsg = validateFile(files)   // Validate file
+      setFormErrors(prev => ({ ...prev, file: errorMsg }));
+   };
    
   return(
       <>
         <div>
-        <Form noValidate validated={validated} onSubmit={handleSubmit}>
+        <Form noValidate onSubmit={handleSubmit} >
             <Row>
                <Col xl="12" lg="12">
                   <Card>
@@ -161,16 +200,16 @@ const CustomerAdd =() =>{
                                  {JSON.stringify(formData, undefined, 2)}
                                  {JSON.stringify(formErrors, undefined, 2)}
                                  </pre>
-                                 <Form.Group className="col-md-6 form-group">
+                                 {/* <Form.Group className={"col-md-6 form-group"}>
                                     <Form.Label htmlFor="fname">First Name:</Form.Label>
-                                    <Form.Control type="text" name='firstName'  id="fname" value={formData.firstName} onChange={handleChange} isInvalid={formErrors.firstName} placeholder="First Name" onBlur={handleBlur} onFocus={handleFocus} required/>
+                                    <Form.Control type="text" name='firstName'  id="fname" value={formData.firstName} onChange={handleChange} isInvalid={formErrors.firstName} placeholder="First Name" onBlur={handleBlur} required />
                                     <Form.Control.Feedback type="invalid">{formErrors.firstName}</Form.Control.Feedback>
                                  </Form.Group>
                                  <Form.Group className="col-md-6 form-group">
                                     <Form.Label htmlFor="lname">Last Name:</Form.Label>
-                                    <Form.Control type="text" name='lastName' id="lname" value={formData.lastName} onChange={handleChange} isInvalid={formErrors.lastName} placeholder="Last Name" onBlur={handleBlur} onFocus={handleFocus} required />
+                                    <Form.Control type="text" name='lastName' id="lname" value={formData.lastName} onChange={handleChange} isInvalid={formErrors.lastName} placeholder="Last Name" onBlur={handleBlur} required />
                                     <Form.Control.Feedback type="invalid">{formErrors.lastName}</Form.Control.Feedback>
-                                 </Form.Group>
+                                 </Form.Group> */}
                                  {/* <Form.Group className="col-md-6 form-group">
                                     <Form.Label htmlFor="add1">Street Address 1:</Form.Label>
                                     <Form.Control type="text"  id="add1" placeholder="Street Address 1"/>
@@ -182,17 +221,18 @@ const CustomerAdd =() =>{
                                  <Form.Group className="col-md-12 form-group">
                                     <Form.Label htmlFor="cname">Company Name:</Form.Label>
                                     <Form.Control type="text"  id="cname" placeholder="Company Name"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group">
-                                    <Form.Label>City:</Form.Label>
-                                    <select name="type" className="selectpicker form-control" data-style="py-0">
-                                       <option>Select City</option>
-                                       <option>Nashik</option>
-                                       <option>Mumbai</option>
-                                       <option >Pune</option>
-                                    </select>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group">
+                                 </Form.Group> */}
+                                {/* <Form.Group className="col-md-4 form-group">
+                                   <Form.Label>City:</Form.Label>
+                                   <Form.Control as="select" name='city' id='city' value={formData.city} onChange={handleChange} isInvalid={formErrors.city} placeholder="City" onBlur={handleBlur}>
+                                      <option value="">--Select--</option>
+                                      <option value="option1">Option 1</option>
+                                      <option value="option2">Option 2</option>
+                                      <option value="option3">Option 3</option>
+                                   </Form.Control>
+                                   <Form.Control.Feedback type="invalid">{formErrors.city}</Form.Control.Feedback>
+                                </Form.Group> */}
+                                 {/* <Form.Group className="col-md-4 form-group">
                                     <Form.Label>State:</Form.Label>
                                     <select name="type" className="selectpicker form-control" data-style="py-0">
                                        <option>Select State</option>
@@ -212,20 +252,28 @@ const CustomerAdd =() =>{
                                        <option>India</option>
                                        <option>Africa</option>
                                     </select>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6  form-group">
+                                 </Form.Group> */}
+                                 {/* <Form.Group className="col-md-6  form-group">
                                     <Form.Label htmlFor="mobno">Mobile Number:</Form.Label>
                                     <Form.Control type="text"  id="mobno" placeholder="Mobile Number"/>
                                  </Form.Group>
                                  <Form.Group className="col-md-6  form-group">
                                     <Form.Label htmlFor="altconno">Alternate Contact:</Form.Label>
                                     <Form.Control type="text"  id="altconno" placeholder="Alternate Contact"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6  form-group">
+                                 </Form.Group> */}
+                                 {/* <Form.Group className="col-md-6  form-group">
                                     <Form.Label htmlFor="email">Email:</Form.Label>
-                                    <Form.Control type="email"  id="email" placeholder="Email"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6 form-group">
+                                    <Form.Control type="email"  id="email" name='email' placeholder="Email" value={formData.email} onChange={handleChange} isInvalid={formErrors.email} onBlur={handleBlur} required={required.email} />
+                                    <Form.Control.Feedback type="invalid">{formErrors.email}</Form.Control.Feedback>
+                                 </Form.Group> */}
+                                 <Form.Group className="form-group col-md-6">
+                                    <Form.Group>
+                                        <Form.Label  className="custom-file-input">Choose file</Form.Label>
+                                        <Form.Control  type="file" id="file" name='file' onChange={handleFileChange} isInvalid={formErrors.file} required={required.file} />
+                                        <Form.Control.Feedback type="invalid">{formErrors.file}</Form.Control.Feedback>
+                                    </Form.Group>
+                                </Form.Group>
+                                 {/* <Form.Group className="col-md-6 form-group">
                                     <Form.Label htmlFor="pno">Pin Code:</Form.Label>
                                     <Form.Control type="text"  id="pno" placeholder="Pin Code"/>
                                  </Form.Group> */}
