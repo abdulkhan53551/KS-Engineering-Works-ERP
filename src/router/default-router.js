@@ -49,6 +49,10 @@ import RtlSupport from '../views/dashboard/special-pages/RtlSupport'
 import Admin from '../views/dashboard/admin/admin';
 import Default from '../layouts/dashboard/default';
 
+// Testing
+import Test from '../views/test/form-validation';
+import AddRow from '../views/test/form-add-row';
+
 
 export const DefaultRouter = [
     {
@@ -97,6 +101,10 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/customer-add',
+                element: <CustomerAdd />
+            },
+            {
+                path: 'dashboard/customer-edit/:id',
                 element: <CustomerAdd />
             },
             {
@@ -163,6 +171,14 @@ export const DefaultRouter = [
             {
                 path: 'dashboard/icon/dual-tone',
                 element: <DualTone />
+            },
+            {
+                path: 'test/form-validation',
+                element: <Test />
+            },
+            {
+                path: 'test/form-add-row',
+                element: <AddRow />
             }
         ]
     }
