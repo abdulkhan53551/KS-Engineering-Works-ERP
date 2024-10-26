@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {Row,Col,Image,Form,Button, Spinner, Dropdown} from 'react-bootstrap'
-import Card from '../../../components/Card'
+import {Row,Col,Image,Form,Button, Spinner, Dropdown, Card} from 'react-bootstrap'
+// import Card from '../../../components/Card'
 import { requestMethod } from '../../../utilities/api/constants'
 import { serverCall } from '../../../utilities/api'
 import { useDispatch, useSelector } from 'react-redux'
@@ -11,6 +11,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ROUTES, Route, dashboard } from '../../../utilities/constant/route-constant'
 import BootstrapSwitchButton from 'bootstrap-switch-button-react'
 import './../../../assets/custom/css/module.css'
+import { DEFAULT_PROFILE } from '../../../utilities/constant/constants'
 
 const states = [
    { "id": 1, "name": "Andhra Pradesh" },
@@ -188,7 +189,7 @@ const CustomerAdd =() =>{
             billingAddress: 'FA-03, Plot 01, SSI Unit, Ambad, MIDC, Nashik',
             shippingAddress: 'FA-03, Plot 01, SSI Unit, Ambad, MIDC, Nashik',
             isGSTRegistered: true,
-            gstNo: '27AQUPK5416E',
+            gstNo: '27AQUPK5416E1ZM',
             state: 14,
             city: 4,
             pinCode: '422010',
@@ -360,209 +361,143 @@ const CustomerAdd =() =>{
                   <Card>
                      <Card.Header className="d-flex justify-content-between">
                         <div className="header-title">
-                           <h4 className="card-title">New User Information</h4>
+                           <h4 className="card-title">Add Customer</h4>
                         </div>
                      </Card.Header>
                      <Card.Body>
                       {/* <DismissibleAlert message="This alert will automatically dismiss after 3 seconds." /> */}
-                        <div className="new-user-info">
-                              <div className="row">
-                                 <pre>
-
-                                 {JSON.stringify(formData, undefined, 2)}
-                                 {JSON.stringify(formErrors, undefined, 2)}
-                                 </pre>
-
-                                 <div class="w-24 h-24 bg-red-500"></div>
-
-                                 <Form.Group className={"form-group"}>
-                                    <Form.Label >Customer Type:</Form.Label>
-                                    <div>
-                                       <BootstrapSwitchButton
-                                          checked={formData.isCustomerTypeBusiness}
-                                          width={200}
-                                          height={40}
-                                          onlabel='Business'
-                                          onstyle='success'
-                                          offlabel='Individual'
-                                          offstyle='secondary'
-                                          size='sm'
-                                          onChange={customerType}
-                                       />
-                                    </div>
-                                 </Form.Group>
-                                 <Form.Group className="form-group col-md-6">
-                                    <Form.Label className="custom-file-input">Business Logo</Form.Label>
-                                    <Form.Control  type="file" id="profileLogo" name='profileLogo' onChange={handleFileChange} isInvalid={formErrors.profileLogo} required={required.profileLogo} />
-                                    <Form.Control.Feedback type="invalid">{formErrors.profileLogo}</Form.Control.Feedback>
-                                  </Form.Group>
-                                  {formData.isCustomerTypeBusiness ? (
-                                    <Form.Group className={`col-md-6 form-group ${required.businessName ? 'required' : ''}`}>
-                                       <Form.Label htmlFor="businessName">Business Name:</Form.Label>
-                                       <Form.Control type="text" name='businessName'  id="businessName" value={formData.businessName} onChange={handleChange} isInvalid={formErrors.businessName} placeholder="Business Name" onBlur={handleBlur} required={required.businessName} />
-                                       <Form.Control.Feedback type="invalid">{formErrors.businessName}</Form.Control.Feedback>
-                                    </Form.Group>
-                                  ) : (
-                                    <Form.Group className={`col-md-6 form-group ${required.customerName ? 'required' : ''}`}>
-                                       <Form.Label htmlFor="customerName">Customer Name:</Form.Label>
-                                       <Form.Control type="text" name='customerName'  id="customerName" value={formData.customerName} onChange={handleChange} isInvalid={formErrors.customerName} placeholder="Customer Name" onBlur={handleBlur} required={required.customerName} />
-                                       <Form.Control.Feedback type="invalid">{formErrors.customerName}</Form.Control.Feedback>
-                                    </Form.Group>
-                                  )}
-                                 <Form.Group className="col-md-6 form-group required">
-                                    <Form.Label htmlFor="billingAddress">Billing Address:</Form.Label>
-                                    <Form.Control as="textarea" rows={3} name='billingAddress' id="billingAddress" value={formData.billingAddress} onChange={handleChange} isInvalid={formErrors.billingAddress} placeholder="Billing Address" onBlur={handleBlur} required />
-                                    <Form.Control.Feedback type="invalid">{formErrors.billingAddress}</Form.Control.Feedback>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6 form-group required">
-                                    <Form.Label htmlFor="shippingAddress">Shipping Address:</Form.Label>
-                                    <Form.Control as="textarea" rows={3} name='shippingAddress' id="shippingAddress" value={formData.shippingAddress} onChange={handleChange} isInvalid={formErrors.shippingAddress} placeholder="Shipping Address" onBlur={handleBlur} required />
-                                    <Form.Control.Feedback type="invalid">{formErrors.shippingAddress}</Form.Control.Feedback>
-                                 </Form.Group>
-                                 <Form.Group className={"form-group col-md-6"}>
-                                    <Form.Label >GST Registered:</Form.Label>
-                                    <div>
-                                       <BootstrapSwitchButton
-                                          checked={formData.isGSTRegistered}
-                                          width={80}
-                                          height={40}
-                                          onlabel='Yes'
-                                          onstyle='success'
-                                          offlabel='No'
-                                          offstyle='danger'
-                                          // style='w-100'
-                                          size='sm'
-                                          onChange={changeGSTRegistered}
-                                       />
-                                    </div>
-                                 </Form.Group>
-                                 {formData.isGSTRegistered && (
-                                    <Form.Group className={`col-md-6 form-group ${required.gstNo ? 'required' : ''}`}>
-                                       <Form.Label htmlFor="gstNo">GST No.:</Form.Label>
-                                       <Form.Control type="text" name='gstNo'  id="gstNo" value={formData.gstNo} onChange={handleChange} isInvalid={formErrors.gstNo} placeholder="GST No." onBlur={handleBlur} required={required.gstNo} />
-                                       <Form.Control.Feedback type="invalid">{formErrors.gstNo}</Form.Control.Feedback>
-                                    </Form.Group>
-                                 )}
-                                 <Form.Group className="col-md-4 form-group required">
-                                   <Form.Label>State:</Form.Label>
-                                   <Form.Control as="select" name='state' id='state' value={formData.state} onChange={handleChange} isInvalid={formErrors.state} placeholder="State" onBlur={handleBlur} required>
-                                      <option value="">--Select--</option>
-                                      {/* <option value="maharashtra">Maharashtra</option>
-                                      <option value="UP">UP</option>
-                                      <option value="Bihar">Bihar</option> */}
-                                      {states.map(item => (<option value={item.id}>{item.name}</option>))}
-                                   </Form.Control>
-                                   <Form.Control.Feedback type="invalid">{formErrors.state}</Form.Control.Feedback>
-                                </Form.Group>
-                                 <Form.Group className="col-md-4 form-group required">
-                                   <Form.Label>City:</Form.Label>
-                                   <Form.Control as="select" name='city' id='city' value={formData.city} onChange={handleChange} isInvalid={formErrors.city} placeholder="City" onBlur={handleBlur} required>
-                                      <option value="">--Select--</option>
-                                      {/* <option value="option1">Option 1</option>
-                                      <option value="option2">Option 2</option>
-                                      <option value="option3">Option 3</option> */}
-                                      {cities.map(item => (<option value={item.id}>{item.name}</option>))}
-                                   </Form.Control>
-                                   <Form.Control.Feedback type="invalid">{formErrors.city}</Form.Control.Feedback>
-                                </Form.Group>
-                                <Form.Group className="col-md-4 form-group required">
-                                    <Form.Label htmlFor="pinCode">Pin Code:</Form.Label>
-                                    <Form.Control type="text" name='pinCode' id="pinCode" placeholder="Pin Code" value={formData.pinCode} onChange={handleChange} isInvalid={formErrors.pinCode} onBlur={handleBlur} required/>
-                                    <Form.Control.Feedback type="invalid">{formErrors.pinCode}</Form.Control.Feedback>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group required">
-                                    <Form.Label htmlFor="paymentTerms">Payment Term (In Days):</Form.Label>
-                                    <Form.Control type="text" name='paymentTerms' id="paymentTerms" placeholder="Payment Term (In Days)" value={formData.paymentTerms} onChange={handleChange} isInvalid={formErrors.paymentTerms} onBlur={handleBlur} required/>
-                                    <Form.Control.Feedback type="invalid">{formErrors.paymentTerms}</Form.Control.Feedback>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group required">
-                                    <Form.Label htmlFor="mobileNo">Mobile Number:</Form.Label>
-                                    <Form.Control type="text" name='mobileNo' id="mobileNo" placeholder="Mobile Number" value={formData.mobileNo} onChange={handleChange} isInvalid={formErrors.mobileNo} onBlur={handleBlur} required/>
-                                    <Form.Control.Feedback type="invalid">{formErrors.mobileNo}</Form.Control.Feedback>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group">
-                                    <Form.Label htmlFor="email">Email:</Form.Label>
-                                    <Form.Control type="email"  id="email" name='email' placeholder="Email" value={formData.email} onChange={handleChange} isInvalid={formErrors.email} onBlur={handleBlur} required={required.email} />
-                                    <Form.Control.Feedback type="invalid">{formErrors.email}</Form.Control.Feedback>
-                                 </Form.Group> 
-                                 {/* <Form.Group className="col-md-6 form-group">
-                                    <Form.Label htmlFor="add1">Street Address 1:</Form.Label>
-                                    <Form.Control type="text"  id="add1" placeholder="Street Address 1"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6 form-group">
-                                    <Form.Label htmlFor="add2">Street Address 2:</Form.Label>
-                                    <Form.Control type="text"  id="add2" placeholder="Street Address 2"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-12 form-group">
-                                    <Form.Label htmlFor="cname">Company Name:</Form.Label>
-                                    <Form.Control type="text"  id="cname" placeholder="Company Name"/>
-                                 </Form.Group> */}
-                                {/* <Form.Group className="col-md-4 form-group">
-                                   <Form.Label>City:</Form.Label>
-                                   <Form.Control as="select" name='city' id='city' value={formData.city} onChange={handleChange} isInvalid={formErrors.city} placeholder="City" onBlur={handleBlur}>
-                                      <option value="">--Select--</option>
-                                      <option value="option1">Option 1</option>
-                                      <option value="option2">Option 2</option>
-                                      <option value="option3">Option 3</option>
-                                   </Form.Control>
-                                   <Form.Control.Feedback type="invalid">{formErrors.city}</Form.Control.Feedback>
-                                </Form.Group> */}
-                                 {/* <Form.Group className="col-md-4 form-group">
-                                    <Form.Label>State:</Form.Label>
-                                    <select name="type" className="selectpicker form-control" data-style="py-0">
-                                       <option>Select State</option>
-                                       <option>Maharastra</option>
-                                       <option>Banglore</option>
-                                       <option >Punjab</option>
-                                       <option>Gujrat</option>
-                                    </select>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-4 form-group">
-                                    <Form.Label>Country:</Form.Label>
-                                    <select name="type" className="selectpicker form-control" data-style="py-0">
-                                       <option>Select Country</option>
-                                       <option>Caneda</option>
-                                       <option>Noida</option>
-                                       <option >USA</option>
-                                       <option>India</option>
-                                       <option>Africa</option>
-                                    </select>
-                                 </Form.Group> */}
-                                 {/* <Form.Group className="col-md-6  form-group">
-                                    <Form.Label htmlFor="mobno">Mobile Number:</Form.Label>
-                                    <Form.Control type="text"  id="mobno" placeholder="Mobile Number"/>
-                                 </Form.Group>
-                                 <Form.Group className="col-md-6  form-group">
-                                    <Form.Label htmlFor="altconno">Alternate Contact:</Form.Label>
-                                    <Form.Control type="text"  id="altconno" placeholder="Alternate Contact"/>
-                                 </Form.Group> */}
-                                 {/* <Form.Group className="col-md-6  form-group">
-                                    <Form.Label htmlFor="email">Email:</Form.Label>
-                                    <Form.Control type="email"  id="email" name='email' placeholder="Email" value={formData.email} onChange={handleChange} isInvalid={formErrors.email} onBlur={handleBlur} required={required.email} />
-                                    <Form.Control.Feedback type="invalid">{formErrors.email}</Form.Control.Feedback>
-                                 </Form.Group> */}
-                                 {/* <Form.Group className="form-group col-md-6">
-                                    <Form.Group>
-                                        <Form.Label  className="custom-file-input">Choose file</Form.Label>
-                                        <Form.Control  type="file" id="file" name='file' onChange={handleFileChange} isInvalid={formErrors.file} required={required.file} />
-                                        <Form.Control.Feedback type="invalid">{formErrors.file}</Form.Control.Feedback>
-                                    </Form.Group>
-                                </Form.Group> */}
-                                 {/* <Form.Group className="col-md-6 form-group">
-                                    <Form.Label htmlFor="pno">Pin Code:</Form.Label>
-                                    <Form.Control type="text"  id="pno" placeholder="Pin Code"/>
-                                 </Form.Group> */}
+                        <div className="row">
+                           {/* <pre>
+                              {JSON.stringify(formData, undefined, 2)}
+                              {JSON.stringify(formErrors, undefined, 2)}
+                           </pre> */}
+                           <Form.Group className={"form-group"}>
+                              <Form.Label >Customer Type:</Form.Label>
+                              <div>
+                                 <BootstrapSwitchButton
+                                    checked={formData.isCustomerTypeBusiness}
+                                    width={200}
+                                    height={40}
+                                    onlabel='Business'
+                                    onstyle='success'
+                                    offlabel='Individual'
+                                    offstyle='secondary'
+                                    size='sm'
+                                    onChange={customerType}
+                                 />
                               </div>
-                             {isFormSubmit ? (
-                                 <Button variant="primary" disabled>
-                                       <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-                                       {/* {' '}Adding... */}
-                                       {' '}{isEditMode ? 'Updating...' : 'Adding'}
-                                 </Button>
-                             ) : (
-                                 <Button type="submit" variant="btn btn-primary">{isEditMode ? 'Update' : 'Add'}</Button>
-                             )}
+                           </Form.Group>
+                           <Form.Group className="form-group col-md-6">
+                              <Form.Label className="custom-file-input">Business Logo</Form.Label>
+                              {isEditMode && (
+                              <Card style={{ width: 100 }}>
+                                 <Card.Img
+                                    variant="top"
+                                    src={formData.profileLogo}
+                                    alt="Profile"
+                                    style={{ height: '100px' }}
+                                    onError={(e) => {
+                                       e.target.onerror = null;
+                                       e.target.src = DEFAULT_PROFILE;
+                                    }}
+                                 />
+                              </Card>
+                              )}
+                              <Form.Control type="file" id="profileLogo" name='profileLogo' onChange={handleFileChange} isInvalid={formErrors.profileLogo} required={required.profileLogo} />
+                              <Form.Control.Feedback type="invalid">{formErrors.profileLogo}</Form.Control.Feedback>
+                           </Form.Group>
+                              {formData.isCustomerTypeBusiness ? (
+                              <Form.Group className={`col-md-6 form-group ${required.businessName ? 'required' : ''}`}>
+                                 <Form.Label htmlFor="businessName">Business Name:</Form.Label>
+                                 <Form.Control type="text" name='businessName'  id="businessName" value={formData.businessName} onChange={handleChange} isInvalid={formErrors.businessName} placeholder="Business Name" onBlur={handleBlur} required={required.businessName} />
+                                 <Form.Control.Feedback type="invalid">{formErrors.businessName}</Form.Control.Feedback>
+                              </Form.Group>
+                              ) : (
+                              <Form.Group className={`col-md-6 form-group ${required.customerName ? 'required' : ''}`}>
+                                 <Form.Label htmlFor="customerName">Customer Name:</Form.Label>
+                                 <Form.Control className='' type="text" name='customerName'  id="customerName" value={formData.customerName} onChange={handleChange} isInvalid={formErrors.customerName} placeholder="Customer Name" onBlur={handleBlur} required={required.customerName} />
+                                 <Form.Control.Feedback type="invalid">{formErrors.customerName}</Form.Control.Feedback>
+                              </Form.Group>
+                              )}
+                           <Form.Group className="col-md-6 form-group required">
+                              <Form.Label htmlFor="billingAddress">Billing Address:</Form.Label>
+                              <Form.Control as="textarea" rows={3} name='billingAddress' id="billingAddress" value={formData.billingAddress} onChange={handleChange} isInvalid={formErrors.billingAddress} placeholder="Billing Address" onBlur={handleBlur} required />
+                              <Form.Control.Feedback type="invalid">{formErrors.billingAddress}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-6 form-group required">
+                              <Form.Label htmlFor="shippingAddress">Shipping Address:</Form.Label>
+                              <Form.Control as="textarea" rows={3} name='shippingAddress' id="shippingAddress" value={formData.shippingAddress} onChange={handleChange} isInvalid={formErrors.shippingAddress} placeholder="Shipping Address" onBlur={handleBlur} required />
+                              <Form.Control.Feedback type="invalid">{formErrors.shippingAddress}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className={"form-group col-md-6"}>
+                              <Form.Label >GST Registered:</Form.Label>
+                              <div>
+                                 <BootstrapSwitchButton
+                                    checked={formData.isGSTRegistered}
+                                    width={80}
+                                    height={40}
+                                    onlabel='Yes'
+                                    onstyle='success'
+                                    offlabel='No'
+                                    offstyle='danger'
+                                    // style='w-100'
+                                    size='sm'
+                                    onChange={changeGSTRegistered}
+                                 />
+                              </div>
+                           </Form.Group>
+                           {formData.isGSTRegistered && (
+                              <Form.Group className={`col-md-6 form-group ${required.gstNo ? 'required' : ''}`}>
+                                 <Form.Label htmlFor="gstNo">GST No.:</Form.Label>
+                                 <Form.Control type="text" name='gstNo'  id="gstNo" value={formData.gstNo} onChange={handleChange} isInvalid={formErrors.gstNo} placeholder="GST No." onBlur={handleBlur} required={required.gstNo} />
+                                 <Form.Control.Feedback type="invalid">{formErrors.gstNo}</Form.Control.Feedback>
+                              </Form.Group>
+                           )}
+                           <Form.Group className="col-md-4 form-group required">
+                              <Form.Label>State:</Form.Label>
+                              <Form.Control as="select" name='state' id='state' value={formData.state} onChange={handleChange} isInvalid={formErrors.state} placeholder="State" onBlur={handleBlur} required>
+                                 <option value="">--Select--</option>
+                                 {states.map(item => (<option value={item.id}>{item.name}</option>))}
+                              </Form.Control>
+                              <Form.Control.Feedback type="invalid">{formErrors.state}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-4 form-group required">
+                              <Form.Label>City:</Form.Label>
+                              <Form.Control as="select" name='city' id='city' value={formData.city} onChange={handleChange} isInvalid={formErrors.city} placeholder="City" onBlur={handleBlur} required>
+                                 <option value="">--Select--</option>
+                                 {cities.map(item => (<option value={item.id}>{item.name}</option>))}
+                              </Form.Control>
+                              <Form.Control.Feedback type="invalid">{formErrors.city}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-4 form-group required">
+                              <Form.Label htmlFor="pinCode">Pin Code:</Form.Label>
+                              <Form.Control type="text" name='pinCode' id="pinCode" placeholder="Pin Code" value={formData.pinCode} onChange={handleChange} isInvalid={formErrors.pinCode} onBlur={handleBlur} required/>
+                              <Form.Control.Feedback type="invalid">{formErrors.pinCode}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-4 form-group required">
+                              <Form.Label htmlFor="paymentTerms">Payment Term (In Days):</Form.Label>
+                              <Form.Control type="text" name='paymentTerms' id="paymentTerms" placeholder="Payment Term (In Days)" value={formData.paymentTerms} onChange={handleChange} isInvalid={formErrors.paymentTerms} onBlur={handleBlur} required/>
+                              <Form.Control.Feedback type="invalid">{formErrors.paymentTerms}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-4 form-group required">
+                              <Form.Label htmlFor="mobileNo">Mobile Number:</Form.Label>
+                              <Form.Control type="text" name='mobileNo' id="mobileNo" placeholder="Mobile Number" value={formData.mobileNo} onChange={handleChange} isInvalid={formErrors.mobileNo} onBlur={handleBlur} required/>
+                              <Form.Control.Feedback type="invalid">{formErrors.mobileNo}</Form.Control.Feedback>
+                           </Form.Group>
+                           <Form.Group className="col-md-4 form-group">
+                              <Form.Label htmlFor="email">Email:</Form.Label>
+                              <Form.Control type="email"  id="email" name='email' placeholder="Email" value={formData.email} onChange={handleChange} isValid={Boolean(formErrors.email)} isInvalid={formErrors.email} onBlur={handleBlur} required={required.email} />
+                              <Form.Control.Feedback type="invalid">{formErrors.email}</Form.Control.Feedback>
+                           </Form.Group> 
                         </div>
+                        {isFormSubmit ? (
+                           <Button variant="primary" disabled>
+                              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                              {' '}{isEditMode ? 'Updating...' : 'Adding'}
+                           </Button>
+                        ) : (
+                           <Button type="submit" variant="btn btn-primary">{isEditMode ? 'Update' : 'Add'}</Button>
+                        )}
                      </Card.Body>
                   </Card>
                </Col>
