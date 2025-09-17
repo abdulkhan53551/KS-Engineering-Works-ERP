@@ -4,7 +4,6 @@ import {Row,Col,Image,Form,Button, Spinner, Dropdown, Card} from 'react-bootstra
 import { requestMethod } from '../../../utilities/api/constants'
 import { serverCall } from '../../../utilities/api'
 import { useDispatch, useSelector } from 'react-redux'
-import { successCustomerAdd } from './action'
 import { testCustomerApi } from './dispatcher'
 import DismissibleAlert from '../../../components/DismissableAlert'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'

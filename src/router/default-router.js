@@ -52,6 +52,7 @@ import Default from '../layouts/dashboard/default';
 // Testing
 import Test from '../views/test/form-validation';
 import AddRow from '../views/test/form-add-row';
+import ProtectedRoute from '../providers/ProtectedRoute';
 
 
 export const DefaultRouter = [
@@ -59,9 +60,16 @@ export const DefaultRouter = [
         path: '/',
         element: <Default />,
         children: [
+            // {
+            //     path: 'dashboard',
+            //     element: <Index />
+            // },
             {
-                path: 'dashboard',
-                element: <Index />
+                element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
+                children: [{
+                    path: 'dashboard',
+                    element: <Index />
+                }]
             },
             {
                 path: 'dashboard/special-pages/billing',
@@ -85,7 +93,7 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/special-pages/rtl-support',
-                element: <RtlSupport/>,
+                element: <RtlSupport />,
             },
             {
                 path: 'dashboard/app/user-profile',

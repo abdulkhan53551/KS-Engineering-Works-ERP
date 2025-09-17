@@ -1,104 +1,85 @@
-// import NetInfo from '@react-native-community/netinfo';
-import axios from 'axios'
-import { BASE_URL, TIME_OUT, requestMethod } from './constants';
-// import { BASE_URL } from './constants';
-// import { navigationRef } from '../../Route/Routes';
-import useNetworkStatus from '../../hooks/useNetworkStatus';
-import { strings } from './errorMessages';
+import axios from "axios";
+// import client from "./client";
+import { wait } from "../utitlity";
+import apiClient from "../../lib/axios";
 
-// export const networkAvailable = () => new Promise((resolve, reject) => NetInfo.fetch().then(state => state.isConnected ? resolve(true) : resolve(false)))
+let isRefreshing = false;
+let subscribers = [];
 
-export const serverCall = async (url, method, data, additionalHeader, selectedUser, isFromPromo = false) => new Promise(async (resolve, reject) => {
-    // let screenName = navigationRef.current?.getCurrentRoute().name;
-    let screenName = null;
+const subscribeTokenRefresh = (cb) => subscribers.push(cb);
+const onRefreshed = (token) => {
+    subscribers.forEach((cb) => cb(token));
+    subscribers = [];
+};
 
-    const CancelToken = axios.CancelToken;
-    const source = CancelToken.source();
+export const apiRequest = async ({
+    url,
+    method = "GET",
+    data,
+    headers = {},
+    retries = 1,
+    backoff = 500,
+}) => {
+    let attempt = 0;
 
-    var headers = {
-        'Content-Type': 'application/json',
-    }
+    while (attempt <= retries) {
+        try {
+            const response = await apiClient.request({ url, method, data, headers });
+            return { success: true, data: response.data };
+        } catch (error) {
+            const status = error.response?.status;
 
-    headers = { ...headers, ...additionalHeader }
+            // 🔹 Token refresh on 401
+            if (status === 401 && !error.config._retry) {
+                if (!isRefreshing) {
+                    isRefreshing = true;
+                    try {
+                        const refreshToken = localStorage.getItem("refreshToken");
+                        const res = await apiClient.post("/auth/refresh", { token: refreshToken });
+                        const newToken = res.data.accessToken;
 
-    var timeout = TIME_OUT
-    let baseURL = BASE_URL
-    let requestObject = {}
+                        localStorage.setItem("accessToken", newToken);
+                        apiClient.defaults.headers.Authorization = `Bearer ${newToken}`;
+                        isRefreshing = false;
+                        onRefreshed(newToken);
+                    } catch {
+                        isRefreshing = false;
+                        localStorage.clear();
+                        window.location.href = "/login";
+                        return { success: false, message: "Session expired" };
+                    }
+                }
 
-    if (method == requestMethod.GET) {
-        requestObject = {
-            url, method, baseURL: `${baseURL}`, timeout, timeoutErrorMessage: strings.request_timeout, responseType: 'json', headers, cancelToken: source.token
-        }
-    } else {
-        requestObject = {
-            url, method, baseURL: `${baseURL}`, data, timeout, timeoutErrorMessage: strings.request_timeout, responseType: 'json', headers, cancelToken: source.token
-        }
-    }
-
-    // let net = await networkAvailable()
-    // let net = useNetworkStatus();
-    let net = true;
-
-    if (!net) {
-        resolve({ success: false, data: {}, message: strings.no_internet })
-    } else {
-        let timer;
-        let isRequestTimeout = false;
-        let response = null;
-
-        timer = setTimeout(() => {
-            if (response === null) {
-                isRequestTimeout = true;
-                source.cancel();
+                return new Promise((resolve) => {
+                    subscribeTokenRefresh((token) => {
+                        error.config._retry = true;
+                        error.config.headers.Authorization = `Bearer ${token}`;
+                        resolve(apiClient(error.config));
+                    });
+                });
             }
-        }, timeout);
 
-        var startTime = performance.now();
+            // 🔹 Retry on network/server issues
+            const shouldRetry =
+                attempt < retries &&
+                (error.code === "ECONNABORTED" ||
+                    error.message?.includes("Network Error") ||
+                    status >= 500);
 
-        axios.request(requestObject)
-            .then(async (response) => {
-                clearTimeout(timer);
-                var EndTime = performance.now();
+            if (shouldRetry) {
+                attempt++;
+                await wait(backoff * attempt); // exponential backoff
+                continue;
+            }
 
-                let responseTimeInSeconds = (((EndTime - startTime) / 1000) % 60).toFixed(2);
-
-                if (response.status === 200) {
-                    resolve({ success: true, data: response.data, message: response.data.message ?? null, requestObject, responseTimeInSeconds, screenName })
-                } else {
-                    resolve({ success: false, data: {}, message: '', requestObject, responseTimeInSeconds, screenName })
-                }
-            })
-            .catch(async (error) => {
-                clearTimeout(timer);
-                console.log('API ERROR:-', error.response ? JSON.stringify(error.response) : JSON.stringify(error));
-
-                const isCanceled = error?.toString()?.includes('CanceledError: canceled') || false
-                if (error.isAxiosError) {
-                    if (error.toString().includes(strings.request_timeout)) {
-                        if (isRequestTimeout) {
-                            resolve({ success: false, message: strings.request_timeout, requestObject })
-                        }
-                        else {
-                            resolve({ success: false, message: strings.poor_network, requestObject })
-                        }
-                    } else if (error.toString().includes('Network Error')) {
-                        resolve({ success: false, message: strings.poor_network, requestObject })
-                    } else if (isCanceled) {
-                        resolve({ success: false, message: strings.request_timeout, requestObject });
-                    } else {
-                        resolve({ success: false, data: error.response.data, message: strings.server_error, requestObject })
-                    }
-                } else if (axios.isCancel(error)) {
-                    if (isRequestTimeout || isCanceled) {
-                        resolve({ success: false, message: strings.request_timeout, requestObject })
-                    } else {
-                        resolve({ success: false, message: strings.poor_network, requestObject })
-                    }
-                } else if (isCanceled) {
-                    resolve({ success: false, message: strings.request_timeout, requestObject });
-                } else {
-                    resolve({ success: false, data: error.response.data, message: strings.server_error, requestObject })
-                }
-            })
+            return {
+                success: false,
+                message:
+                    error.code === "ECONNABORTED"
+                        ? "Request timeout"
+                        : error.message || "Server error",
+                data: error.response?.data,
+            };
+        }
     }
-})
+};

@@ -1,13 +1,59 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Row, Col, Image, Form, Button, } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
-import Card from '../../../components/Card'
+// import Card from '../../../components/Card'
 
 // img
-import auth1 from '../../../assets/images/auth/01.png'
+import auth1 from '../../assets/images/auth/01.png'
+import { useCurrentUser, useLogin, usePost } from './hooks/api.hooks'
+import { useDispatch, useSelector } from 'react-redux'
+import { setAccessToken } from '../../store/auth.slice'
+import { setUser } from '../../store/user.slice'
+import Card from '../../components/Card'
+import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 
 const SignIn = () => {
+   const dispatch = useDispatch()
    let history = useNavigate()
+
+   const {accessToken} = useSelector((state) => state.authReducer)
+   const userProfile = useSelector((state) => state.userReducer)
+
+   const loginMutation = useLogin();
+   // const { data: user } = useCurrentUser();
+   const post = usePost()
+
+   // const usersQuery = useQuery({
+   //    queryKey: ["users"],
+   //    queryFn: () => axios.get("https://jsonplaceholder.typicode.com/users").then(res => res.data),
+   // });
+
+   useEffect(() => {
+      // fetch("https://jsonplaceholder.typicode.com/users")
+      //    .then((res) => res.json())
+      //    .then((json) => console.log("Fetched data:", json))
+      //    .catch((err) => console.error("Error:", err));
+
+      // axios.get("https://jsonplaceholder.typicode.com/users").then(res => res.data)
+   }, []); // runs only once on mount
+   
+
+   const handleLogin = () => {
+      const accessToken = 'abcd1234'; // Replace with actual token from login response
+      const user = { id: 1, name: 'John Doe', email: 'test@gmail.com'}
+      // dispatch(setAccessToken(accessToken))
+      // dispatch(setUser(user))
+      // loginMutation.mutate(
+      //    { email: "test@test.com", password: "123456" },
+      //    {
+      //       onSuccess: (res) => {
+      //          localStorage.setItem("token", res.data.token);
+      //       },
+      //    }
+      // );
+   };
+
    return (
       <>
          <section className="login-content">
@@ -37,8 +83,8 @@ const SignIn = () => {
                                        </Form.Floating>
                                     </Col>
                                     <Col lg="12">
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="password" id="password" autoComplete="current-password"  placeholder="Password" />
+                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
+                                          <Form.Control type="password" id="password" autoComplete="current-password" placeholder="Password" />
                                           <Form.Label htmlFor="password" >Password</Form.Label>
                                        </Form.Floating>
                                     </Col>
@@ -51,7 +97,7 @@ const SignIn = () => {
                                     </Col>
                                  </Row>
                                  <div className="d-flex justify-content-center">
-                                    <Button onClick={() => history.push('/dashboard')} type="button" variant="btn btn-primary">Sign In</Button>
+                                    <Button onClick={handleLogin} type="button" variant="btn btn-primary">Sign In</Button>
                                  </div>
                                  <p className="mt-3 text-center">
                                     Don’t have an account? <Link to="/auth/sign-up" className="text-underline">Click here to sign up.</Link>
