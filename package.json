@@ -28,6 +28,7 @@
     "fullcalendar-interaction": "^5.3.3",
     "immutability-helper": "^3.1.1",
     "jquery": "^3.6.0",
+    "jwt-decode": "^4.0.0",
     "leaflet": "^1.7.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.3",

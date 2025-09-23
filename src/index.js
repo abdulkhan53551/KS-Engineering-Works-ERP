@@ -15,24 +15,27 @@ import { IndexRouters } from "./router";
 import { SimpleRouter } from "./router/simple-router";
 import { DefaultRouter } from "./router/default-router";
 import { QueryProvider } from "./providers/QueryProvider";
+import { AuthSyncProvider } from "./providers/AuthSyncProvider";
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Index />,
+    element: <App />, // App is now layout
+    children: [
+      { path: "/", element: <Index /> },
+      ...DefaultRouter,
+      ...IndexRouters,
+      ...SimpleRouter,
+    ],
   },
-  ...DefaultRouter,
-  ...IndexRouters,
-  ...SimpleRouter
 ], { basename: process.env.PUBLIC_URL });
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <Provider store={store}>
       <QueryProvider>
-        <App>
-          <RouterProvider router={router}></RouterProvider>
-        </App>
+        <AuthSyncProvider >
+          <RouterProvider router={router} />
+        </AuthSyncProvider>
       </QueryProvider>
     </Provider>
   </React.StrictMode>

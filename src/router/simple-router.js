@@ -8,10 +8,11 @@ import Recoverpw from '../views/dashboard/auth/recoverpw'
 // import SignIn from '../views/dashboard/auth/sign-in'
 import SignUp from '../views/dashboard/auth/sign-up'
 // errors
-import Error404 from '../views/dashboard/errors/error404'
-import Error500 from '../views/dashboard/errors/error500'
-import Maintenance from '../views/dashboard/errors/maintenance'
+import Error404 from '../views/auth/components/error404'
+import Error500 from '../views/auth/components/error500'
+import Maintenance from '../views/auth/components/maintenance'
 import SignIn from '../views/auth/sign-in'
+import Error403 from '../views/auth/components/error403'
 
 // const SimpleRouter = () => {
 //     return (
@@ -72,7 +73,7 @@ export const SimpleRouter = [
         element: <SignIn />
     },
     {
-        path: 'auth/sign-up',
+        path: '/sign-up',
         element: <SignUp />
     },
     {
@@ -88,15 +89,19 @@ export const SimpleRouter = [
         element: <Recoverpw />
     },
     {
-        path: 'errors/error404',
-        element: <Error404 />
-    },
-    {
-        path: 'errors/error500',
+        path: '/server-error',
         element: <Error500 />
     },
     {
-        path: 'errors/maintenance',
+        path: '/unauthorized',
+        element: <Error403 />
+    },
+    {
+        path: 'maintenance',
         element: <Maintenance />
+    },
+    {
+        path: '*',
+        element: <Error404 />
     }
 ]

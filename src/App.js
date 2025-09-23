@@ -13,14 +13,20 @@ import { useDispatch } from 'react-redux';
 
 // import state selectors
 import { setSetting } from './store/setting/actions'
+import { useEffect } from "react"
+import { Outlet } from "react-router-dom"
 
 function App({children}) {
   const dispatch = useDispatch()
-  dispatch(setSetting())
+
+  useEffect(() => {
+    dispatch(setSetting())
+  }, [dispatch])
+  
   return (
     <div className="App">
       {/* <IndexRouters /> */}
-      {children}
+      <Outlet />
       
     </div>
   );

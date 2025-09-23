@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Row, Col, Image, Form, Button, } from 'react-bootstrap'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 // import Card from '../../../components/Card'
 
 // img
 import auth1 from '../../assets/images/auth/01.png'
 import { useCurrentUser, useLogin, usePost } from './hooks/api.hooks'
 import { useDispatch, useSelector } from 'react-redux'
-import { setAccessToken } from '../../store/auth.slice'
+import { loginSuccess, setAccessToken } from '../../store/auth.slice'
 import { setUser } from '../../store/user.slice'
 import Card from '../../components/Card'
 import { useQuery } from '@tanstack/react-query'
@@ -16,8 +16,12 @@ import axios from 'axios'
 const SignIn = () => {
    const dispatch = useDispatch()
    let history = useNavigate()
+   const navigate = useNavigate()
+   const location = useLocation();
+   const historyStack = useRef([]);
+   const { isAuthenticated } = useSelector((state) => state.authReducer);
 
-   const {accessToken} = useSelector((state) => state.authReducer)
+   const { accessToken } = useSelector((state) => state.authReducer)
    const userProfile = useSelector((state) => state.userReducer)
 
    const loginMutation = useLogin();
@@ -30,6 +34,9 @@ const SignIn = () => {
    // });
 
    useEffect(() => {
+      // if (isAuthenticated) {
+      //    navigate("/dashboard", { replace: true });
+      // }
       // fetch("https://jsonplaceholder.typicode.com/users")
       //    .then((res) => res.json())
       //    .then((json) => console.log("Fetched data:", json))
@@ -37,13 +44,47 @@ const SignIn = () => {
 
       // axios.get("https://jsonplaceholder.typicode.com/users").then(res => res.data)
    }, []); // runs only once on mount
-   
+
+
 
    const handleLogin = () => {
       const accessToken = 'abcd1234'; // Replace with actual token from login response
-      const user = { id: 1, name: 'John Doe', email: 'test@gmail.com'}
+      const user = { id: 1, name: 'John Doe', email: 'test@gmail.com' }
       // dispatch(setAccessToken(accessToken))
       // dispatch(setUser(user))
+
+      const authData = {
+         user: {
+            id: 1,
+            name: 'John Doe',
+            role: 'admin',
+         },
+         // accessToken: res.data.accessToken,
+         // refreshToken: res.data.refreshToken,
+         accessToken: 'abcd1234',
+         refreshToken: 'refresh1234',
+      }
+
+      dispatch(loginSuccess(authData));
+
+      // navigate("/unauthorized");
+      navigate("/dashboard", { replace: true });
+
+      const userAuthData = {
+         isAuthenticated: true,
+         user: {
+            name: 'John Doe',
+            role: 'admin'
+         }
+      }
+
+      // Store in local storage
+      localStorage.setItem("authState", JSON.stringify(userAuthData));
+
+      // navigate("/dashboard");
+
+
+
       // loginMutation.mutate(
       //    { email: "test@test.com", password: "123456" },
       //    {

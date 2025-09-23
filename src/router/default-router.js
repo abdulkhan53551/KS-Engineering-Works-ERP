@@ -66,10 +66,10 @@ export const DefaultRouter = [
             // },
             {
                 element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
-                children: [{
-                    path: 'dashboard',
-                    element: <Index />
-                }]
+                children: [
+                    { path: 'dashboard', element: <Index /> },
+                    // { path: 'customer-add', element: <CustomerAdd /> },
+                ]
             },
             {
                 path: 'dashboard/special-pages/billing',
