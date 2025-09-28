@@ -1,7 +1,7 @@
 import axios from "axios";
 // import client from "./client";
 import { wait } from "../utitlity";
-import apiClient from "../../lib/axios";
+import api from "../../lib/axios";
 
 let isRefreshing = false;
 let subscribers = [];
@@ -24,7 +24,7 @@ export const apiRequest = async ({
 
     while (attempt <= retries) {
         try {
-            const response = await apiClient.request({ url, method, data, headers });
+            const response = await api.request({ url, method, data, headers });
             return { success: true, data: response.data };
         } catch (error) {
             const status = error.response?.status;
@@ -34,12 +34,11 @@ export const apiRequest = async ({
                 if (!isRefreshing) {
                     isRefreshing = true;
                     try {
-                        const refreshToken = localStorage.getItem("refreshToken");
-                        const res = await apiClient.post("/auth/refresh", { token: refreshToken });
+                        const res = await api.post("/auth/refresh", {}, { withCredentials: true });
                         const newToken = res.data.accessToken;
 
                         localStorage.setItem("accessToken", newToken);
-                        apiClient.defaults.headers.Authorization = `Bearer ${newToken}`;
+                        api.defaults.headers.Authorization = `Bearer ${newToken}`;
                         isRefreshing = false;
                         onRefreshed(newToken);
                     } catch {
@@ -54,7 +53,7 @@ export const apiRequest = async ({
                     subscribeTokenRefresh((token) => {
                         error.config._retry = true;
                         error.config.headers.Authorization = `Bearer ${token}`;
-                        resolve(apiClient(error.config));
+                        resolve(api(error.config));
                     });
                 });
             }

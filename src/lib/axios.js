@@ -2,19 +2,21 @@
 import axios from "axios";
 import { store } from "../store";
 import { loginSuccess, logout } from "../store/auth.slice";
+import { localStorageKey } from "../utilities/constant/constants";
 
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || "",
+    baseURL: process.env.REACT_APP_API_BASE_URL || "",
     timeout: 10000,
     headers: { "Content-Type": "application/json" },
+    withCredentials: true, // 🔑 allow cookies
 });
 
 // Attach token automatically
 api.interceptors.request.use(
     (config) => {
-        const token = store.getState().auth.accessToken;
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const { accessToken } = store.getState().authReducer;
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
@@ -28,35 +30,40 @@ api.interceptors.response.use(
         const { response } = error;
         const { dispatch, getState } = store;
 
-        if (response?.status === 401) {
-            const refreshToken = getState().auth.refreshToken;
-            if (!refreshToken) {
-                dispatch(logout());
-                return Promise.reject(error);
-            }
+        if (response?.status === 401 && !error.config._retry) {
+            error.config._retry = true; // avoid infinite loop
 
             try {
+                // 👇 no refresh token in body, cookie gets sent automatically
                 const res = await axios.post(
-                    `${process.env.APP_API_URL}/auth/refresh`,
-                    { refreshToken }
+                    `${process.env.REACT_APP_API_BASE_URL}/auth/refresh-token`,
+                    {},
+                    { withCredentials: true } // VERY important
                 );
 
+                const newAccessToken = res.data.data.accessToken;
+
+                // Update Redux with new token
                 dispatch(
                     loginSuccess({
                         user: getState().auth.user,
-                        accessToken: res.data.accessToken,
-                        refreshToken: res.data.refreshToken,
+                        accessToken: newAccessToken,
                     })
                 );
 
-                // retry original request
-                error.config.headers.Authorization = `Bearer ${res.data.accessToken}`;
+                // Update localStorage
+                localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, newAccessToken);
+
+                // retry original request with new token
+                error.config.headers.Authorization = `Bearer ${newAccessToken}`;
                 return api.request(error.config);
             } catch (refreshErr) {
                 dispatch(logout());
+                localStorage.removeItem("accessToken");
                 return Promise.reject(refreshErr);
             }
         }
+
         return Promise.reject(error);
     }
 );

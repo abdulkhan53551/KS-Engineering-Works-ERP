@@ -2,13 +2,59 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import apiClient from "../../../lib/axios";
 import { requestMethod } from "../../../utilities/api/constants";
 import { apiRequest } from "../../../utilities/api";
+import { login, logout } from "../api";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { loginSuccess, logout as logoutRedux } from "../../../store/auth.slice";
+import { localStorageKey } from "../../../utilities/constant/constants";
+import { useNavigate } from "react-router-dom";
 
 // Login
-export const useLogin = () =>
-    useMutation({
-        // mutationFn: (data) => axios.post("/auth/login", data),
-        mutationFn: async (data) => await apiRequest({ url: "/auth/login", method: requestMethod.POST, data }),
+export const useLogin = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    return useMutation({
+        mutationFn: login,
+        onSuccess: (res) => {
+            if (res.success) {
+                const authData = {
+                    user: {
+                        role: 'admin'
+                    },
+                    accessToken: res.data.accessToken,
+                }
+
+                dispatch(loginSuccess(authData));
+                localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, res.data.accessToken);
+
+                // Redirect to dashboard
+                navigate("/dashboard", { replace: true });
+                toast.success(res.message || "Login successful");
+            }
+        }
     });
+}
+
+// Logout
+export const useLogout = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    return useMutation({
+        mutationFn: logout,
+        onSuccess: (res) => {
+            if (res.success) {
+                dispatch(logoutRedux());
+                localStorage.removeItem("accessToken");
+
+                // Redirect to dashboard
+                navigate("/sign-in", { replace: true });
+                toast.success(res.message || "Logout successful");
+            }
+        }
+    });
+}
 
 // Current User
 export const useCurrentUser = () =>

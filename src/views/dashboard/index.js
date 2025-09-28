@@ -38,6 +38,7 @@ import { useDispatch, useSelector } from "react-redux";
 // Import selectors & action from setting store
 import * as SettingSelector from "../../store/setting/selectors";
 import { logout } from "../../store/auth.slice.js";
+import { useLogout } from "../auth/hooks/api.hooks.js";
 
 // install Swiper modules
 SwiperCore.use([Navigation]);
@@ -45,6 +46,8 @@ SwiperCore.use([Navigation]);
 const Index = memo((props) => {
   const dispatch = useDispatch()
   useSelector(SettingSelector.theme_color);
+
+  const { mutate: logoutApi, isLoading } = useLogout();
 
   const getVariableColor = () => {
     let prefix =
@@ -292,7 +295,7 @@ const Index = memo((props) => {
                   2040: { slidesPerView: 7 },
                   2440: { slidesPerView: 8 }
                 }}
-    
+
               >
                 <SwiperSlide className="card card-slide" >
                   <div className="card-body">
@@ -329,14 +332,16 @@ const Index = memo((props) => {
                     </div>
                   </div>
                 </SwiperSlide>
-                 <SwiperSlide className="card card-slide" onClick={() => {
-                  console.log("Clicked Slide");
+                <SwiperSlide className="card card-slide" onClick={() => {
+                  console.log("Logout clicked");
 
-                  dispatch(logout())
-                  localStorage.removeItem("authState");
-                  
-                  
-                 }} >
+                  logoutApi();
+
+                  // dispatch(logout())
+                  // localStorage.removeItem("accessToken");
+
+
+                }} >
                   <div className="card-body">
                     <div className="progress-widget">
                       <Circularprogressbar

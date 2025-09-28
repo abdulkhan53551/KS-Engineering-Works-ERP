@@ -1,20 +1,24 @@
-export const ACCESS_TOKEN_KEY = "accessToken";
+import api from "../../lib/axios";
+import { requestMethod } from "../../utilities/api/constants";
+import { asyncHandler } from "../../utilities/asyncHandler";
 
-// 🔹 Save token to state + localStorage
-export const saveToken = (newToken) => {
-  if (newToken) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, newToken);
-  } else {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-  }
-};
+// Login
+export const login = asyncHandler(async (request) => {
+  const res = await api.request({
+    url: '/auth/login',
+    method: requestMethod.POST,
+    data: request
+  });
 
-// 🔹 Login (fake for now, just sets token)
-export const login = (fakeToken) => {
-  saveToken(fakeToken);
-};
+  return res.data;
+})
 
-// 🔹 Logout
-export const logout = () => {
-  saveToken(null);
-};
+// Logout
+export const logout = asyncHandler(async () => {
+  const res = await api.request({
+    url: '/auth/logout',
+    method: requestMethod.POST
+  });
+
+  return res.data;
+});
