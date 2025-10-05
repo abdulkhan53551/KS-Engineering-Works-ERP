@@ -29,10 +29,13 @@ import { useSelector } from 'react-redux';
 
 // Import selectors & action from setting store
 import * as SettingSelector from '../../../../store/setting/selectors'
+import { useLogout } from '../../../../views/auth/hooks/api.hooks'
 
 const Header = memo((props) => {
     const navbarHide = useSelector(SettingSelector.navbar_show); // array
     const headerNavbar = useSelector(SettingSelector.header_navbar)
+    const { mutate: logoutApi, isLoading } = useLogout();
+    
     useEffect(() => {
         // navbarstylemode
         if (headerNavbar === 'navs-sticky' || headerNavbar === 'nav-glass') {
@@ -271,7 +274,7 @@ const Header = memo((props) => {
                                     <Dropdown.Item href="https://templates.iqonic.design/hope-ui/react/build/dashboard/app/user-profile">Profile</Dropdown.Item>
                                     <Dropdown.Item href="https://templates.iqonic.design/hope-ui/react/build/dashboard/app/user-privacy-setting">Privacy Setting</Dropdown.Item>
                                     <Dropdown.Divider />
-                                    <Dropdown.Item href="https://templates.iqonic.design/hope-ui/react/build/auth/sign-in">Logout</Dropdown.Item>
+                                    <Dropdown.Item onClick={logoutApi}>Logout</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         </Nav>

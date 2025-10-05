@@ -2,6 +2,7 @@ import axios from "axios";
 // import client from "./client";
 import { wait } from "../utitlity";
 import api from "../../lib/axios";
+import { localStorageKey } from "../constant/constants";
 
 let isRefreshing = false;
 let subscribers = [];
@@ -37,7 +38,7 @@ export const apiRequest = async ({
                         const res = await api.post("/auth/refresh", {}, { withCredentials: true });
                         const newToken = res.data.accessToken;
 
-                        localStorage.setItem("accessToken", newToken);
+                        localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, newToken);
                         api.defaults.headers.Authorization = `Bearer ${newToken}`;
                         isRefreshing = false;
                         onRefreshed(newToken);

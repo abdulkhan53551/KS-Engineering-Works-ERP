@@ -1,4 +1,4 @@
-import React, { useEffect, memo, Fragment } from "react";
+import React, { useEffect, memo, Fragment, useState } from "react";
 import { Row, Col, Dropdown, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
@@ -39,6 +39,7 @@ import { useDispatch, useSelector } from "react-redux";
 import * as SettingSelector from "../../store/setting/selectors";
 import { logout } from "../../store/auth.slice.js";
 import { useLogout } from "../auth/hooks/api.hooks.js";
+import { useCountryState, useUserProfile } from "./hooks/api.hooks.js";
 
 // install Swiper modules
 SwiperCore.use([Navigation]);
@@ -48,6 +49,18 @@ const Index = memo((props) => {
   useSelector(SettingSelector.theme_color);
 
   const { mutate: logoutApi, isLoading } = useLogout();
+  const { data: userProfile, refetch } = useUserProfile();
+  const { data: countryStates } = useCountryState();
+
+  // console.log("userProfile => ", userProfile);
+  console.log("countryStates => ", countryStates);
+
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     refetch();  
+  //   }, 2000);
+  // }, [])
+  
 
   const getVariableColor = () => {
     let prefix =
@@ -336,11 +349,6 @@ const Index = memo((props) => {
                   console.log("Logout clicked");
 
                   logoutApi();
-
-                  // dispatch(logout())
-                  // localStorage.removeItem("accessToken");
-
-
                 }} >
                   <div className="card-body">
                     <div className="progress-widget">

@@ -32,7 +32,7 @@ export const AuthSyncProvider = ({ children }) => {
                         router.navigate("/dashboard", { replace: true });
                     } else {
                         dispatch(logout());
-                        localStorage.removeItem("accessToken");
+                        localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
                     }
                 } catch (error) {
                     console.log("Error parsing authState from localStorage:", error);

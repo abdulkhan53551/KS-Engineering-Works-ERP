@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Row, Col, Image, Form, Button, } from 'react-bootstrap'
+import { Row, Col, Image, Form, Button, Spinner, } from 'react-bootstrap'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 // import Card from '../../../components/Card'
 
@@ -20,105 +20,23 @@ import "react-toastify/dist/ReactToastify.css";
 // import Toast from '../../utilities/toast'
 
 const SignIn = () => {
-   const dispatch = useDispatch()
-   let history = useNavigate()
-   const navigate = useNavigate()
-   const location = useLocation();
-   const historyStack = useRef([]);
    const { isAuthenticated } = useSelector((state) => state.authReducer);
-
    const { accessToken } = useSelector((state) => state.authReducer)
    const userProfile = useSelector((state) => state.userReducer)
 
-   const [showToast, setShowToast] = useState(false);
-
-   const { mutate: loginApi, isLoading, isError, error } = useLogin();
-
+   const { mutate: loginApi, isPending, isError, error } = useLogin();
    const { register, handleSubmit, formState: { errors } } = useForm({
-      // defaultValues: { email: "", password: "" }, // initial values
       resolver: joiResolver(signinSchema),
-      // mode: "onChange",
       mode: "onBlur",
       reValidateMode: "onChange",
    });
 
+   // Handle form submit
    const onSubmit = (data) => {
-      loginApi(data);
-      // Call your API here
-   };
-
-   // const { data: user } = useCurrentUser();
-   // const post = usePost()
-
-   // const usersQuery = useQuery({
-   //    queryKey: ["users"],
-   //    queryFn: () => axios.get("https://jsonplaceholder.typicode.com/users").then(res => res.data),
-   // });
-
-   useEffect(() => {
-      // if (isAuthenticated) {
-      //    navigate("/dashboard", { replace: true });
-      // }
-      // fetch("https://jsonplaceholder.typicode.com/users")
-      //    .then((res) => res.json())
-      //    .then((json) => console.log("Fetched data:", json))
-      //    .catch((err) => console.error("Error:", err));
-
-      // axios.get("https://jsonplaceholder.typicode.com/users").then(res => res.data)
-   }, []); // runs only once on mount
-
-
-
-   const handleLogin = () => {
-      const accessToken = 'abcd1234'; // Replace with actual token from login response
-      const user = { id: 1, name: 'John Doe', email: 'test@gmail.com' }
-      // dispatch(setAccessToken(accessToken))
-      // dispatch(setUser(user))
-
-      const authData = {
-         user: {
-            id: 1,
-            name: 'John Doe',
-            role: 'admin',
-         },
-         // accessToken: res.data.accessToken,
-         accessToken: 'abcd1234',
+      if (!isPending) {
+         loginApi(data);
       }
-
-      dispatch(loginSuccess(authData));
-
-      // navigate("/unauthorized");
-      navigate("/dashboard", { replace: true });
-
-
-      // navigate("/dashboard");
-
-
-
-      // loginMutation.mutate(
-      //    { email: "test@test.com", password: "123456" },
-      //    {
-      //       onSuccess: (res) => {
-      //          localStorage.setItem("token", res.data.token);
-      //       },
-      //    }
-      // );
    };
-
-   // const handleSuccess = () => {
-   //    toast.success("User registered successfully!");
-   // };
-
-   // const handleError = () => {
-   //    toast.error("Failed to save data!");
-   // };
-
-   // const handleLoading = () => {
-   //    const id = toast.loading("Saving data...");
-   //    setTimeout(() => {
-   //       toast.update(id, "success", "Data saved successfully!");
-   //    }, 2000);
-   // };
 
    return (
       <>
@@ -144,7 +62,7 @@ const SignIn = () => {
                                  <Row>
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="email" autoComplete="username email" placeholder="Email" isInvalid={!!errors.email} {...register("email")} />
+                                          <Form.Control type="email" value={"sabirkhan@gmail.com"} autoComplete="username email" placeholder="Email" isInvalid={!!errors.email} {...register("email")} />
                                           <Form.Label htmlFor="email" >
                                              Email <span className="text-danger label-required">*</span>
                                           </Form.Label>
@@ -153,7 +71,7 @@ const SignIn = () => {
                                     </Col>
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="password" autoComplete="current-password" placeholder="Password" isInvalid={!!errors.password} {...register("password")} />
+                                          <Form.Control type="password" value={123456} autoComplete="current-password" placeholder="Password" isInvalid={!!errors.password} {...register("password")} />
                                           <Form.Label htmlFor="password" >
                                              Password <span className="text-danger" style={{ marginLeft: "-2px" }}>*</span>
                                           </Form.Label>
@@ -169,14 +87,19 @@ const SignIn = () => {
                                     </Col>
                                  </Row>
                                  <div className="d-flex justify-content-center">
-                                    {/* <Button onClick={handleLogin} type="button" variant="btn btn-primary">Sign In</Button> */}
-                                    <Button type="submit" variant="btn btn-primary">Sign In</Button>
-                                    {/* <button onClick={() => setShowToast(true)}>Show Toast</button> */}
-
-                                    {/* <button onClick={handleSuccess}>Show Success</button>
-                                    <button onClick={handleError}>Show Error</button>
-                                    <button onClick={handleLoading}>Show Loading → Success</button> */}
-                                    {/* <ToastContainer /> */}
+                                    <Button type="submit" variant="btn btn-primary" disabled={isPending}>
+                                       {isPending && (
+                                          <Spinner
+                                             as="span"
+                                             animation="border"
+                                             size="sm"
+                                             role="status"
+                                             aria-hidden="true"
+                                             className="me-2" // spacing between spinner & text
+                                          />
+                                       )}
+                                       Sign In
+                                    </Button>
                                  </div>
                                  <p className="mt-3 text-center">
                                     Don’t have an account? <Link to="/auth/sign-up" className="text-underline">Click here to sign up.</Link>

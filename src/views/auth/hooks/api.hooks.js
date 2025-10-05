@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../../../lib/axios";
 import { requestMethod } from "../../../utilities/api/constants";
 import { apiRequest } from "../../../utilities/api";
@@ -15,6 +15,7 @@ export const useLogin = () => {
     const navigate = useNavigate();
 
     return useMutation({
+        mutationKey: ["login"],
         mutationFn: login,
         onSuccess: (res) => {
             if (res.success) {
@@ -40,13 +41,19 @@ export const useLogin = () => {
 export const useLogout = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: ["logout"],
         mutationFn: logout,
         onSuccess: (res) => {
             if (res.success) {
+                // Clear React Query cache completely
+                queryClient.removeQueries(); // removes all queries
+                queryClient.clear();         // optional, clears mutations too
+
                 dispatch(logoutRedux());
-                localStorage.removeItem("accessToken");
+                localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
 
                 // Redirect to dashboard
                 navigate("/sign-in", { replace: true });

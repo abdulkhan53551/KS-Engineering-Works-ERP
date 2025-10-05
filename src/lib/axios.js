@@ -7,7 +7,10 @@ import { localStorageKey } from "../utilities/constant/constants";
 const api = axios.create({
     baseURL: process.env.REACT_APP_API_BASE_URL || "",
     timeout: 10000,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache"
+    },
     withCredentials: true, // 🔑 allow cookies
 });
 
@@ -59,7 +62,7 @@ api.interceptors.response.use(
                 return api.request(error.config);
             } catch (refreshErr) {
                 dispatch(logout());
-                localStorage.removeItem("accessToken");
+                localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
                 return Promise.reject(refreshErr);
             }
         }
