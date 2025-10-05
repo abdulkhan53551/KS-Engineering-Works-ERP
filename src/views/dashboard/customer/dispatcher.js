@@ -1,6 +1,7 @@
+import { failCustomerAdd, initCustomerAdd, successCustomerAdd } from "../../../store/customer.slice";
 import { serverCall } from "../../../utilities/api";
 import { requestMethod } from "../../../utilities/api/constants";
-import { failCustomerAdd, initCustomerAdd, successCustomerAdd } from "./action";
+// import { failCustomerAdd, initCustomerAdd, successCustomerAdd } from "./action";
 
 export function testCustomerApi() {
     return async (dispatch) => {
@@ -15,15 +16,15 @@ export function testCustomerApi() {
         //     headers,
         //   );
 
-        const headers = {};
-        const result = await serverCall('https://jsonplaceholder.typicode.com/users', requestMethod.GET, params, headers);
-        console.log('Result => ', result);
+        // const headers = {};
+        // const result = await serverCall('https://jsonplaceholder.typicode.com/users', requestMethod.GET, params, headers);
+        // console.log('Result => ', result);
 
 
-        if (result.success) {
-            dispatch(successCustomerAdd(result.data));
-        } else {
-            dispatch(failCustomerAdd());
-        }
+        // if (result.success) {
+        //     dispatch(successCustomerAdd(result.data));
+        // } else {
+        //     dispatch(failCustomerAdd());
+        // }
     };
 }

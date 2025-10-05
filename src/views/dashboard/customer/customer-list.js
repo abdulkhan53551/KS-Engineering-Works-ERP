@@ -222,7 +222,7 @@ const CustomerList = () => {
                               </Form.Select>
                               <Form.Label>entries</Form.Label>
                            </div>
-                           <Form.Floating className="form-floating-sm mb-3">
+                           <Form.Floating className="custom-form-floating form-floating-sm mb-3">
                               <Form.Control type="text" className="" id="floatingInput1" autoComplete="username email" placeholder="name@example.com" onChange={onSearch} />
                               <Form.Label htmlFor="floatingInput">Search</Form.Label>
                            </Form.Floating>

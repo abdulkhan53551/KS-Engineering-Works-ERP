@@ -1,4 +1,4 @@
-import React, { useEffect, memo, Fragment } from "react";
+import React, { useEffect, memo, Fragment, useState } from "react";
 import { Row, Col, Dropdown, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
@@ -33,16 +33,34 @@ import shapes5 from "../../assets/images/shapes/05.png";
 import CountUp from "react-countup";
 
 // Redux Selector / Action
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 // Import selectors & action from setting store
 import * as SettingSelector from "../../store/setting/selectors";
+import { logout } from "../../store/auth.slice.js";
+import { useLogout } from "../auth/hooks/api.hooks.js";
+import { useCountryState, useUserProfile } from "./hooks/api.hooks.js";
 
 // install Swiper modules
 SwiperCore.use([Navigation]);
 
 const Index = memo((props) => {
+  const dispatch = useDispatch()
   useSelector(SettingSelector.theme_color);
+
+  const { mutate: logoutApi, isLoading } = useLogout();
+  const { data: userProfile, refetch } = useUserProfile();
+  const { data: countryStates } = useCountryState();
+
+  // console.log("userProfile => ", userProfile);
+  console.log("countryStates => ", countryStates);
+
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     refetch();  
+  //   }, 2000);
+  // }, [])
+  
 
   const getVariableColor = () => {
     let prefix =
@@ -290,7 +308,7 @@ const Index = memo((props) => {
                   2040: { slidesPerView: 7 },
                   2440: { slidesPerView: 8 }
                 }}
-    
+
               >
                 <SwiperSlide className="card card-slide" >
                   <div className="card-body">
@@ -320,6 +338,45 @@ const Index = memo((props) => {
                       </Circularprogressbar>
                       <div className="progress-detail">
                         <p className="mb-2">Total Sales</p>
+                        <h4 className="counter">
+                          $<CountUp start={120} end={560} duration={3} />K
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+                </SwiperSlide>
+                <SwiperSlide className="card card-slide" onClick={() => {
+                  console.log("Logout clicked");
+
+                  logoutApi();
+                }} >
+                  <div className="card-body">
+                    <div className="progress-widget">
+                      <Circularprogressbar
+                        stroke={variableColors.primary}
+                        width="60px"
+                        height="60px"
+                        Linecap="rounded"
+                        trailstroke="#ddd"
+                        strokewidth="4px"
+                        style={{ width: 60, height: 60 }}
+                        value={90}
+                        id="circle-progress-01"
+                      >
+                        <svg
+                          className=""
+                          width="24"
+                          height="24px"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z"
+                          />
+                        </svg>
+                      </Circularprogressbar>
+                      <div className="progress-detail">
+                        <p className="mb-2">Click To Logout</p>
                         <h4 className="counter">
                           $<CountUp start={120} end={560} duration={3} />K
                         </h4>

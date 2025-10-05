@@ -1,13 +1,43 @@
-import React from 'react'
-import { Row, Col, Image, Form, Button, } from 'react-bootstrap'
-import { Link, useNavigate } from 'react-router-dom'
-import Card from '../../../components/Card'
+import React, { useEffect, useRef, useState } from 'react'
+import { Row, Col, Image, Form, Button, Spinner, } from 'react-bootstrap'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+// import Card from '../../../components/Card'
 
 // img
-import auth1 from '../../../assets/images/auth/01.png'
+import auth1 from '../../assets/images/auth/01.png'
+import { useCurrentUser, useLogin, usePost } from './hooks/api.hooks'
+import { useDispatch, useSelector } from 'react-redux'
+import { loginSuccess, setAccessToken } from '../../store/auth.slice'
+import { setUser } from '../../store/user.slice'
+import Card from '../../components/Card'
+import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
+import { useForm } from 'react-hook-form'
+import { joiResolver } from "@hookform/resolvers/joi";
+import { signinSchema } from '../../validation/auth.validation'
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+// import Toast from '../../utilities/toast'
 
 const SignIn = () => {
-   let history = useNavigate()
+   const { isAuthenticated } = useSelector((state) => state.authReducer);
+   const { accessToken } = useSelector((state) => state.authReducer)
+   const userProfile = useSelector((state) => state.userReducer)
+
+   const { mutate: loginApi, isPending, isError, error } = useLogin();
+   const { register, handleSubmit, formState: { errors } } = useForm({
+      resolver: joiResolver(signinSchema),
+      mode: "onBlur",
+      reValidateMode: "onChange",
+   });
+
+   // Handle form submit
+   const onSubmit = (data) => {
+      if (!isPending) {
+         loginApi(data);
+      }
+   };
+
    return (
       <>
          <section className="login-content">
@@ -28,18 +58,24 @@ const SignIn = () => {
                               </Link>
                               <h2 className="mb-2 text-center">Sign In</h2>
                               <p className="text-center">Login to stay connected.</p>
-                              <Form>
+                              <Form onSubmit={handleSubmit(onSubmit)}>
                                  <Row>
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="email" id="email" autoComplete="username email" placeholder="Email" />
-                                          <Form.Label htmlFor="email" >Email</Form.Label>
+                                          <Form.Control type="email" value={"sabirkhan@gmail.com"} autoComplete="username email" placeholder="Email" isInvalid={!!errors.email} {...register("email")} />
+                                          <Form.Label htmlFor="email" >
+                                             Email <span className="text-danger label-required">*</span>
+                                          </Form.Label>
+                                          <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
                                        </Form.Floating>
                                     </Col>
                                     <Col lg="12">
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="password" id="password" autoComplete="current-password"  placeholder="Password" />
-                                          <Form.Label htmlFor="password" >Password</Form.Label>
+                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
+                                          <Form.Control type="password" value={123456} autoComplete="current-password" placeholder="Password" isInvalid={!!errors.password} {...register("password")} />
+                                          <Form.Label htmlFor="password" >
+                                             Password <span className="text-danger" style={{ marginLeft: "-2px" }}>*</span>
+                                          </Form.Label>
+                                          <Form.Control.Feedback type="invalid">{errors.password?.message}</Form.Control.Feedback>
                                        </Form.Floating>
                                     </Col>
                                     <Col lg="12" className="d-flex justify-content-between">
@@ -51,7 +87,19 @@ const SignIn = () => {
                                     </Col>
                                  </Row>
                                  <div className="d-flex justify-content-center">
-                                    <Button onClick={() => history.push('/dashboard')} type="button" variant="btn btn-primary">Sign In</Button>
+                                    <Button type="submit" variant="btn btn-primary" disabled={isPending}>
+                                       {isPending && (
+                                          <Spinner
+                                             as="span"
+                                             animation="border"
+                                             size="sm"
+                                             role="status"
+                                             aria-hidden="true"
+                                             className="me-2" // spacing between spinner & text
+                                          />
+                                       )}
+                                       Sign In
+                                    </Button>
                                  </div>
                                  <p className="mt-3 text-center">
                                     Don’t have an account? <Link to="/auth/sign-up" className="text-underline">Click here to sign up.</Link>
