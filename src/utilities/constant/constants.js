@@ -1,4 +1,4 @@
-export const DEFAULT_PROFILE = 'https://example.com/invalid-image.jpg'
+export const DEFAULT_PROFILE = 'https://placehold.co/400'
 
 // Local Storage Keys
 export const localStorageKey = {

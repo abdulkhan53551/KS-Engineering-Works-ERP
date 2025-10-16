@@ -49,7 +49,7 @@ api.interceptors.response.use(
                 // Update Redux with new token
                 dispatch(
                     loginSuccess({
-                        user: getState().auth.user,
+                        user: getState().authReducer.user,
                         accessToken: newAccessToken,
                     })
                 );

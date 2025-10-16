@@ -16,7 +16,17 @@ export const getUserProfile = asyncHandler(async () => {
 export const getState = asyncHandler(async () => {
   const res = await api.request({
     url: '/masters/states',
-    method: requestMethod.GE
+    method: requestMethod.GET
+  });
+
+  return res.data;
+});
+
+// Get city
+export const getCity = asyncHandler(async (selectedState) => {
+  const res = await api.request({
+    url: `/masters/states/${selectedState}/cities`,
+    method: requestMethod.GET
   });
 
   return res.data;

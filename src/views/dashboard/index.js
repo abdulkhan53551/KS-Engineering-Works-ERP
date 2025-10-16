@@ -1,4 +1,4 @@
-import React, { useEffect, memo, Fragment, useState } from "react";
+import React, { useEffect, memo, Fragment } from "react";
 import { Row, Col, Dropdown, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
@@ -33,7 +33,7 @@ import shapes5 from "../../assets/images/shapes/05.png";
 import CountUp from "react-countup";
 
 // Redux Selector / Action
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 // Import selectors & action from setting store
 import * as SettingSelector from "../../store/setting/selectors";
@@ -45,21 +45,11 @@ import { useCountryState, useUserProfile } from "./hooks/api.hooks.js";
 SwiperCore.use([Navigation]);
 
 const Index = memo((props) => {
-  const dispatch = useDispatch()
   useSelector(SettingSelector.theme_color);
 
   const { mutate: logoutApi, isLoading } = useLogout();
   const { data: userProfile, refetch } = useUserProfile();
   const { data: countryStates } = useCountryState();
-
-  // console.log("userProfile => ", userProfile);
-  console.log("countryStates => ", countryStates);
-
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     refetch();  
-  //   }, 2000);
-  // }, [])
   
 
   const getVariableColor = () => {
