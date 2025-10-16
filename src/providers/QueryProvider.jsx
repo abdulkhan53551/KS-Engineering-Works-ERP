@@ -6,7 +6,7 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             networkMode: "online", // fail immediately if offline
-            refetchOnWindowFocus: false,
+            refetchOnWindowFocus: true,
             staleTime: 1000 * 60 * 5, // cache 5 min
             retry: 1,
             onError: (err) => {

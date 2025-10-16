@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getState, getUserProfile } from "../api";
+import { getCity, getState, getUserProfile } from "../api";
 
 // Get user profile
 export const useUserProfile = () => {
@@ -16,6 +16,19 @@ export const useCountryState = () => {
         queryFn: getState,
         staleTime: Infinity,
         cacheTime: Infinity,
+        retry: false,
+        select: (result) => {
+            return result?.data ?? [];
+        }
+    });
+}
+
+// Get city
+export const useStateCity = (selectedState = 0) => {
+    return useQuery({
+        queryKey: ["cities", selectedState],
+        queryFn: () => getCity(selectedState),
+        enabled: !!selectedState, // ⛔ Only fetch when a state is selected
         select: (result) => {
             return result?.data ?? [];
         }

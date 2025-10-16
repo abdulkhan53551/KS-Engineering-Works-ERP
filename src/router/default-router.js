@@ -53,6 +53,8 @@ import Default from '../layouts/dashboard/default';
 import Test from '../views/test/form-validation';
 import AddRow from '../views/test/form-add-row';
 import ProtectedRoute from '../providers/ProtectedRoute';
+import FirmList from '../views/firms/FirmList';
+import FirmForm from '../views/firms/FirmForm';
 
 
 export const DefaultRouter = [
@@ -68,7 +70,9 @@ export const DefaultRouter = [
                 element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
                 children: [
                     { path: 'dashboard', element: <Index /> },
-                    // { path: 'customer-add', element: <CustomerAdd /> },
+                    { path: 'firms', element: <FirmList /> },
+                    { path: 'firms/create', element: <FirmForm mode="create" /> },
+                    { path: 'firms/:id/edit', element: <FirmForm mode="edit" /> },
                 ]
             },
             {
