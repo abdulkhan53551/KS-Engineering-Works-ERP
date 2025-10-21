@@ -55,6 +55,8 @@ import AddRow from '../views/test/form-add-row';
 import ProtectedRoute from '../providers/ProtectedRoute';
 import FirmList from '../views/firms/FirmList';
 import FirmForm from '../views/firms/FirmForm';
+import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
+import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
 
 
 export const DefaultRouter = [
@@ -70,9 +72,18 @@ export const DefaultRouter = [
                 element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
                 children: [
                     { path: 'dashboard', element: <Index /> },
+
+                    /* Organization */
+                    // Firm Routes
                     { path: 'firms', element: <FirmList /> },
                     { path: 'firms/create', element: <FirmForm mode="create" /> },
                     { path: 'firms/:id/edit', element: <FirmForm mode="edit" /> },
+
+                    /* Sales */
+                    // Challan Routes
+                    { path: 'sales/challans', element: <InvoiceChallanList /> },
+                    { path: 'sales/challans/create', element: <InvoiceChallan mode="create" /> },
+                    { path: 'sales/challans/:id/edit', element: <InvoiceChallan mode="edit" /> },
                 ]
             },
             {
