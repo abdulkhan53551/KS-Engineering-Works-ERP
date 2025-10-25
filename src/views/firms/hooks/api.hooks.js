@@ -19,7 +19,7 @@ export const useGetFirmsPagination = ({ page, pageSize, search }) => {
     return useQuery({
         queryKey: ["firm-pagination", page, pageSize, search],
         queryFn: () => getFirmsPagination({ page, pageSize, search }),
-        staleTime: 0,
+        // staleTime: 0,
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
@@ -41,7 +41,7 @@ export const useGetFirms = ({ page, pageSize, search }) => {
     return useQuery({
         queryKey: ["getFirms", page, pageSize, search],
         queryFn: () => getFirms({ page, pageSize, search }),
-        staleTime: 0,
+        // staleTime: 0,
         keepPreviousData: true,
         select: (result) => {
             return result?.data ?? [];
