@@ -69,6 +69,7 @@ export const useCreatInvoiceChallan = () => {
                 const challanId = res.data?.id;
                 toast.success(res.message || "Challan created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] })
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanPagination'] })
                 navigate(`/sales/challans/${challanId}/edit`, { replace: true });
             }
         }
@@ -86,6 +87,7 @@ export const useUpdateInvoiceChallan = (id) => {
             if (res.success) {
                 toast.success(res.message || "Challan updated successfully.");
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanPagination'] });
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanById'] });
             }
         }
@@ -103,6 +105,7 @@ export const useDeleteInvoiceChallan = () => {
                 toast.success(res.message || "Challan deleted successfully.");
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+                queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
             }
         }
     });

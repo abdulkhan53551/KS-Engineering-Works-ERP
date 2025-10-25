@@ -73,6 +73,7 @@ export const useCreatFirm = () => {
             if (res.success) {
                 toast.success(res.message || "Firm created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['getFirms'] })
+                queryClient.invalidateQueries({ queryKey: ['firm-pagination'] })
                 navigate("/firms", { replace: true });
             }
         }
@@ -90,6 +91,7 @@ export const useUpdateFirm = (id) => {
             if (res.success) {
                 toast.success(res.message || "Firm updated successfully.");
                 queryClient.invalidateQueries({ queryKey: ['getFirms'] });
+                queryClient.invalidateQueries({ queryKey: ['firm-pagination'] });
                 queryClient.invalidateQueries({ queryKey: ['getFirmById'] });
             }
         }
@@ -107,6 +109,7 @@ export const useDeleteFirm = () => {
                 toast.success(res.message || "Firm deleted successfully.");
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+                queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
             }
         }
     });

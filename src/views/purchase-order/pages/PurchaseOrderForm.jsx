@@ -1,31 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { Row, Col, Form, Card, FormCheck } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import Flatpickr from "react-flatpickr";
 import { Controller, useForm } from 'react-hook-form'
 import { joiResolver } from '@hookform/resolvers/joi'
-import { useGetInvoiceChallanById } from '../hooks/useApi'
+import { usePurchaseOrderById } from '../hooks/useApi'
 import useHandleSubmit from '../hooks/useHandleSubmit'
-import { invoiceChallanValidationSchema } from '../../../validation/invoiceChallan.validation'
 import SubmitButton from '../../../components/SubmitButton'
 import { FaRegCalendarAlt } from 'react-icons/fa';
+import { purchaseOrderValidationSchema } from '../../../validation/purchaseOrder.validation';
 import useFormInit from '../hooks/useFormInit';
 
-const InvoiceChallan = ({ mode }) => {
-   const { id: challanId } = useParams();
+const PurchaseOrderForm = ({ mode }) => {
+   const { id: poId } = useParams();
    const [isInvoiced, setIsInvoiced] = useState(false);
    const isEditMode = !!(mode == 'edit');
    const defaultFormValue = {
-      challanNo: '',
-      challanDate: new Date(),
+      poNo: '',
+      poDate: new Date(),
       isInvoiced: false,
       customerName: '',
    }
 
    const {
-      register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
+      register, handleSubmit, setValue, watch, reset, resetField, getValues, control, formState: { errors },
    } = useForm({
-      resolver: joiResolver(invoiceChallanValidationSchema),
+      resolver: joiResolver(purchaseOrderValidationSchema),
       mode: "onBlur",
       reValidateMode: "onChange",
       defaultValues: {
@@ -34,9 +34,9 @@ const InvoiceChallan = ({ mode }) => {
       }
    });
 
-   const { data: invoiceChallan = {}, isFetching: isFetchingFirm } = useGetInvoiceChallanById(challanId);
-   const { onSubmit, onError, createFirmIsPending, updateFirmIsPending } = useHandleSubmit({ challanId, isEditMode })
-   useFormInit({ invoiceChallan, isEditMode, reset, defaultFormValue })
+   const { data: purchaseOrder = {} } = usePurchaseOrderById(poId);
+   const { onSubmit, onError, createPurchaseOrderIsPending, updatePurchaseOrderIsPending } = useHandleSubmit({ poId, isEditMode })
+   useFormInit({ purchaseOrder, isEditMode, reset, defaultFormValue })
 
    return (
       <>
@@ -47,19 +47,18 @@ const InvoiceChallan = ({ mode }) => {
                      <Card>
                         <Card.Header className="d-flex justify-content-between">
                            <div className="header-title">
-                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} Invoice Challan</h4>
+                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} Purchase Order</h4>
                            </div>
                         </Card.Header>
                         <Card.Body>
                            <div className="row">
-                              <input type="hidden" name="invoiceId" value={null} {...register('invoiceId')} />
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control type="text" id='challanNo' placeholder="Challan No" isInvalid={!!errors.challanNo} {...register("challanNo")} />
-                                    <Form.Label htmlFor="challanNo" >
-                                       Challan No <span className="text-danger label-required">*</span>
+                                    <Form.Control type="text" id='poNo' placeholder="PO No" isInvalid={!!errors.poNo} {...register("poNo")} />
+                                    <Form.Label htmlFor="poNo" >
+                                       PO No <span className="text-danger label-required">*</span>
                                     </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.challanNo?.message}</Form.Control.Feedback>
+                                    <Form.Control.Feedback type="invalid">{errors.poNo?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
 
@@ -70,7 +69,7 @@ const InvoiceChallan = ({ mode }) => {
                                           <FaRegCalendarAlt />
                                        </span>
                                        <Controller
-                                          name="challanDate"
+                                          name="poDate"
                                           control={control}
                                           defaultValue={new Date()} // or new Date() if you want default as today
                                           render={({ field, fieldState: { error } }) => (
@@ -86,16 +85,13 @@ const InvoiceChallan = ({ mode }) => {
                                                    className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
                                                    placeholder="Select Date..."
                                                 />
-                                                <Form.Control.Feedback type="invalid">{errors.challanDate?.message}</Form.Control.Feedback>
+                                                <Form.Control.Feedback type="invalid">{errors.poDate?.message}</Form.Control.Feedback>
                                              </div>
                                           )}
                                        />
                                     </div>
-
-                                    {/* <Form.Control.Feedback type="invalid">{errors.challanDate?.message}</Form.Control.Feedback> */}
                                  </Form.Floating>
                               </Col>
-
 
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
@@ -129,7 +125,7 @@ const InvoiceChallan = ({ mode }) => {
                            </div>
 
                            <SubmitButton
-                              isLoading={createFirmIsPending || updateFirmIsPending}
+                              isLoading={createPurchaseOrderIsPending || updatePurchaseOrderIsPending}
                               isEditMode={isEditMode}
                            />
                         </Card.Body>
@@ -143,4 +139,4 @@ const InvoiceChallan = ({ mode }) => {
 
 }
 
-export default InvoiceChallan;
+export default PurchaseOrderForm;

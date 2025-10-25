@@ -17,6 +17,7 @@ import { setSetting } from './store/setting/actions'
 import { useEffect } from "react"
 import { Outlet } from "react-router-dom"
 import { Bounce, ToastContainer } from "react-toastify"
+import { UIManagerProvider } from "./contexts/UIManagerContext"
 
 function App({ children }) {
   const dispatch = useDispatch()
@@ -28,18 +29,20 @@ function App({ children }) {
   return (
     <div className="App">
       {/* <IndexRouters /> */}
-      <Outlet />
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="light"
-        transition={Bounce}
-      />
+      <UIManagerProvider>
+        <Outlet />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="light"
+          transition={Bounce}
+        />
+      </UIManagerProvider>
     </div>
   );
 }
