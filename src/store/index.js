@@ -12,6 +12,7 @@ import settingReducer from './setting/reducers';
 import customerReducer from './customer.slice';
 import authReducer from './auth.slice';
 import userReducer from './user.slice';
+import uiModalReducer from './uiModal.slice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     customer: customerReducer,
     authReducer: authReducer,
     userReducer: userReducer,
+    uiModalReducer: uiModalReducer,
   },
   devTools: process.env.NODE_ENV !== "production", // enable only in dev
 });

@@ -533,7 +533,7 @@ const VerticalNav = memo((props) => {
                                         </Button>
                                     </Link>
                                 </Link>
-                                <Link className={`${location.pathname.includes('/firms') ? 'active' : ''} nav-link`} to="/firms">
+                                <Link className={`${location.pathname.includes('/sales/eway-bill') ? 'active' : ''} nav-link`} to="/sales/eway-bill">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -542,7 +542,7 @@ const VerticalNav = memo((props) => {
                                         </svg>
                                     </i>
                                     <span className="item-name">E way bill</span>
-                                    <Link className="me-2" to={`/firms/create`}>
+                                    <Link className="me-2" to={`/sales/eway-bill/create`}>
                                         <Button
                                             className="d-flex align-items-center justify-content-center p-1 rounded"
                                             style={{ transition: 'all 0.2s ease' }}
@@ -581,7 +581,7 @@ const VerticalNav = memo((props) => {
                     <Accordion.Collapse eventKey="sidebar-purchase">
                         <ul className="sub-nav">
                             <li className="nav-item">
-                                <Link className={`${location.pathname.includes('/firms') ? 'active' : ''} nav-link`} to="/firms">
+                                <Link className={`${location.pathname.includes('/purchase/purchase-order') ? 'active' : ''} nav-link`} to="/purchase/purchase-order">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -590,7 +590,7 @@ const VerticalNav = memo((props) => {
                                         </svg>
                                     </i>
                                     <span className="item-name">Purchase Order</span>
-                                    <Link className="me-2" to={`/firms/create`}>
+                                    <Link className="me-2" to={`/purchase/purchase-order/create`}>
                                         <Button
                                             className="d-flex align-items-center justify-content-center p-1 rounded"
                                             style={{ transition: 'all 0.2s ease' }}

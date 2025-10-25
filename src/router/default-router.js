@@ -57,6 +57,10 @@ import FirmList from '../views/firms/FirmList';
 import FirmForm from '../views/firms/FirmForm';
 import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
 import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
+import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
+import EwayBillList from '../views/eway-bill/pages/EwayBillList';
+import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
+import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 
 
 export const DefaultRouter = [
@@ -84,6 +88,17 @@ export const DefaultRouter = [
                     { path: 'sales/challans', element: <InvoiceChallanList /> },
                     { path: 'sales/challans/create', element: <InvoiceChallan mode="create" /> },
                     { path: 'sales/challans/:id/edit', element: <InvoiceChallan mode="edit" /> },
+
+                    // Eway bill Routes
+                    { path: 'sales/eway-bill', element: <EwayBillList /> },
+                    { path: 'sales/eway-bill/create', element: <EwayBillForm mode="create" /> },
+                    { path: 'sales/eway-bill/:id/edit', element: <EwayBillForm mode="edit" /> },
+
+                    /* Purchase */
+                    // Purchase order Routes
+                    { path: 'purchase/purchase-order', element: <PurchaseOrderList /> },
+                    { path: 'purchase/purchase-order/create', element: <PurchaseOrderForm mode="create" /> },
+                    { path: 'purchase/purchase-order/:id/edit', element: <PurchaseOrderForm mode="edit" /> },
                 ]
             },
             {
