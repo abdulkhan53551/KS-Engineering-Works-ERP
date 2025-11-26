@@ -8,9 +8,6 @@ const useFormInit = (props) => {
         if (ewayBill && isEditMode) {
             const { ewayBillId, validUpto, ...rest } = ewayBill;
 
-            console.log('rest => ', rest);
-            
-
             reset({
                 ...rest,
                 ewaybillValidUpto: validUpto

@@ -19,7 +19,7 @@ const FirmForm = ({ mode }) => {
    const isEditMode = !!(mode == 'edit');
    const [metaIds, setMetaIds] = useState({ firmAddressId: null, firmBankId: null });
 
-   const hasReset = useRef(false);
+   // const hasReset = useRef(false);
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
@@ -38,7 +38,7 @@ const FirmForm = ({ mode }) => {
    const { onSubmit, onError, createFirmIsPending, updateFirmIsPending } = useHandleSubmit({ firmId, isEditMode, metaIds })
 
    useEffect(() => {
-      if (firm && isEditMode && !hasReset.current) {
+      if (firm && isEditMode) {
          const { firmId, firmAddressId, firmBankAccountId, ...rest } = firm;
 
          setMetaIds({
@@ -51,7 +51,7 @@ const FirmForm = ({ mode }) => {
             isGstRegistered: Boolean(firm.gstin) || false,
          });
 
-         hasReset.current = true; // mark as done
+         // hasReset.current = true; // mark as done
       }
    }, [firm, isEditMode, reset]);
 

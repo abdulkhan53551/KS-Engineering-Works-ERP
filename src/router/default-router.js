@@ -56,6 +56,8 @@ import ProtectedRoute from '../providers/ProtectedRoute';
 import FirmList from '../views/firms/FirmList';
 import FirmForm from '../views/firms/FirmForm';
 import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
+import InvoiceForm from '../views/invoice/pages/InvoiceForm';
+import InvoiceList from '../views/invoice/pages/InvoiceList';
 import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
 import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
 import EwayBillList from '../views/eway-bill/pages/EwayBillList';
@@ -84,6 +86,11 @@ export const DefaultRouter = [
                     { path: 'firms/:id/edit', element: <FirmForm mode="edit" /> },
 
                     /* Sales */
+                    // Invoice Routes
+                    { path: 'sales/invoice', element: <InvoiceList /> },
+                    { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
+                    { path: 'sales/invoice/:id/edit', element: <InvoiceForm mode="edit" /> },
+
                     // Challan Routes
                     { path: 'sales/challans', element: <InvoiceChallanList /> },
                     { path: 'sales/challans/create', element: <InvoiceChallan mode="create" /> },

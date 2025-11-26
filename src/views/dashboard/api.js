@@ -31,3 +31,43 @@ export const getCity = asyncHandler(async (selectedState) => {
 
   return res.data;
 });
+
+// Get product unit
+export const getProductUnit = asyncHandler(async () => {
+  const res = await api.request({
+    url: '/masters/product-units',
+    method: requestMethod.GET
+  });
+
+  return res.data;
+});
+
+// Get GST slab
+export const getGstSlab = asyncHandler(async () => {
+  const res = await api.request({
+    url: '/masters/gst-slabs',
+    method: requestMethod.GET
+  });
+
+  return res.data;
+});
+
+// Get payment status
+export const getPaymentStatus = asyncHandler(async () => {
+  const res = await api.request({
+    url: '/masters/payment-statuses',
+    method: requestMethod.GET
+  });
+
+  return res.data;
+});
+
+// Get payment mode
+export const getPaymentMode = asyncHandler(async () => {
+  const res = await api.request({
+    url: '/masters/payment-methods',
+    method: requestMethod.GET
+  });
+
+  return res.data;
+});
