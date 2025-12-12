@@ -109,11 +109,22 @@ export const useDeleteEwayBill = () => {
     return useMutation({
         mutationKey: ["deleteEwayBill"],
         mutationFn: deleteEwayBill,
-        onSuccess: (res) => {
+        onSuccess: (res, { id, invoiceId, type }) => {
             if (res.success) {
                 dispatch(clearLoading());
                 closeModal();
                 toast.success(res.message || "Eway Bill deleted successfully.");
+
+                // Refresh the list
+                queryClient.setQueryData(['unmappedEwayBill', invoiceId], (old) => {
+                    const newData = {
+                        ...old,
+                        data: old?.data?.filter(item => item.ewayBillId !== id) ?? []
+                    }
+
+                    return newData;
+                });
+
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
                 queryClient.invalidateQueries({ queryKey: ["ewayBillPagination"] });

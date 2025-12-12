@@ -34,7 +34,7 @@ const EwayBillList = () => {
          confirmText: "Delete",
          onConfirm: async () => {
             dispatch(setModalLoading({ key: "delete", isLoading: true }));
-            deleteEwayBill(id);
+            deleteEwayBill({id});
          },
       });
    };

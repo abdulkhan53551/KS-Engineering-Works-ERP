@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createInvoice, deleteInvoice, getInvoice, getInvoiceById, getInvoicePagination, updateInvoice } from "../api";
+import { createInvoice, deleteInvoice, getInvoice, getInvoiceById, getInvoicePagination, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -160,6 +160,7 @@ export const useInvoiceById = (id = 0) => {
             const invoiceData = {
                 ...result?.data,
                 billingAddress: {
+                    id: data.billingId,
                     email: data.billingEmail,
                     phoneNumber: data.billingPhoneNumber,
                     website: data.billingWebsite,
@@ -169,6 +170,7 @@ export const useInvoiceById = (id = 0) => {
                     pincode: data.billingPincode
                 },
                 shippingAddress: {
+                    id: data.shippingId,
                     email: data.shippingEmail,
                     phoneNumber: data.shippingPhoneNumber,
                     addressLine1: data.shippingAddress,
@@ -252,3 +254,70 @@ export const useDeleteInvoice = () => {
         }
     });
 };
+
+// Get unmapped invoice challan by invoice id
+export const useUnmappedInvoiceChallanByInvoiceId = (id) => {
+    return useQuery({
+        queryKey: ["unmappedInvoiceChallan", id],
+        queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
+        enabled: false,
+        select: (result) => {
+            // const data = result?.data ?? [];
+            const structuredData = result?.data?.map(item => ({
+                documentId: item.challanId,
+                documentNo: item.challanNo,
+                documentDate: item.challanDate,
+                isInvoiced: item.isInvoiced,
+                invoiceId: item.invoiceId,
+                customerName: item.customerName,
+            })) ?? [];
+
+            return structuredData;
+        }
+    });
+}
+
+// Get unmapped purchase order by invoice id
+export const useUnmappedPurchaseOrderByInvoiceId = (id) => {
+    return useQuery({
+        queryKey: ["unmappedPurchaseOrder", id],
+        queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
+        enabled: false,
+        select: (result) => {
+            // const data = result?.data ?? [];
+            const structuredData = result?.data?.map(item => ({
+                documentId: item.poId,
+                documentNo: item.poNo,
+                documentDate: item.poDate,
+                isInvoiced: item.isInvoiced,
+                invoiceId: item.invoiceId,
+                customerName: item.customerName,
+            })) ?? [];
+
+            return structuredData;
+        }
+    });
+}
+
+// Get unmapped eway bill by invoice id
+export const useUnmappedEwayBillByInvoiceId = (id) => {
+    return useQuery({
+        queryKey: ["unmappedEwayBill", id],
+        queryFn: () => getUnmappedEwayBillByInvoiceId(id),
+        enabled: false,
+        select: (result) => {
+            // const data = result?.data ?? [];
+            const structuredData = result?.data?.map(item => ({
+                documentId: item.ewayBillId,
+                documentNo: item.ewayBillNo,
+                documentDate: item.ewayBillDate,
+                validUpto: item.validUpto,
+                isInvoiced: item.isInvoiced,
+                invoiceId: item.invoiceId,
+                customerName: item.customerName,
+            })) ?? [];
+
+            return structuredData;
+        }
+    });
+}

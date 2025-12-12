@@ -6,24 +6,34 @@ const useHandleSubmit = (props) => {
     const { mutate: updateInvoice, isPending: updateInvoiceIsPending } = useUpdateInvoice(invoiceId);
 
     const onSubmit = (data) => {
-        console.log("Invoice Data:", data);
+        delete data.roundOffManual;
+        // console.log("Invoice Data:", data);
 
         const invoiceDateISO = data.invoiceDate ? new Date(data.invoiceDate).toISOString() : null;
         const dueDateISO = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+
+        console.log('data => ', data);
+        // console.log('data.dueDate => ', data.dueDate);
+        // console.log('dueDateISO => ', dueDateISO);
+        
 
         if (createInvoiceIsPending || updateInvoiceIsPending) return false;
 
         const formPayload = {
             ...data,
+            // ...selectedDocumentIds,
             invoiceDate: invoiceDateISO,
             dueDate: dueDateISO
         }
 
-        // if (isEditMode) {
-        //     updateInvoice(formPayload);
-        // } else {
-        //     createInvoice(formPayload);
-        // }
+        // console.log('invoice formPayload => ', formPayload);
+        
+
+        if (isEditMode) {
+            updateInvoice(formPayload);
+        } else {
+            createInvoice(formPayload);
+        }
     }
 
     const onError = (errors, e) => console.log('Form Error: ', errors);

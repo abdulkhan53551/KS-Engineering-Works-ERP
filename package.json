@@ -28,6 +28,7 @@
     "bootstrap": "^5.2.3",
     "bootstrap-switch-button-react": "^1.2.0",
     "choices.js": "^10.1.0",
+    "decimal.js": "^10.6.0",
     "fslightbox-react": "^1.6.2-2",
     "fullcalendar-interaction": "^5.3.3",
     "immutability-helper": "^3.1.1",

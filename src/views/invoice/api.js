@@ -64,3 +64,33 @@ export const deleteInvoice = asyncHandler(async (id) => {
     });
     return res.data;
 });
+
+// Get unmapped invoice challan by invoice id
+export const getUnmappedInvoiceChallanByInvoiceId = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/invoice-challan/invoice/${id}?includeUnmappedChallans=true`,
+        method: requestMethod.GET
+    });
+
+    return res.data;
+})
+
+// Get unmapped purchase order by invoice id
+export const getUnmappedPurchaseOrderByInvoiceId = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/purchase-order/invoice/${id}?includeUnmappedPurchaseOrders=true`,
+        method: requestMethod.GET
+    });
+
+    return res.data;
+})
+
+// Get unmapped eway bill by invoice id
+export const getUnmappedEwayBillByInvoiceId = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/ewaybill/invoice/${id}?includeUnmappedEwayBills=true`,
+        method: requestMethod.GET
+    });
+
+    return res.data;
+})

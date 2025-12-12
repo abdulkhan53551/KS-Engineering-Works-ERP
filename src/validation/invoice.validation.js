@@ -1,8 +1,9 @@
 // validationSchema.ts
 import Joi from "joi";
+import Decimal from 'decimal.js';
 
 // Schema: Create a new invoice
-export const invoiceValidationSchema = Joi.object({
+export const invoiceValidationSchema = (isEditMode) => Joi.object({
     invoiceNo: Joi.string().max(255).required(),
     invoiceDate: Joi.date().required(),
 
@@ -26,6 +27,9 @@ export const invoiceValidationSchema = Joi.object({
         }),
 
     billingAddress: Joi.object({
+        id: isEditMode
+            ? Joi.number().integer().required()   // required only in edit
+            : Joi.number().integer().optional(), // optional in add
         email: Joi.string().email().allow(null, ''),
         phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).allow(null, '').messages({
             'string.pattern.base': 'Billing phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
@@ -39,6 +43,9 @@ export const invoiceValidationSchema = Joi.object({
     }),
 
     shippingAddress: Joi.object({
+        id: isEditMode
+            ? Joi.number().integer().required()   // required only in edit
+            : Joi.number().integer().optional(), // optional in add
         email: Joi.string().email().allow(null, ''),
         phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).allow(null, '').messages({
             'string.pattern.base': 'Shipping phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
@@ -53,6 +60,42 @@ export const invoiceValidationSchema = Joi.object({
     hasChallan: Joi.boolean().default(false),
     hasPo: Joi.boolean().default(false),
     hasEwayBill: Joi.boolean().default(false),
+
+    // Challans
+    challanIds: Joi.array()
+        .items(Joi.number().integer().positive())
+        .default([])
+        .when('hasChallan', {
+            is: true,
+            then: Joi.array().min(1).required().messages({
+                'any.required': 'Challan IDs are required when challan is selected.',
+                'array.min': 'Please select at least one challan.'
+            })
+        }),
+
+    // Purchase Orders
+    poIds: Joi.array()
+        .items(Joi.number().integer().positive())
+        .default([])
+        .when('hasPo', {
+            is: true,
+            then: Joi.array().min(1).required().messages({
+                'any.required': 'Purchase order IDs are required when PO is selected.',
+                'array.min': 'Please select at least one PO.'
+            })
+        }),
+
+    // E-Way Bills
+    ewayBillIds: Joi.array()
+        .items(Joi.number().integer().positive())
+        .default([])
+        .when('hasEwayBill', {
+            is: true,
+            then: Joi.array().min(1).required().messages({
+                'any.required': 'E-way bill IDs are required when e-way bill is selected.',
+                'array.min': 'Please select at least one e-way bill.'
+            })
+        }),
 
     items: Joi.array().items(
         Joi.object({
@@ -75,8 +118,8 @@ export const invoiceValidationSchema = Joi.object({
             igst: Joi.number().precision(2).min(0).allow(0),
             total: Joi.number().precision(2).min(0).required().allow(0)
         })
-            // .custom(invoiceItemCustomValidation)
-            // .messages({ 'any.invalid': '{{#customMessage}}' })
+        .custom(invoiceItemCustomValidation)
+        .messages({ 'any.invalid': '{{#customMessage}}' })
     ).min(1).required(),
 
     subTotal: Joi.number().precision(2).min(0).required(),
@@ -88,17 +131,21 @@ export const invoiceValidationSchema = Joi.object({
     igst: Joi.number().precision(2).min(0).allow(null, 0),
     total: Joi.number().precision(2).min(0).required(),
     roundOff: Joi.number().precision(2).allow(null, 0),
+    roundOffManual: Joi.boolean().optional(),
     other: Joi.number().precision(2).allow(null, 0),
 
     paymentStatusId: Joi.number().integer().min(1).required(),
     paymentModeId: Joi.number().integer().min(0).required()
 })
-    // .custom(validateCreateOrUpdateCustom)
-    // .messages({ 'any.invalid': '{{#customMessage}}' })
+.custom(validateCreateOrUpdateCustom)
+.messages({ 'any.invalid': '{{#customMessage}}' })
 
 // Custom validation function for create/update
 function validateCreateOrUpdateCustom(item, helpers) {
-    const gross = new Decimal(item.subTotal);
+
+    // console.log('items => ', item);
+    
+    const gross = new Decimal(item.subTotal || 0);
 
     // Rule: If discountPercent > 0 → discountAmount must be > 0
     if (item.discountPercent && item.discountPercent > 0) {
@@ -116,7 +163,7 @@ function validateCreateOrUpdateCustom(item, helpers) {
     }
 
     // Rule: discount amount cannot exceed gross
-    if (gross.lessThan(item.discountAmount)) {
+    if (gross.lessThan(item.discountAmount || 0)) {
         return helpers.error("any.invalid", { customMessage: "Discount amount cannot exceed gross amount of invoice" });
     }
 
@@ -130,7 +177,7 @@ function invoiceItemCustomValidation(item, helpers) {
     const grossAmount = qty.times(rate);
 
     // Rule 1: discount amount <= gross
-    if (grossAmount.lessThan(item.discountAmount)) {
+    if (grossAmount.lessThan(item.discountAmount || 0)) {
         return helpers.error("any.invalid", { customMessage: "Discount amount cannot exceed gross amount (rate * qty) of invoice item" });
     }
 

@@ -28,7 +28,8 @@ const useInvoiceCalculation = (props) => {
             igst += Number(item.igst || 0);
         });
 
-        const totalBeforeRound = taxableAmount + cgst + sgst + igst - Number(discountAmount) + Number(otherCharges);
+        taxableAmount = taxableAmount - Number(discountAmount) + Number(otherCharges);
+        const totalBeforeRound = taxableAmount + cgst + sgst + igst;
         const autoRoundedTotal = Math.round(totalBeforeRound);
         const autoRoundOff = autoRoundedTotal - totalBeforeRound;
 

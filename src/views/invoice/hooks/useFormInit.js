@@ -20,6 +20,7 @@ const useFormInit = (props) => {
                 gstNumber: invoice.gstNumber,
 
                 billingAddress: {
+                    id: invoice.billingAddress?.id,
                     email: invoice.billingAddress?.email,
                     phoneNumber: invoice.billingAddress?.phoneNumber,
                     website: invoice.billingAddress?.website,
@@ -30,6 +31,7 @@ const useFormInit = (props) => {
                 },
 
                 shippingAddress: {
+                    id: invoice.shippingAddress?.id,
                     email: invoice.shippingAddress?.email,
                     phoneNumber: invoice.shippingAddress?.phoneNumber,
                     addressLine1: invoice.shippingAddress?.addressLine1,
@@ -41,6 +43,9 @@ const useFormInit = (props) => {
                 hasChallan: invoice.hasChallan,
                 hasPo: invoice.hasPo,
                 hasEwayBill: invoice.hasEwayBill,
+                challanIds: invoice.challanIds || [],
+                poIds: invoice.poIds || [],
+                ewayBillIds: invoice.ewbIds || [],
 
                 // ==== Items Array (Required Section) ====
                 items: invoice.items?.map(item => ({

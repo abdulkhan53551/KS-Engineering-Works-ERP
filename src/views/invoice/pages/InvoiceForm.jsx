@@ -1,359 +1,171 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, CheckSquare, Square, Trash2, CheckCircle, ListChecks, Search } from 'lucide-react';
-
-// --- Reusable Modal Component ---
-function ModuleSelectorModal({ moduleKey, show, onClose, moduleData, updateModuleData, onSubmit }) {
-  const [localTasks, setLocalTasks] = useState(moduleData);
-  const [newTodo, setNewTodo] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [submittedData, setSubmittedData] = useState(null);
-
-  // Sync local tasks when module data changes (i.e., when modal opens for a new module)
-  useEffect(() => {
-    setLocalTasks(moduleData);
-    setSubmittedData(null);
-    setSearchTerm('');
-  }, [moduleData]);
-
-  const filteredTasks = localTasks.filter(task =>
-    task.text.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleAddTodo = (e) => {
-    e.preventDefault();
-    if (!newTodo.trim()) return;
-
-    const newItem = {
-      // Use moduleKey + current time for better ID separation across modules
-      id: `${moduleKey}-${Date.now()}`, 
-      text: newTodo.trim(),
-      selected: false,
-    };
-
-    const newTasks = [...localTasks, newItem];
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state immediately
-    setNewTodo('');
-  };
-
-  const toggleSelection = (id) => {
-    const newTasks = localTasks.map(task => 
-      task.id === id ? { ...task, selected: !task.selected } : task
-    );
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state
-    if (submittedData) setSubmittedData(null);
-  };
-
-  const allFilteredSelected = filteredTasks.length > 0 && filteredTasks.every(t => t.selected);
-
-  const toggleAll = () => {
-    const filteredIds = filteredTasks.map(t => t.id);
-    
-    const newTasks = localTasks.map(task => {
-        if (filteredIds.includes(task.id)) {
-            // Toggle based on the state of all filtered items
-            return { ...task, selected: !allFilteredSelected };
-        }
-        return task;
-    });
-
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state
-  };
-
-  const deleteTodo = (id) => {
-    const newTasks = localTasks.filter(t => t.id !== id);
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state
-  };
-
-  const handleSubmit = () => {
-    const selectedIds = localTasks.filter(t => t.selected).map(t => t.id);
-    setSubmittedData({
-      timestamp: new Date().toLocaleTimeString(),
-      ids: selectedIds,
-      count: selectedIds.length
-    });
-    onSubmit(moduleKey, selectedIds); // Call external submit handler
-  };
-
-  // If the modal is not visible, return null
-  if (!show) return null;
-
-  const totalSelected = localTasks.filter(t => t.selected).length;
-  const modalTitle = `${moduleKey} Task Selector`;
-  
-  return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="modal-backdrop fade show" 
-        style={{ zIndex: 1040 }}
-        onClick={onClose}
-      ></div>
-
-      {/* Modal Container */}
-      <div 
-        className="modal fade show d-block" 
-        tabIndex="-1" 
-        style={{ zIndex: 1050, overflowY: 'auto' }}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="modal-dialog modal-dialog-centered modal-lg"> 
-          <div className="modal-content shadow-lg border-0">
-            
-            {/* Modal Header (Fixed) */}
-            <div className="modal-header bg-white border-bottom-0 pb-0">
-              <h5 className="modal-title d-flex align-items-center gap-2 fw-bold text-primary text-capitalize">
-                <ListChecks size={24} />
-                {modalTitle}
-              </h5>
-              <button 
-                type="button" 
-                className="btn-close" 
-                onClick={onClose}
-                aria-label="Close"
-              ></button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="modal-body p-4">
-              
-              {/* Search Input (Fixed) */}
-              <div className="input-group mb-3">
-                <span className="input-group-text bg-light text-muted"><Search size={18} /></span>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={`Search ${moduleKey} tasks...`}
-                  className="form-control"
-                />
-              </div>
-
-              {/* Add New & Controls (Fixed) */}
-              <div className="mb-4">
-                 <div className="row g-2">
-                    <div className="col-md-9">
-                      <form onSubmit={handleAddTodo} className="d-flex gap-2">
-                        <input
-                          type="text"
-                          value={newTodo}
-                          onChange={(e) => setNewTodo(e.target.value)}
-                          placeholder={`Add new ${moduleKey} task...`}
-                          className="form-control"
-                        />
-                        <button 
-                          type="submit"
-                          className="btn btn-primary d-flex align-items-center gap-2 btn-shadow"
-                        >
-                          <Plus size={18} />
-                          Add
-                        </button>
-                      </form>
-                    </div>
-                    <div className="col-md-3">
-                       <button 
-                        onClick={toggleAll}
-                        // Conditional button styling based on selection state
-                        className={`btn ${allFilteredSelected ? 'btn-secondary' : 'btn-success'} w-100 btn-shadow`}
-                        disabled={filteredTasks.length === 0}
-                      >
-                        {allFilteredSelected ? 'Deselect Visible' : 'Select All Visible'}
-                      </button>
-                    </div>
-                 </div>
-              </div>
-
-              {/* Todo List Container (SCROLLABLE AREA with scroll shadow) */}
-              <div className="todo-list-scroll mb-4">
-                <ul className="list-group list-group-flush">
-                  {filteredTasks.length === 0 ? (
-                    <li className="list-group-item p-4 text-center text-muted">
-                      <p className="mb-0">No tasks found matching "{searchTerm}" in {moduleKey}.</p>
-                    </li>
-                  ) : (
-                    filteredTasks.map((task) => (
-                      <li 
-                        key={task.id} 
-                        // Using custom class for compact height
-                        className={`list-group-item compact-list-item d-flex justify-content-between align-items-center ${task.selected ? 'selected' : ''}`}
-                        onClick={() => toggleSelection(task.id)}
-                      >
-                        <div className="d-flex align-items-center gap-3">
-                          <div className={task.selected ? "text-primary" : "text-secondary"}>
-                            {/* Reduced icon size for a tighter fit */}
-                            {task.selected ? <CheckSquare size={18} /> : <Square size={18} />}
-                          </div>
-                          <div>
-                            <span className={`fw-medium ${task.selected ? 'text-primary' : 'text-dark'}`}>
-                              {task.text}
-                            </span>
-                            {/* <div className="small text-muted">ID: {task.id}</div> */}
-                          </div>
-                        </div>
-                        
-                        {/* Delete Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTodo(task.id);
-                          }}
-                          className="btn btn-danger btn-sm delete-btn border-0"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>
-
-              {/* Submission Results (Fixed) */}
-              {submittedData && (
-                <div className="alert alert-dark border-0 btn-shadow mb-0">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <strong className="text-success d-flex align-items-center gap-2 text-capitalize">
-                       <CheckCircle size={16} /> {moduleKey} Submission Successful
-                    </strong>
-                    <span className="badge bg-secondary">{submittedData.timestamp}</span>
-                  </div>
-                  <div className="bg-black p-3 rounded text-info font-monospace small overflow-auto">
-                    {JSON.stringify({ module: moduleKey, selectedIds: submittedData.ids }, null, 2)}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer (Fixed) */}
-            <div className="modal-footer bg-light">
-              <div className="me-auto text-muted small text-capitalize">
-                 {totalSelected} {moduleKey} items selected
-              </div>
-              <button 
-                type="button" 
-                className="btn btn-secondary btn-shadow" 
-                onClick={onClose}
-              >
-                Close
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={totalSelected === 0}
-                className="btn btn-success d-flex align-items-center gap-2 btn-shadow"
-              >
-                <CheckCircle size={18} />
-                Submit Selected
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
+import React, { useEffect, useMemo } from 'react'
+import { Row, Col, Form, Card, FormCheck, Button, Table } from 'react-bootstrap'
+import { useParams } from 'react-router-dom'
+import Flatpickr from "react-flatpickr";
+import { Controller, FormProvider, useFieldArray, useForm, useFormState, useWatch } from 'react-hook-form'
+import { joiResolver } from '@hookform/resolvers/joi'
+import useHandleSubmit from '../hooks/useHandleSubmit'
+import SubmitButton from '../../../components/SubmitButton'
+import { FaRegCalendarAlt, FaRegWindowClose, FaWindowClose } from 'react-icons/fa';
+import useFormInit from '../hooks/useFormInit';
+import { invoiceValidationSchema } from '../../../validation/invoice.validation';
+import { useGetInvoiceChallanById } from '../../invoice-challan/hooks/useApi';
+import { useInvoiceById } from '../hooks/useApi';
+import { MdAddBox } from 'react-icons/md';
+import { DevTool } from "@hookform/devtools";
+import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProductUnit, useStateCity } from '../../dashboard/hooks/api.hooks';
+import InvoiceItemsTable from '../components/InvoiceItemsTable';
+import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
+import { Eye, ListChecks } from 'lucide-react';
+import IconButton from '../components/IconButton';
+import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
+import useInvoiceModules from '../hooks/useAccountingDocumentModules';
+import './invoice.scss'
+import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
 
 
-// --- Main Application Component ---
-export default function App() {
-  const initialModuleData = {
-    challan: [
-        { id: 'C-101', text: 'Verify Challan C-101 against invoice', selected: false },
-        { id: 'C-102', text: 'Export Challan report for Q3', selected: false },
-        { id: 'C-103', text: 'Challan C-103 needs re-authorization', selected: true },
-        { id: 'C-104', text: 'Archive old Challan documents', selected: false },
-        { id: 'C-105', text: 'Follow up on payment for Challan C-105', selected: false },
-        { id: 'C-106', text: 'Update Challan template for new region', selected: false },
-        { id: 'C-107', text: 'Review Challan C-107 status', selected: false },
-        { id: 'C-108', text: 'Send reminder for Challan C-108', selected: false },
-        { id: 'C-109', text: 'Final sign-off for Challan C-109', selected: false },
-        { id: 'C-110', text: 'Issue refund for Challan C-110', selected: false },
-        { id: 'C-111', text: 'Check customs clearance for C-111', selected: false },
-        { id: 'C-112', text: 'Audit trail review for Challan C-112', selected: false },
-    ],
-    purchaseOrder: [
-        { id: 'PO-201', text: 'Approve Purchase Order PO-201', selected: false },
-        { id: 'PO-202', text: 'Draft new PO for supplier X', selected: false },
-        { id: 'PO-203', text: 'Review PO-203 budget alignment', selected: false },
-        { id: 'PO-204', text: 'Send PO-204 confirmation to vendor', selected: true },
-    ],
-    ewayBill: [
-        { id: 'EB-301', text: 'Generate Eway Bill for shipment #99', selected: false },
-        { id: 'EB-302', text: 'Check bill status for EB-302', selected: false },
-        { id: 'EB-303', text: 'Update vehicle number for Eway Bill EB-303', selected: false },
-    ],
-  };
+const InvoiceForm = ({ mode }) => {
+   const { id: invoiceId } = useParams();
+   const isEditMode = !!(mode == 'edit');
+   const defaultFormValue = {
+      invoiceNo: "",
+      invoiceDate: new Date(),
+      dueDays: 0,
+      dueDate: new Date(),
+      customerName: "",
+      hasGst: false,
+      gstNumber: "",
+      billingAddress: {
+         email: "",
+         phoneNumber: "",
+         website: "",
+         addressLine1: "",
+         cityId: null,
+         stateId: null,
+         pincode: null
+      },
+      shippingAddress: {
+         email: "",
+         phoneNumber: "",
+         addressLine1: "",
+         cityId: null,
+         stateId: null,
+         pincode: null
+      },
+      hasChallan: false,
+      hasPo: false,
+      hasEwayBill: false,
+      challanIds: [],
+      poIds: [],
+      ewayBillIds: [],
 
-  const [moduleData, setModuleData] = useState(initialModuleData);
-  const [activeModule, setActiveModule] = useState(null); // 'challan', 'purchaseOrder', or 'ewayBill'
+      items: [
+         {
+            description: "",
+            hsnSacCode: "",
+            qty: 1,
+            itemUnitId: null,
+            rate: 0,
+            discountPercent: 0,
+            discountAmount: 0,
+            taxableAmount: 0,
+            gstSlabId: null,
+            cgst: 0,
+            sgst: 0,
+            igst: 0,
+            total: 0,
+         }
+      ],
+      subTotal: 0,
+      discountPercent: 0,
+      discountAmount: 0,
+      taxableAmount: 0,
+      cgst: 0,
+      sgst: 0,
+      igst: 0,
+      total: 0,
+      roundOff: 0,
+      other: 0,
+      paymentStatusId: 1,
+      paymentModeId: 0
+   }
 
-  // Handler to open the modal for a specific module
-  const handleViewModule = (moduleKey) => {
-    setActiveModule(moduleKey);
-  };
+   const formMethods = useForm({
+      resolver: joiResolver(invoiceValidationSchema(isEditMode)),
+      mode: "onBlur",
+      reValidateMode: "onChange",
+      defaultValues: {
+         ...defaultFormValue
+      }
+   });
 
-  // Handler to close the modal
-  const handleCloseModal = () => {
-    setActiveModule(null);
-  };
-  
-  // Handler passed to the modal to permanently update the tasks for a module
-  const updateModuleData = (moduleKey, newTasks) => {
-    setModuleData(prev => ({
-        ...prev,
-        [moduleKey]: newTasks
-    }));
-  };
+   const { register, handleSubmit, setValue, reset, watch, getValues, control, formState: { errors } } = formMethods;
+   const selectedBillingState = watch("billingAddress.stateId");
+   const selectedShippingState = watch("shippingAddress.stateId");
+   const hasChallan = watch("hasChallan");
+   const hasPo = watch("hasPo");
+   const hasEwayBill = watch("hasEwayBill");
+   const invoiceDate = watch("invoiceDate");
 
-  // Handler for submission (optional: log or save submission results globally)
-  const handleModuleSubmit = (moduleKey, selectedIds) => {
-    console.log(`Submitted IDs for ${moduleKey}:`, selectedIds);
-    // In a real application, you would send this data to an API endpoint here.
-  };
-
-  const currentModuleData = activeModule ? moduleData[activeModule] : [];
-  
-  // Array defining the modules to display buttons for
-  const modules = [
-    { key: 'challan', label: 'Challan', icon: 'FileText', color: 'primary' },
-    { key: 'purchaseOrder', label: 'Purchase Order', icon: 'ShoppingCart', color: 'info' },
-    { key: 'ewayBill', label: 'Eway Bill', icon: 'Truck', color: 'warning' },
-  ];
-  
-  // Function to dynamically render Lucide icons based on string name
-  const getIconComponent = (key) => {
-    const icons = {
-        FileText: ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>,
-        ShoppingCart: ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 2-1.58L23 6H6"></path></svg>,
-        Truck: ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-5"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>,
-    };
-    return icons[key] || ListChecks;
-  };
+   const { data: invoice = {} } = useInvoiceById(invoiceId);
+   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode })
+   useFormInit({ invoice, isEditMode, reset, defaultFormValue })
+   useInvoiceCalculation({ control, setValue, getValues });
+   const { data: productUnit = [] } = useProductUnit();
+   const { data: gstSlab = [] } = useGstSlab();
+   const { data: billingStates = [] } = useCountryState();
+   const { data: billingCities = [], isFetching: isFetchingBillingCities } = useStateCity(selectedBillingState);
+   const { data: shippingStates = [] } = useCountryState();
+   const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
+   const { data: paymentStatus = [] } = usePaymentStatus();
+   const { data: paymentMode = [] } = usePaymentMode();
+   const { activeModule, moduleData, selectedDocumentIds, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule } = useAccountingDocumentModules({ invoiceId, setValue });
 
 
-  return (
-    <>
-      {/* Inject Bootstrap 5 via CDN */}
-      <link 
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
-        rel="stylesheet" 
-        crossOrigin="anonymous" 
-      />
-      
-      <style>{`
-        body { background-color: #f0f2f5; }
-        .list-group-item.selected { background-color: #e7f1ff; border-color: #b6d4fe; }
-        .list-group-item { cursor: pointer; transition: background-color 0.2s; }
+   // const initialModuleData = {
+   //    challan: [
+   //       { id: 'C-101', text: 'Verify Challan C-101 against invoice', selected: false },
+   //       { id: 'C-102', text: 'Export Challan report for Q3', selected: false },
+   //       { id: 'C-103', text: 'Challan C-103 needs re-authorization', selected: true },
+   //       { id: 'C-104', text: 'Archive old Challan documents', selected: false },
+   //       { id: 'C-105', text: 'Follow up on payment for Challan C-105', selected: false },
+   //       { id: 'C-106', text: 'Update Challan template for new region', selected: false },
+   //       { id: 'C-107', text: 'Review Challan C-107 status', selected: false },
+   //       { id: 'C-108', text: 'Send reminder for Challan C-108', selected: false },
+   //       { id: 'C-109', text: 'Final sign-off for Challan C-109', selected: false },
+   //       { id: 'C-110', text: 'Issue refund for Challan C-110', selected: false },
+   //       { id: 'C-111', text: 'Check customs clearance for C-111', selected: false },
+   //       { id: 'C-112', text: 'Audit trail review for Challan C-112', selected: false },
+   //    ],
+   //    purchaseOrder: [
+   //       { id: 'PO-201', text: 'Approve Purchase Order PO-201', selected: false },
+   //       { id: 'PO-202', text: 'Draft new PO for supplier X', selected: false },
+   //       { id: 'PO-203', text: 'Review PO-203 budget alignment', selected: false },
+   //       { id: 'PO-204', text: 'Send PO-204 confirmation to vendor', selected: true },
+   //    ],
+   //    ewayBill: [
+   //       { id: 'EB-301', text: 'Generate Eway Bill for shipment #99', selected: false },
+   //       { id: 'EB-302', text: 'Check bill status for EB-302', selected: false },
+   //       { id: 'EB-303', text: 'Update vehicle number for Eway Bill EB-303', selected: false },
+   //    ],
+   // };
 
-        /* 1. Further Reduced Compact List Item Height */
-        .compact-list-item {
-            padding-top: 0.6rem !important; /* Reduced from 0.75rem */
-            padding-bottom: 0.6rem !important;
-        }
-        
+   // const {
+   //    // isLoading,
+   //    activeModule,
+   //    moduleData,
+   //    selectedDocumentIds,
+   //    fetchModuleFun,
+   //    openModule,
+   //    closeModule,
+   //    updateModuleData,
+   //    submitModule
+   // } = useAccountingDocumentModules(invoiceId);
+
+   return (
+      <>
+
+         <style>{`
         /* Delete Button Hover Effect */
         .delete-btn { 
           opacity: 0; 
@@ -365,84 +177,647 @@ export default function App() {
           line-height: 1; 
           color: #999; 
         }
-        .list-group-item:hover .delete-btn { 
-          opacity: 1; 
-          transform: scale(1);
-          color: var(--bs-danger); 
-        }
         .delete-btn:hover {
           background-color: var(--bs-danger-bg-subtle, rgba(220, 53, 69, 0.15)); 
           transform: scale(1.05); 
         }
-        
-        .modal.show { display: block; }
-        .fade-in-up { animation: fadeInUp 0.3s ease-out; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Scroll Visibility Enhancement */
-        .todo-list-scroll {
-          max-height: 40vh; 
-          overflow-y: auto;
-          border: 1px solid rgba(0, 0, 0, 0.125); 
-          border-radius: 0.25rem;
-          background-color: #fff;
-          /* Subtle shadows to indicate content above/below the visible area */
-          box-shadow: inset 0 6px 6px -6px rgba(0, 0, 0, 0.15),
-                      inset 0 -6px 6px -6px rgba(0, 0, 0, 0.15);
-        }
-        .todo-list-scroll .list-group {
-            margin-bottom: 0 !important;
-            border: none !important;
-        }
-        .btn-shadow { 
-          box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08); 
-          transition: transform 0.15s ease;
-        }
-        .btn-shadow:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
-        }
       `}</style>
+         <div>
+            <FormProvider {...formMethods}>
+               <Form noValidate onSubmit={handleSubmit(onSubmit, onError)} >
+                  <Row>
+                     <Col xl="12" lg="12">
+                        <Card>
+                           <Card.Header className="d-flex justify-content-between">
+                              <div className="header-title">
+                                 <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} Invoice</h4>
+                              </div>
+                           </Card.Header>
+                           <Card.Body>
+                              <div className="row">
+                                 <Col lg="6">
+                                    <Row>
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control type="text" id='invoiceNo' placeholder="PO No" isInvalid={!!errors.invoiceNo} {...register("invoiceNo")} />
+                                             <Form.Label htmlFor="invoiceNo" >
+                                                Invoice No <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                       <Col lg="8">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control type="text" name='customerName' id='customerName' placeholder="Customer Name" isInvalid={!!errors.customerName} {...register('customerName')} />
+                                             <Form.Label htmlFor="customerName" >
+                                                Customer Name <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.customerName?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                       <Col lg="4">
+                                          <Form.Group className=" form-group mb-4">
+                                             <Form.Check className=" form-check-inline">
+                                                <FormCheck.Input
+                                                   type="checkbox"
+                                                   className="form-check-input"
+                                                   id="hasGst"
+                                                   isInvalid={!!errors.hasGst}
+                                                   {...register("hasGst", {
+                                                      onChange: (e) => {
+                                                         const value = e.target.checked;
+                                                         // ✅ Update value in RHF
+                                                         setValue("hasGst", value, { shouldValidate: true });
+                                                      }
+                                                   })} />
+                                                <FormCheck.Label className="form-check-label pl-2" htmlFor="hasGst">GST available</FormCheck.Label>
+                                                <Form.Control.Feedback type="invalid">{errors.hasGst?.message}</Form.Control.Feedback>
+                                             </Form.Check>
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="5">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control type="text" name='gstNumber' id='gstNumber' placeholder="GST No." isInvalid={!!errors.gstNumber} {...register("gstNumber")} />
+                                             <Form.Label htmlFor="gstNumber" >
+                                                GST No. <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.gstNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                       <Col lg="4">
+                                          <Form.Group className=" form-group mb-4">
+                                             <Form.Check className=" form-check-inline">
+                                                <FormCheck.Input
+                                                   type="checkbox"
+                                                   className="form-check-input"
+                                                   id="hasChallan"
+                                                   isInvalid={!!errors.challanIds || !!errors.hasChallan}
+                                                   {...register("hasChallan", {
+                                                      onChange: (e) => {
+                                                         const value = e.target.checked;
+                                                         // ✅ Update value in RHF
+                                                         setValue("hasChallan", value, { shouldValidate: true });
+                                                      }
+                                                   })} />
+                                                <FormCheck.Label className="form-check-label pl-2" htmlFor="hasChallan">Has Challan ?</FormCheck.Label>
+                                                <Form.Control.Feedback type="invalid">{errors.hasChallan?.message}</Form.Control.Feedback>
+                                             </Form.Check>
+                                             <IconButton
+                                                iconKey="FileText"
+                                                label="Challan"
+                                                disabled={!hasChallan}
+                                                // onClick={() => openModule('challan')}
+                                                onClick={() => {
+                                                   openModule('challan')
+                                                   // refetch()
+                                                }}
+                                                variant="primary"
+                                             />
+                                             {errors.challanIds && (
+                                                <div className="invalid-feedback d-block">
+                                                   {errors.challanIds.message}
+                                                </div>
+                                             )}
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="4">
+                                          <Form.Group className=" form-group mb-4">
+                                             <Form.Check className=" form-check-inline">
+                                                <FormCheck.Input
+                                                   type="checkbox"
+                                                   className="form-check-input"
+                                                   id="hasPo"
+                                                   isInvalid={!!errors.hasPo || !!errors.poIds}
+                                                   {...register("hasPo", {
+                                                      onChange: (e) => {
+                                                         const value = e.target.checked;
+                                                         // ✅ Update value in RHF
+                                                         setValue("hasPo", value, { shouldValidate: true });
+                                                      }
+                                                   })} />
+                                                <FormCheck.Label className="form-check-label pl-2" htmlFor="hasPo">Has PO ?</FormCheck.Label>
+                                             </Form.Check>
+                                             <IconButton
+                                                iconKey="ShoppingCart"
+                                                label="P.O"
+                                                disabled={!hasPo}
+                                                // onClick={() => openModule('purchaseOrder')}
+                                                onClick={() => {
+                                                   openModule('purchaseOrder')
+                                                   // refetch();
+                                                }}
+                                                variant="info"
+                                             />
+                                             {/* Show validation message (must use d-block) */}
+                                             {errors.poIds && (
+                                                <div className="invalid-feedback d-block">
+                                                   {errors.poIds.message}
+                                                </div>
+                                             )}
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="4">
+                                          <Form.Group className=" form-group mb-4">
+                                             <Form.Check className=" form-check-inline">
+                                                <FormCheck.Input
+                                                   type="checkbox"
+                                                   className="form-check-input"
+                                                   id="hasEwayBill"
+                                                   isInvalid={!!errors.ewayBillIds || !!errors.hasEwayBill}
+                                                   {...register("hasEwayBill", {
+                                                      onChange: (e) => {
+                                                         const value = e.target.checked;
+                                                         // ✅ Update value in RHF
+                                                         setValue("hasEwayBill", value, { shouldValidate: true });
+                                                      }
+                                                   })} />
+                                                <FormCheck.Label className="form-check-label pl-2" htmlFor="hasEwayBill">Has Eway Bill ?</FormCheck.Label>
+                                                <Form.Control.Feedback type="invalid">{errors.hasEwayBill?.message}</Form.Control.Feedback>
+                                             </Form.Check>
+                                             <IconButton
+                                                iconKey="Truck"
+                                                label="E-Way Bill"
+                                                disabled={!hasEwayBill}
+                                                // onClick={() => console.log("EWB Clicked")}
+                                                onClick={() => openModule('ewayBill')}
+                                                variant="warning"
+                                             />
+                                             {errors.ewayBillIds && (
+                                                <div className="invalid-feedback d-block">
+                                                   {errors.ewayBillIds.message}
+                                                </div>
+                                             )}
+                                          </Form.Group>
+                                       </Col>
+                                    </Row>
+                                 </Col>
 
-      {/* Main Page Content (Module Selector Buttons) */}
-      <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-5">
-        <div className="text-center fade-in-up mb-5">
-          <div className="mb-4 bg-white p-4 rounded-circle shadow-sm d-inline-block">
-             <ListChecks size={64} className="text-dark" />
-          </div>
-          <h1 className="display-4 fw-bold text-dark mb-3">Module Task Selector</h1>
-          <p className="lead text-muted mb-4">Select a module to view and manage its associated tasks.</p>
-        </div>
-        
-        <div className="d-flex flex-wrap justify-content-center gap-4">
-          {modules.map(moduleInfo => {
-            const Icon = getIconComponent(moduleInfo.icon);
-            return (
-              <button 
-                key={moduleInfo.key}
-                onClick={() => handleViewModule(moduleInfo.key)}
-                className={`btn btn-${moduleInfo.color} btn-lg px-5 py-3 rounded-pill btn-shadow fw-semibold d-inline-flex align-items-center gap-2`}
-              >
-                <Icon size={24} />
-                {moduleInfo.label} View
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                                 <Col lg="6">
+                                    <Row>
+                                       <Col lg="6">
+                                          <Form.Group className="form-group mb-4">
+                                             <Form.Label htmlFor="invoiceDate">
+                                                Invoice date <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Controller
+                                                name="invoiceDate"
+                                                control={control}
+                                                defaultValue={new Date()} // Set default date
+                                                render={({ field, fieldState: { error } }) => (
+                                                   <div className="input-group">
+                                                      <span className="input-group-text">
+                                                         <FaRegCalendarAlt />
+                                                      </span>
+                                                      <Flatpickr
+                                                         {...field}
+                                                         value={field.value}
+                                                         onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                         options={{
+                                                            dateFormat: "d/m/Y",
+                                                            defaultDate: ["today"]
+                                                         }}
+                                                         className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
+                                                         placeholder="Select E-way bill Date..."
+                                                      />
+                                                      <Form.Control.Feedback type="invalid">
+                                                         {errors.invoiceDate?.message}
+                                                      </Form.Control.Feedback>
+                                                   </div>
+                                                )}
+                                             />
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="6">
+                                          <Form.Group className="form-group mb-4">
+                                             <Form.Label htmlFor="dueDate">
+                                                Due date <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Controller
+                                                name="dueDate"
+                                                control={control}
+                                                defaultValue={new Date()} // Set default date
+                                                // disabled={true}
+                                                // readOnly={true}
+                                                render={({ field, fieldState: { error } }) => (
+                                                   <div className="input-group">
+                                                      <span className="input-group-text">
+                                                         <FaRegCalendarAlt />
+                                                      </span>
+                                                      <Flatpickr
+                                                         {...field}
+                                                         value={field.value}
+                                                         onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                         options={{
+                                                            dateFormat: "d/m/Y",
+                                                            defaultDate: ["today"],
+                                                            minDate: invoiceDate || "today"
+                                                            
+                                                         }}
+                                                         className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
+                                                         placeholder="Select E-way bill Date..."
+                                                      />
+                                                      <Form.Control.Feedback type="invalid">
+                                                         {errors.dueDate?.message}
+                                                      </Form.Control.Feedback>
+                                                   </div>
+                                                )}
+                                             />
+                                          </Form.Group>
 
-      {/* Conditional Modal Rendering */}
-      <ModuleSelectorModal 
-        moduleKey={activeModule}
-        show={!!activeModule} // Only show if activeModule is set
-        onClose={handleCloseModal}
-        moduleData={currentModuleData}
-        updateModuleData={updateModuleData}
-        onSubmit={handleModuleSubmit}
-      />
-    </>
-  );
+                                       </Col>
+                                       <Col lg="4">
+                                          <Form.Group className="form-group">
+                                             <Form.Label htmlFor="paymentStatusId">
+                                                Payment Status <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Select name="paymentStatusId" id="paymentStatusId" isInvalid={!!errors.paymentStatusId} {...register("paymentStatusId")}>
+                                                <option value="">--Select Payment Status--</option>
+                                                {paymentStatus.map((item) => (<option key={item.id} value={item.id}>{item.label}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="5">
+                                          <Form.Group className="form-group">
+                                             <Form.Label htmlFor="paymentModeId">
+                                                Payment Mode <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Select name="paymentModeId" id="paymentModeId" isInvalid={!!errors.paymentModeId} {...register("paymentModeId")}>
+                                                <option value="">--Select Payment Mode--</option>
+                                                {paymentMode.map((item) => (<option key={item.id} value={item.id}>{item.label}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+                                       <Col lg="3">
+                                          <Form.Label htmlFor="dueDays">&nbsp;</Form.Label>
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control type="text" id='dueDays' placeholder="PO No" isInvalid={!!errors.dueDays} {...register("dueDays")} />
+                                             <Form.Label htmlFor="dueDays" >
+                                                Due Day <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.dueDays?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                    </Row>
+                                 </Col>
+
+                                 <hr className="mx-2 border-2 border-primary" />
+
+                                 <div className="row">
+                                 </div>
+                                 {/* Billing Section */}
+                                 <Col lg="6">
+                                    <Row>
+                                       <Col lg='12'>
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control as="textarea" placeholder="Address" style={{ height: '105px' }} isInvalid={!!errors?.billingAddress?.addressLine1} {...register("billingAddress.addressLine1")} />
+                                             <Form.Label htmlFor="addressLine1" >
+                                                Billing Address <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.addressLine1?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Phone Number */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Billing Phone Number"
+                                                isInvalid={!!errors?.billingAddress?.phoneNumber}
+                                                minLength={10}
+                                                maxLength={10}
+                                                {...register("billingAddress.phoneNumber", {
+                                                   onChange: (e) => {
+                                                      // allow only digits
+                                                      const onlyNumbers = e.target.value.replace(/\D/g, "");
+                                                      setValue("billingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
+                                                   }
+                                                })}
+                                             />
+                                             <Form.Label htmlFor="phoneNumber">
+                                                Billing Phone Number <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.phoneNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Email */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="email"
+                                                placeholder="Billing Email"
+                                                isInvalid={!!errors?.billingAddress?.email}
+                                                {...register("billingAddress.email")}
+                                             />
+                                             <Form.Label htmlFor="email">
+                                                Billing Email
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.email?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* State */}
+                                       <Col lg="6">
+                                          <Form.Group className="form-group required">
+                                             <Form.Select
+                                                isInvalid={!!errors?.billingAddress?.stateId}
+                                                {...register("billingAddress.stateId")}
+                                             >
+                                                <option value="">-- Select State --</option>
+                                                {billingStates.map((state) => (<option key={state.id} value={state.id}>{state.name}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.stateId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+
+                                       {/* City */}
+                                       <Col lg="6">
+                                          <Form.Group className="form-group required">
+                                             <Form.Select disabled={!selectedBillingState || isFetchingBillingCities} isInvalid={!!errors?.billingAddress?.cityId} {...register("billingAddress.cityId")}>
+                                                <option value="">{isFetchingBillingCities ? "Loading..." : "-- Select City --"}</option>
+                                                {billingCities.map((city) => (<option key={city.id} value={city.id}>{city.name}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.cityId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+                                       {/* Pincode */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Pincode"
+                                                isInvalid={!!errors?.billingAddress?.pincode}
+                                                maxLength={6}
+                                                {...register("billingAddress.pincode")}
+                                             />
+                                             <Form.Label htmlFor="pincode">
+                                                Pincode <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.pincode?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Website */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Website"
+                                                isInvalid={!!errors?.billingAddress?.website}
+                                                {...register("billingAddress.website")}
+                                             />
+                                             <Form.Label htmlFor="website">
+                                                Website
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.website?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                       <Col lg='6'>
+                                          <Row>
+                                          </Row>
+
+                                          <Row>
+
+                                          </Row>
+                                       </Col>
+
+                                    </Row>
+                                    {/* Address Line 1 */}
+                                 </Col>
+
+                                 {/* Shipping Address Section */}
+                                 {/* Address Line 1 */}
+                                 <Col lg="6">
+                                    <Row>
+                                       <Col lg='12'>
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control as="textarea" placeholder="Address" style={{ height: '105px' }} isInvalid={!!errors?.shippingAddress?.addressLine1} {...register("shippingAddress.addressLine1")} />
+                                             <Form.Label htmlFor="addressLine1" >
+                                                Shipping Address <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.addressLine1?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Phone Number */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Shipping Phone Number"
+                                                isInvalid={!!errors?.shippingAddress?.phoneNumber}
+                                                minLength={10}
+                                                maxLength={10}
+                                                {...register("shippingAddress.phoneNumber", {
+                                                   onChange: (e) => {
+                                                      // allow only digits
+                                                      const onlyNumbers = e.target.value.replace(/\D/g, "");
+                                                      setValue("shippingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
+                                                   }
+                                                })}
+                                             />
+                                             <Form.Label htmlFor="phoneNumber">
+                                                Shipping Phone Number <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.phoneNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Email */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="email"
+                                                placeholder="Shipping Email"
+                                                isInvalid={!!errors?.shippingAddress?.email}
+                                                {...register("shippingAddress.email")}
+                                             />
+                                             <Form.Label htmlFor="email">
+                                                Shipping Email
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.email?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* State */}
+                                       <Col lg="6">
+                                          <Form.Group className="form-group required">
+                                             <Form.Select
+                                                isInvalid={!!errors?.shippingAddress?.stateId}
+                                                {...register("shippingAddress.stateId")}
+                                             >
+                                                <option value="">-- Select State --</option>
+                                                {shippingStates.map((state) => (<option key={state.id} value={state.id}>{state.name}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.stateId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+
+                                       {/* City */}
+                                       <Col lg="6">
+                                          <Form.Group className="form-group required">
+                                             <Form.Select disabled={!selectedShippingState || isFetchingShippingCities} isInvalid={!!errors?.shippingAddress?.cityId} {...register("shippingAddress.cityId")}>
+                                                <option value="">{isFetchingShippingCities ? "Loading..." : "-- Select City --"}</option>
+                                                {shippingCities.map((city) => (<option key={city.id} value={city.id}>{city.name}</option>))}
+                                             </Form.Select>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.cityId?.message}</Form.Control.Feedback>
+                                          </Form.Group>
+                                       </Col>
+                                       {/* Pincode */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Pincode"
+                                                isInvalid={!!errors?.shippingAddress?.pincode}
+                                                maxLength={6}
+                                                {...register("billingAddress.pincode")}
+                                             />
+                                             <Form.Label htmlFor="pincode">
+                                                Pincode <span className="text-danger label-required">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.pincode?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                    </Row>
+                                 </Col>
+                              </div>
+
+                              <hr className="mx-2 border-2 border-primary" />
+
+                              <div className="row">
+                                 <Col lg="12">
+                                    <InvoiceItemsTable
+                                       productUnit={productUnit}
+                                       gstSlab={gstSlab}
+                                    />
+                                 </Col>
+
+                                 <hr className="mx-2 border-2 border-primary" />
+
+                                 <Col lg="3">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='subTotal' placeholder="Sub Total" className="text-end" disabled={true} isInvalid={!!errors.subTotal} {...register("subTotal")} />
+                                       <Form.Label htmlFor="subTotal" >
+                                          Sub Total <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.subTotal?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="3">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='discountPercent' placeholder="Discount (%)" className="text-end" disabled={true} isInvalid={!!errors.discountPercent} {...register("discountPercent")} />
+                                       <Form.Label htmlFor="discountPercent" >
+                                          Discount (%) <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.discountPercent?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="3">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='discountAmount' placeholder="Discount Amount" className="text-end" isInvalid={!!errors.discountAmount} {...register("discountAmount")} />
+                                       <Form.Label htmlFor="discountAmount" >
+                                          Discount Amount <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.discountAmount?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="3">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='other' placeholder="Other Charges" className="text-end" isInvalid={!!errors.other} {...register("other")} />
+                                       <Form.Label htmlFor="other" >
+                                          Other Charges <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.other?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='taxableAmount' placeholder="Taxable Amount" className="text-end" disabled={true} isInvalid={!!errors.taxableAmount} {...register("taxableAmount")} />
+                                       <Form.Label htmlFor="taxableAmount" >
+                                          Taxable Amount <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.taxableAmount?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='cgst' placeholder="CGST" className="text-end" disabled={true} isInvalid={!!errors.cgst} {...register("cgst")} />
+                                       <Form.Label htmlFor="cgst" >
+                                          CGST <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.cgst?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='sgst' placeholder="SGST" className="text-end" disabled={true} isInvalid={!!errors.sgst} {...register("sgst")} />
+                                       <Form.Label htmlFor="sgst" >
+                                          SGST <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.sgst?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='igst' placeholder="IGST" className="text-end" disabled={true} isInvalid={!!errors.igst} {...register("igst")} />
+                                       <Form.Label htmlFor="igst" >
+                                          IGST <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.igst?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='roundOff' placeholder="Round Off" className="text-end" isInvalid={!!errors.roundOff} {...register("roundOff", {
+                                          onChange: () => setValue("roundOffManual", true),
+                                       })} />
+                                       <Form.Label htmlFor="roundOff" >
+                                          Round Off. <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.roundOff?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='total' placeholder="Total" className="text-end" disabled={true} isInvalid={!!errors.total} {...register("total")} />
+                                       <Form.Label htmlFor="total" >
+                                          Total <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.total?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                              </div>
+                              <SubmitButton
+                                 isLoading={createInvoiceIsPending || updateInvoiceIsPending}
+                                 isEditMode={isEditMode}
+                              />
+                           </Card.Body>
+                        </Card>
+                     </Col>
+                  </Row>
+               </Form>
+               {/* Conditional Modal Rendering */}
+               <ModuleSelectorModal
+                  moduleKey={activeModule}
+                  // isLoading={isLoading}
+                  invoiceId={invoiceId}
+                  show={!!activeModule} // Only show if activeModule is set
+                  fetchModuleFun={fetchModuleFun}
+                  onClose={closeModule}
+                  moduleData={moduleData}
+                  updateModuleData={updateModuleData}
+                  onSubmit={submitModule}
+               />
+            </FormProvider>
+         </div >
+
+         <DevTool control={control} /> {/* set up the dev tool */}
+      </>
+   )
 }
+
+export default InvoiceForm;

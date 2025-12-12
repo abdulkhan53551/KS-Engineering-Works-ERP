@@ -57,7 +57,7 @@ export const updateInvoiceChallan = asyncHandler(async (id, request) => {
 })
 
 
-export const deleteInvoiceChallan = asyncHandler(async (id) => {
+export const deleteInvoiceChallan = asyncHandler(async ({id}) => {
     const res = await api.request({
         url: `/invoice-challan/${id}`,
         method: requestMethod.DELETE

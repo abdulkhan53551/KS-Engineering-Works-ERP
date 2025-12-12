@@ -108,11 +108,22 @@ export const useDeletePurchaseOrder = () => {
     return useMutation({
         mutationKey: ["deletePurchaseOrder"],
         mutationFn: deletePurchaseOrder,
-        onSuccess: (res) => {
+        onSuccess: (res, { id, invoiceId, type }) => {
             if (res.success) {
                 dispatch(clearLoading());
                 closeModal();
                 toast.success(res.message || "Purchase order deleted successfully.");
+
+                // Refresh the list
+                queryClient.setQueryData(['unmappedPurchaseOrder', invoiceId], (old) => {
+                    const newData = {
+                        ...old,
+                        data: old?.data?.filter(item => item.poId !== id) ?? []
+                    }
+                    
+                    return newData;
+                });
+
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
                 queryClient.invalidateQueries({ queryKey: ["purchaseOrderPagination"] });

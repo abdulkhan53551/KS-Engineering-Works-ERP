@@ -100,10 +100,23 @@ export const useDeleteInvoiceChallan = () => {
     return useMutation({
         mutationKey: ["deleteInvoiceChallan"],
         mutationFn: deleteInvoiceChallan,
-        onSuccess: (res) => {
+        onSuccess: (res, { id, invoiceId, type }) => {
             if (res.success) {
                 toast.success(res.message || "Challan deleted successfully.");
+
+                if (type === 'invoiceChallanPopup') {
+                }
                 // Refresh the list
+                queryClient.setQueryData(['unmappedInvoiceChallan', invoiceId], (old) => {
+                    const newData = {
+                        ...old,
+                        data: old?.data?.filter(item => item.challanId !== id) ?? []
+                    }
+                    
+                    return newData;
+                });
+
+                // also sync fresh data
                 queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
                 queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
             }
