@@ -59,7 +59,7 @@ const PurchaseOrderList = () => {
          confirmText: "Delete",
          onConfirm: async () => {
             dispatch(setModalLoading({ key: "delete", isLoading: true }));
-            deleteInvoiceChallan(id);
+            deleteInvoiceChallan({id});
          },
       });
    };
@@ -202,7 +202,6 @@ const AdvanceSearch = memo(({ name, ...props }) => {
    }
 
    const handleOnSearch = (event) => {
-      console.log('======= handle submit => ',);
       event.preventDefault();
       const form = event.currentTarget;
 

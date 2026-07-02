@@ -39,7 +39,7 @@ import { useSelector } from "react-redux";
 import * as SettingSelector from "../../store/setting/selectors";
 import { logout } from "../../store/auth.slice.js";
 import { useLogout } from "../auth/hooks/api.hooks.js";
-import { useCountryState, useUserProfile } from "./hooks/api.hooks.js";
+import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProductUnit, useUserProfile } from "./hooks/api.hooks.js";
 
 // install Swiper modules
 SwiperCore.use([Navigation]);
@@ -50,7 +50,10 @@ const Index = memo((props) => {
   const { mutate: logoutApi, isLoading } = useLogout();
   const { data: userProfile, refetch } = useUserProfile();
   const { data: countryStates } = useCountryState();
-  
+  const { data: productUnit } = useProductUnit();
+  const { data: gstSlab } = useGstSlab();
+  const { data: paymentStatus } = usePaymentStatus();
+  const { data: paymentMode } = usePaymentMode();
 
   const getVariableColor = () => {
     let prefix =

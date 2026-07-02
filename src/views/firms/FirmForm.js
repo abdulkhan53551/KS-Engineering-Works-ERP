@@ -3,7 +3,7 @@ import { Row, Col, Form, Button, Spinner, Card } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import BootstrapSwitchButton from 'bootstrap-switch-button-react'
 import { DEFAULT_PROFILE } from '../../utilities/constant/constants'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { createFirmValidationSchema } from '../../validation/firm.validation'
 import { joiResolver } from '@hookform/resolvers/joi'
 import { useCountryState, useStateCity } from '../dashboard/hooks/api.hooks'
@@ -19,7 +19,7 @@ const FirmForm = ({ mode }) => {
    const isEditMode = !!(mode == 'edit');
    const [metaIds, setMetaIds] = useState({ firmAddressId: null, firmBankId: null });
 
-   const hasReset = useRef(false);
+   // const hasReset = useRef(false);
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
@@ -29,8 +29,8 @@ const FirmForm = ({ mode }) => {
       reValidateMode: "onChange",
    });
 
-   const watchIsGstRegistered = watch("isGstRegistered");
-   const selectedState = watch("stateId");
+   const watchIsGstRegistered = useWatch("isGstRegistered");
+   const selectedState = useWatch("stateId");
 
    const { data: countryStates = [] } = useCountryState();
    const { data: cities = [], isFetching: isFetchingCities } = useStateCity(selectedState);
@@ -38,7 +38,7 @@ const FirmForm = ({ mode }) => {
    const { onSubmit, onError, createFirmIsPending, updateFirmIsPending } = useHandleSubmit({ firmId, isEditMode, metaIds })
 
    useEffect(() => {
-      if (firm && isEditMode && !hasReset.current) {
+      if (firm && isEditMode) {
          const { firmId, firmAddressId, firmBankAccountId, ...rest } = firm;
 
          setMetaIds({
@@ -51,7 +51,7 @@ const FirmForm = ({ mode }) => {
             isGstRegistered: Boolean(firm.gstin) || false,
          });
 
-         hasReset.current = true; // mark as done
+         // hasReset.current = true; // mark as done
       }
    }, [firm, isEditMode, reset]);
 

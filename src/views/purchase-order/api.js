@@ -57,7 +57,7 @@ export const updatePurchaseOrder = asyncHandler(async (id, request) => {
 })
 
 // Delete purchase order
-export const deletePurchaseOrder = asyncHandler(async (id) => {
+export const deletePurchaseOrder = asyncHandler(async ({id}) => {
     const res = await api.request({
         url: `/purchase-order/${id}`,
         method: requestMethod.DELETE

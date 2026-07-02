@@ -1,10 +1,10 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Row, Col, Table, Button, Form } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 import Card from '../../../components/Card'
 import { FaPen, FaTrash } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
-import { useDeleteEwayBill, useEwayBill, useEwayBillPagination } from '../hooks/useApi';
+import { useDeleteInvoice, useInvoice, useInvoicePagination } from '../hooks/useApi';
 import PaginationBar from '../../../components/PaginationBar';
 import { useUIManager } from '../../../contexts/UIManagerContext';
 import { useDispatch } from 'react-redux';
@@ -12,14 +12,14 @@ import { setModalLoading } from '../../../store/uiModal.slice';
 
 const pageSize = 10;
 
-const EwayBillList = () => {
+const InvoiceList = () => {
    const dispatch = useDispatch();
    const [page, setPage] = useState(1)
 
-   const { data: ewayBill = [] } = useEwayBill({ page, pageSize });
-   const { data: pagination = {} } = useEwayBillPagination({ page, pageSize });
-   const { mutate: deleteEwayBill } = useDeleteEwayBill();
-   const { showModal, showToast } = useUIManager();
+   const { data: invoice = [] } = useInvoice({ page, pageSize });
+   const { data: pagination = {} } = useInvoicePagination({ page, pageSize });
+   const { mutate: deleteInvoice } = useDeleteInvoice();
+   const { showModal } = useUIManager();
    const { pageStart, pageEnd, total: totalItems } = pagination;
 
    // Handle on page change
@@ -34,10 +34,23 @@ const EwayBillList = () => {
          confirmText: "Delete",
          onConfirm: async () => {
             dispatch(setModalLoading({ key: "delete", isLoading: true }));
-            deleteEwayBill({id});
+            deleteInvoice(id);
          },
       });
    };
+
+   // useEffect(() => {
+   //    const arr = [];
+   //    let i = 0
+   //   const ref = setInterval(() => {
+   //       console.log('aaaaaaaaaa');
+   //       arr.push(`Index ${i}`)
+   //       i++
+         
+   //    }, 1);
+
+   //    // return () => clearInterval(ref)
+   // }, [])
 
    return (
       <>
@@ -70,31 +83,49 @@ const EwayBillList = () => {
                               <thead>
                                  <tr className="light">
                                     <th>#ID</th>
-                                    <th>E-way Bill Date</th>
-                                    <th>E-way Bill Validity</th>
+                                    <th>Invoice No.</th>
+                                    <th>Invoice Date</th>
+                                    <th>Invoice Due Date</th>
                                     <th>Customer Name</th>
-                                    <th>E-way Bill No.</th>
-                                    <th>Is Invoiced</th>
+                                    <th>GST No.</th>
+                                    <th>PO No.</th>
+                                    <th>Eway Bill No.</th>
+                                    <th>Sub Total</th>
+                                    <th>Taxabale Amount</th>
+                                    <th>CGST</th>
+                                    <th>SGST</th>
+                                    <th>Total</th>
+                                    <th>Payment Status</th>
+                                    <th>Payment Mode</th>
                                     <th>Added By</th>
                                     <th>Last Modified</th>
                                     <th min-width="100px">Action</th>
                                  </tr>
                               </thead>
                               <tbody>
-                                 {ewayBill.length ? (
-                                    ewayBill.map((item, idx) => (
+                                 {invoice.length ? (
+                                    invoice.map((item, idx) => (
                                        <tr key={idx} id='example-collapse-text'>
-                                          <td className="text-center">{item.ewayBillId}</td>
-                                          <td>{new Date(item.ewayBillDate).toLocaleDateString('en-GB')}</td>
-                                          <td>{new Date(item.validUpto).toLocaleDateString('en-GB')}</td>
+                                          <td className="text-center">{item.invoiceId}</td>
+                                          <td>{item.invoiceNo}</td>
+                                          <td>{new Date(item.invoiceDate).toLocaleDateString('en-GB')}</td>
+                                          <td>{new Date(item.dueDate).toLocaleDateString('en-GB')}</td>
                                           <td>{item.customerName}</td>
+                                          <td>{item.gstNumber}</td>
+                                          <td>{item.poNo}</td>
                                           <td>{item.ewayBillNo}</td>
-                                          <td><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
+                                          <td>{item.subTotal}</td>
+                                          <td>{item.taxableAmount}</td>
+                                          <td>{item.cgst}</td>
+                                          <td>{item.sgst}</td>
+                                          <td>{item.total}</td>
+                                          <td><span className={`badge ${item.color}`}>{item.paymentStatusCode}</span></td>
+                                          <td>{item.paymentModeCode}</td>
                                           <td>{item.createdBy}</td>
                                           <td>{new Date(item.updatedAt).toLocaleDateString('en-GB')}</td>
                                           <td>
                                              <div className="flex align-items-center list-user-action">
-                                                <Link className="me-2" to={`/sales/eway-bill/${item.ewayBillId}/edit`}>
+                                                <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
                                                    <Button variant="outline-success" size='sm'>
                                                       <FaPen />
                                                    </Button>
@@ -102,9 +133,9 @@ const EwayBillList = () => {
                                                 <Button
                                                    variant="outline-danger"
                                                    size='sm'
-                                                   onClick={() => handleDelete(item.ewayBillId, item.customerName)}
+                                                   onClick={() => handleDelete(item.invoiceId, item.customerName)}
                                                    aria-controls="example-collapse-text"
-                                                   aria-expanded={item.ewayBillId}
+                                                   aria-expanded={item.invoiceId}
                                                 >
                                                    <FaTrash />
                                                 </Button>
@@ -114,7 +145,7 @@ const EwayBillList = () => {
                                     ))
                                  ) : (
                                     <tr>
-                                       <td colSpan={9} className="text-center text-muted">
+                                       <td colSpan={18} className="text-center text-muted">
                                           No records found
                                        </td>
                                     </tr>
@@ -144,4 +175,4 @@ const EwayBillList = () => {
 
 }
 
-export default EwayBillList;
+export default InvoiceList;

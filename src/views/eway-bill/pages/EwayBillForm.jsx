@@ -39,8 +39,6 @@ const EwayBillForm = ({ mode }) => {
    const { onSubmit, onError, createPurchaseOrderIsPending, updatePurchaseOrderIsPending } = useHandleSubmit({ ewayBillId, isEditMode })
    useFormInit({ ewayBill, isEditMode, reset, defaultFormValue })
 
-   const formValue = getValues();
-
    return (
       <>
          <div>

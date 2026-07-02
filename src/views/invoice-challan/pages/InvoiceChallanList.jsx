@@ -57,7 +57,7 @@ const InvoiceChallan = () => {
    const handleDeleteModalOnConfirm = useCallback((id = 0) => {
       if (id > 0. && !deleteInvoiceChallanIsPending) {
          // Do stuff delete confirmation received
-         deleteInvoiceChallan(id);
+         deleteInvoiceChallan({id});
          // handleDeleteModalOnClose()
          // setFilterData(prev => prev.filter(item => item.id != id))
       }
@@ -258,7 +258,6 @@ const AdvanceSearch = memo(({ name, ...props }) => {
    }
 
    const handleOnSearch = (event) => {
-      console.log('======= handle submit => ',);
       event.preventDefault();
       const form = event.currentTarget;
 

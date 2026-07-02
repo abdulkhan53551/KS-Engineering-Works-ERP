@@ -57,7 +57,7 @@ export const updateEwayBill = asyncHandler(async (id, request) => {
 })
 
 // Delete eway bill
-export const deleteEwayBill = asyncHandler(async (id) => {
+export const deleteEwayBill = asyncHandler(async ({id}) => {
     const res = await api.request({
         url: `/ewaybill/${id}`,
         method: requestMethod.DELETE
