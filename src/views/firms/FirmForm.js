@@ -3,7 +3,7 @@ import { Row, Col, Form, Button, Spinner, Card } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import BootstrapSwitchButton from 'bootstrap-switch-button-react'
 import { DEFAULT_PROFILE } from '../../utilities/constant/constants'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { createFirmValidationSchema } from '../../validation/firm.validation'
 import { joiResolver } from '@hookform/resolvers/joi'
 import { useCountryState, useStateCity } from '../dashboard/hooks/api.hooks'
@@ -29,8 +29,8 @@ const FirmForm = ({ mode }) => {
       reValidateMode: "onChange",
    });
 
-   const watchIsGstRegistered = watch("isGstRegistered");
-   const selectedState = watch("stateId");
+   const watchIsGstRegistered = useWatch("isGstRegistered");
+   const selectedState = useWatch("stateId");
 
    const { data: countryStates = [] } = useCountryState();
    const { data: cities = [], isFetching: isFetchingCities } = useStateCity(selectedState);

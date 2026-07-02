@@ -1,7 +1,13 @@
 import { useEffect } from "react";
+import { useWatch } from "react-hook-form";
+import { useStateCity } from "../../dashboard/hooks/api.hooks";
 
 const useFormInit = (props) => {
-    const { invoice, isEditMode, reset = Function(), defaultFormValue } = props;
+    const { invoice, isEditMode, reset = Function(), setValue = Function(), control, defaultFormValue } = props;
+    const selectedBillingStateId = useWatch({ control, name: "billingAddress.stateId" });
+    const selectedShippingStateId = useWatch({ control, name: "shippingAddress.stateId" });
+    const { data: billingCities = [] } = useStateCity(selectedBillingStateId);
+    const { data: shippingCities = [] } = useStateCity(selectedShippingStateId);
 
     // Prefill form
     useEffect(() => {
@@ -81,53 +87,8 @@ const useFormInit = (props) => {
                 paymentModeId: invoice.paymentModeId
             };
 
-            // const cleanedItems = items.map(({ id, invoiceId, gstRate, uqc, ...itemRest }) => itemRest);
-
-
-            // const tempData = {
-            //     "invoiceNo": "INV-2025-012",
-            //     "invoiceDate": "2025-08-24T18:30:00.000Z",
-            //     "customerName": "ABC Traders Pvt Ltd",
-            //     "items": [
-            //         {
-            //             // "id": 53,
-            //             // "invoiceId": 47,
-            //             "description": "Gold Necklace",
-            //             "hsnSacCode": "71131910",
-            //             "itemUnitId": 1,
-            //             "qty": "2.00",
-            //             "rate": "25000.00",
-            //             "gstSlabId": 1,
-            //             "taxableAmount": "45000.00",
-            //             "cgst": "0.00",
-            //             "sgst": "0.00",
-            //             "total": "45000.00"
-            //         },
-            //         {
-            //             // "id": 55,
-            //             // "invoiceId": 47,
-            //             "description": "Silver Bracelet",
-            //             "hsnSacCode": "71141100",
-            //             "itemUnitId": 1,
-            //             "qty": "5.00",
-            //             "rate": "1500.00",
-            //             "gstSlabId": 2,
-            //             "taxableAmount": "6750.00",
-            //             "cgst": "168.75",
-            //             "sgst": "168.75",
-            //             "total": "7087.50"
-            //         }
-            //     ]
-            // }
-
-
-            // reset({
-            //     ...tempData,
-            // });
-
             reset({
-                ...cleanedInvoice,
-                // items: cleanedItems
+                ...cleanedInvoice
             });
         }
     }, [invoice, isEditMode, reset]);
@@ -138,7 +99,30 @@ const useFormInit = (props) => {
             reset(defaultFormValue)
         }
     }, [isEditMode, reset])
-}
 
+    // Set billing address city
+    useEffect(() => {
+        if (!invoice?.billingAddress?.cityId) return;
+        if (!billingCities?.length) return;
+
+        setValue(
+            "billingAddress.cityId",
+            invoice.billingAddress.cityId,
+            { shouldDirty: false }
+        );
+    }, [billingCities, selectedBillingStateId, invoice?.billingAddress?.cityId, setValue]);
+
+    // Set shipping address city
+    useEffect(() => {
+        if (!invoice?.shippingAddress?.cityId) return;
+        if (!shippingCities?.length) return;
+
+        setValue(
+            "shippingAddress.cityId",
+            invoice.shippingAddress.cityId,
+            { shouldDirty: false }
+        );
+    }, [shippingCities, selectedShippingStateId, invoice?.shippingAddress?.cityId, setValue]);
+}
 
 export default useFormInit;

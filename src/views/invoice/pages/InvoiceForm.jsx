@@ -12,86 +12,87 @@ import { invoiceValidationSchema } from '../../../validation/invoice.validation'
 import { useGetInvoiceChallanById } from '../../invoice-challan/hooks/useApi';
 import { useInvoiceById } from '../hooks/useApi';
 import { MdAddBox } from 'react-icons/md';
-import { DevTool } from "@hookform/devtools";
 import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProductUnit, useStateCity } from '../../dashboard/hooks/api.hooks';
 import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
-import { Eye, ListChecks } from 'lucide-react';
+// import { Eye, ListChecks, Watch } from 'lucide-react';
 import IconButton from '../components/IconButton';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
 import useInvoiceModules from '../hooks/useAccountingDocumentModules';
 import './invoice.scss'
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
+import InvoiceRow from '../components/InvoiceRow';
 
+const defaultFormValue = {
+   invoiceNo: "",
+   invoiceDate: new Date(),
+   dueDays: 0,
+   dueDate: new Date(),
+   customerName: "",
+   hasGst: false,
+   gstNumber: "",
+   billingAddress: {
+      email: "",
+      phoneNumber: "",
+      website: "",
+      addressLine1: "",
+      cityId: null,
+      stateId: null,
+      pincode: null
+   },
+   shippingAddress: {
+      email: "",
+      phoneNumber: "",
+      addressLine1: "",
+      cityId: null,
+      stateId: null,
+      pincode: null
+   },
+   hasChallan: false,
+   hasPo: false,
+   hasEwayBill: false,
+   challanIds: [],
+   poIds: [],
+   ewayBillIds: [],
+
+   items: [
+      {
+         description: "",
+         hsnSacCode: "",
+         qty: 1,
+         itemUnitId: null,
+         rate: 0,
+         discountPercent: 0,
+         discountAmount: 0,
+         taxableAmount: 0,
+         gstSlabId: null,
+         cgst: 0,
+         sgst: 0,
+         igst: 0,
+         total: 0,
+      }
+   ],
+   subTotal: 0,
+   discountPercent: 0,
+   discountAmount: 0,
+   taxableAmount: 0,
+   cgst: 0,
+   sgst: 0,
+   igst: 0,
+   total: 0,
+   roundOff: 0,
+   other: 0,
+   paymentStatusId: 1,
+   paymentModeId: 0
+}
 
 const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const isEditMode = !!(mode == 'edit');
-   const defaultFormValue = {
-      invoiceNo: "",
-      invoiceDate: new Date(),
-      dueDays: 0,
-      dueDate: new Date(),
-      customerName: "",
-      hasGst: false,
-      gstNumber: "",
-      billingAddress: {
-         email: "",
-         phoneNumber: "",
-         website: "",
-         addressLine1: "",
-         cityId: null,
-         stateId: null,
-         pincode: null
-      },
-      shippingAddress: {
-         email: "",
-         phoneNumber: "",
-         addressLine1: "",
-         cityId: null,
-         stateId: null,
-         pincode: null
-      },
-      hasChallan: false,
-      hasPo: false,
-      hasEwayBill: false,
-      challanIds: [],
-      poIds: [],
-      ewayBillIds: [],
-
-      items: [
-         {
-            description: "",
-            hsnSacCode: "",
-            qty: 1,
-            itemUnitId: null,
-            rate: 0,
-            discountPercent: 0,
-            discountAmount: 0,
-            taxableAmount: 0,
-            gstSlabId: null,
-            cgst: 0,
-            sgst: 0,
-            igst: 0,
-            total: 0,
-         }
-      ],
-      subTotal: 0,
-      discountPercent: 0,
-      discountAmount: 0,
-      taxableAmount: 0,
-      cgst: 0,
-      sgst: 0,
-      igst: 0,
-      total: 0,
-      roundOff: 0,
-      other: 0,
-      paymentStatusId: 1,
-      paymentModeId: 0
-   }
 
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
+      shouldUnregister: false,
       mode: "onBlur",
       reValidateMode: "onChange",
       defaultValues: {
@@ -99,18 +100,22 @@ const InvoiceForm = ({ mode }) => {
       }
    });
 
-   const { register, handleSubmit, setValue, reset, watch, getValues, control, formState: { errors } } = formMethods;
-   const selectedBillingState = watch("billingAddress.stateId");
-   const selectedShippingState = watch("shippingAddress.stateId");
-   const hasChallan = watch("hasChallan");
-   const hasPo = watch("hasPo");
-   const hasEwayBill = watch("hasEwayBill");
-   const invoiceDate = watch("invoiceDate");
+   const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors } } = formMethods;
+   const [
+      selectedBillingState, selectedShippingState, hasChallan, hasPo, hasEwayBill, invoiceDate,
+   ] = useWatch({
+      control,
+      name: [
+         "billingAddress.stateId", "shippingAddress.stateId", "hasChallan", "hasPo", "hasEwayBill", "invoiceDate",
+      ],
+   });
 
+   const invoiceDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"] }), [])
+   const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate])
    const { data: invoice = {} } = useInvoiceById(invoiceId);
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode })
-   useFormInit({ invoice, isEditMode, reset, defaultFormValue })
-   useInvoiceCalculation({ control, setValue, getValues });
+   useFormInit({ invoice, isEditMode, setValue, reset, control, defaultFormValue })
+   const { lastEditedFieldRef } = useInvoiceCalculation({ control, setValue, getValues });
    const { data: productUnit = [] } = useProductUnit();
    const { data: gstSlab = [] } = useGstSlab();
    const { data: billingStates = [] } = useCountryState();
@@ -119,52 +124,10 @@ const InvoiceForm = ({ mode }) => {
    const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
-   const { activeModule, moduleData, selectedDocumentIds, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule } = useAccountingDocumentModules({ invoiceId, setValue });
-
-
-   // const initialModuleData = {
-   //    challan: [
-   //       { id: 'C-101', text: 'Verify Challan C-101 against invoice', selected: false },
-   //       { id: 'C-102', text: 'Export Challan report for Q3', selected: false },
-   //       { id: 'C-103', text: 'Challan C-103 needs re-authorization', selected: true },
-   //       { id: 'C-104', text: 'Archive old Challan documents', selected: false },
-   //       { id: 'C-105', text: 'Follow up on payment for Challan C-105', selected: false },
-   //       { id: 'C-106', text: 'Update Challan template for new region', selected: false },
-   //       { id: 'C-107', text: 'Review Challan C-107 status', selected: false },
-   //       { id: 'C-108', text: 'Send reminder for Challan C-108', selected: false },
-   //       { id: 'C-109', text: 'Final sign-off for Challan C-109', selected: false },
-   //       { id: 'C-110', text: 'Issue refund for Challan C-110', selected: false },
-   //       { id: 'C-111', text: 'Check customs clearance for C-111', selected: false },
-   //       { id: 'C-112', text: 'Audit trail review for Challan C-112', selected: false },
-   //    ],
-   //    purchaseOrder: [
-   //       { id: 'PO-201', text: 'Approve Purchase Order PO-201', selected: false },
-   //       { id: 'PO-202', text: 'Draft new PO for supplier X', selected: false },
-   //       { id: 'PO-203', text: 'Review PO-203 budget alignment', selected: false },
-   //       { id: 'PO-204', text: 'Send PO-204 confirmation to vendor', selected: true },
-   //    ],
-   //    ewayBill: [
-   //       { id: 'EB-301', text: 'Generate Eway Bill for shipment #99', selected: false },
-   //       { id: 'EB-302', text: 'Check bill status for EB-302', selected: false },
-   //       { id: 'EB-303', text: 'Update vehicle number for Eway Bill EB-303', selected: false },
-   //    ],
-   // };
-
-   // const {
-   //    // isLoading,
-   //    activeModule,
-   //    moduleData,
-   //    selectedDocumentIds,
-   //    fetchModuleFun,
-   //    openModule,
-   //    closeModule,
-   //    updateModuleData,
-   //    submitModule
-   // } = useAccountingDocumentModules(invoiceId);
+   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule } = useAccountingDocumentModules({ invoiceId, setValue });
 
    return (
       <>
-
          <style>{`
         /* Delete Button Hover Effect */
         .delete-btn { 
@@ -372,10 +335,7 @@ const InvoiceForm = ({ mode }) => {
                                                          {...field}
                                                          value={field.value}
                                                          onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
-                                                         options={{
-                                                            dateFormat: "d/m/Y",
-                                                            defaultDate: ["today"]
-                                                         }}
+                                                         options={invoiceDateOptons}
                                                          className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
                                                          placeholder="Select E-way bill Date..."
                                                       />
@@ -407,12 +367,7 @@ const InvoiceForm = ({ mode }) => {
                                                          {...field}
                                                          value={field.value}
                                                          onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
-                                                         options={{
-                                                            dateFormat: "d/m/Y",
-                                                            defaultDate: ["today"],
-                                                            minDate: invoiceDate || "today"
-                                                            
-                                                         }}
+                                                         options={dueDateOptons}
                                                          className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
                                                          placeholder="Select E-way bill Date..."
                                                       />
@@ -674,7 +629,7 @@ const InvoiceForm = ({ mode }) => {
                                                 placeholder="Pincode"
                                                 isInvalid={!!errors?.shippingAddress?.pincode}
                                                 maxLength={6}
-                                                {...register("billingAddress.pincode")}
+                                                {...register("shippingAddress.pincode")}
                                              />
                                              <Form.Label htmlFor="pincode">
                                                 Pincode <span className="text-danger label-required">*</span>
@@ -693,6 +648,7 @@ const InvoiceForm = ({ mode }) => {
                                     <InvoiceItemsTable
                                        productUnit={productUnit}
                                        gstSlab={gstSlab}
+                                       lastEditedFieldRef={lastEditedFieldRef}
                                     />
                                  </Col>
 
@@ -801,21 +757,20 @@ const InvoiceForm = ({ mode }) => {
                   </Row>
                </Form>
                {/* Conditional Modal Rendering */}
-               <ModuleSelectorModal
-                  moduleKey={activeModule}
-                  // isLoading={isLoading}
-                  invoiceId={invoiceId}
-                  show={!!activeModule} // Only show if activeModule is set
-                  fetchModuleFun={fetchModuleFun}
-                  onClose={closeModule}
-                  moduleData={moduleData}
-                  updateModuleData={updateModuleData}
-                  onSubmit={submitModule}
-               />
+               {activeModule && (
+                  <ModuleSelectorModal
+                     moduleKey={activeModule}
+                     invoiceId={invoiceId}
+                     show={!!activeModule} // Only show if activeModule is set
+                     fetchModuleFun={fetchModuleFun}
+                     onClose={closeModule}
+                     moduleData={moduleData}
+                     updateModuleData={updateModuleData}
+                     onSubmit={submitModule}
+                  />
+               )}
             </FormProvider>
          </div >
-
-         <DevTool control={control} /> {/* set up the dev tool */}
       </>
    )
 }

@@ -2,12 +2,13 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { MdAddBox } from "react-icons/md";
 import InvoiceRow from "./InvoiceRow";
 import { Table } from "react-bootstrap";
+import { useMemo } from "react";
 
-export default function InvoiceItemsTable({ productUnit, gstSlab }) {
+export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFieldRef }) {
     const { control } = useFormContext();
     const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
-    const defaultItem = {
+    const defaultItem = useMemo(() => ({
         description: "",
         hsnSacCode: "",
         qty: 1,
@@ -21,7 +22,7 @@ export default function InvoiceItemsTable({ productUnit, gstSlab }) {
         sgst: 0,
         igst: 0,
         total: 0,
-    };
+    }), []);
 
     return (
         <div className="table-responsive">
@@ -35,10 +36,11 @@ export default function InvoiceItemsTable({ productUnit, gstSlab }) {
                         <th style={{ minWidth: '200px' }}>Rate</th>
                         {/* <th>Discount %</th>
                                                      <th>Discount Amt</th> */}
-                        <th style={{ minWidth: '200px' }}>Taxable Amt</th>
+                        <th style={{ minWidth: '200px' }}>Sub Total</th>
                         <th style={{ minWidth: '150px' }}>GST Slab</th>
-                        <th style={{ minWidth: '190px' }}>CGST</th>
-                        <th style={{ minWidth: '190px' }}>SGST</th>
+                        <th style={{ minWidth: '200px' }}>Taxable Amt</th>
+                        <th style={{ minWidth: '150px' }}>CGST</th>
+                        <th style={{ minWidth: '150px' }}>SGST</th>
                         <th style={{ minWidth: '210px' }}>Total</th>
                         <th style={{ padding: '0.3rem 0.2rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             <MdAddBox
@@ -58,6 +60,7 @@ export default function InvoiceItemsTable({ productUnit, gstSlab }) {
                             remove={remove}
                             productUnit={productUnit}
                             gstSlab={gstSlab}
+                            lastEditedFieldRef={lastEditedFieldRef}
                         />
                     ))}
                 </tbody>

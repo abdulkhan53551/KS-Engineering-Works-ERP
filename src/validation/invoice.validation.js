@@ -36,10 +36,16 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             'string.base': 'Billing phone must be text',
         }),
         website: Joi.string().uri().allow(null, ''),
-        addressLine1: Joi.string().max(255).allow(null, ''),
+        addressLine1: Joi.string().max(255).required().messages({
+            'any.required': 'Billing address is required',
+            'string.empty': 'Billing address is required'
+        }),
         cityId: Joi.number().integer().required(),
         stateId: Joi.number().integer().required(),
-        pincode: Joi.number().integer().min(100000).max(999999).allow(null)
+        pincode: Joi.number().integer().min(100000).max(999999).messages({
+            'any.required': 'Pincode is required',
+            'string.empty': 'Pincode is required'
+        }),
     }),
 
     shippingAddress: Joi.object({
@@ -51,10 +57,16 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             'string.pattern.base': 'Shipping phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
             'string.base': 'Shipping phone must be text',
         }),
-        addressLine1: Joi.string().max(255).allow(null, ''),
+        addressLine1: Joi.string().max(255).messages({
+            'any.required': 'Shipping address is required',
+            'string.empty': 'Shipping address is required'
+        }),
         cityId: Joi.number().integer().required(),
         stateId: Joi.number().integer().required(),
-        pincode: Joi.number().integer().min(100000).max(999999).allow(null)
+        pincode: Joi.number().integer().min(100000).max(999999).required().messages({
+            'any.required': 'Pincode is required',
+            'string.empty': 'Pincode is required'
+        }),
     }),
 
     hasChallan: Joi.boolean().default(false),
@@ -111,6 +123,7 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             rate: Joi.number().precision(2).min(0).required(),
             discountPercent: Joi.number().precision(2).min(0).max(100).allow(0),
             discountAmount: Joi.number().precision(2).min(0).allow(0),
+            subTotal: Joi.number().precision(2).min(0).allow(0),
             taxableAmount: Joi.number().precision(2).min(0).allow(0),
             gstSlabId: Joi.number().integer().required(),
             cgst: Joi.number().precision(2).min(0).allow(0),
@@ -118,13 +131,17 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             igst: Joi.number().precision(2).min(0).allow(0),
             total: Joi.number().precision(2).min(0).required().allow(0)
         })
-        .custom(invoiceItemCustomValidation)
-        .messages({ 'any.invalid': '{{#customMessage}}' })
+            .custom(invoiceItemCustomValidation)
+            .messages({ 'any.invalid': '{{#customMessage}}' })
     ).min(1).required(),
 
     subTotal: Joi.number().precision(2).min(0).required(),
     discountPercent: Joi.number().precision(2).min(0).max(100).allow(null, 0),
-    discountAmount: Joi.number().precision(2).min(0).allow(null, 0),
+    discountAmount: Joi.number().precision(2).min(0).max(Joi.ref('subTotal')).default(0).messages({
+        'number.max': 'Discount amount cannot be greater than the item subtotal.',
+        'number.base': 'Discount amount must be a number.',
+        'number.min': 'Discount amount cannot be negative.'
+    }),
     taxableAmount: Joi.number().precision(2).min(0).allow(null, 0),
     cgst: Joi.number().precision(2).min(0).allow(null, 0),
     sgst: Joi.number().precision(2).min(0).allow(null, 0),
@@ -137,8 +154,8 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
     paymentStatusId: Joi.number().integer().min(1).required(),
     paymentModeId: Joi.number().integer().min(0).required()
 })
-.custom(validateCreateOrUpdateCustom)
-.messages({ 'any.invalid': '{{#customMessage}}' })
+    .custom(validateCreateOrUpdateCustom)
+    .messages({ 'any.invalid': '{{#customMessage}}' })
 
 // Custom validation function for create/update
 function validateCreateOrUpdateCustom(item, helpers) {
