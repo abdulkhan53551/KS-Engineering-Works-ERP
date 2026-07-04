@@ -124,7 +124,7 @@ const InvoiceChallan = () => {
                                  </tr>
                               </thead>
                               <tbody>
-                                 {
+                                 {invoiceChallan.length ? (
                                     invoiceChallan.map((item, idx) => (
                                        <tr key={idx} id='example-collapse-text'>
                                           <td className="text-center">{item.challanId}</td>
@@ -153,7 +153,14 @@ const InvoiceChallan = () => {
                                              </div>
                                           </td>
                                        </tr>
-                                    ))}
+                                    ))
+                                 ) : (
+                                    <tr>
+                                       <td colSpan={9} className="text-center text-muted">
+                                          No records found
+                                       </td>
+                                    </tr>
+                                 )}
                               </tbody>
                            </Table>
                         </div>
