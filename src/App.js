@@ -7,21 +7,42 @@ import "./assets/scss/custom.scss"
 import "./assets/scss/dark.scss"
 import "./assets/scss/rtl.scss"
 import "./assets/scss/customizer.scss"
+import "./assets/custom/scss/custom.scss"
 
 // Redux Selector / Action
 import { useDispatch } from 'react-redux';
 
 // import state selectors
 import { setSetting } from './store/setting/actions'
+import { useEffect } from "react"
+import { Outlet } from "react-router-dom"
+import { Bounce, ToastContainer } from "react-toastify"
+import { UIManagerProvider } from "./contexts/UIManagerContext"
 
-function App({children}) {
+function App({ children }) {
   const dispatch = useDispatch()
-  dispatch(setSetting())
+
+  useEffect(() => {
+    dispatch(setSetting())
+  }, [dispatch])
+
   return (
     <div className="App">
       {/* <IndexRouters /> */}
-      {children}
-      
+      <UIManagerProvider>
+        <Outlet />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="light"
+          transition={Bounce}
+        />
+      </UIManagerProvider>
     </div>
   );
 }

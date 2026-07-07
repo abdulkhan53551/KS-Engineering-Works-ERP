@@ -1,0 +1,47 @@
+.form-group.required .form-label:after { 
+    color: #d00;
+    content: "*";
+    margin-left: 3px;
+}
+
+/* Add pointer cursor to sortable columns */
+.table-sortable th {
+    cursor: pointer;
+    transition: background-color 0.2s ease; /* Smooth hover transition */
+}
+  
+  /* Optional: Change the background color on hover to indicate interactivity */
+.table-sortable th:hover {
+    background-color: #e9eaed;  /* Light gray background */
+}
+
+/* Start: Advance search */
+.search-offcanvas .offcanvas-header {
+    background-color: #f8f9fa; /* Light background for header */
+    border-bottom: 1px solid #dee2e6;
+}
+  
+.search-offcanvas .offcanvas-title {
+    font-weight: 600;
+}
+  
+.search-offcanvas .offcanvas-body {
+    padding: 20px;
+}
+  
+.search-offcanvas .form-control {
+    border-radius: 0.25rem; /* Rounded corners */
+    border: 1px solid #ced4da;
+}
+  
+.search-offcanvas .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-weight: 500;
+}
+  
+.search-offcanvas .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+/* End: Advance search */

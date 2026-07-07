@@ -61,3 +61,11 @@
 .dark .is-open .choices__list[aria-expanded]{
     border-color: rgba(#ffff,.1);
 }
+
+.label-required {
+    margin-bottom: 10px;
+    position: relative;
+    top: -2px;
+    left: -2px;
+    font-size: 14px;
+}

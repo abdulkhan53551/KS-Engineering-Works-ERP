@@ -1,0 +1,46 @@
+.item-list-item {
+  transition: background-color 0.2s ease;
+}
+
+.item-list-item:hover {
+  background-color: #f8f9fa;
+}
+
+.delete-icon-wrapper {
+  animation: slideInDelete 0.3s ease forwards;
+  margin-left: 12px;
+}
+
+@keyframes slideInDelete {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background-color: #ffe6e6;
+  color: #c82333;
+  transform: scale(1.1);
+}
+
+.delete-btn:active {
+  transform: scale(0.95);
+}

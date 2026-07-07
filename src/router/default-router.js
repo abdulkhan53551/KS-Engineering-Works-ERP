@@ -49,15 +49,64 @@ import RtlSupport from '../views/dashboard/special-pages/RtlSupport'
 import Admin from '../views/dashboard/admin/admin';
 import Default from '../layouts/dashboard/default';
 
+// Testing
+import Test from '../views/test/form-validation';
+import AddRow from '../views/test/form-add-row';
+import ProtectedRoute from '../providers/ProtectedRoute';
+import FirmList from '../views/firms/FirmList';
+import FirmForm from '../views/firms/FirmForm';
+import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
+import InvoiceForm from '../views/invoice/pages/InvoiceForm';
+import InvoiceList from '../views/invoice/pages/InvoiceList';
+import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
+import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
+import EwayBillList from '../views/eway-bill/pages/EwayBillList';
+import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
+import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
+
 
 export const DefaultRouter = [
     {
         path: '/',
         element: <Default />,
         children: [
+            // {
+            //     path: 'dashboard',
+            //     element: <Index />
+            // },
             {
-                path: 'dashboard',
-                element: <Index />
+                element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
+                children: [
+                    { path: 'dashboard', element: <Index /> },
+
+                    /* Organization */
+                    // Firm Routes
+                    { path: 'firms', element: <FirmList /> },
+                    { path: 'firms/create', element: <FirmForm mode="create" /> },
+                    { path: 'firms/:id/edit', element: <FirmForm mode="edit" /> },
+
+                    /* Sales */
+                    // Invoice Routes
+                    { path: 'sales/invoice', element: <InvoiceList /> },
+                    { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
+                    { path: 'sales/invoice/:id/edit', element: <InvoiceForm mode="edit" /> },
+
+                    // Challan Routes
+                    { path: 'sales/challans', element: <InvoiceChallanList /> },
+                    { path: 'sales/challans/create', element: <InvoiceChallan mode="create" /> },
+                    { path: 'sales/challans/:id/edit', element: <InvoiceChallan mode="edit" /> },
+
+                    // Eway bill Routes
+                    { path: 'sales/eway-bill', element: <EwayBillList /> },
+                    { path: 'sales/eway-bill/create', element: <EwayBillForm mode="create" /> },
+                    { path: 'sales/eway-bill/:id/edit', element: <EwayBillForm mode="edit" /> },
+
+                    /* Purchase */
+                    // Purchase order Routes
+                    { path: 'purchase/purchase-order', element: <PurchaseOrderList /> },
+                    { path: 'purchase/purchase-order/create', element: <PurchaseOrderForm mode="create" /> },
+                    { path: 'purchase/purchase-order/:id/edit', element: <PurchaseOrderForm mode="edit" /> },
+                ]
             },
             {
                 path: 'dashboard/special-pages/billing',
@@ -81,7 +130,7 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/special-pages/rtl-support',
-                element: <RtlSupport/>,
+                element: <RtlSupport />,
             },
             {
                 path: 'dashboard/app/user-profile',
@@ -97,6 +146,10 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/customer-add',
+                element: <CustomerAdd />
+            },
+            {
+                path: 'dashboard/customer-edit/:id',
                 element: <CustomerAdd />
             },
             {
@@ -163,6 +216,14 @@ export const DefaultRouter = [
             {
                 path: 'dashboard/icon/dual-tone',
                 element: <DualTone />
+            },
+            {
+                path: 'test/form-validation',
+                element: <Test />
+            },
+            {
+                path: 'test/form-add-row',
+                element: <AddRow />
             }
         ]
     }

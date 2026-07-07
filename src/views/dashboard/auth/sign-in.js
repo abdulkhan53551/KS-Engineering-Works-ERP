@@ -1,13 +1,9 @@
 import React from 'react'
-import { Row, Col, Image, Form, Button, ListGroup, } from 'react-bootstrap'
+import { Row, Col, Image, Form, Button, } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
 import Card from '../../../components/Card'
 
 // img
-import facebook from '../../../assets/images/brands/fb.svg'
-import google from '../../../assets/images/brands/gm.svg'
-import instagram from '../../../assets/images/brands/im.svg'
-import linkedin from '../../../assets/images/brands/li.svg'
 import auth1 from '../../../assets/images/auth/01.png'
 
 const SignIn = () => {
@@ -35,16 +31,16 @@ const SignIn = () => {
                               <Form>
                                  <Row>
                                     <Col lg="12">
-                                       <Form.Group className="form-group">
-                                          <Form.Label htmlFor="email" className="">Email</Form.Label>
-                                          <Form.Control type="email" className="" id="email" aria-describedby="email" placeholder=" " />
-                                       </Form.Group >
+                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
+                                          <Form.Control type="email" id="email" autoComplete="username email" placeholder="Email" />
+                                          <Form.Label htmlFor="email" >Email</Form.Label>
+                                       </Form.Floating>
                                     </Col>
-                                    <Col lg="12" className="">
-                                       <Form.Group className="form-group">
-                                          <Form.Label htmlFor="password" className="">Password</Form.Label>
-                                          <Form.Control type="password" className="" id="password" aria-describedby="password" placeholder=" " />
-                                       </Form.Group>
+                                    <Col lg="12">
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
+                                          <Form.Control type="password" id="password" autoComplete="current-password"  placeholder="Password" />
+                                          <Form.Label htmlFor="password" >Password</Form.Label>
+                                       </Form.Floating>
                                     </Col>
                                     <Col lg="12" className="d-flex justify-content-between">
                                        <Form.Check className="form-check mb-3">
@@ -56,23 +52,6 @@ const SignIn = () => {
                                  </Row>
                                  <div className="d-flex justify-content-center">
                                     <Button onClick={() => history.push('/dashboard')} type="button" variant="btn btn-primary">Sign In</Button>
-                                 </div>
-                                 <p className="text-center my-3">or sign in with other accounts?</p>
-                                 <div className="d-flex justify-content-center">
-                                    <ListGroup as="ul" className="list-group-horizontal list-group-flush">
-                                       <ListGroup.Item as="li" className="border-0 pb-0">
-                                          <Link to="#"><Image src={facebook} alt="fb" /></Link>
-                                       </ListGroup.Item>
-                                       <ListGroup.Item as="li" className="border-0 pb-0">
-                                          <Link to="#"><Image src={google} alt="gm" /></Link>
-                                       </ListGroup.Item>
-                                       <ListGroup.Item as="li" className="border-0 pb-0">
-                                          <Link to="#"><Image src={instagram} alt="im" /></Link>
-                                       </ListGroup.Item>
-                                       <ListGroup.Item as="li" className="border-0 pb-0">
-                                          <Link to="#"><Image src={linkedin} alt="li" /></Link>
-                                       </ListGroup.Item>
-                                    </ListGroup>
                                  </div>
                                  <p className="mt-3 text-center">
                                     Don’t have an account? <Link to="/auth/sign-up" className="text-underline">Click here to sign up.</Link>
