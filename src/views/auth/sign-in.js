@@ -35,7 +35,7 @@ const SignIn = () => {
    useEffect(() => {
       const wakeUpServer = async () => {
          try {
-            await fetch('https://ks-engg-erp-api.onrender.com', {
+            await fetch(process.env.REACT_APP_API_BASE_URL, {
                method: "GET",
                cache: "no-store",
             });
