@@ -31,6 +31,22 @@ const SignIn = () => {
       reValidateMode: "onChange",
    });
 
+   // Just to wake up the server instance if it's in sleep mode (for Render free tier)
+   useEffect(() => {
+      const wakeUpServer = async () => {
+         try {
+            await fetch('https://ks-engg-erp-api.onrender.com', {
+               method: "GET",
+               cache: "no-store",
+            });
+         } catch (err) {
+            console.log("Wake-up request failed:", err);
+         }
+      };
+
+      wakeUpServer();
+   }, []);
+
    // Handle form submit
    const onSubmit = (data) => {
       if (!isPending) {
