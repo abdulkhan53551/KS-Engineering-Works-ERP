@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Row, Col, Table, Button, Form } from 'react-bootstrap'
+import { Row, Col, Table, Button, Form, Spinner } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 import Card from '../../../components/Card'
-import { FaPen, FaTrash } from 'react-icons/fa';
+import { FaDownload, FaPen, FaTrash } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
-import { useDeleteInvoice, useInvoice, useInvoicePagination } from '../hooks/useApi';
+import { useDeleteInvoice, useDownloadInvoice, useInvoice, useInvoicePagination } from '../hooks/useApi';
 import PaginationBar from '../../../components/PaginationBar';
 import { useUIManager } from '../../../contexts/UIManagerContext';
 import { useDispatch } from 'react-redux';
@@ -19,6 +19,7 @@ const InvoiceList = () => {
    const { data: invoice = [] } = useInvoice({ page, pageSize });
    const { data: pagination = {} } = useInvoicePagination({ page, pageSize });
    const { mutate: deleteInvoice } = useDeleteInvoice();
+   const { mutate: downloadInvoice, downloadingInvoiceId } = useDownloadInvoice();
    const { showModal } = useUIManager();
    const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -125,6 +126,25 @@ const InvoiceList = () => {
                                           <td>{new Date(item.updatedAt).toLocaleDateString('en-GB')}</td>
                                           <td>
                                              <div className="flex align-items-center list-user-action">
+                                                <Button
+                                                   className="me-2"
+                                                   variant="outline-primary"
+                                                   size="sm"
+                                                   disabled={downloadingInvoiceId === item.invoiceId}
+                                                   onClick={() => downloadInvoice(item.invoiceId)}
+                                                >
+                                                   {downloadingInvoiceId === item.invoiceId ? (
+                                                      <Spinner
+                                                         as="span"
+                                                         animation="border"
+                                                         size="sm"
+                                                         role="status"
+                                                         aria-hidden="true"
+                                                      />
+                                                   ) : (
+                                                      <FaDownload className="me-1" />
+                                                   )}
+                                                </Button>
                                                 <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
                                                    <Button variant="outline-success" size='sm'>
                                                       <FaPen />
