@@ -94,3 +94,17 @@ export const getUnmappedEwayBillByInvoiceId = asyncHandler(async (id) => {
 
     return res.data;
 })
+
+// Download invoice PDF
+export const downloadInvoice = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/invoice/${id}/pdf`,
+        method: requestMethod.GET,
+        responseType: "blob",
+    });
+
+    return {
+        data: res.data,
+        headers: res.headers,
+    };
+});

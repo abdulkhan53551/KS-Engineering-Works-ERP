@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createInvoice, deleteInvoice, getInvoice, getInvoiceById, getInvoicePagination, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
+import { createInvoice, deleteInvoice, downloadInvoice, getInvoice, getInvoiceById, getInvoicePagination, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearLoading } from "../../../store/uiModal.slice";
 import { useDispatch } from "react-redux";
 import { useUIManager } from "../../../contexts/UIManagerContext";
+import { useState } from "react";
 
 // Get invoice pagination
 export const useInvoicePagination = ({ page, pageSize, search }) => {
@@ -321,3 +322,61 @@ export const useUnmappedEwayBillByInvoiceId = (id) => {
         }
     });
 }
+
+// Download invoice
+export const useDownloadInvoice = () => {
+    const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
+
+    const mutation = useMutation({
+        mutationKey: ["downloadInvoice"],
+        mutationFn: downloadInvoice,
+
+        onMutate: (invoiceId) => {
+            setDownloadingInvoiceId(invoiceId);
+        },
+
+        onSuccess: (response, invoiceId) => {
+            const disposition = response.headers["content-disposition"];
+
+            let fileName = `Invoice-${invoiceId}.pdf`;
+
+            if (disposition) {
+                const match = disposition.match(/filename="?([^"]+)"?/);
+                if (match?.[1]) {
+                    fileName = match[1];
+                }
+            }
+
+            const blobUrl = window.URL.createObjectURL(response.data);
+
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            toast.success("Invoice downloaded successfully.");
+        },
+
+        onSettled: () => {
+            setDownloadingInvoiceId(null);
+        },
+
+        onError: (error) => {
+            toast.error(
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to download invoice."
+            );
+        },
+    });
+
+    return {
+        ...mutation,
+        downloadingInvoiceId,
+    };
+};
