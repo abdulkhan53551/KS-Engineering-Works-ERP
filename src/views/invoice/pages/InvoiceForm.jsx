@@ -683,15 +683,6 @@ const InvoiceForm = ({ mode }) => {
                                  </Col>
                                  <Col lg="3">
                                     <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                       <Form.Control type="text" id='other' placeholder="Other Charges" className="text-end" isInvalid={!!errors.other} {...register("other")} />
-                                       <Form.Label htmlFor="other" >
-                                          Other Charges <span className="text-danger label-required">*</span>
-                                       </Form.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.other?.message}</Form.Control.Feedback>
-                                    </Form.Floating>
-                                 </Col>
-                                 <Col lg="2">
-                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                        <Form.Control type="text" id='taxableAmount' placeholder="Taxable Amount" className="text-end" disabled={true} isInvalid={!!errors.taxableAmount} {...register("taxableAmount")} />
                                        <Form.Label htmlFor="taxableAmount" >
                                           Taxable Amount <span className="text-danger label-required">*</span>
@@ -724,6 +715,15 @@ const InvoiceForm = ({ mode }) => {
                                           IGST <span className="text-danger label-required">*</span>
                                        </Form.Label>
                                        <Form.Control.Feedback type="invalid">{errors.igst?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+                                 <Col lg="2">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                       <Form.Control type="text" id='other' placeholder="Other Charges" className="text-end" isInvalid={!!errors.other} {...register("other")} />
+                                       <Form.Label htmlFor="other" >
+                                          Other Charges <span className="text-danger label-required">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.other?.message}</Form.Control.Feedback>
                                     </Form.Floating>
                                  </Col>
                                  <Col lg="2">
