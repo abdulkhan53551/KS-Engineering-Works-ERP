@@ -8,7 +8,6 @@ const api = axios.create({
     baseURL: process.env.REACT_APP_API_BASE_URL || "",
     timeout: 10000,
     headers: {
-        "Content-Type": "application/json",
         "Cache-Control": "no-cache"
     },
     withCredentials: true, // 🔑 allow cookies
@@ -17,6 +16,12 @@ const api = axios.create({
 // Attach token automatically
 api.interceptors.request.use(
     (config) => {
+        // Set Content-Type to application/json for non-FormData requests
+        if (!(config.data instanceof FormData)) {
+            // Let Axios/browser set multipart/form-data with boundary
+            config.headers["Content-Type"] = "application/json";
+        }
+
         const { accessToken } = store.getState().authReducer;
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
