@@ -74,3 +74,27 @@ export const deleteFirm = asyncHandler(async (id) => {
     });
     return res.data;
 });
+
+// Upload firm logo
+export const uploadFirmLogo = asyncHandler(async (id, file) => {
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    const res = await api.request({
+        url: `/firm/${id}/logo`,
+        method: requestMethod.POST,
+        data: formData,
+    });
+
+    return res.data;
+});
+
+// Delete firm logo
+export const deleteFirmLogo = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/firm/${id}/logo`,
+        method: requestMethod.DELETE,
+    });
+
+    return res.data;
+});

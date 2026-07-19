@@ -29,8 +29,9 @@ const FirmForm = ({ mode }) => {
       reValidateMode: "onChange",
    });
 
-   const watchIsGstRegistered = useWatch("isGstRegistered");
-   const selectedState = useWatch("stateId");
+   const watchIsGstRegistered = useWatch({ control, name: "isGstRegistered" });
+   const selectedState = useWatch({ control, name: "stateId" });
+   const logoUrl = useWatch({ control, name: "logoUrl" });
 
    const { data: countryStates = [] } = useCountryState();
    const { data: cities = [], isFetching: isFetchingCities } = useStateCity(selectedState);
@@ -132,11 +133,11 @@ const FirmForm = ({ mode }) => {
                               <Col lg="6">
                                  <Form.Group className="form-group col-md-6">
                                     <Form.Label className="custom-file-input">Firm Logo</Form.Label>
-                                    {true && (
+                                    {isEditMode && (
                                        <Card style={{ width: 100 }}>
                                           <Card.Img
                                              variant="top"
-                                             src={DEFAULT_PROFILE}
+                                             src={logoUrl || DEFAULT_PROFILE}
                                              alt="Profile"
                                              style={{ height: '100px' }}
                                              onError={(e) => {

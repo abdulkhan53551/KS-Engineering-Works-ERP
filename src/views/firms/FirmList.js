@@ -301,7 +301,7 @@ const FirmList = () => {
                                           <td className="text-center">{item.firmId}</td>
                                           <td className="text-center">
                                              {/* <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.img} alt="profile" /> */}
-                                             <Image className="bg-soft-primary rounded img-fluid avatar-40" src={`https://i.pravatar.cc/50?img=${idx + 1}`} alt="profile" />
+                                             <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.logoUrl} alt="profile" />
                                           </td>
                                           <td>{item.firmName}</td>
                                           <td>{item.tradeName}</td>

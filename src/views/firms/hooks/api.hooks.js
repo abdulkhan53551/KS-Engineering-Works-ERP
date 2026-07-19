@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFirm, deleteFirm, getFirmById, getFirms, getFirmsPagination, getFirmType, updateFirm } from "../api";
+import { createFirm, deleteFirm, deleteFirmLogo, getFirmById, getFirms, getFirmsPagination, getFirmType, updateFirm, uploadFirmLogo } from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -65,16 +65,20 @@ export const useGetFirmById = (id = 0) => {
 export const useCreatFirm = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { mutate: uploadLogo } = useUploadFirmLogo();
 
     return useMutation({
         mutationKey: ["createFirm"],
-        mutationFn: createFirm,
-        onSuccess: (res) => {
+        mutationFn: ({ data }) => createFirm(data),
+        onSuccess: (res, req) => {
             if (res.success) {
+                const { logo } = req
+                const id = res.data?.id;
+                uploadLogo({ id: id, file: logo[0] })
                 toast.success(res.message || "Firm created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['getFirms'] })
                 queryClient.invalidateQueries({ queryKey: ['firm-pagination'] })
-                navigate("/firms", { replace: true });
+                navigate(`/firms${id}/edit`, { replace: true });
             }
         }
     });
@@ -112,5 +116,40 @@ export const useDeleteFirm = () => {
                 queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
             }
         }
+    });
+};
+
+// Upload Firm Logo
+export const useUploadFirmLogo = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["uploadFirmLogo"],
+        mutationFn: ({ id, file }) => uploadFirmLogo(id, file),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ["getFirmById"] });
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+                queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
+            }
+        }
+    });
+};
+
+// Delete Firm Logo
+export const useDeleteFirmLogo = (id) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["deleteFirmLogo"],
+        mutationFn: () => deleteFirmLogo(id),
+        onSuccess: (res) => {
+            if (res.success) {
+                toast.success(res.message || "Firm logo deleted successfully.");
+                queryClient.invalidateQueries({ queryKey: ["getFirmById"] });
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+                queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
+            }
+        },
     });
 };
