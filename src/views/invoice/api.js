@@ -97,14 +97,23 @@ export const getUnmappedEwayBillByInvoiceId = asyncHandler(async (id) => {
 
 // Download invoice PDF
 export const downloadInvoice = asyncHandler(async (id) => {
-    const res = await api.request({
-        url: `/invoice/${id}/pdf`,
-        method: requestMethod.GET,
-        responseType: "blob",
-    });
+    try {
+        const res = await api.request({
+            url: `/invoice/${id}/pdf`,
+            method: requestMethod.GET,
+            responseType: "blob",
+        });
 
-    return {
-        data: res.data,
-        headers: res.headers,
-    };
+        return {
+            data: res.data,
+            headers: res.headers,
+        };
+    } catch (error) {
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            error.response.data = JSON.parse(text);
+        }
+
+        throw error;
+    }
 });
