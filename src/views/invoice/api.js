@@ -117,3 +117,13 @@ export const downloadInvoice = asyncHandler(async (id) => {
         throw error;
     }
 });
+
+// Get next invoice number
+export const getNextInvoiceNumber = asyncHandler(async () => {
+    const res = await api.request({
+        url: "/invoice/next-invoice-number",
+        method: requestMethod.GET,
+    });
+
+    return res.data;
+});
