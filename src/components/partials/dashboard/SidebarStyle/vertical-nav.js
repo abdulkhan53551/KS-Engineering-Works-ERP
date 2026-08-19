@@ -653,6 +653,30 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/parties') ? 'active' : ''} nav-link`} to="/parties">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Parties</span>
+                                    <Link className="me-2" to={`/parties/create`}>
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
                                 <Link className={`${location.pathname === '/dashboard/customer-list' ? 'active' : ''} nav-link`} to="/dashboard/customer-list">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">

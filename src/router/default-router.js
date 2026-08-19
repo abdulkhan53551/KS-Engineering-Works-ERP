@@ -63,6 +63,8 @@ import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
 import EwayBillList from '../views/eway-bill/pages/EwayBillList';
 import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
+import PartyList from '../views/party/pages/PartyList';
+import PartyForm from '../views/party/pages/PartyForm';
 
 
 export const DefaultRouter = [
@@ -84,6 +86,11 @@ export const DefaultRouter = [
                     { path: 'firms', element: <FirmList /> },
                     { path: 'firms/create', element: <FirmForm mode="create" /> },
                     { path: 'firms/:id/edit', element: <FirmForm mode="edit" /> },
+
+                    // Party Routes
+                    { path: 'parties', element: <PartyList /> },
+                    { path: 'parties/create', element: <PartyForm mode="create" /> },
+                    { path: 'parties/:id/edit', element: <PartyForm mode="edit" /> },
 
                     /* Sales */
                     // Invoice Routes

@@ -1,0 +1,140 @@
+.party-autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.party-autocomplete-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.party-autocomplete-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.party-autocomplete-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  background: transparent;
+  border: none;
+  color: #adb5bd;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s ease-in-out;
+}
+
+.party-autocomplete-clear-btn:hover {
+  color: #dc3545;
+}
+
+.party-autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 1050;
+  padding: 6px;
+  animation: fadeInDown 0.15s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.party-autocomplete-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.party-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.party-autocomplete-item:hover,
+.party-autocomplete-item.active {
+  background-color: #f0f7ff;
+  border-color: #d0e3ff;
+}
+
+.party-autocomplete-item:hover .party-item-legal-name,
+.party-autocomplete-item.active .party-item-legal-name {
+  color: #007bff;
+}
+
+.party-item-code {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #e2e8f0;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.party-autocomplete-item:hover .party-item-code,
+.party-autocomplete-item.active .party-item-code {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.party-item-legal-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.party-item-display-name {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.party-autocomplete-empty {
+  padding: 16px 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.party-autocomplete-header {
+  padding: 4px 8px 6px 8px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
