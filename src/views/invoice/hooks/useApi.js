@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createInvoice, deleteInvoice, downloadInvoice, getInvoice, getInvoiceById, getInvoicePagination, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
+import { createInvoice, deleteInvoice, downloadInvoice, getInvoice, getInvoiceById, getInvoicePagination, getLastInvoice, getNextInvoiceNumber, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -67,97 +67,6 @@ export const useInvoiceById = (id = 0) => {
         select: (result) => {
             // return result?.data ?? {};
             const data = result?.data ?? {};
-            // const data = {
-            //     "invoiceId": 47,
-            //     "invoiceNo": "INV-2025-012",
-            //     "invoiceDate": "2025-08-24T18:30:00.000Z",
-            //     "dueDays": 15,
-            //     "dueDate": "2025-09-10T18:30:00.000Z",
-            //     "firmId": 1,
-            //     "companyName": "Omega Precision Works Pvt Ltd",
-            //     "firmType": "Pvt Ltd",
-            //     "companyLogo": "https://example.com/omega/logo-updated.png",
-            //     "firmGstin": "27ABCDE5678G1Z2",
-            //     "invoicePrefix": "OPW",
-            //     "notesFooter": "We appreciate your continued partnership.",
-            //     "companyEntityType": "firm",
-            //     "companyEmail": "info@kewexample.com",
-            //     "companyPhoneNumber": "9876543210",
-            //     "companyWebsite": "https://kewexample.com",
-            //     "companyAddress": "Plot 42, MIDC Industrial Area",
-            //     "companyCityId": 302,
-            //     "companyStateId": 21,
-            //     "companyPincode": 422101,
-            //     "customerName": "ABC Traders Pvt Ltd",
-            //     "hasGst": true,
-            //     "gstNumber": "27ABCDE1234F1Z5",
-            //     "billingEmail": "billing@abctraders.com",
-            //     "billingPhoneNumber": "9876543210",
-            //     "billingWebsite": "https://abctraders.com",
-            //     "billingAddress": "123 Business Park, MG Road",
-            //     "billingCityId": 101,
-            //     "billingStateId": 27,
-            //     "billingPincode": 422010,
-            //     "shippingEmail": "warehouse@abctraders.com",
-            //     "shippingPhoneNumber": "9876501234",
-            //     "shippingAddress": "Plot No 456, Industrial Area",
-            //     "shippingCityId": 102,
-            //     "shippingStateId": 27,
-            //     "shippingPincode": 422011,
-            //     "hasChallan": false,
-            //     "hasPo": false,
-            //     "hasEwayBill": false,
-            //     "subTotal": "57500.00",
-            //     "discountPercent": "0.00",
-            //     "discountAmount": "5750.00",
-            //     "taxableAmount": "51750.00",
-            //     "cgst": "168.75",
-            //     "sgst": "168.75",
-            //     "igst": "0.00",
-            //     "total": "52087.50",
-            //     "roundOff": "0.00",
-            //     "other": "0.00",
-            //     "paymentStatusId": 1,
-            //     "paymentModeId": 2,
-            //     "bankName": "HDFC Bank",
-            //     "accountNumber": "123456789012",
-            //     "ifscCode": "HDFC0001234",
-            //     "branchName": "Nashik MIDC Branch",
-            //     "items": [
-            //         {
-            //             "id": 53,
-            //             "invoiceId": 47,
-            //             "description": "Gold Necklace",
-            //             "hsnSacCode": "71131910",
-            //             "itemUnitId": 1,
-            //             "uqc": "PCS",
-            //             "qty": "2.00",
-            //             "rate": "25000.00",
-            //             "gstSlabId": 1,
-            //             "gstRate": "0.00",
-            //             "taxableAmount": "45000.00",
-            //             "cgst": "0.00",
-            //             "sgst": "0.00",
-            //             "total": "45000.00"
-            //         },
-            //         {
-            //             "id": 55,
-            //             "invoiceId": 47,
-            //             "description": "Silver Bracelet",
-            //             "hsnSacCode": "71141100",
-            //             "itemUnitId": 1,
-            //             "uqc": "PCS",
-            //             "qty": "5.00",
-            //             "rate": "1500.00",
-            //             "gstSlabId": 2,
-            //             "gstRate": "5.00",
-            //             "taxableAmount": "6750.00",
-            //             "cgst": "168.75",
-            //             "sgst": "168.75",
-            //             "total": "7087.50"
-            //         }
-            //     ]
-            // }
             const invoiceData = {
                 ...result?.data,
                 billingAddress: {
@@ -378,4 +287,19 @@ export const useDownloadInvoice = () => {
         ...mutation,
         downloadingInvoiceId,
     };
+};
+
+// Get next invoice number
+export const useGetNextInvoiceNumber = (enabled) => {
+    return useQuery({
+        queryKey: ["getNextInvoiceNumber"],
+        queryFn: getNextInvoiceNumber,
+        enabled: enabled,
+        staleTime: 0,
+        cacheTime: 0,
+        gcTime: 0,
+        refetchOnMount: "always",
+        refetchOnReconnect: true,
+        select: (result) => result?.data ?? {},
+    });
 };
