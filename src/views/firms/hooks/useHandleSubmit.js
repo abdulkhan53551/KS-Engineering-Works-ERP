@@ -19,7 +19,9 @@ const useHandleSubmit = (props) => {
 
         if (isEditMode) {
             updateFirmApi(formPayload);
-            uploadLogo({ id: firmId, file: logoUrl[0] })
+
+            // Do not update logo in edit mode for temporary
+            // uploadLogo({ id: firmId, file: logoUrl[0] })
         } else {
             createFirmApi({ logo: logoUrl, data: formPayload });
         }

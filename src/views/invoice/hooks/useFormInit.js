@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useWatch } from "react-hook-form";
 import { useStateCity } from "../../dashboard/hooks/api.hooks";
+import { useGetNextInvoiceNumber } from "./useApi";
 
 const useFormInit = (props) => {
     const { invoice, isEditMode, reset = Function(), setValue = Function(), control, defaultFormValue } = props;
@@ -8,6 +9,7 @@ const useFormInit = (props) => {
     const selectedShippingStateId = useWatch({ control, name: "shippingAddress.stateId" });
     const { data: billingCities = [] } = useStateCity(selectedBillingStateId);
     const { data: shippingCities = [] } = useStateCity(selectedShippingStateId);
+    const { data: nextInvoiceNumber } = useGetNextInvoiceNumber(!isEditMode);
 
     // Prefill form
     useEffect(() => {
@@ -99,6 +101,13 @@ const useFormInit = (props) => {
             reset(defaultFormValue)
         }
     }, [isEditMode, reset])
+
+    // Set invoice no that is autogenrated
+    useEffect(() => {
+        if (!isEditMode && nextInvoiceNumber?.invoiceNo) {
+            setValue("invoiceNo", nextInvoiceNumber.invoiceNo);
+        }
+    }, [nextInvoiceNumber, setValue, isEditMode]);
 
     // Set billing address city
     useEffect(() => {
