@@ -22,6 +22,7 @@ import useInvoiceModules from '../hooks/useAccountingDocumentModules';
 import './invoice.scss'
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
 import InvoiceRow from '../components/InvoiceRow';
+import moment from 'moment'
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -162,9 +163,9 @@ const InvoiceForm = ({ mode }) => {
                                     <Row>
                                        <Col lg="4">
                                           <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                             <Form.Control type="text" id='invoiceNo' placeholder="PO No" isInvalid={!!errors.invoiceNo} {...register("invoiceNo")} />
-                                             <Form.Label htmlFor="invoiceNo" >
-                                                Invoice No <span className="text-danger label-required">*</span>
+                                             <Form.Control type="text" id="invoiceNo" placeholder="Invoice No" isInvalid={!!errors.invoiceNo} {...register("invoiceNo")} />
+                                             <Form.Label htmlFor="invoiceNo">
+                                                Invoice No <span className="text-danger">*</span>
                                              </Form.Label>
                                              <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
                                           </Form.Floating>
@@ -325,7 +326,7 @@ const InvoiceForm = ({ mode }) => {
                                              <Controller
                                                 name="invoiceDate"
                                                 control={control}
-                                                defaultValue={new Date()} // Set default date
+                                                defaultValue={new Date()}
                                                 render={({ field, fieldState: { error } }) => (
                                                    <div className="input-group">
                                                       <span className="input-group-text">
@@ -334,10 +335,27 @@ const InvoiceForm = ({ mode }) => {
                                                       <Flatpickr
                                                          {...field}
                                                          value={field.value}
-                                                         onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                         onChange={(selectedDates) => {
+                                                            const date = selectedDates[0] || null;
+
+                                                            field.onChange(date);
+
+                                                            const dueDays = getValues("dueDays") ?? 0;
+
+                                                            if (date) {
+                                                               setValue(
+                                                                  "dueDate",
+                                                                  moment(date).add(dueDays, "days").toDate(),
+                                                                  {
+                                                                     shouldDirty: true,
+                                                                     shouldValidate: true,
+                                                                  }
+                                                               );
+                                                            }
+                                                         }}
                                                          options={invoiceDateOptons}
                                                          className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
-                                                         placeholder="Select E-way bill Date..."
+                                                         placeholder="Select Invoice Date..."
                                                       />
                                                       <Form.Control.Feedback type="invalid">
                                                          {errors.invoiceDate?.message}
@@ -356,8 +374,6 @@ const InvoiceForm = ({ mode }) => {
                                                 name="dueDate"
                                                 control={control}
                                                 defaultValue={new Date()} // Set default date
-                                                // disabled={true}
-                                                // readOnly={true}
                                                 render={({ field, fieldState: { error } }) => (
                                                    <div className="input-group">
                                                       <span className="input-group-text">
@@ -366,7 +382,21 @@ const InvoiceForm = ({ mode }) => {
                                                       <Flatpickr
                                                          {...field}
                                                          value={field.value}
-                                                         onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                         onChange={(selectedDates) => {
+                                                            const date = selectedDates[0];
+                                                            field.onChange(date);
+
+                                                            if (invoiceDate && date) {
+                                                               const days = moment(date)
+                                                                  .startOf("day")
+                                                                  .diff(moment(invoiceDate).startOf("day"), "days");
+
+                                                               setValue("dueDays", days, {
+                                                                  shouldDirty: true,
+                                                                  shouldValidate: true,
+                                                               });
+                                                            }
+                                                         }}
                                                          options={dueDateOptons}
                                                          className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
                                                          placeholder="Select E-way bill Date..."
@@ -407,7 +437,36 @@ const InvoiceForm = ({ mode }) => {
                                        <Col lg="3">
                                           <Form.Label htmlFor="dueDays">&nbsp;</Form.Label>
                                           <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                             <Form.Control type="text" id='dueDays' placeholder="PO No" isInvalid={!!errors.dueDays} {...register("dueDays")} />
+                                             <Form.Control
+                                                type="number"
+                                                id="dueDays"
+                                                min={0}
+                                                step={1}
+                                                placeholder="Due Days"
+                                                isInvalid={!!errors.dueDays}
+                                                onKeyDown={(e) => {
+                                                   if (["-", "+", "e", "E", "."].includes(e.key)) {
+                                                      e.preventDefault();
+                                                   }
+                                                }}
+                                                {...register("dueDays", {
+                                                   onChange: ({ target }) => {
+                                                      const days = Math.max(0, target.valueAsNumber || 0);
+                                                      setValue("dueDays", days, { shouldValidate: true });
+
+                                                      if (invoiceDate) {
+                                                         setValue(
+                                                            "dueDate",
+                                                            moment(invoiceDate).add(days, "days").toDate(),
+                                                            {
+                                                               shouldDirty: true,
+                                                               shouldValidate: true,
+                                                            }
+                                                         );
+                                                      }
+                                                   },
+                                                })}
+                                             />
                                              <Form.Label htmlFor="dueDays" >
                                                 Due Day <span className="text-danger label-required">*</span>
                                              </Form.Label>

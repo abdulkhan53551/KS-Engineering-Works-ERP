@@ -29,13 +29,15 @@ export const createFirmValidationSchema = Joi.object({
         .valid('Proprietorship', 'Partnership', 'LLP', 'Pvt Ltd', 'Public Ltd', 'Other')
         .required(),
     businessActivity: Joi.string().max(1000).required(),
+    // logoUrl: Joi.any()
+    //     .custom(validateLogoFile)
+    //     .messages({
+    //         "any.required": "Please upload a logo file.",
+    //         "file.invalidType": "Logo must be a PNG or JPG image.",
+    //         "file.maxSize": "Logo size must be less than 2MB.",
+    //     })
+    //     .optional(),
     logoUrl: Joi.any()
-        .custom(validateLogoFile)
-        .messages({
-            "any.required": "Please upload a logo file.",
-            "file.invalidType": "Logo must be a PNG or JPG image.",
-            "file.maxSize": "Logo size must be less than 2MB.",
-        })
         .optional(),
     isGstRegistered: Joi.boolean().required(),
     gstin: Joi.when('isGstRegistered', {
@@ -55,7 +57,7 @@ export const createFirmValidationSchema = Joi.object({
 
     invoicePrefix: Joi.string().max(10).default('INV'),
     invoiceStartNumber: Joi.string()
-        .pattern(/^[0-9]+$/)
+        .pattern(/^\d+$/)
         .min(1)
         .max(6)
         .required()
