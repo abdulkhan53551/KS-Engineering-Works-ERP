@@ -16,12 +16,13 @@ import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProdu
 import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
 // import { Eye, ListChecks, Watch } from 'lucide-react';
-import IconButton from '../components/IconButton';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
-import useInvoiceModules from '../hooks/useAccountingDocumentModules';
-import './invoice.scss'
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
+import './invoice.scss';
 import InvoiceRow from '../components/InvoiceRow';
+import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
+import { toast } from 'react-toastify';
+import IconButton from '../components/IconButton';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -102,13 +103,62 @@ const InvoiceForm = ({ mode }) => {
 
    const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors } } = formMethods;
    const [
-      selectedBillingState, selectedShippingState, hasChallan, hasPo, hasEwayBill, invoiceDate,
+      selectedBillingState, selectedShippingState, hasChallan, hasPo, hasEwayBill, invoiceDate, customerName,
    ] = useWatch({
       control,
       name: [
-         "billingAddress.stateId", "shippingAddress.stateId", "hasChallan", "hasPo", "hasEwayBill", "invoiceDate",
+         "billingAddress.stateId", "shippingAddress.stateId", "hasChallan", "hasPo", "hasEwayBill", "invoiceDate", "customerName",
       ],
    });
+
+   const handlePartySelect = (party) => {
+      if (!party) return;
+      const chosenName = party.displayName || party.legalName || "";
+      setValue("customerName", chosenName, { shouldValidate: true, shouldDirty: true });
+
+      const hasGst = Boolean(party.gstRegistered && party.gstin);
+      setValue("hasGst", hasGst, { shouldValidate: true, shouldDirty: true });
+      setValue("gstNumber", party.gstin || "", { shouldValidate: true, shouldDirty: true });
+
+      if (party.billingAddress) {
+         setValue("billingAddress.addressLine1", party.billingAddress.address || "", { shouldValidate: true, shouldDirty: true });
+         setValue("billingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
+         setValue("billingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
+         setValue("billingAddress.website", party.website || "", { shouldValidate: true, shouldDirty: true });
+         if (party.billingAddress.stateId) {
+            setValue("billingAddress.stateId", Number(party.billingAddress.stateId), { shouldValidate: true, shouldDirty: true });
+         }
+         if (party.billingAddress.cityId) {
+            setValue("billingAddress.cityId", Number(party.billingAddress.cityId), { shouldValidate: true, shouldDirty: true });
+         }
+         if (party.billingAddress.pincode) {
+            setValue("billingAddress.pincode", String(party.billingAddress.pincode), { shouldValidate: true, shouldDirty: true });
+         }
+      } else {
+         if (party.mobile) setValue("billingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
+         if (party.email) setValue("billingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
+         if (party.website) setValue("billingAddress.website", party.website, { shouldValidate: true, shouldDirty: true });
+      }
+
+      const shippingSource = party.shippingAddress || party.billingAddress;
+      if (shippingSource) {
+         setValue("shippingAddress.addressLine1", shippingSource.address || "", { shouldValidate: true, shouldDirty: true });
+         setValue("shippingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
+         setValue("shippingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
+         if (shippingSource.stateId) {
+            setValue("shippingAddress.stateId", Number(shippingSource.stateId), { shouldValidate: true, shouldDirty: true });
+         }
+         if (shippingSource.cityId) {
+            setValue("shippingAddress.cityId", Number(shippingSource.cityId), { shouldValidate: true, shouldDirty: true });
+         }
+         if (shippingSource.pincode) {
+            setValue("shippingAddress.pincode", String(shippingSource.pincode), { shouldValidate: true, shouldDirty: true });
+         }
+      } else {
+         if (party.mobile) setValue("shippingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
+         if (party.email) setValue("shippingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
+      }
+   };
 
    const invoiceDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"] }), [])
    const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate])
@@ -170,13 +220,16 @@ const InvoiceForm = ({ mode }) => {
                                           </Form.Floating>
                                        </Col>
                                        <Col lg="8">
-                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                             <Form.Control type="text" name='customerName' id='customerName' placeholder="Customer Name" isInvalid={!!errors.customerName} {...register('customerName')} />
-                                             <Form.Label htmlFor="customerName" >
-                                                Customer Name <span className="text-danger label-required">*</span>
-                                             </Form.Label>
-                                             <Form.Control.Feedback type="invalid">{errors.customerName?.message}</Form.Control.Feedback>
-                                          </Form.Floating>
+                                          <PartyAutocompleteInput
+                                             value={customerName || ''}
+                                             onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
+                                             onSelectParty={handlePartySelect}
+                                             isInvalid={!!errors.customerName}
+                                             errorMessage={errors.customerName?.message}
+                                             placeholder="Search party by name or code..."
+                                             label="Customer Name"
+                                             required
+                                          />
                                        </Col>
                                        <Col lg="4">
                                           <Form.Group className=" form-group mb-4">
