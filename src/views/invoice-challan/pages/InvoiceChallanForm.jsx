@@ -1,31 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Row, Col, Form, Card, FormCheck } from 'react-bootstrap'
+import React from 'react'
+import { Row, Col, Form, Card } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import Flatpickr from "react-flatpickr";
 import { Controller, useForm } from 'react-hook-form'
 import { joiResolver } from '@hookform/resolvers/joi'
 import { useGetInvoiceChallanById } from '../hooks/useApi'
 import useHandleSubmit from '../hooks/useHandleSubmit'
-import { invoiceChallanValidationSchema } from '../../../validation/invoiceChallan.validation'
+import { createInvoiceChallanValidationSchema, updateInvoiceChallanValidationSchema } from '../../../validation/invoiceChallan.validation'
 import SubmitButton from '../../../components/SubmitButton'
 import { FaRegCalendarAlt } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
 
 const InvoiceChallan = ({ mode }) => {
    const { id: challanId } = useParams();
-   const [isInvoiced, setIsInvoiced] = useState(false);
-   const isEditMode = !!(mode == 'edit');
+   const isEditMode = !!(mode === 'edit');
    const defaultFormValue = {
       challanNo: '',
       challanDate: new Date(),
-      isInvoiced: false,
       customerName: '',
    }
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
    } = useForm({
-      resolver: joiResolver(invoiceChallanValidationSchema),
+      resolver: joiResolver(isEditMode ? updateInvoiceChallanValidationSchema : createInvoiceChallanValidationSchema),
       mode: "onBlur",
       reValidateMode: "onChange",
       defaultValues: {
@@ -34,9 +32,9 @@ const InvoiceChallan = ({ mode }) => {
       }
    });
 
-   const { data: invoiceChallan = {}, isFetching: isFetchingFirm } = useGetInvoiceChallanById(challanId);
-   const { onSubmit, onError, createFirmIsPending, updateFirmIsPending } = useHandleSubmit({ challanId, isEditMode })
-   useFormInit({ invoiceChallan, isEditMode, reset, defaultFormValue })
+   const { data: invoiceChallan = {}, isFetching } = useGetInvoiceChallanById(challanId);
+   const { onSubmit, onError, createInvoiceChallanIsPending, updateInvoiceChallanIsPending } = useHandleSubmit({ challanId, isEditMode });
+   useFormInit({ invoiceChallan, isEditMode, reset, defaultFormValue });
 
    return (
       <>
@@ -52,7 +50,6 @@ const InvoiceChallan = ({ mode }) => {
                         </Card.Header>
                         <Card.Body>
                            <div className="row">
-                              <input type="hidden" name="invoiceId" value={null} {...register('invoiceId')} />
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control type="text" id='challanNo' placeholder="Challan No" isInvalid={!!errors.challanNo} {...register("challanNo")} />
@@ -72,7 +69,7 @@ const InvoiceChallan = ({ mode }) => {
                                        <Controller
                                           name="challanDate"
                                           control={control}
-                                          defaultValue={new Date()} // or new Date() if you want default as today
+                                          defaultValue={new Date()}
                                           render={({ field, fieldState: { error } }) => (
                                              <div>
                                                 <Flatpickr
@@ -80,7 +77,7 @@ const InvoiceChallan = ({ mode }) => {
                                                    value={field.value}
                                                    onChange={(selectedDates) => field.onChange(selectedDates[0] || null)}
                                                    options={{
-                                                      dateFormat: "d/m/Y", // 20/10/2025 format
+                                                      dateFormat: "d/m/Y",
                                                       defaultDate: ["today"],
                                                    }}
                                                    className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
@@ -91,11 +88,8 @@ const InvoiceChallan = ({ mode }) => {
                                           )}
                                        />
                                     </div>
-
-                                    {/* <Form.Control.Feedback type="invalid">{errors.challanDate?.message}</Form.Control.Feedback> */}
                                  </Form.Floating>
                               </Col>
-
 
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
@@ -106,30 +100,10 @@ const InvoiceChallan = ({ mode }) => {
                                     <Form.Control.Feedback type="invalid">{errors.customerName?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
-                              <Col lg="6">
-                                 <Form.Group className=" form-group mb-4">
-                                    <Form.Check className=" form-check-inline">
-                                       <FormCheck.Input
-                                          type="checkbox"
-                                          className="form-check-input"
-                                          id="isInvoiced"
-                                          isInvalid={!!errors.isInvoiced}
-                                          {...register("isInvoiced", {
-                                             onChange: (e) => {
-                                                const value = e.target.checked;
-                                                // ✅ Update value in RHF
-                                                setValue("isInvoiced", value, { shouldValidate: true });
-                                             }
-                                          })} />
-                                       <FormCheck.Label className="form-check-label pl-2" htmlFor="isInvoiced">Is Invoiced</FormCheck.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.isInvoiced?.message}</Form.Control.Feedback>
-                                    </Form.Check>
-                                 </Form.Group>
-                              </Col>
                            </div>
 
                            <SubmitButton
-                              isLoading={createFirmIsPending || updateFirmIsPending}
+                              isLoading={createInvoiceChallanIsPending || updateInvoiceChallanIsPending}
                               isEditMode={isEditMode}
                            />
                         </Card.Body>

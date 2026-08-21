@@ -15,6 +15,15 @@ const useFormInit = (props) => {
     useEffect(() => {
         if (invoice && isEditMode) {
             const { invoiceId, items, ...rest } = invoice;  // invoiceId of invoice
+
+            const challanIds = invoice.challanIds || [];
+            const poIds = invoice.poIds || invoice.purchaseOrderIds || [];
+            const ewayBillIds = invoice.ewayBillIds || invoice.ewbIds || [];
+
+            const hasChallan = Boolean(invoice.hasChallan || challanIds.length > 0);
+            const hasPo = Boolean(invoice.hasPo || poIds.length > 0);
+            const hasEwayBill = Boolean(invoice.hasEwayBill || ewayBillIds.length > 0);
+
             const cleanedInvoice = {
                 // ==== Main Invoice Fields ====
                 invoiceNo: invoice.invoiceNo,
@@ -48,12 +57,12 @@ const useFormInit = (props) => {
                     pincode: invoice.shippingAddress?.pincode
                 },
 
-                hasChallan: invoice.hasChallan,
-                hasPo: invoice.hasPo,
-                hasEwayBill: invoice.hasEwayBill,
-                challanIds: invoice.challanIds || [],
-                poIds: invoice.poIds || [],
-                ewayBillIds: invoice.ewbIds || [],
+                hasChallan,
+                hasPo,
+                hasEwayBill,
+                challanIds,
+                poIds,
+                ewayBillIds,
 
                 // ==== Items Array (Required Section) ====
                 items: invoice.items?.map(item => ({
