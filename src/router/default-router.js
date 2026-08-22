@@ -65,6 +65,9 @@ import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 import PartyList from '../views/party/pages/PartyList';
 import PartyForm from '../views/party/pages/PartyForm';
+import AddressTypeList from '../views/masters/address-types/pages/AddressTypeList';
+import ContactRoleList from '../views/masters/contact-roles/pages/ContactRoleList';
+import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
 
 
 export const DefaultRouter = [
@@ -91,6 +94,12 @@ export const DefaultRouter = [
                     { path: 'parties', element: <PartyList /> },
                     { path: 'parties/create', element: <PartyForm mode="create" /> },
                     { path: 'parties/:id/edit', element: <PartyForm mode="edit" /> },
+                    { path: 'parties/party-roles', element: <PartyRoleList /> },
+                    { path: 'organization/party-roles', element: <PartyRoleList /> },
+
+                    /* Masters */
+                    { path: 'masters/address-types', element: <AddressTypeList /> },
+                    { path: 'masters/contact-roles', element: <ContactRoleList /> },
 
                     /* Sales */
                     // Invoice Routes
