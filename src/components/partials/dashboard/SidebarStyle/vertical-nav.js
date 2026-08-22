@@ -653,7 +653,7 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname.includes('/parties') ? 'active' : ''} nav-link`} to="/parties">
+                                <Link className={`${location.pathname === '/parties' || (location.pathname.startsWith('/parties') && !location.pathname.includes('/party-roles')) ? 'active' : ''} nav-link`} to="/parties">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -677,7 +677,7 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname === '/dashboard/customer-list' ? 'active' : ''} nav-link`} to="/dashboard/customer-list">
+                                <Link className={`${location.pathname.includes('/party-roles') ? 'active' : ''} nav-link`} to="/parties/party-roles">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -685,8 +685,87 @@ const VerticalNav = memo((props) => {
                                             </g>
                                         </svg>
                                     </i>
-                                    <i className="sidenav-mini-icon"> U </i>
-                                    <span className="item-name">Dummy module</span>
+                                    <span className="item-name">Party Roles</span>
+                                    <Link className="me-2" to="/parties/party-roles?action=create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                        </ul>
+                    </Accordion.Collapse>
+                </Accordion.Item>
+                <Accordion.Item as="li" eventKey="sidebar-masters" bsPrefix={`nav-item ${active === 'masters' ? 'active' : ''} `} onClick={() => setActive('masters')}>
+                    <CustomToggle eventKey="sidebar-masters" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                        <i className="icon">
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.4" d="M19.4616 2H16.0756C14.6734 2 13.5371 3.14585 13.5371 4.55996V7.97452C13.5371 9.38864 14.6734 10.5345 16.0756 10.5345H19.4616C20.8639 10.5345 22.0001 9.38864 22.0001 7.97452V4.55996C22.0001 3.14585 20.8639 2 19.4616 2Z" fill="currentColor"></path>
+                                <path fillRule="evenodd" clipRule="evenodd" d="M4.53852 2H7.92449C9.32676 2 10.463 3.14585 10.463 4.55996V7.97452C10.463 9.38864 9.32676 10.5345 7.92449 10.5345H4.53852C3.13626 10.5345 2 9.38864 2 7.97452V4.55996C2 3.14585 3.13626 2 4.53852 2ZM4.53852 13.4655H7.92449C9.32676 13.4655 10.463 14.6114 10.463 16.0255V19.44C10.463 20.8532 9.32676 22 7.92449 22H4.53852C3.13626 22 2 20.8532 2 19.44V16.0255C2 14.6114 3.13626 13.4655 4.53852 13.4655ZM19.4615 13.4655H16.0755C14.6732 13.4655 13.537 14.6114 13.537 16.0255V19.44C13.537 20.8532 14.6732 22 16.0755 22H19.4615C20.8637 22 22 20.8532 22 19.44V16.0255C22 14.6114 20.8637 13.4655 19.4615 13.4655Z" fill="currentColor"></path>
+                            </svg>
+                        </i>
+                        <span className="item-name">Masters</span>
+                        <i className="right-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </i>
+                    </CustomToggle>
+                    <Accordion.Collapse eventKey="sidebar-masters">
+                        <ul className="sub-nav">
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/masters/address-types') ? 'active' : ''} nav-link`} to="/masters/address-types">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Address Types</span>
+                                    <Link className="me-2" to="/masters/address-types?action=create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/masters/contact-roles') ? 'active' : ''} nav-link`} to="/masters/contact-roles">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Contact Roles</span>
+                                    <Link className="me-2" to="/masters/contact-roles?action=create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
                                 </Link>
                             </li>
                         </ul>

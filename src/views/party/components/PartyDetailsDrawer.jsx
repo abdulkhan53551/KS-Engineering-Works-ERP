@@ -108,6 +108,18 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
                             <span className="text-muted small d-block">Legal Name</span>
                             <span className="text-dark">{party.legalName || '—'}</span>
                         </div>
+                        {Array.isArray(party.roles) && party.roles.length > 0 && (
+                            <div className="mb-2">
+                                <span className="text-muted small d-block mb-1">Assigned Roles</span>
+                                <div className="d-flex flex-wrap gap-1">
+                                    {party.roles.map((r, i) => (
+                                        <Badge key={i} bg="soft-primary" className="text-primary fw-semibold px-2 py-1" style={{ fontSize: '0.74rem' }}>
+                                            {r.roleName || r.roleCode || r.name || r.code || `Role #${r.roleId || r.id}`}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <Row className="g-2">
                             <Col xs={6}>
                                 <div className="mb-2">

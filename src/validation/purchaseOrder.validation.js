@@ -2,16 +2,20 @@
 import Joi from "joi";
 
 // Schema: Create a new purchase order
-export const purchaseOrderValidationSchema = Joi.object({
-    invoiceId: Joi.number().integer().positive().allow(null).optional(),
+export const createPurchaseOrderValidationSchema = Joi.object({
     poNo: Joi.string().max(50).required(),
     poDate: Joi.date().required(),
     customerName: Joi.string().max(255).required(),
-    isInvoiced: Joi.boolean().when('invoiceId', {
-        is: Joi.number().integer().positive(),
-        then: Joi.boolean().default(false),
-        otherwise: Joi.valid(false)
-            .messages({ "any.only": "isInvoiced must be false when invoice is not mapped to this purchase order." })
-            .default(false)
-    })
+    status: Joi.string().valid('OPEN', 'COMPLETED', 'CANCELLED').default('OPEN')
 });
+
+// Schema: Update an existing purchase order
+export const updatePurchaseOrderValidationSchema = Joi.object({
+    poNo: Joi.string().max(50).optional(),
+    poDate: Joi.date().optional(),
+    customerName: Joi.string().max(255).optional(),
+    status: Joi.string().valid('OPEN', 'COMPLETED', 'CANCELLED').optional()
+}).min(1);
+
+// Default export / alias for form validation compatibility
+export const purchaseOrderValidationSchema = createPurchaseOrderValidationSchema;
