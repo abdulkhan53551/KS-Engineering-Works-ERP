@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Row, Col, Form, Card, FormCheck } from 'react-bootstrap'
+import React from 'react'
+import { Row, Col, Form, Card } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import Flatpickr from "react-flatpickr";
 import { Controller, useForm } from 'react-hook-form'
@@ -9,24 +9,22 @@ import useHandleSubmit from '../hooks/useHandleSubmit'
 import SubmitButton from '../../../components/SubmitButton'
 import { FaRegCalendarAlt } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
-import { eWayBillValidationSchema } from '../../../validation/ewayBill.validation';
+import { createEWayBillValidationSchema, updateEWayBillValidationSchema } from '../../../validation/ewayBill.validation';
 
 const EwayBillForm = ({ mode }) => {
    const { id: ewayBillId } = useParams();
-   const [isInvoiced, setIsInvoiced] = useState(false);
-   const isEditMode = !!(mode == 'edit');
+   const isEditMode = !!(mode === 'edit');
    const defaultFormValue = {
       ewayBillNo: '',
       ewayBillDate: new Date(),
       ewaybillValidUpto: new Date(),
-      isInvoiced: false,
       customerName: '',
    }
 
    const {
       register, handleSubmit, setValue, reset, getValues, control, formState: { errors },
    } = useForm({
-      resolver: joiResolver(eWayBillValidationSchema),
+      resolver: joiResolver(isEditMode ? updateEWayBillValidationSchema : createEWayBillValidationSchema),
       mode: "onBlur",
       reValidateMode: "onChange",
       defaultValues: {
@@ -36,8 +34,8 @@ const EwayBillForm = ({ mode }) => {
    });
 
    const { data: ewayBill = {} } = useEwayBillById(ewayBillId);
-   const { onSubmit, onError, createPurchaseOrderIsPending, updatePurchaseOrderIsPending } = useHandleSubmit({ ewayBillId, isEditMode })
-   useFormInit({ ewayBill, isEditMode, reset, defaultFormValue })
+   const { onSubmit, onError, createEwayBillIsPending, updateEwayBillIsPending } = useHandleSubmit({ ewayBillId, isEditMode });
+   useFormInit({ ewayBill, isEditMode, reset, defaultFormValue });
 
    return (
       <>
@@ -48,21 +46,20 @@ const EwayBillForm = ({ mode }) => {
                      <Card>
                         <Card.Header className="d-flex justify-content-between">
                            <div className="header-title">
-                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} E Way Bill</h4>
+                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} E-Way Bill</h4>
                            </div>
                         </Card.Header>
                         <Card.Body>
                            <div className="row">
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control type="text" id='ewayBillNo' placeholder="PO No" isInvalid={!!errors.ewayBillNo} {...register("ewayBillNo")} />
+                                    <Form.Control type="text" id='ewayBillNo' placeholder="E-way bill No" isInvalid={!!errors.ewayBillNo} {...register("ewayBillNo")} />
                                     <Form.Label htmlFor="ewayBillNo" >
                                        E-way bill No <span className="text-danger label-required">*</span>
                                     </Form.Label>
                                     <Form.Control.Feedback type="invalid">{errors.ewayBillNo?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
-
 
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
@@ -82,7 +79,7 @@ const EwayBillForm = ({ mode }) => {
                                     <Controller
                                        name="ewayBillDate"
                                        control={control}
-                                       defaultValue={new Date()} // Set default date
+                                       defaultValue={new Date()}
                                        render={({ field, fieldState: { error } }) => (
                                           <div className="input-group">
                                              <span className="input-group-text">
@@ -91,7 +88,7 @@ const EwayBillForm = ({ mode }) => {
                                              <Flatpickr
                                                 {...field}
                                                 value={field.value}
-                                                onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                onChange={(selectedDates) => field.onChange(selectedDates[0] || null)}
                                                 options={{
                                                    dateFormat: "d/m/Y",
                                                    defaultDate: ["today"]
@@ -106,8 +103,8 @@ const EwayBillForm = ({ mode }) => {
                                        )}
                                     />
                                  </Form.Group>
-
                               </Col>
+
                               <Col lg="6">
                                  <Form.Group className="form-group mb-4">
                                     <Form.Label htmlFor="ewaybillValidUpto">
@@ -116,7 +113,7 @@ const EwayBillForm = ({ mode }) => {
                                     <Controller
                                        name="ewaybillValidUpto"
                                        control={control}
-                                       defaultValue={new Date()} // Set default date
+                                       defaultValue={new Date()}
                                        render={({ field, fieldState: { error } }) => (
                                           <div className="input-group">
                                              <span className="input-group-text">
@@ -125,7 +122,7 @@ const EwayBillForm = ({ mode }) => {
                                              <Flatpickr
                                                 {...field}
                                                 value={field.value}
-                                                onChange={(selectedDates) => field.onChange(selectedDates[0] || null)} // return ISO or Date object
+                                                onChange={(selectedDates) => field.onChange(selectedDates[0] || null)}
                                                 options={{
                                                    dateFormat: "d/m/Y",
                                                    defaultDate: ["today"]
@@ -140,33 +137,11 @@ const EwayBillForm = ({ mode }) => {
                                        )}
                                     />
                                  </Form.Group>
-
-                              </Col>
-
-                              <Col lg="6">
-                                 <Form.Group className=" form-group mb-4">
-                                    <Form.Check className=" form-check-inline">
-                                       <FormCheck.Input
-                                          type="checkbox"
-                                          className="form-check-input"
-                                          id="isInvoiced"
-                                          isInvalid={!!errors.isInvoiced}
-                                          {...register("isInvoiced", {
-                                             onChange: (e) => {
-                                                const value = e.target.checked;
-                                                // ✅ Update value in RHF
-                                                setValue("isInvoiced", value, { shouldValidate: true });
-                                             }
-                                          })} />
-                                       <FormCheck.Label className="form-check-label pl-2" htmlFor="isInvoiced">Is Invoiced</FormCheck.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.isInvoiced?.message}</Form.Control.Feedback>
-                                    </Form.Check>
-                                 </Form.Group>
                               </Col>
                            </div>
 
                            <SubmitButton
-                              isLoading={createPurchaseOrderIsPending || updatePurchaseOrderIsPending}
+                              isLoading={createEwayBillIsPending || updateEwayBillIsPending}
                               isEditMode={isEditMode}
                            />
                         </Card.Body>

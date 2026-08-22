@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Row, Col, Form, Card, FormCheck } from 'react-bootstrap'
+import React from 'react'
+import { Row, Col, Form, Card } from 'react-bootstrap'
 import { useParams } from 'react-router-dom'
 import Flatpickr from "react-flatpickr";
 import { Controller, useForm } from 'react-hook-form'
@@ -8,35 +8,31 @@ import { usePurchaseOrderById } from '../hooks/useApi'
 import useHandleSubmit from '../hooks/useHandleSubmit'
 import SubmitButton from '../../../components/SubmitButton'
 import { FaRegCalendarAlt } from 'react-icons/fa';
-import { purchaseOrderValidationSchema } from '../../../validation/purchaseOrder.validation';
+import { createPurchaseOrderValidationSchema, updatePurchaseOrderValidationSchema } from '../../../validation/purchaseOrder.validation';
 import useFormInit from '../hooks/useFormInit';
 
 const PurchaseOrderForm = ({ mode }) => {
    const { id: poId } = useParams();
-   const [isInvoiced, setIsInvoiced] = useState(false);
-   const isEditMode = !!(mode == 'edit');
+   const isEditMode = !!(mode === 'edit');
    const defaultFormValue = {
       poNo: '',
       poDate: new Date(),
-      isInvoiced: false,
       customerName: '',
+      status: 'OPEN'
    }
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, getValues, control, formState: { errors },
    } = useForm({
-      resolver: joiResolver(purchaseOrderValidationSchema),
+      resolver: joiResolver(isEditMode ? updatePurchaseOrderValidationSchema : createPurchaseOrderValidationSchema),
       mode: "onBlur",
       reValidateMode: "onChange",
-      defaultValues: {
-         invoiceId: null,
-         ...defaultFormValue
-      }
+      defaultValues: defaultFormValue
    });
 
    const { data: purchaseOrder = {} } = usePurchaseOrderById(poId);
-   const { onSubmit, onError, createPurchaseOrderIsPending, updatePurchaseOrderIsPending } = useHandleSubmit({ poId, isEditMode })
-   useFormInit({ purchaseOrder, isEditMode, reset, defaultFormValue })
+   const { onSubmit, onError, createPurchaseOrderIsPending, updatePurchaseOrderIsPending } = useHandleSubmit({ poId, isEditMode });
+   useFormInit({ purchaseOrder, isEditMode, reset, defaultFormValue });
 
    return (
       <>
@@ -71,7 +67,7 @@ const PurchaseOrderForm = ({ mode }) => {
                                        <Controller
                                           name="poDate"
                                           control={control}
-                                          defaultValue={new Date()} // or new Date() if you want default as today
+                                          defaultValue={new Date()}
                                           render={({ field, fieldState: { error } }) => (
                                              <div>
                                                 <Flatpickr
@@ -79,7 +75,7 @@ const PurchaseOrderForm = ({ mode }) => {
                                                    value={field.value}
                                                    onChange={(selectedDates) => field.onChange(selectedDates[0] || null)}
                                                    options={{
-                                                      dateFormat: "d/m/Y", // 20/10/2025 format
+                                                      dateFormat: "d/m/Y",
                                                       defaultDate: ["today"],
                                                    }}
                                                    className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
@@ -102,25 +98,17 @@ const PurchaseOrderForm = ({ mode }) => {
                                     <Form.Control.Feedback type="invalid">{errors.customerName?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
+
                               <Col lg="6">
-                                 <Form.Group className=" form-group mb-4">
-                                    <Form.Check className=" form-check-inline">
-                                       <FormCheck.Input
-                                          type="checkbox"
-                                          className="form-check-input"
-                                          id="isInvoiced"
-                                          isInvalid={!!errors.isInvoiced}
-                                          {...register("isInvoiced", {
-                                             onChange: (e) => {
-                                                const value = e.target.checked;
-                                                // ✅ Update value in RHF
-                                                setValue("isInvoiced", value, { shouldValidate: true });
-                                             }
-                                          })} />
-                                       <FormCheck.Label className="form-check-label pl-2" htmlFor="isInvoiced">Is Invoiced</FormCheck.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.isInvoiced?.message}</Form.Control.Feedback>
-                                    </Form.Check>
-                                 </Form.Group>
+                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+                                    <Form.Select id="status" isInvalid={!!errors.status} {...register("status")}>
+                                       <option value="OPEN">OPEN</option>
+                                       <option value="COMPLETED">COMPLETED</option>
+                                       <option value="CANCELLED">CANCELLED</option>
+                                    </Form.Select>
+                                    <Form.Label htmlFor="status">Status</Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.status?.message}</Form.Control.Feedback>
+                                 </Form.Floating>
                               </Col>
                            </div>
 

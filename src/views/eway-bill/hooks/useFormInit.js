@@ -5,12 +5,13 @@ const useFormInit = (props) => {
 
     // Prefill form
     useEffect(() => {
-        if (ewayBill && isEditMode) {
-            const { ewayBillId, validUpto, ...rest } = ewayBill;
-
+        if (ewayBill && isEditMode && Object.keys(ewayBill).length > 0) {
             reset({
-                ...rest,
-                ewaybillValidUpto: validUpto
+                invoiceId: ewayBill.invoiceId ?? null,
+                ewayBillNo: ewayBill.ewayBillNo ?? '',
+                ewayBillDate: ewayBill.ewayBillDate ? new Date(ewayBill.ewayBillDate) : new Date(),
+                ewaybillValidUpto: ewayBill.validUpto || ewayBill.ewaybillValidUpto ? new Date(ewayBill.validUpto || ewayBill.ewaybillValidUpto) : new Date(),
+                customerName: ewayBill.customerName ?? '',
             });
         }
     }, [ewayBill, isEditMode, reset]);
@@ -18,10 +19,9 @@ const useFormInit = (props) => {
     // Reset the form
     useEffect(() => {
         if (!isEditMode) {
-            reset(defaultFormValue)
+            reset(defaultFormValue);
         }
-    }, [isEditMode, reset])
-}
-
+    }, [isEditMode, reset]);
+};
 
 export default useFormInit;

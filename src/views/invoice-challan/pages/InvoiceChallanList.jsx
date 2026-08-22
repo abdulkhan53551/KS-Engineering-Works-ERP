@@ -7,7 +7,7 @@ import PaginationControl from '../../../components/Pagination';
 import { FaSearchengin } from 'react-icons/fa';
 import useKsSearchParam from '../../../hooks/useSearchParam';
 import PageLoader from '../../../components/PageLoader';
-import { useDeleteFirm, useDeleteInvoiceChallan, useGetFirms, useGetFirmsPagination, useGetInvoiceChallan, useGetInvoiceChallanPagination } from '../hooks/useApi';
+import { useDeleteInvoiceChallan, useGetInvoiceChallan, useGetInvoiceChallanPagination } from '../hooks/useApi';
 import PaginationBar from '../../../components/PaginationBar';
 
 const pageSize = 10;
@@ -72,7 +72,7 @@ const InvoiceChallan = () => {
                   <Card>
                      <Card.Header className="d-flex justify-content-between">
                         <div className="header-title d-flex">
-                           <h4 className="card-title">Firm List</h4>
+                           <h4 className="card-title">Invoice Challan List</h4>
                            <AdvanceSearch
                               name={'Enable body scrolling'}
                               scroll={true}
