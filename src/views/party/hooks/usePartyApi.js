@@ -21,13 +21,11 @@ import {
     getPartyDetailsById,
     getPartyContacts,
     getPartyContactById,
-    getPartyRoles,
     searchParties,
     updateParty,
     updatePartyAddress,
     updatePartyBankAccount,
-    updatePartyContact,
-    updatePartyRoles
+    updatePartyContact
 } from "../api";
 import { toast } from "react-toastify";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -175,7 +173,8 @@ export const useUpdateParty = (id) => {
         mutationFn: (data) => updateParty(id, data),
         onSuccess: (res) => {
             toast.success(res?.message || "Party updated successfully.");
-            queryClient.invalidateQueries({ queryKey: ["partyDetails", id] });
+            queryClient.invalidateQueries({ queryKey: ["partyById", id] });
+            queryClient.invalidateQueries({ queryKey: ["partyFullDetails", id] });
             queryClient.invalidateQueries({ queryKey: ["partyList"] });
             queryClient.invalidateQueries({ queryKey: ["partyPagination"] });
         },
@@ -210,39 +209,6 @@ export const useDeleteParty = () => {
     });
 };
 
-/* =========================================================================
-   3. PARTY ROLE MAPPING HOOKS
-   ========================================================================= */
-
-export const usePartyRoles = (partyId) => {
-    return useQuery({
-        queryKey: ["partyRoles", partyId],
-        queryFn: () => getPartyRoles(partyId),
-        enabled: Boolean(partyId && partyId !== "create"),
-        select: (result) => {
-            const list = result?.data ?? result ?? [];
-            return Array.isArray(list) ? list : [];
-        }
-    });
-};
-
-export const useUpdatePartyRoles = (partyId) => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationKey: ["updatePartyRoles", partyId],
-        mutationFn: ({ partyRoleIds }) => updatePartyRoles(partyId, { partyRoleIds }),
-        onSuccess: (res) => {
-            toast.success(res?.message || "Party roles updated successfully.");
-            queryClient.invalidateQueries({ queryKey: ["partyRoles", partyId] });
-            queryClient.invalidateQueries({ queryKey: ["partyDetails", partyId] });
-        },
-        onError: (error) => {
-            const message = error?.response?.data?.message || error?.message || "Failed to update party roles.";
-            toast.error(message);
-        }
-    });
-};
 
 /* =========================================================================
    4. PARTY ADDRESSES HOOKS
