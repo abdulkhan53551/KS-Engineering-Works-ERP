@@ -5,6 +5,7 @@ import Joi from "joi";
  */
 export const createPartyValidationSchema = Joi.object({
     firmId: Joi.number().integer().allow(null, '').optional(),
+    partyRoleIds: Joi.array().items(Joi.number().integer().positive()).optional(),
     partyCode: Joi.string().max(50).required().messages({
         "string.empty": "Party code is required.",
         "any.required": "Party code is required."
@@ -162,6 +163,7 @@ export const partyBankAccountValidationSchema = Joi.object({
     upiId: Joi.string()
         .pattern(/^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/)
         .allow(null, "")
+        .optional()
         .messages({
             "string.pattern.base": "Please enter a valid UPI ID (e.g. name@bank)."
         }),

@@ -52,11 +52,14 @@ const PartyRoleSelector = ({ selectedRoleIds = [], onChange, disabled = false })
 
             <div className="d-flex flex-wrap gap-2">
                 {roles.map((role) => {
-                    const isChecked = selectedRoleIds.includes(role.id);
+                    const roleId = role.id ?? role.roleId;
+                    const roleLabel = role.name || role.roleName || role.code || role.roleCode || `Role #${roleId}`;
+                    const isChecked = selectedRoleIds.map(Number).includes(Number(roleId));
+
                     return (
                         <div
-                            key={role.id}
-                            onClick={() => handleCheckboxChange(role.id)}
+                            key={roleId}
+                            onClick={() => handleCheckboxChange(Number(roleId))}
                             className={`d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1.5 transition-all user-select-none border ${
                                 isChecked
                                     ? 'bg-primary text-white border-primary shadow-sm'
@@ -77,7 +80,7 @@ const PartyRoleSelector = ({ selectedRoleIds = [], onChange, disabled = false })
                             >
                                 {isChecked && <FaCheck size={8} />}
                             </span>
-                            <span>{role.name || role.code}</span>
+                            <span>{roleLabel}</span>
                         </div>
                     );
                 })}

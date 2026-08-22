@@ -82,7 +82,11 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             then: Joi.array().min(1).required().messages({
                 'any.required': 'Challan IDs are required when challan is selected.',
                 'array.min': 'Please select at least one challan.'
-            })
+            }),
+            otherwise: Joi.array()
+                .items(Joi.number().integer().positive())
+                .default([])
+                .custom(() => [])
         }),
 
     // Purchase Orders
@@ -94,7 +98,11 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             then: Joi.array().min(1).required().messages({
                 'any.required': 'Purchase order IDs are required when PO is selected.',
                 'array.min': 'Please select at least one PO.'
-            })
+            }),
+            otherwise: Joi.array()
+                .items(Joi.number().integer().positive())
+                .default([])
+                .custom(() => [])
         }),
 
     // E-Way Bills
@@ -106,8 +114,13 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             then: Joi.array().min(1).required().messages({
                 'any.required': 'E-way bill IDs are required when e-way bill is selected.',
                 'array.min': 'Please select at least one e-way bill.'
-            })
+            }),
+            otherwise: Joi.array()
+                .items(Joi.number().integer().positive())
+                .default([])
+                .custom(() => [])
         }),
+
 
     items: Joi.array().items(
         Joi.object({
@@ -161,7 +174,7 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
 function validateCreateOrUpdateCustom(item, helpers) {
 
     // console.log('items => ', item);
-    
+
     const gross = new Decimal(item.subTotal || 0);
 
     // Rule: If discountPercent > 0 → discountAmount must be > 0

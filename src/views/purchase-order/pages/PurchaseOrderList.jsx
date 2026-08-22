@@ -22,7 +22,7 @@ const PurchaseOrderList = () => {
 
    const { data: purchaseOrder = [] } = usePurchaseOrder({ page, pageSize });
    const { data: pagination = {} } = usePurchaseOrderPagination({ page, pageSize });
-   const { mutate: deleteInvoiceChallan } = useDeletePurchaseOrder();
+   const { mutate: deletePurchaseOrder } = useDeletePurchaseOrder();
    const { pageStart, pageEnd, total: totalItems } = pagination;
 
    const onSearch = (e) => {
@@ -59,10 +59,11 @@ const PurchaseOrderList = () => {
          confirmText: "Delete",
          onConfirm: async () => {
             dispatch(setModalLoading({ key: "delete", isLoading: true }));
-            deleteInvoiceChallan({id});
+            deletePurchaseOrder({id});
          },
       });
    };
+
 
    return (
       <>

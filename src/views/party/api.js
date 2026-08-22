@@ -167,37 +167,6 @@ export const deleteParty = asyncHandler(async (id) => {
     return res.data;
 });
 
-/* =========================================================================
-   3. PARTY ROLE MAPPING APIS
-   ========================================================================= */
-
-/**
- * Get roles assigned to a party
- * Endpoint: GET /parties/:partyId/roles
- */
-export const getPartyRoles = asyncHandler(async (partyId) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/roles`,
-        method: requestMethod.GET
-    });
-
-    return res.data;
-});
-
-/**
- * Update/Create party role mapping
- * Endpoint: PATCH /parties/:partyId/roles
- * Payload: { partyRoleIds: [1, 2] }
- */
-export const updatePartyRoles = asyncHandler(async (partyId, { partyRoleIds }) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/roles`,
-        method: requestMethod.PATCH,
-        data: { partyRoleIds }
-    });
-
-    return res.data;
-});
 
 /* =========================================================================
    4. PARTY ADDRESSES APIS

@@ -5,11 +5,12 @@ const useFormInit = (props) => {
 
     // Prefill form
     useEffect(() => {
-        if (purchaseOrder && isEditMode) {
-            const { poId, ...rest } = purchaseOrder;
-
+        if (purchaseOrder && isEditMode && Object.keys(purchaseOrder).length > 0) {
             reset({
-                ...rest,
+                poNo: purchaseOrder.poNo ?? '',
+                poDate: purchaseOrder.poDate ? new Date(purchaseOrder.poDate) : new Date(),
+                customerName: purchaseOrder.customerName ?? '',
+                status: purchaseOrder.status ?? 'OPEN'
             });
         }
     }, [purchaseOrder, isEditMode, reset]);
@@ -17,10 +18,9 @@ const useFormInit = (props) => {
     // Reset the form
     useEffect(() => {
         if (!isEditMode) {
-            reset(defaultFormValue)
+            reset(defaultFormValue);
         }
-    }, [isEditMode, reset])
-}
-
+    }, [isEditMode, reset]);
+};
 
 export default useFormInit;

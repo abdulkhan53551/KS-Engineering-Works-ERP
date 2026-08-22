@@ -13,7 +13,7 @@ const moduleTitles = {
 }
 
 // --- Reusable Modal Component ---
-export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, moduleData, fetchModuleFun, updateModuleData, onSubmit }) {
+export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, moduleData, selectedIds = [], fetchModuleFun, updateModuleData, onSubmit }) {
   const [localTasks, setLocalTasks] = useState([]);
   const [newTodo, setNewTodo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,14 +23,9 @@ export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, modul
   const totalSelected = useMemo(() => localTasks.filter(t => t.selected).length, [localTasks]);
   const modalTitle = `Select ${moduleTitles[moduleKey]}`;
 
-  // const invoiceId = "47";  // temp fix
-
-  // const { data, isLoading, isFetching, refetch } = fetchModuleFun(moduleKey)
   const { fetchDocument, deleteDocument } = fetchModuleFun(moduleKey)
   const { data, isLoading, isFetching, refetch } = fetchDocument()
   const { mutate: deleteDocumentItem, isSuccess: isDeletedSuccessfully } = deleteDocument()
-  // const { data, isLoading, isFetching, refetch } = useUnmappedInvoiceChallanByInvoiceId(invoiceId);
-  // const { mutate: deleteInvoiceChallan, isSuccess: isDeletedSuccessfully } = useDeleteInvoiceChallan();
 
   useEffect(() => {
     if (show) {
@@ -39,20 +34,23 @@ export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, modul
   }, [show])
 
   const newData = useMemo(() => {
-    const formatted = data?.map(item => ({
-      id: item.documentId,
-      text: `${item.documentNo} - (${item.customerName})`,
-      selected: item?.isInvoiced
-    })) ?? [];
+    const formatted = data?.map(item => {
+      const isSelectedInForm = Array.isArray(selectedIds) && selectedIds.includes(item.documentId);
+      return {
+        id: item.documentId,
+        text: `${item.documentNo} - (${item.customerName})`,
+        selected: isSelectedInForm || Boolean(item?.isInvoiced)
+      };
+    }) ?? [];
 
     return formatted;
-  }, [data])
+  }, [data, selectedIds]);
 
   useEffect(() => {
     setLocalTasks(newData);
     setSubmittedData(null);
     setSearchTerm('');
-  }, [moduleKey, isFetching, isDeletedSuccessfully]);
+  }, [newData, moduleKey, isFetching, isDeletedSuccessfully]);
 
   // const filteredTasks = localTasks.filter(task =>
   //   task.text.toLowerCase().includes(searchTerm.toLowerCase())
