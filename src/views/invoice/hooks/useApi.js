@@ -107,8 +107,11 @@ export const useCreateInvoice = () => {
             if (res.success) {
                 const id = res.data?.id;
                 toast.success(res.message || "Invoice created successfully.");
-                queryClient.invalidateQueries({ queryKey: ['invoiceList'] })
+                queryClient.invalidateQueries({ queryKey: ['invoiceList'] });
                 queryClient.invalidateQueries({ queryKey: ['invoicePagination'] });
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
+                queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
+                queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
                 navigate(`/sales/invoice/${id}/edit`, { replace: true });
             }
         }
@@ -128,6 +131,12 @@ export const useUpdateInvoice = (id) => {
                 queryClient.invalidateQueries({ queryKey: ['invoiceList'] });
                 queryClient.invalidateQueries({ queryKey: ['invoicePagination'] });
                 queryClient.invalidateQueries({ queryKey: ['invoiceById'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedInvoiceChallan'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedPurchaseOrder'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedEwayBill'] });
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
+                queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
+                queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
             }
         }
     });

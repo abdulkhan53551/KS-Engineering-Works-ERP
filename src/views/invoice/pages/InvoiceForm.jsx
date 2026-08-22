@@ -9,8 +9,8 @@ import SubmitButton from '../../../components/SubmitButton'
 import { FaRegCalendarAlt, FaRegWindowClose, FaWindowClose } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
-import { useGetInvoiceChallanById } from '../../invoice-challan/hooks/useApi';
 import { useInvoiceById } from '../hooks/useApi';
+
 import { MdAddBox } from 'react-icons/md';
 import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProductUnit, useStateCity } from '../../dashboard/hooks/api.hooks';
 import InvoiceItemsTable from '../components/InvoiceItemsTable';
@@ -175,6 +175,19 @@ const InvoiceForm = ({ mode }) => {
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
    const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule } = useAccountingDocumentModules({ invoiceId, setValue });
+
+   const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
+   const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
+   const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
+
+   const activeSelectedIds = useMemo(() => {
+      switch (activeModule) {
+         case 'challan': return currentChallanIds;
+         case 'purchaseOrder': return currentPoIds;
+         case 'ewayBill': return currentEwayBillIds;
+         default: return [];
+      }
+   }, [activeModule, currentChallanIds, currentPoIds, currentEwayBillIds]);
 
    return (
       <>
@@ -873,6 +886,7 @@ const InvoiceForm = ({ mode }) => {
                      moduleKey={activeModule}
                      invoiceId={invoiceId}
                      show={!!activeModule} // Only show if activeModule is set
+                     selectedIds={activeSelectedIds}
                      fetchModuleFun={fetchModuleFun}
                      onClose={closeModule}
                      moduleData={moduleData}

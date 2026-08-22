@@ -7,9 +7,7 @@ import { createPartyValidationSchema } from '../../../validation/party.validatio
 import {
     useCreateParty,
     usePartyById,
-    usePartyRoles,
-    useUpdateParty,
-    useUpdatePartyRoles
+    useUpdateParty
 } from '../hooks/usePartyApi';
 import PartyRoleSelector from '../components/PartyRoleSelector';
 import PartyAddressSection from '../components/sections/PartyAddressSection';
@@ -34,14 +32,12 @@ const PartyForm = ({ mode = 'create' }) => {
 
     // Queries
     const { data: party = {}, isLoading: isLoadingParty, isFetching: isFetchingParty } = usePartyById(partyId);
-    const { data: partyRoles = [] } = usePartyRoles(partyId);
 
     // Mutations
     const { mutate: createPartyMutate, isPending: isCreatingParty } = useCreateParty();
     const { mutate: updatePartyMutate, isPending: isUpdatingParty } = useUpdateParty(partyId);
-    const { mutate: updateRolesMutate, isPending: isUpdatingRoles } = useUpdatePartyRoles(partyId);
 
-    const isSubmitting = isCreatingParty || isUpdatingParty || isUpdatingRoles;
+    const isSubmitting = isCreatingParty || isUpdatingParty;
 
     const {
         register,
@@ -56,6 +52,7 @@ const PartyForm = ({ mode = 'create' }) => {
         mode: 'onBlur',
         reValidateMode: 'onChange',
         defaultValues: {
+            partyRoleIds: [],
             partyCode: '',
             legalName: '',
             displayName: '',
@@ -74,10 +71,11 @@ const PartyForm = ({ mode = 'create' }) => {
 
     const watchGstRegistered = useWatch({ control, name: 'gstRegistered' });
 
-    // Populate party form data when in edit mode
+    // Populate party form data and roles when in edit mode
     useEffect(() => {
         if (isEditMode && party && Object.keys(party).length > 0) {
             reset({
+                partyRoleIds: party.partyRoleIds || (Array.isArray(party.roles) ? party.roles.map(r => r.roleId || r.id) : []),
                 partyCode: party.partyCode || '',
                 legalName: party.legalName || '',
                 displayName: party.displayName || '',
@@ -92,16 +90,18 @@ const PartyForm = ({ mode = 'create' }) => {
                 remarks: party.remarks || '',
                 status: party.status || 'ACTIVE'
             });
-        }
-    }, [isEditMode, party, reset]);
 
-    // Populate party roles when loaded
-    useEffect(() => {
-        if (partyRoles && partyRoles.length > 0) {
-            const roleIds = partyRoles.map((r) => r.roleId || r.id);
+            // Populate partyRoleIds from party.partyRoleIds or party.roles
+            let roleIds = [];
+            if (Array.isArray(party.partyRoleIds)) {
+                roleIds = party.partyRoleIds.map(Number);
+            } else if (Array.isArray(party.roles)) {
+                roleIds = party.roles.map((r) => Number(r.roleId || r.id));
+            }
             setSelectedRoleIds(roleIds);
+            setValue('partyRoleIds', roleIds);
         }
-    }, [partyRoles]);
+    }, [isEditMode, party, reset, setValue]);
 
     // Auto-clear GSTIN when GST is toggled off
     useEffect(() => {
@@ -118,6 +118,7 @@ const PartyForm = ({ mode = 'create' }) => {
         }
 
         const payload = {
+            partyRoleIds: selectedRoleIds,
             partyCode: formData.partyCode.trim(),
             legalName: formData.legalName.trim(),
             displayName: formData.displayName.trim(),
@@ -134,20 +135,9 @@ const PartyForm = ({ mode = 'create' }) => {
         };
 
         if (isEditMode) {
-            updatePartyMutate(payload, {
-                onSuccess: () => {
-                    updateRolesMutate({ partyRoleIds: selectedRoleIds });
-                }
-            });
+            updatePartyMutate(payload);
         } else {
-            createPartyMutate(payload, {
-                onSuccess: (res) => {
-                    const newPartyId = res?.data?.id || res?.id;
-                    if (newPartyId && selectedRoleIds.length > 0) {
-                        updateRolesMutate({ partyRoleIds: selectedRoleIds });
-                    }
-                }
-            });
+            createPartyMutate(payload);
         }
     };
 
@@ -287,7 +277,10 @@ const PartyForm = ({ mode = 'create' }) => {
                             <Col xs={12}>
                                 <PartyRoleSelector
                                     selectedRoleIds={selectedRoleIds}
-                                    onChange={(ids) => setSelectedRoleIds(ids)}
+                                    onChange={(ids) => {
+                                        setSelectedRoleIds(ids);
+                                        setValue('partyRoleIds', ids, { shouldValidate: true });
+                                    }}
                                 />
                             </Col>
                         </Row>

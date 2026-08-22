@@ -5,11 +5,12 @@ const useFormInit = (props) => {
 
     // Prefill form
     useEffect(() => {
-        if (invoiceChallan && isEditMode) {
-            const { poId, ...rest } = invoiceChallan;
-
+        if (invoiceChallan && isEditMode && Object.keys(invoiceChallan).length > 0) {
             reset({
-                ...rest,
+                invoiceId: invoiceChallan.invoiceId ?? null,
+                challanNo: invoiceChallan.challanNo ?? '',
+                challanDate: invoiceChallan.challanDate ? new Date(invoiceChallan.challanDate) : new Date(),
+                customerName: invoiceChallan.customerName ?? '',
             });
         }
     }, [invoiceChallan, isEditMode, reset]);
@@ -17,10 +18,9 @@ const useFormInit = (props) => {
     // Reset the form
     useEffect(() => {
         if (!isEditMode) {
-            reset(defaultFormValue)
+            reset(defaultFormValue);
         }
-    }, [isEditMode, reset])
-}
-
+    }, [isEditMode, reset]);
+};
 
 export default useFormInit;
