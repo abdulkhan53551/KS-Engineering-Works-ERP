@@ -1,3 +1,4 @@
+import moment from "moment";
 import { useCreatInvoiceChallan, useUpdateInvoiceChallan } from "./useApi";
 
 const useHandleSubmit = (props) => {
@@ -8,11 +9,11 @@ const useHandleSubmit = (props) => {
     const onSubmit = (data) => {
         if (createInvoiceChallanIsPending || updateInvoiceChallanIsPending) return false;
 
-        const challanDateISO = data.challanDate ? new Date(data.challanDate).toISOString() : null;
+        const challanDate = data.challanDate ? moment(data.challanDate).format('YYYY-MM-DD') : null;
 
         const formPayload = {
             challanNo: data.challanNo?.trim(),
-            challanDate: challanDateISO,
+            challanDate,
             customerName: data.customerName?.trim(),
             invoiceId: data.invoiceId ? Number(data.invoiceId) : null
         };

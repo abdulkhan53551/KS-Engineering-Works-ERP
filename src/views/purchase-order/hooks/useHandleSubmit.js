@@ -1,3 +1,4 @@
+import moment from "moment";
 import { useCreatPurchaseOrder, useUpdatePurchaseOrder } from "./useApi";
 
 const useHandleSubmit = (props) => {
@@ -8,11 +9,11 @@ const useHandleSubmit = (props) => {
     const onSubmit = (data) => {
         if (createPurchaseOrderIsPending || updatePurchaseOrderIsPending) return false;
 
-        const poDateISO = data.poDate ? new Date(data.poDate).toISOString() : null;
+        const poDate = data.poDate ? moment(data.poDate).format('YYYY-MM-DD') : null;
 
         const formPayload = {
             poNo: data.poNo?.trim(),
-            poDate: poDateISO,
+            poDate,
             customerName: data.customerName?.trim(),
             status: data.status || 'OPEN'
         };
