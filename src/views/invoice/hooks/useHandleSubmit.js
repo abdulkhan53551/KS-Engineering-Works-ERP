@@ -1,3 +1,4 @@
+import moment from "moment";
 import { useCreateInvoice, useUpdateInvoice } from "./useApi";
 
 const useHandleSubmit = (props) => {
@@ -8,8 +9,8 @@ const useHandleSubmit = (props) => {
     const onSubmit = (data) => {
         delete data.roundOffManual;
 
-        const invoiceDateISO = data.invoiceDate ? new Date(data.invoiceDate).toISOString() : null;
-        const dueDateISO = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+        const invoiceDate = data.invoiceDate ? moment(data.invoiceDate).format('YYYY-MM-DD') : null;
+        const dueDate = data.dueDate ? moment(data.dueDate).format('YYYY-MM-DD') : null;
 
         if (createInvoiceIsPending || updateInvoiceIsPending) return false;
 
@@ -18,8 +19,8 @@ const useHandleSubmit = (props) => {
             challanIds: data.hasChallan ? (data.challanIds || []) : [],
             poIds: data.hasPo ? (data.poIds || []) : [],
             ewayBillIds: data.hasEwayBill ? (data.ewayBillIds || []) : [],
-            invoiceDate: invoiceDateISO,
-            dueDate: dueDateISO
+            invoiceDate,
+            dueDate
         };
 
         if (isEditMode) {
