@@ -2,27 +2,35 @@ import api from "../../lib/axios";
 import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
-// Get invoice
-export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '' }) => {
+// Get invoice pagination
+export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+    const params = { page, pageSize };
+    if (search) params.search = search;
+    if (trash) params.trash = trash;
+
     const res = await api.request({
         url: '/invoice/pagination',
         method: requestMethod.GET,
-        params: { page, pageSize, search }
+        params
     });
 
     return res.data;
-})
+});
 
-// Get invoice
-export const getInvoice = asyncHandler(async ({ page = 1, pageSize = 10, search = '' }) => {
+// Get invoice list
+export const getInvoice = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+    const params = { page, pageSize };
+    if (search) params.search = search;
+    if (trash) params.trash = trash;
+
     const res = await api.request({
         url: '/invoice',
         method: requestMethod.GET,
-        params: { page, pageSize, search }
+        params
     });
 
     return res.data;
-})
+});
 
 // Get invoice by id
 export const getInvoiceById = asyncHandler(async (id) => {
@@ -32,7 +40,7 @@ export const getInvoiceById = asyncHandler(async (id) => {
     });
 
     return res.data;
-})
+});
 
 // Create invoice
 export const createInvoice = asyncHandler(async (request) => {
@@ -43,7 +51,7 @@ export const createInvoice = asyncHandler(async (request) => {
     });
 
     return res.data;
-})
+});
 
 // Update invoice
 export const updateInvoice = asyncHandler(async (id, request) => {
@@ -54,13 +62,43 @@ export const updateInvoice = asyncHandler(async (id, request) => {
     });
 
     return res.data;
-})
+});
 
-// Delete invoice
-export const deleteInvoice = asyncHandler(async (id) => {
+// Delete invoice (Soft delete or Permanent delete)
+export const deleteInvoice = asyncHandler(async (id, isPermanentDelete = false) => {
     const res = await api.request({
         url: `/invoice/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+// Restore invoice from trash
+export const restoreInvoice = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/invoice/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+// Bulk delete invoices (Soft delete or Permanent delete)
+export const bulkDeleteInvoices = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/invoice/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+    return res.data;
+});
+
+// Bulk restore invoices from trash
+export const bulkRestoreInvoices = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/invoice/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
     return res.data;
 });

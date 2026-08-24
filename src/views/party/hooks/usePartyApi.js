@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+    bulkDeleteParties,
+    bulkRestoreParties,
     createParty,
     createPartyAddress,
     createPartyBankAccount,
@@ -21,6 +23,7 @@ import {
     getPartyDetailsById,
     getPartyContacts,
     getPartyContactById,
+    restoreParty,
     searchParties,
     updateParty,
     updatePartyAddress,
@@ -71,10 +74,10 @@ export const useMasterPartyRoles = () => {
    2. MAIN PARTY HOOKS
    ========================================================================= */
 
-export const usePartyPagination = ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '' }) => {
+export const usePartyPagination = ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '', trash = false }) => {
     return useQuery({
-        queryKey: ["partyPagination", page, pageSize, search, status, gstRegistered],
-        queryFn: () => getPartiesPagination({ page, pageSize, search, status, gstRegistered }),
+        queryKey: ["partyPagination", page, pageSize, search, status, gstRegistered, trash],
+        queryFn: () => getPartiesPagination({ page, pageSize, search, status, gstRegistered, trash }),
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? result?.pagination ?? {};
@@ -95,10 +98,10 @@ export const usePartyPagination = ({ page = 1, pageSize = 10, search = '', statu
     });
 };
 
-export const useParties = ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '' }) => {
+export const useParties = ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '', trash = false }) => {
     return useQuery({
-        queryKey: ["partyList", page, pageSize, search, status, gstRegistered],
-        queryFn: () => getParties({ page, pageSize, search, status, gstRegistered }),
+        queryKey: ["partyList", page, pageSize, search, status, gstRegistered, trash],
+        queryFn: () => getParties({ page, pageSize, search, status, gstRegistered, trash }),
         keepPreviousData: true,
         select: (result) => {
             const list = result?.data ?? [];
@@ -192,7 +195,7 @@ export const useDeleteParty = () => {
 
     return useMutation({
         mutationKey: ["deleteParty"],
-        mutationFn: (id) => deleteParty(id),
+        mutationFn: ({ id, isPermanentDelete = false }) => deleteParty(id, isPermanentDelete),
         onSuccess: (res) => {
             dispatch(clearLoading());
             closeModal();
@@ -204,6 +207,78 @@ export const useDeleteParty = () => {
         onError: (error) => {
             dispatch(clearLoading());
             const message = error?.response?.data?.message || error?.message || "Something went wrong while deleting the party.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useRestoreParty = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreParty"],
+        mutationFn: (id) => restoreParty(id),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Party restored from Trash successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["partyList"] });
+            queryClient.invalidateQueries({ queryKey: ["partyPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message = error?.response?.data?.message || error?.message || "Failed to restore party.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useBulkDeleteParties = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteParties"],
+        mutationFn: ({ ids, isPermanentDelete = false }) => bulkDeleteParties({ ids, isPermanentDelete }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Selected parties deleted successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["partyList"] });
+            queryClient.invalidateQueries({ queryKey: ["partyPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message = error?.response?.data?.message || error?.message || "Failed to delete selected parties.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useBulkRestoreParties = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreParties"],
+        mutationFn: ({ ids }) => bulkRestoreParties({ ids }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Selected parties restored successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["partyList"] });
+            queryClient.invalidateQueries({ queryKey: ["partyPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message = error?.response?.data?.message || error?.message || "Failed to restore selected parties.";
             toast.error(message);
         }
     });

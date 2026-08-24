@@ -1,30 +1,57 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
+import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, FormCheck } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import Card from '../../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaSyncAlt } from 'react-icons/fa';
+import {
+    FaPen,
+    FaTrash,
+    FaEye,
+    FaPlus,
+    FaSearch,
+    FaTimes,
+    FaSort,
+    FaSortAlphaUpAlt,
+    FaSortAlphaDownAlt,
+    FaSyncAlt,
+    FaUndo,
+    FaExclamationTriangle
+} from 'react-icons/fa';
 import PageLoader from '../../../../components/PageLoader';
 import PaginationBar from '../../../../components/PaginationBar';
-import { useAddressTypesList, useDeleteAddressType } from '../../hooks/useMastersApi';
+import {
+    useAddressTypesList,
+    useDeleteAddressType,
+    useRestoreAddressType,
+    useBulkDeleteAddressTypes,
+    useBulkRestoreAddressTypes
+} from '../../hooks/useMastersApi';
 import { useUIManager } from '../../../../contexts/UIManagerContext';
 import { useDispatch } from 'react-redux';
 import { setModalLoading } from '../../../../store/uiModal.slice';
 import AddressTypeModal from '../components/AddressTypeModal';
+import TrashTabFilter from '../../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../../components/trash/BulkActionBar';
+import moment from 'moment';
+import useDebounce from '../../../../hooks/useDebounce';
 
 /**
  * AddressTypeList Component
- * Clean and professional master list for Address Types matching PartyList structure.
+ * Master list for Address Types with Recycle Bin, Multi-Selection, and Debounced Search.
  */
 const AddressTypeList = () => {
     const dispatch = useDispatch();
     const { showModal } = useUIManager();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Local state for pagination, filters, and sorting
+    // Local state for pagination, filters, sorting, and trash
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+    const [isTrash, setIsTrash] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const debouncedSearch = useDebounce(searchTerm, 400);
 
     const [modalState, setModalState] = useState({
         show: false,
@@ -32,8 +59,11 @@ const AddressTypeList = () => {
         selectedItem: null
     });
 
-    const { data: addressTypes = [], isLoading, isFetching, refetch } = useAddressTypesList();
+    const { data: addressTypes = [], isLoading, isFetching, refetch } = useAddressTypesList({ trash: isTrash });
     const { mutate: deleteType, isPending: isDeleting } = useDeleteAddressType();
+    const { mutate: restoreType, isPending: isRestoring } = useRestoreAddressType();
+    const { mutate: bulkDeleteTypes, isPending: isBulkDeleting } = useBulkDeleteAddressTypes();
+    const { mutate: bulkRestoreTypes, isPending: isBulkRestoring } = useBulkRestoreAddressTypes();
 
     // Auto-open modal if URL has ?action=create
     useEffect(() => {
@@ -47,6 +77,13 @@ const AddressTypeList = () => {
             setSearchParams(searchParams, { replace: true });
         }
     }, [searchParams, setSearchParams]);
+
+    // Handle Tab Switch
+    const handleTabChange = (trashState) => {
+        setIsTrash(trashState);
+        setPage(1);
+        setSelectedIds([]);
+    };
 
     // Sorting handler
     const handleSort = (key) => {
@@ -73,17 +110,20 @@ const AddressTypeList = () => {
     const sortedAndFilteredList = useMemo(() => {
         let items = [...addressTypes];
 
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase().trim();
+        // Search Filter
+        if (debouncedSearch.trim()) {
+            const term = debouncedSearch.toLowerCase().trim();
             items = items.filter((item) => {
                 const idStr = String(item.id || '');
                 const code = (item.code || item.typeCode || '').toLowerCase();
                 const name = (item.name || item.typeName || '').toLowerCase();
                 const desc = (item.description || '').toLowerCase();
-                return idStr.includes(term) || code.includes(term) || name.includes(term) || desc.includes(term);
+                const delBy = (item.deletedBy || '').toLowerCase();
+                return idStr.includes(term) || code.includes(term) || name.includes(term) || desc.includes(term) || delBy.includes(term);
             });
         }
 
+        // Sorting
         if (sortConfig.key) {
             items.sort((a, b) => {
                 let aVal = '';
@@ -111,7 +151,7 @@ const AddressTypeList = () => {
         }
 
         return items;
-    }, [addressTypes, searchTerm, sortConfig]);
+    }, [addressTypes, debouncedSearch, sortConfig]);
 
     // Pagination calculations
     const total = sortedAndFilteredList.length;
@@ -123,6 +163,25 @@ const AddressTypeList = () => {
         const start = (page - 1) * pageSize;
         return sortedAndFilteredList.slice(start, start + pageSize);
     }, [sortedAndFilteredList, page, pageSize]);
+
+    // Multi-selection handlers
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            const pageIds = pagedList.map((item) => item.id);
+            setSelectedIds(pageIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectRow = (id) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const isAllSelected = pagedList.length > 0 && pagedList.every((item) => selectedIds.includes(item.id));
+    const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
     const handleOpenModal = (mode = 'create', item = null) => {
         setModalState({
@@ -140,17 +199,98 @@ const AddressTypeList = () => {
         });
     };
 
+    // Action: Move to Trash (Soft Delete)
     const handleDelete = (item) => {
-        const label = item.name || item.typeName || item.code || `Type #${item.id}`;
+        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
         showModal('confirm', {
             show: true,
-            title: 'Delete Address Type',
-            message: `Are you sure you want to delete "${label}"?`,
-            confirmText: 'Delete',
+            title: 'Move to Recycle Bin',
+            message: `Are you sure you want to move address type "${label}" to the Recycle Bin?`,
+            confirmText: 'Move to Bin',
             confirmVariant: 'danger',
             onConfirm: async () => {
                 dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteType(item.id);
+                deleteType({ id: item.id, isPermanentDelete: false });
+            }
+        });
+    };
+
+    // Action: Restore Single Item
+    const handleRestore = (item) => {
+        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
+        showModal('confirm', {
+            show: true,
+            title: 'Restore Address Type',
+            message: `Are you sure you want to restore address type "${label}" back to active address types?`,
+            confirmText: 'Restore',
+            confirmVariant: 'success',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                restoreType(item.id);
+            }
+        });
+    };
+
+    // Action: Permanent Delete Single Item
+    const handlePermanentDelete = (item) => {
+        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
+        showModal('confirm', {
+            show: true,
+            title: 'Permanently Delete Address Type',
+            message: `Are you sure you want to PERMANENTLY delete address type "${label}"? This action cannot be undone.`,
+            confirmText: 'Delete Permanently',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                deleteType({ id: item.id, isPermanentDelete: true });
+            }
+        });
+    };
+
+    // Bulk: Move to Trash
+    const handleBulkDelete = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Move Selected to Recycle Bin',
+            message: `Are you sure you want to move ${selectedIds.length} selected address types to the Recycle Bin?`,
+            confirmText: 'Move to Bin',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: false });
+                setSelectedIds([]);
+            }
+        });
+    };
+
+    // Bulk: Restore
+    const handleBulkRestore = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Restore Selected Address Types',
+            message: `Are you sure you want to restore ${selectedIds.length} selected address types back to active?`,
+            confirmText: 'Restore All',
+            confirmVariant: 'success',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkRestoreTypes({ ids: selectedIds });
+                setSelectedIds([]);
+            }
+        });
+    };
+
+    // Bulk: Permanent Delete
+    const handleBulkPermanentDelete = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Permanently Delete Selected Address Types',
+            message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected address types? This action CANNOT be undone.`,
+            confirmText: 'Delete Permanently',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: true });
+                setSelectedIds([]);
             }
         });
     };
@@ -160,7 +300,7 @@ const AddressTypeList = () => {
             <Row>
                 <Col sm="12">
                     <Card>
-                        {/* 1. Header with Title, Count, and Add Button */}
+                        {/* 1. Header with Title, Tabs, Count, and Add Button */}
                         <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div className="header-title d-flex align-items-center gap-2">
                                 <h4 className="card-title mb-0">Address Types</h4>
@@ -170,19 +310,35 @@ const AddressTypeList = () => {
                                     </Badge>
                                 )}
                             </div>
+
+                            {/* Active vs Recycle Bin Tabs */}
+                            <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
+
                             <div className="d-flex align-items-center gap-2">
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    className="d-flex align-items-center gap-1.5 shadow-sm"
-                                    onClick={() => handleOpenModal('create')}
-                                    style={{ fontSize: '0.82rem', fontWeight: 600 }}
-                                >
-                                    <FaPlus size={11} />
-                                    <span>Add Address Type</span>
-                                </Button>
+                                {!isTrash && (
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        className="d-flex align-items-center gap-1.5 shadow-sm"
+                                        onClick={() => handleOpenModal('create')}
+                                        style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                                    >
+                                        <FaPlus size={11} />
+                                        <span>Add Address Type</span>
+                                    </Button>
+                                )}
                             </div>
                         </Card.Header>
+
+                        {/* Bulk Action Bar */}
+                        <BulkActionBar
+                            selectedCount={selectedIds.length}
+                            isTrash={isTrash}
+                            onBulkDelete={handleBulkDelete}
+                            onBulkRestore={handleBulkRestore}
+                            onBulkPermanentDelete={handleBulkPermanentDelete}
+                            onDeselectAll={() => setSelectedIds([])}
+                        />
 
                         <Card.Body className="px-0">
                             {/* PageLoader for background refetching */}
@@ -200,6 +356,7 @@ const AddressTypeList = () => {
                                         onChange={(e) => {
                                             setPageSize(Number(e.target.value));
                                             setPage(1);
+                                            setSelectedIds([]);
                                         }}
                                     >
                                         <option value="10">10</option>
@@ -223,6 +380,7 @@ const AddressTypeList = () => {
                                             onChange={(e) => {
                                                 setSearchTerm(e.target.value);
                                                 setPage(1);
+                                                setSelectedIds([]);
                                             }}
                                             className="border-start-0 border-end-0 ps-0"
                                             style={{ fontSize: '0.84rem' }}
@@ -234,6 +392,7 @@ const AddressTypeList = () => {
                                                 onClick={() => {
                                                     setSearchTerm('');
                                                     setPage(1);
+                                                    setSelectedIds([]);
                                                 }}
                                                 title="Clear search"
                                             >
@@ -254,11 +413,21 @@ const AddressTypeList = () => {
                                 </div>
                             </Col>
 
-                            {/* 3. Table Content with Thin Header, Zebra Striping and Bordered Columns */}
+                            {/* 3. Table Content */}
                             <div className="table-responsive">
                                 <Table className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive>
                                     <thead className="light">
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                            <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
+                                                <FormCheck
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    ref={(el) => {
+                                                        if (el) el.indeterminate = isIndeterminate;
+                                                    }}
+                                                    onChange={handleSelectAll}
+                                                />
+                                            </th>
                                             <th
                                                 className="text-center cursor-pointer user-select-none py-2"
                                                 style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.3rem' }}
@@ -287,6 +456,12 @@ const AddressTypeList = () => {
                                             >
                                                 Description {renderSortIcon('description')}
                                             </th>
+                                            {isTrash && (
+                                                <>
+                                                    <th style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
+                                                    <th style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}>Deleted By</th>
+                                                </>
+                                            )}
                                             <th
                                                 className="text-center py-2"
                                                 style={{ width: '120px', minWidth: '120px', padding: '0.45rem 0.5rem' }}
@@ -298,21 +473,31 @@ const AddressTypeList = () => {
                                     <tbody style={{ fontSize: '0.86rem' }}>
                                         {isLoading ? (
                                             Array.from({ length: 4 }).map((_, idx) => (
-                                                <tr key={`addr-type-skel-${idx}`}>
+                                                <tr key={`address-type-skel-${idx}`}>
+                                                    <td className="text-center py-2"><span className="placeholder col-6 rounded" /></td>
                                                     <td className="text-center py-2"><span className="placeholder col-6 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-8 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-10 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-12 rounded" /></td>
+                                                    {isTrash && (
+                                                        <>
+                                                            <td className="py-2"><span className="placeholder col-8 rounded" /></td>
+                                                            <td className="py-2"><span className="placeholder col-8 rounded" /></td>
+                                                        </>
+                                                    )}
                                                     <td className="text-center py-2"><span className="placeholder col-8 rounded" /></td>
                                                 </tr>
                                             ))
                                         ) : pagedList.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="text-center py-5 text-muted">
+                                                <td colSpan={isTrash ? 8 : 6} className="text-center py-5 text-muted">
                                                     <div className="mb-2">
-                                                        {searchTerm ? `No address types matching "${searchTerm}"` : 'No address types found.'}
+                                                        {isTrash
+                                                            ? (searchTerm ? `No deleted address types matching "${searchTerm}"` : 'Recycle Bin is empty.')
+                                                            : (searchTerm ? `No address types matching "${searchTerm}"` : 'No address types found.')
+                                                        }
                                                     </div>
-                                                    {!searchTerm && (
+                                                    {!searchTerm && !isTrash && (
                                                         <Button
                                                             variant="outline-primary"
                                                             size="sm"
@@ -326,7 +511,14 @@ const AddressTypeList = () => {
                                             </tr>
                                         ) : (
                                             pagedList.map((item) => (
-                                                <tr key={item.id}>
+                                                <tr key={item.id} className={selectedIds.includes(item.id) ? 'table-active' : ''}>
+                                                    <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
+                                                        <FormCheck
+                                                            type="checkbox"
+                                                            checked={selectedIds.includes(item.id)}
+                                                            onChange={() => handleSelectRow(item.id)}
+                                                        />
+                                                    </td>
                                                     <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>
                                                         {item.id}
                                                     </td>
@@ -341,41 +533,85 @@ const AddressTypeList = () => {
                                                     <td style={{ padding: '0.45rem 0.5rem' }}>
                                                         <span className="text-muted small">{item.description || '—'}</span>
                                                     </td>
+                                                    {isTrash && (
+                                                        <>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-muted small">
+                                                                    {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-dark small">
+                                                                    {item.deletedBy || '—'}
+                                                                </span>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                     <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                                         <div className="d-inline-flex align-items-center gap-1">
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>View Details</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-info"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    onClick={() => handleOpenModal('view', item)}
-                                                                >
-                                                                    <FaEye size={11} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                            {!isTrash ? (
+                                                                <>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>View Details</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-info"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => handleOpenModal('view', item)}
+                                                                        >
+                                                                            <FaEye size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
 
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>Edit Type</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-success"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    onClick={() => handleOpenModal('edit', item)}
-                                                                >
-                                                                    <FaPen size={10} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Edit Type</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => handleOpenModal('edit', item)}
+                                                                        >
+                                                                            <FaPen size={10} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
 
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>Delete Type</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-danger"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    disabled={isDeleting}
-                                                                    onClick={() => handleDelete(item)}
-                                                                >
-                                                                    <FaTrash size={10} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Move to Bin</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isDeleting}
+                                                                            onClick={() => handleDelete(item)}
+                                                                        >
+                                                                            <FaTrash size={10} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Restore Type</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isRestoring}
+                                                                            onClick={() => handleRestore(item)}
+                                                                        >
+                                                                            <FaUndo size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Permanently Delete</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isDeleting}
+                                                                            onClick={() => handlePermanentDelete(item)}
+                                                                        >
+                                                                            <FaExclamationTriangle size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -399,7 +635,10 @@ const AddressTypeList = () => {
                                             pageSize={pageSize}
                                             total={total}
                                             totalPages={totalPages}
-                                            onPageChange={setPage}
+                                            onPageChange={(newPage) => {
+                                                setPage(newPage);
+                                                setSelectedIds([]);
+                                            }}
                                         />
                                     </Col>
                                 </Row>

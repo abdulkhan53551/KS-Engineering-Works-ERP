@@ -1,14 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createInvoiceChallan, deleteInvoiceChallan, getInvoiceChallan, getInvoiceChallanById, getInvoiceChallanPagination, updateInvoiceChallan } from "../api";
+import {
+    bulkDeleteInvoiceChallans,
+    bulkRestoreInvoiceChallans,
+    createInvoiceChallan,
+    deleteInvoiceChallan,
+    getInvoiceChallan,
+    getInvoiceChallanById,
+    getInvoiceChallanPagination,
+    restoreInvoiceChallan,
+    updateInvoiceChallan
+} from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { clearLoading } from "../../../store/uiModal.slice";
+import { useDispatch } from "react-redux";
+import { useUIManager } from "../../../contexts/UIManagerContext";
 
-// Get firms pagination
-export const useGetInvoiceChallanPagination = ({ page, pageSize, search }) => {
+// Get invoice challan pagination
+export const useGetInvoiceChallanPagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["invoiceChallanPagination", page, pageSize, search],
-        queryFn: () => getInvoiceChallanPagination({ page, pageSize, search }),
-        // staleTime: 0,
+        queryKey: ["invoiceChallanPagination", page, pageSize, search, trash],
+        queryFn: () => getInvoiceChallanPagination({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
@@ -24,15 +36,15 @@ export const useGetInvoiceChallanPagination = ({ page, pageSize, search }) => {
             };
         }
     });
-}
-// Get firms
-export const useGetInvoiceChallan = ({ page, pageSize, search }) => {
+};
+
+// Get invoice challan list
+export const useGetInvoiceChallan = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["invoiceChallanList", page, pageSize, search],
-        queryFn: () => getInvoiceChallan({ page, pageSize, search }),
+        queryKey: ["invoiceChallanList", page, pageSize, search, trash],
+        queryFn: () => getInvoiceChallan({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
-            // const data = json.parse(JSON.stringify(result?.data ?? []));
             const data = result?.data?.map(item => ({
                 ...item,
                 color: item.isInvoiced ? 'bg-success' : 'bg-danger',
@@ -42,9 +54,9 @@ export const useGetInvoiceChallan = ({ page, pageSize, search }) => {
             return data;
         }
     });
-}
+};
 
-// Get firm by id
+// Get invoice challan by id
 export const useGetInvoiceChallanById = (id = 0) => {
     return useQuery({
         queryKey: ["invoiceChallanById", id],
@@ -54,9 +66,9 @@ export const useGetInvoiceChallanById = (id = 0) => {
             return result?.data ?? {};
         }
     });
-}
+};
 
-// Create firm
+// Create invoice challan
 export const useCreatInvoiceChallan = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -68,15 +80,15 @@ export const useCreatInvoiceChallan = () => {
             if (res.success) {
                 const challanId = res.data?.id;
                 toast.success(res.message || "Challan created successfully.");
-                queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] })
-                queryClient.invalidateQueries({ queryKey: ['invoiceChallanPagination'] })
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
+                queryClient.invalidateQueries({ queryKey: ['invoiceChallanPagination'] });
                 navigate(`/sales/challans/${challanId}/edit`, { replace: true });
             }
         }
     });
-}
+};
 
-// Update firm
+// Update invoice challan
 export const useUpdateInvoiceChallan = (id) => {
     const queryClient = useQueryClient();
 
@@ -92,34 +104,131 @@ export const useUpdateInvoiceChallan = (id) => {
             }
         }
     });
-}
+};
 
+// Delete invoice challan (Soft delete or Permanent delete)
 export const useDeleteInvoiceChallan = () => {
     const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
 
     return useMutation({
         mutationKey: ["deleteInvoiceChallan"],
-        mutationFn: deleteInvoiceChallan,
-        onSuccess: (res, { id, invoiceId, type }) => {
+        mutationFn: ({ id, isPermanentDelete = false }) => deleteInvoiceChallan({ id, isPermanentDelete }),
+        onSuccess: (res, { id, invoiceId }) => {
             if (res.success) {
+                dispatch(clearLoading());
+                closeModal();
                 toast.success(res.message || "Challan deleted successfully.");
 
-                if (type === 'invoiceChallanPopup') {
+                if (invoiceId) {
+                    queryClient.setQueryData(['unmappedInvoiceChallan', invoiceId], (old) => {
+                        const newData = {
+                            ...old,
+                            data: old?.data?.filter(item => item.challanId !== id) ?? []
+                        };
+                        return newData;
+                    });
                 }
-                // Refresh the list
-                queryClient.setQueryData(['unmappedInvoiceChallan', invoiceId], (old) => {
-                    const newData = {
-                        ...old,
-                        data: old?.data?.filter(item => item.challanId !== id) ?? []
-                    }
-                    
-                    return newData;
-                });
 
                 // also sync fresh data
                 queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
                 queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
+                queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
             }
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Something went wrong while deleting";
+
+            toast.error(message);
+        }
+    });
+};
+
+// Restore invoice challan from trash
+export const useRestoreInvoiceChallan = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreInvoiceChallan"],
+        mutationFn: (id) => restoreInvoiceChallan(id),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Challan restored successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore invoice challan.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk delete invoice challans (Soft delete or Permanent delete)
+export const useBulkDeleteInvoiceChallans = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteInvoiceChallans"],
+        mutationFn: ({ ids, isPermanentDelete = false }) => bulkDeleteInvoiceChallans({ ids, isPermanentDelete }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected challans deleted successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to delete selected challans.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk restore invoice challans from trash
+export const useBulkRestoreInvoiceChallans = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreInvoiceChallans"],
+        mutationFn: ({ ids }) => bulkRestoreInvoiceChallans({ ids }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected challans restored successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore selected challans.";
+            toast.error(message);
         }
     });
 };

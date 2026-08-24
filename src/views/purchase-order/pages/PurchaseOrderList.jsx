@@ -1,69 +1,175 @@
 import React, { memo, useCallback, useState } from 'react'
-import { Row, Col, Table, Button, Form, Offcanvas } from 'react-bootstrap'
+import { Row, Col, Table, Button, Form, FormCheck } from 'react-bootstrap'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Card from '../../../components/Card'
-import { FaPen, FaTrash } from 'react-icons/fa';
-import { FaSearchengin } from 'react-icons/fa';
-import useKsSearchParam from '../../../hooks/useSearchParam';
+import { FaPen, FaTrash, FaUndo, FaExclamationTriangle } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
-import { useDeletePurchaseOrder, usePurchaseOrder, usePurchaseOrderPagination } from '../hooks/useApi';
+import {
+   useBulkDeletePurchaseOrders,
+   useBulkRestorePurchaseOrders,
+   useDeletePurchaseOrder,
+   usePurchaseOrder,
+   usePurchaseOrderPagination,
+   useRestorePurchaseOrder
+} from '../hooks/useApi';
 import PaginationBar from '../../../components/PaginationBar';
 import { useUIManager } from '../../../contexts/UIManagerContext';
 import { useDispatch } from 'react-redux';
 import { setModalLoading } from '../../../store/uiModal.slice';
+import TrashTabFilter from '../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../components/trash/BulkActionBar';
+import moment from 'moment';
+import useDebounce from '../../../hooks/useDebounce';
 
 const pageSize = 10;
 
 const PurchaseOrderList = () => {
    const dispatch = useDispatch();
-   const [page, setPage] = useState(1)
-   const [tableData, setTableData] = useState([])
-   const [filterData, setFilterData] = useState([])
+   const [page, setPage] = useState(1);
+   const [search, setSearch] = useState('');
+   const [isTrash, setIsTrash] = useState(false);
+   const [selectedIds, setSelectedIds] = useState([]);
 
-   const { data: purchaseOrder = [] } = usePurchaseOrder({ page, pageSize });
-   const { data: pagination = {} } = usePurchaseOrderPagination({ page, pageSize });
+   const debouncedSearch = useDebounce(search, 400);
+
+   const { data: purchaseOrder = [], isLoading } = usePurchaseOrder({ page, pageSize, search: debouncedSearch, trash: isTrash });
+   const { data: pagination = {} } = usePurchaseOrderPagination({ page, pageSize, search: debouncedSearch, trash: isTrash });
    const { mutate: deletePurchaseOrder } = useDeletePurchaseOrder();
+   const { mutate: restorePurchaseOrder } = useRestorePurchaseOrder();
+   const { mutate: bulkDeletePurchaseOrders } = useBulkDeletePurchaseOrders();
+   const { mutate: bulkRestorePurchaseOrders } = useBulkRestorePurchaseOrders();
+
    const { pageStart, pageEnd, total: totalItems } = pagination;
+   const { showModal } = useUIManager();
+
+   const handleTabChange = (trashState) => {
+      setIsTrash(trashState);
+      setPage(1);
+      setSelectedIds([]);
+   };
 
    const onSearch = (e) => {
-      const { name, value: searchTerm } = e.target;
-      const keysToRemove = ['id', 'color'];
+      setSearch(e.target.value);
+      setPage(1);
+      setSelectedIds([]);
+   };
 
-      // Function to filter data based on search term across all fields
-      const filteredData = tableData?.filter((item) =>
-         Object.values(
-            // Remove keys/property from object
-            Object.fromEntries(
-               Object.entries(item).filter(([key]) => !keysToRemove.includes(key))
-            )
-            // Search OR Match data
-         ).some((value) =>
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-         )
-      ) ?? [];
+   const handleOnPageChange = useCallback((newPage) => {
+      setPage(newPage);
+      setSelectedIds([]);
+   }, []);
 
-      setFilterData(filteredData)
-   }
+   // Multi-selection handlers
+   const handleSelectAll = (e) => {
+      if (e.target.checked) {
+         const allIds = purchaseOrder.map(item => item.poId);
+         setSelectedIds(allIds);
+      } else {
+         setSelectedIds([]);
+      }
+   };
 
-   // Handle on page change
-   const handleOnPageChange = useCallback(setPage, [page])
+   const handleSelectRow = (id) => {
+      setSelectedIds(prev =>
+         prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+      );
+   };
 
-   const { showModal, showToast } = useUIManager();
+   const isAllSelected = purchaseOrder.length > 0 && selectedIds.length === purchaseOrder.length;
+   const isIndeterminate = selectedIds.length > 0 && selectedIds.length < purchaseOrder.length;
 
-   // Handle item delete
+   // Action: Move to Trash (Soft Delete)
    const handleDelete = (id, name) => {
       showModal("confirm", {
          show: true,
-         title: "Confirm Delete",
-         message: `Are you sure you want to delete "${name}"?`,
-         confirmText: "Delete",
+         title: "Move to Recycle Bin",
+         message: `Are you sure you want to move Purchase Order "${name}" to the Recycle Bin?`,
+         confirmText: "Move to Bin",
+         confirmVariant: "danger",
          onConfirm: async () => {
             dispatch(setModalLoading({ key: "delete", isLoading: true }));
-            deletePurchaseOrder({id});
+            deletePurchaseOrder({ id, isPermanentDelete: false });
          },
       });
    };
 
+   // Action: Restore Single Item
+   const handleRestore = (id, name) => {
+      showModal("confirm", {
+         show: true,
+         title: "Restore Purchase Order",
+         message: `Are you sure you want to restore Purchase Order "${name}" back to active records?`,
+         confirmText: "Restore",
+         confirmVariant: "success",
+         onConfirm: async () => {
+            dispatch(setModalLoading({ key: "delete", isLoading: true }));
+            restorePurchaseOrder(id);
+         },
+      });
+   };
+
+   // Action: Permanent Delete Single Item
+   const handlePermanentDelete = (id, name) => {
+      showModal("confirm", {
+         show: true,
+         title: "Permanently Delete Purchase Order",
+         message: `Are you sure you want to PERMANENTLY delete Purchase Order "${name}"? This action cannot be undone.`,
+         confirmText: "Delete Permanently",
+         confirmVariant: "danger",
+         onConfirm: async () => {
+            dispatch(setModalLoading({ key: "delete", isLoading: true }));
+            deletePurchaseOrder({ id, isPermanentDelete: true });
+         },
+      });
+   };
+
+   // Action: Bulk Move to Trash
+   const handleBulkDelete = () => {
+      showModal("confirm", {
+         show: true,
+         title: "Move Selected to Recycle Bin",
+         message: `Are you sure you want to move ${selectedIds.length} selected purchase orders to the Recycle Bin?`,
+         confirmText: "Move to Bin",
+         confirmVariant: "danger",
+         onConfirm: async () => {
+            dispatch(setModalLoading({ key: "delete", isLoading: true }));
+            bulkDeletePurchaseOrders({ ids: selectedIds, isPermanentDelete: false });
+            setSelectedIds([]);
+         },
+      });
+   };
+
+   // Action: Bulk Restore
+   const handleBulkRestore = () => {
+      showModal("confirm", {
+         show: true,
+         title: "Restore Selected Purchase Orders",
+         message: `Are you sure you want to restore ${selectedIds.length} selected purchase orders back to active records?`,
+         confirmText: "Restore All",
+         confirmVariant: "success",
+         onConfirm: async () => {
+            dispatch(setModalLoading({ key: "delete", isLoading: true }));
+            bulkRestorePurchaseOrders({ ids: selectedIds });
+            setSelectedIds([]);
+         },
+      });
+   };
+
+   // Action: Bulk Permanent Delete
+   const handleBulkPermanentDelete = () => {
+      showModal("confirm", {
+         show: true,
+         title: "Permanently Delete Selected Purchase Orders",
+         message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected purchase orders? This action cannot be undone.`,
+         confirmText: "Delete Permanently",
+         confirmVariant: "danger",
+         onConfirm: async () => {
+            dispatch(setModalLoading({ key: "delete", isLoading: true }));
+            bulkDeletePurchaseOrders({ ids: selectedIds, isPermanentDelete: true });
+            setSelectedIds([]);
+         },
+      });
+   };
 
    return (
       <>
@@ -71,85 +177,152 @@ const PurchaseOrderList = () => {
             <Row>
                <Col sm="12">
                   <Card>
-                     <Card.Header className="d-flex justify-content-between">
-                        <div className="header-title d-flex">
-                           <h4 className="card-title">Purchase Order List</h4>
-                           <AdvanceSearch
-                              name={'Enable body scrolling'}
-                              scroll={true}
-                              backdrop={false}
-                              restoreFocus={false}
+                     <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div className="header-title d-flex align-items-center gap-3">
+                           <h4 className="card-title mb-0">Purchase Order List</h4>
+                           <TrashTabFilter
+                              isTrash={isTrash}
+                              onTabChange={handleTabChange}
+                              trashLabel="Recycle Bin"
                            />
                         </div>
                      </Card.Header>
                      <Card.Body className="px-0">
-                        <PageLoader loading={false} />
-                        <Col className='d-flex justify-content-between align-items-center' style={{ height: '3rem', marginLeft: '1rem', marginRight: '1rem' }}>
-                           <div className="col-md-4 d-flex align-items-center">
-                              <Form.Label>Show</Form.Label>
-                              <Form.Select className="form-select-sm" style={{ marginLeft: '0.5rem', marginRight: '0.5rem', width: '5.8rem' }} aria-label=".form-select-sm example">
-                                 <option defaultValue="10">10</option>
-                                 <option defaultValue="25">25</option>
-                                 <option defaultValue="50">50</option>
-                                 <option defaultValue="100">100</option>
-                              </Form.Select>
-                              <Form.Label>entries</Form.Label>
+                        <PageLoader loading={isLoading} />
+                        <div className="d-flex justify-content-between align-items-center px-4 mb-3">
+                           <div className="d-flex align-items-center">
+                              <span className="text-muted small">
+                                 {isTrash ? 'Showing deleted purchase orders' : 'Showing active purchase orders'}
+                              </span>
                            </div>
-                           <Form.Floating className="custom-form-floating form-floating-sm mb-3">
-                              <Form.Control type="text" className="" id="floatingInput1" autoComplete="username email" placeholder="name@example.com" onChange={onSearch} />
-                              <Form.Label htmlFor="floatingInput">Search</Form.Label>
+                           <Form.Floating className="custom-form-floating form-floating-sm mb-0">
+                              <Form.Control
+                                 type="text"
+                                 id="floatingSearchPO"
+                                 placeholder="Search..."
+                                 value={search}
+                                 onChange={onSearch}
+                              />
+                              <Form.Label htmlFor="floatingSearchPO">Search PO</Form.Label>
                            </Form.Floating>
+                        </div>
 
-                        </Col>
+                        <div className="px-4">
+                           <BulkActionBar
+                              selectedCount={selectedIds.length}
+                              isTrash={isTrash}
+                              onBulkDelete={handleBulkDelete}
+                              onBulkRestore={handleBulkRestore}
+                              onBulkPermanentDelete={handleBulkPermanentDelete}
+                              onClearSelection={() => setSelectedIds([])}
+                           />
+                        </div>
+
                         <div className="table-responsive">
                            <Table className='table-sortable ms-1 me-1' striped bordered hover responsive>
                               <thead>
                                  <tr className="light">
+                                    <th style={{ width: '40px' }} className="text-center">
+                                       <FormCheck
+                                          type="checkbox"
+                                          checked={isAllSelected}
+                                          ref={(input) => {
+                                             if (input) input.indeterminate = isIndeterminate;
+                                          }}
+                                          onChange={handleSelectAll}
+                                       />
+                                    </th>
                                     <th>#ID</th>
                                     <th>PO Date</th>
                                     <th>Customer Name</th>
                                     <th>PO No.</th>
-                                    <th>Is Invoiced</th>
+                                    {!isTrash && <th>Is Invoiced</th>}
                                     <th>Added By</th>
-                                    <th>Last Modified</th>
+                                    {isTrash ? (
+                                       <>
+                                          <th>Deleted Date</th>
+                                          <th>Deleted By</th>
+                                       </>
+                                    ) : (
+                                       <th>Last Modified</th>
+                                    )}
                                     <th min-width="100px">Action</th>
                                  </tr>
                               </thead>
                               <tbody>
                                  {purchaseOrder.length ? (
                                     purchaseOrder.map((item, idx) => (
-                                       <tr key={idx} id='example-collapse-text'>
+                                       <tr key={idx} className={selectedIds.includes(item.poId) ? 'table-active' : ''}>
+                                          <td className="text-center">
+                                             <FormCheck
+                                                type="checkbox"
+                                                checked={selectedIds.includes(item.poId)}
+                                                onChange={() => handleSelectRow(item.poId)}
+                                             />
+                                          </td>
                                           <td className="text-center">{item.poId}</td>
-                                          <td>{new Date(item.poDate).toLocaleDateString('en-GB')}</td>
+                                          <td>{item.poDate ? moment(item.poDate).format('DD/MM/YYYY') : '-'}</td>
                                           <td>{item.customerName}</td>
                                           <td>{item.poNo}</td>
-                                          <td><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
+                                          {!isTrash && (
+                                             <td><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
+                                          )}
                                           <td>{item.createdBy}</td>
-                                          <td>{new Date(item.updatedAt).toLocaleDateString('en-GB')}</td>
+                                          {isTrash ? (
+                                             <>
+                                                <td>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
+                                                <td>{item.deletedBy || '-'}</td>
+                                             </>
+                                          ) : (
+                                             <td>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
+                                          )}
                                           <td>
                                              <div className="flex align-items-center list-user-action">
-                                                <Link className="me-2" to={`/purchase/purchase-order/${item.poId}/edit`}>
-                                                   <Button variant="outline-success" size='sm'>
-                                                      <FaPen />
-                                                   </Button>
-                                                </Link>
-                                                <Button
-                                                   variant="outline-danger"
-                                                   size='sm'
-                                                   onClick={() => handleDelete(item.poId, item.customerName)}
-                                                   aria-controls="example-collapse-text"
-                                                   aria-expanded={item.poId}
-                                                >
-                                                   <FaTrash />
-                                                </Button>
+                                                {!isTrash ? (
+                                                   <>
+                                                      <Link className="me-2" to={`/purchase/purchase-order/${item.poId}/edit`}>
+                                                         <Button variant="outline-success" size='sm' title="Edit">
+                                                            <FaPen />
+                                                         </Button>
+                                                      </Link>
+                                                      <Button
+                                                         variant="outline-danger"
+                                                         size='sm'
+                                                         title="Move to Bin"
+                                                         onClick={() => handleDelete(item.poId, item.poNo || item.customerName)}
+                                                      >
+                                                         <FaTrash />
+                                                      </Button>
+                                                   </>
+                                                ) : (
+                                                   <>
+                                                      <Button
+                                                         variant="outline-success"
+                                                         size='sm'
+                                                         className="me-2"
+                                                         title="Restore"
+                                                         onClick={() => handleRestore(item.poId, item.poNo || item.customerName)}
+                                                      >
+                                                         <FaUndo />
+                                                      </Button>
+                                                      <Button
+                                                         variant="outline-danger"
+                                                         size='sm'
+                                                         title="Delete Permanently"
+                                                         onClick={() => handlePermanentDelete(item.poId, item.poNo || item.customerName)}
+                                                      >
+                                                         <FaExclamationTriangle />
+                                                      </Button>
+                                                   </>
+                                                )}
                                              </div>
                                           </td>
                                        </tr>
                                     ))
                                  ) : (
                                     <tr>
-                                       <td colSpan={8} className="text-center text-muted">
-                                          No records found
+                                       <td colSpan={isTrash ? 9 : 9} className="text-center text-muted py-4">
+                                          {isTrash ? 'Recycle bin is empty.' : 'No purchase orders found.'}
                                        </td>
                                     </tr>
                                  )}
@@ -162,9 +335,9 @@ const PurchaseOrderList = () => {
                            </div>
                            <PaginationBar
                               page={page}
-                              pageSize={pagination.pageSize}
-                              total={pagination.total}
-                              totalPages={pagination.totalPages}
+                              pageSize={pagination.pageSize || pageSize}
+                              total={pagination.total || 0}
+                              totalPages={pagination.totalPages || 1}
                               onPageChange={handleOnPageChange}
                            />
                         </div>
@@ -174,9 +347,8 @@ const PurchaseOrderList = () => {
             </Row>
          </div>
       </>
-   )
-
-}
+   );
+};
 
 export default PurchaseOrderList;
 

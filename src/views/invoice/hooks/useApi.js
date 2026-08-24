@@ -1,5 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createInvoice, deleteInvoice, downloadInvoice, getInvoice, getInvoiceById, getInvoicePagination, getLastInvoice, getNextInvoiceNumber, getUnmappedEwayBillByInvoiceId, getUnmappedInvoiceChallanByInvoiceId, getUnmappedPurchaseOrderByInvoiceId, updateInvoice } from "../api";
+import {
+    bulkDeleteInvoices,
+    bulkRestoreInvoices,
+    createInvoice,
+    deleteInvoice,
+    downloadInvoice,
+    getInvoice,
+    getInvoiceById,
+    getInvoicePagination,
+    getLastInvoice,
+    getNextInvoiceNumber,
+    getUnmappedEwayBillByInvoiceId,
+    getUnmappedInvoiceChallanByInvoiceId,
+    getUnmappedPurchaseOrderByInvoiceId,
+    restoreInvoice,
+    updateInvoice
+} from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -8,11 +24,10 @@ import { useUIManager } from "../../../contexts/UIManagerContext";
 import { useState } from "react";
 
 // Get invoice pagination
-export const useInvoicePagination = ({ page, pageSize, search }) => {
+export const useInvoicePagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["invoicePagination", page, pageSize, search],
-        queryFn: () => getInvoicePagination({ page, pageSize, search }),
-        // staleTime: 0,
+        queryKey: ["invoicePagination", page, pageSize, search, trash],
+        queryFn: () => getInvoicePagination({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
@@ -28,16 +43,15 @@ export const useInvoicePagination = ({ page, pageSize, search }) => {
             };
         }
     });
-}
+};
 
 // Get invoice
-export const useInvoice = ({ page, pageSize, search }) => {
+export const useInvoice = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["invoiceList", page, pageSize, search],
-        queryFn: () => getInvoice({ page, pageSize, search }),
+        queryKey: ["invoiceList", page, pageSize, search, trash],
+        queryFn: () => getInvoice({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
-
             const paymentStatusColor = {
                 PENDING: 'bg-warning',
                 PAID: 'bg-success',
@@ -47,7 +61,6 @@ export const useInvoice = ({ page, pageSize, search }) => {
                 REFUNDED: 'bg-primary'
             };
 
-            // const data = json.parse(JSON.stringify(result?.data ?? []));
             const data = result?.data?.map(item => ({
                 ...item,
                 color: paymentStatusColor[item.paymentStatusCode] ?? 'bg-secondary'
@@ -56,7 +69,7 @@ export const useInvoice = ({ page, pageSize, search }) => {
             return data;
         }
     });
-}
+};
 
 // Get invoice by id
 export const useInvoiceById = (id = 0) => {
@@ -65,7 +78,6 @@ export const useInvoiceById = (id = 0) => {
         queryFn: () => getInvoiceById(id),
         enabled: !!id,
         select: (result) => {
-            // return result?.data ?? {};
             const data = result?.data ?? {};
             const invoiceData = {
                 ...result?.data,
@@ -88,12 +100,12 @@ export const useInvoiceById = (id = 0) => {
                     stateId: data.shippingStateId,
                     pincode: data.shippingPincode
                 }
-            }
+            };
 
             return invoiceData;
         }
     });
-}
+};
 
 // Create invoice
 export const useCreateInvoice = () => {
@@ -116,7 +128,7 @@ export const useCreateInvoice = () => {
             }
         }
     });
-}
+};
 
 // Update invoice
 export const useUpdateInvoice = (id) => {
@@ -140,27 +152,27 @@ export const useUpdateInvoice = (id) => {
             }
         }
     });
-}
+};
 
-// Delete invoice
+// Delete invoice (Soft delete or Permanent delete)
 export const useDeleteInvoice = () => {
     const queryClient = useQueryClient();
     const dispatch = useDispatch();
-    const { showModal, closeModal } = useUIManager();
-
+    const { closeModal } = useUIManager();
 
     return useMutation({
         mutationKey: ["deleteInvoice"],
-        mutationFn: deleteInvoice,
+        mutationFn: ({ id, isPermanentDelete = false }) => deleteInvoice(id, isPermanentDelete),
         onSuccess: (res) => {
-            if (res.success) {
-                dispatch(clearLoading());
-                closeModal();
-                toast.success(res.message || "Invoice deleted successfully.");
-                // Refresh the list
-                queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
-                queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
-            }
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Invoice deleted successfully.");
+            // Refresh the lists
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
         },
         onError: (error) => {
             dispatch(clearLoading());
@@ -169,6 +181,90 @@ export const useDeleteInvoice = () => {
                 error?.message ||
                 "Something went wrong while deleting";
 
+            toast.error(message);
+        }
+    });
+};
+
+// Restore invoice from trash
+export const useRestoreInvoice = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreInvoice"],
+        mutationFn: (id) => restoreInvoice(id),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Invoice restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore invoice.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk delete invoices (Soft delete or Permanent delete)
+export const useBulkDeleteInvoices = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteInvoices"],
+        mutationFn: ({ ids, isPermanentDelete = false }) => bulkDeleteInvoices({ ids, isPermanentDelete }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected invoices deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to delete selected invoices.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk restore invoices from trash
+export const useBulkRestoreInvoices = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreInvoices"],
+        mutationFn: ({ ids }) => bulkRestoreInvoices({ ids }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected invoices restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore selected invoices.";
             toast.error(message);
         }
     });

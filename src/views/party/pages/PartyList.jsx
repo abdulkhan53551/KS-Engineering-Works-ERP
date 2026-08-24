@@ -1,19 +1,30 @@
-import React, { useState, useMemo } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image } from 'react-bootstrap';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck } from 'react-icons/fa';
+import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import PaginationBar from '../../../components/PaginationBar';
 import { useUIManager } from '../../../contexts/UIManagerContext';
 import { useDispatch } from 'react-redux';
 import { setModalLoading } from '../../../store/uiModal.slice';
-import { useDeleteParty, useParties, usePartyPagination } from '../hooks/usePartyApi';
+import {
+    useBulkDeleteParties,
+    useBulkRestoreParties,
+    useDeleteParty,
+    useParties,
+    usePartyPagination,
+    useRestoreParty
+} from '../hooks/usePartyApi';
 import PartyStatusBadge from '../components/PartyStatusBadge';
 import GstBadge from '../components/GstBadge';
 import PartyDetailsDrawer from '../components/PartyDetailsDrawer';
+import TrashTabFilter from '../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../components/trash/BulkActionBar';
 import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
+import moment from 'moment';
+import useDebounce from '../../../hooks/useDebounce';
 
 /**
  * Format date string safely to DD/MM/YYYY
@@ -40,6 +51,10 @@ const PartyList = () => {
     const [statusFilter, setStatusFilter] = useState('');
     const [gstFilter, setGstFilter] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+    const [isTrash, setIsTrash] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const debouncedSearch = useDebounce(searchTerm, 400);
 
     // Drawer state
     const [selectedParty, setSelectedParty] = useState(null);
@@ -52,9 +67,10 @@ const PartyList = () => {
     const queryParams = {
         page,
         pageSize,
-        search: searchTerm,
+        search: debouncedSearch,
         status: statusFilter,
-        gstRegistered: gstFilter
+        gstRegistered: gstFilter,
+        trash: isTrash
     };
 
     const {
@@ -71,8 +87,132 @@ const PartyList = () => {
     } = usePartyPagination(queryParams);
 
     const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
+    const { mutate: restoreParty } = useRestoreParty();
+    const { mutate: bulkDeleteParties } = useBulkDeleteParties();
+    const { mutate: bulkRestoreParties } = useBulkRestoreParties();
 
     const { total = 0, totalPages = 1, pageStart = 0, pageEnd = 0 } = pagination;
+
+    const handleTabChange = (trashState) => {
+        setIsTrash(trashState);
+        setPage(1);
+        setSelectedIds([]);
+    };
+
+    // Multi-selection handlers
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            const allIds = parties.map(item => item.id);
+            setSelectedIds(allIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectRow = (id) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const isAllSelected = parties.length > 0 && selectedIds.length === parties.length;
+    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < parties.length;
+
+    // Action: Move to Trash (Soft Delete)
+    const handleDelete = (party) => {
+        const name = party.displayName || party.legalName || `Party #${party.id}`;
+        showModal('confirm', {
+            show: true,
+            title: 'Move to Recycle Bin',
+            message: `Are you sure you want to move Party "${name}" to the Recycle Bin?`,
+            confirmText: 'Move to Bin',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                deleteParty({ id: party.id, isPermanentDelete: false });
+            }
+        });
+    };
+
+    // Action: Restore Single Item
+    const handleRestore = (party) => {
+        const name = party.displayName || party.legalName || `Party #${party.id}`;
+        showModal('confirm', {
+            show: true,
+            title: 'Restore Party',
+            message: `Are you sure you want to restore Party "${name}" back to active parties?`,
+            confirmText: 'Restore',
+            confirmVariant: 'success',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                restoreParty(party.id);
+            }
+        });
+    };
+
+    // Action: Permanent Delete Single Item
+    const handlePermanentDelete = (party) => {
+        const name = party.displayName || party.legalName || `Party #${party.id}`;
+        showModal('confirm', {
+            show: true,
+            title: 'Permanently Delete Party',
+            message: `Are you sure you want to PERMANENTLY delete Party "${name}"? This action cannot be undone.`,
+            confirmText: 'Delete Permanently',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                deleteParty({ id: party.id, isPermanentDelete: true });
+            }
+        });
+    };
+
+    // Action: Bulk Move to Trash
+    const handleBulkDelete = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Move Selected to Recycle Bin',
+            message: `Are you sure you want to move ${selectedIds.length} selected parties to the Recycle Bin?`,
+            confirmText: 'Move to Bin',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: false });
+                setSelectedIds([]);
+            }
+        });
+    };
+
+    // Action: Bulk Restore
+    const handleBulkRestore = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Restore Selected Parties',
+            message: `Are you sure you want to restore ${selectedIds.length} selected parties back to active records?`,
+            confirmText: 'Restore All',
+            confirmVariant: 'success',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkRestoreParties({ ids: selectedIds });
+                setSelectedIds([]);
+            }
+        });
+    };
+
+    // Action: Bulk Permanent Delete
+    const handleBulkPermanentDelete = () => {
+        showModal('confirm', {
+            show: true,
+            title: 'Permanently Delete Selected Parties',
+            message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected parties? This action cannot be undone.`,
+            confirmText: 'Delete Permanently',
+            confirmVariant: 'danger',
+            onConfirm: async () => {
+                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
+                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: true });
+                setSelectedIds([]);
+            }
+        });
+    };
 
     // Handle column sorting
     const handleSort = (key) => {
@@ -172,21 +312,7 @@ const PartyList = () => {
         setDrawerOpen(true);
     };
 
-    // Handle Delete confirmation
-    const handleDelete = (party) => {
-        const name = party.displayName || party.legalName || `Party #${party.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Delete Party',
-            message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
-            confirmText: 'Delete',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteParty(party.id);
-            }
-        });
-    };
+
 
     // Copy to clipboard helper for table cells
     const handleCopy = (text, keyName, label) => {
@@ -213,22 +339,31 @@ const PartyList = () => {
             <Row>
                 <Col sm="12">
                     <Card>
-                        {/* 1. Header with Title, Count and Add Button */}
+                        {/* 1. Header with Title, Count, TrashTabFilter and Add Button */}
                         <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div className="header-title d-flex align-items-center gap-2">
-                                <h4 className="card-title mb-0">Party List</h4>
-                                {!isLoading && total > 0 && (
-                                    <Badge bg="soft-primary" className="text-primary fw-semibold px-2 py-1">
-                                        {total} Total
-                                    </Badge>
-                                )}
+                            <div className="header-title d-flex align-items-center gap-3">
+                                <div className="d-flex align-items-center gap-2">
+                                    <h4 className="card-title mb-0">Party List</h4>
+                                    {!isLoading && total > 0 && (
+                                        <Badge bg="soft-primary" className="text-primary fw-semibold px-2 py-1">
+                                            {total} Total
+                                        </Badge>
+                                    )}
+                                </div>
+                                <TrashTabFilter
+                                    isTrash={isTrash}
+                                    onTabChange={handleTabChange}
+                                    trashLabel="Recycle Bin"
+                                />
                             </div>
-                            <div className="d-flex align-items-center gap-2">
-                                <Link to="/parties/create" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5 shadow-sm">
-                                    <FaPlus size={12} />
-                                    <span>Add Party</span>
-                                </Link>
-                            </div>
+                            {!isTrash && (
+                                <div className="d-flex align-items-center gap-2">
+                                    <Link to="/parties/create" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5 shadow-sm">
+                                        <FaPlus size={12} />
+                                        <span>Add Party</span>
+                                    </Link>
+                                </div>
+                            )}
                         </Card.Header>
 
                         <Card.Body className="px-0">
@@ -335,11 +470,33 @@ const PartyList = () => {
                                 </div>
                             </Col>
 
+                            {/* Bulk Action Bar */}
+                            <div className="px-4">
+                                <BulkActionBar
+                                    selectedCount={selectedIds.length}
+                                    isTrash={isTrash}
+                                    onBulkDelete={handleBulkDelete}
+                                    onBulkRestore={handleBulkRestore}
+                                    onBulkPermanentDelete={handleBulkPermanentDelete}
+                                    onClearSelection={() => setSelectedIds([])}
+                                />
+                            </div>
+
                             {/* 3. Table Content with Thin Header, Zebra Striping and Bordered Columns */}
                             <div className="table-responsive">
                                 <Table className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive>
                                     <thead className="light">
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                            <th style={{ width: '40px' }} className="text-center">
+                                                <FormCheck
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    ref={(input) => {
+                                                        if (input) input.indeterminate = isIndeterminate;
+                                                    }}
+                                                    onChange={handleSelectAll}
+                                                />
+                                            </th>
                                             <th
                                                 className="text-center cursor-pointer user-select-none py-2"
                                                 style={{ width: '48px', minWidth: '48px', maxWidth: '52px', padding: '0.45rem 0.3rem' }}
@@ -394,13 +551,24 @@ const PartyList = () => {
                                             >
                                                 Added By {renderSortIcon('createdBy')}
                                             </th>
-                                            <th
-                                                className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '110px', padding: '0.45rem 0.5rem' }}
-                                                onClick={() => handleSort('updatedAt')}
-                                            >
-                                                Last Modified {renderSortIcon('updatedAt')}
-                                            </th>
+                                            {isTrash ? (
+                                                <>
+                                                    <th className="py-2" style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}>
+                                                        Deleted Date
+                                                    </th>
+                                                    <th className="py-2" style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}>
+                                                        Deleted By
+                                                    </th>
+                                                </>
+                                            ) : (
+                                                <th
+                                                    className="cursor-pointer user-select-none py-2"
+                                                    style={{ minWidth: '110px', padding: '0.45rem 0.5rem' }}
+                                                    onClick={() => handleSort('updatedAt')}
+                                                >
+                                                    Last Modified {renderSortIcon('updatedAt')}
+                                                </th>
+                                            )}
                                             <th className="text-center py-2" style={{ width: '115px', minWidth: '115px', padding: '0.45rem 0.5rem' }}>
                                                 Action
                                             </th>
@@ -411,6 +579,11 @@ const PartyList = () => {
                                         {isLoading ? (
                                             Array.from({ length: 5 }).map((_, idx) => (
                                                 <tr key={`skeleton-${idx}`}>
+                                                    <td className="text-center py-2">
+                                                        <div className="placeholder-glow">
+                                                            <span className="placeholder col-6 rounded" />
+                                                        </div>
+                                                    </td>
                                                     <td className="text-center py-2">
                                                         <div className="placeholder-glow">
                                                             <span className="placeholder col-6 rounded" />
@@ -473,7 +646,7 @@ const PartyList = () => {
                                         ) : isError ? (
                                             /* Error State */
                                             <tr>
-                                                <td colSpan={11} className="text-center py-5">
+                                                <td colSpan={isTrash ? 13 : 12} className="text-center py-5">
                                                     <div className="text-danger mb-2">
                                                         Failed to load parties. Please try again.
                                                     </div>
@@ -485,23 +658,29 @@ const PartyList = () => {
                                         ) : displayData.length === 0 ? (
                                             /* Empty State */
                                             <tr>
-                                                <td colSpan={11} className="text-center py-5">
+                                                <td colSpan={isTrash ? 13 : 12} className="text-center py-5">
                                                     <div className="my-3 text-muted">
                                                         <div className="mb-2" style={{ fontSize: '2rem' }}>📋</div>
-                                                        <h6 className="fw-semibold text-dark">No Parties Found</h6>
+                                                        <h6 className="fw-semibold text-dark">
+                                                            {isTrash ? 'Recycle Bin is Empty' : 'No Parties Found'}
+                                                        </h6>
                                                         <p className="text-muted small mb-3">
-                                                            {hasActiveFilters
-                                                                ? 'No parties match your search or filter criteria.'
-                                                                : 'Get started by creating your first party profile.'}
+                                                            {isTrash
+                                                                ? 'There are no deleted parties in the recycle bin.'
+                                                                : hasActiveFilters
+                                                                    ? 'No parties match your search or filter criteria.'
+                                                                    : 'Get started by creating your first party profile.'}
                                                         </p>
-                                                        {hasActiveFilters ? (
-                                                            <Button variant="outline-primary" size="sm" onClick={handleClearFilters}>
-                                                                Clear Filters
-                                                            </Button>
-                                                        ) : (
-                                                            <Link to="/parties/create" className="btn btn-primary btn-sm">
-                                                                Add New Party
-                                                            </Link>
+                                                        {!isTrash && (
+                                                            hasActiveFilters ? (
+                                                                <Button variant="outline-primary" size="sm" onClick={handleClearFilters}>
+                                                                    Clear Filters
+                                                                </Button>
+                                                            ) : (
+                                                                <Link to="/parties/create" className="btn btn-primary btn-sm">
+                                                                    Add New Party
+                                                                </Link>
+                                                            )
                                                         )}
                                                     </div>
                                                 </td>
@@ -515,7 +694,16 @@ const PartyList = () => {
                                                     party.legalName.trim().toLowerCase() !== party.displayName.trim().toLowerCase();
 
                                                 return (
-                                                    <tr key={party.id}>
+                                                    <tr key={party.id} className={selectedIds.includes(party.id) ? 'table-active' : ''}>
+                                                        {/* Checkbox Column */}
+                                                        <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
+                                                            <FormCheck
+                                                                type="checkbox"
+                                                                checked={selectedIds.includes(party.id)}
+                                                                onChange={() => handleSelectRow(party.id)}
+                                                            />
+                                                        </td>
+
                                                         {/* 1. #ID Column (Lesser width) */}
                                                         <td className="text-center fw-medium text-muted" style={{ padding: '0.45rem 0.3rem' }}>
                                                             {party.id}
@@ -654,53 +842,98 @@ const PartyList = () => {
                                                             </span>
                                                         </td>
 
-                                                        {/* 10. Last Modified */}
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <span className="text-muted small font-monospace">
-                                                                {formatDate(party.updatedAt || party.createdAt)}
-                                                            </span>
-                                                        </td>
+                                                        {/* 10. Last Modified or Deleted Info */}
+                                                        {isTrash ? (
+                                                            <>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                    <span className="text-muted small font-monospace">
+                                                                        {party.deletedAt ? moment(party.deletedAt).format('DD/MM/YYYY hh:mm A') : '—'}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                    <span className="text-dark small">
+                                                                        {party.deletedBy || '—'}
+                                                                    </span>
+                                                                </td>
+                                                            </>
+                                                        ) : (
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-muted small font-monospace">
+                                                                    {formatDate(party.updatedAt || party.createdAt)}
+                                                                </span>
+                                                            </td>
+                                                        )}
 
                                                         {/* 11. Action Buttons */}
                                                         <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                                             <div className="d-inline-flex align-items-center gap-1">
-                                                                {/* Quick View Button */}
-                                                                <OverlayTrigger placement="top" overlay={<Tooltip>Quick View</Tooltip>}>
-                                                                    <Button
-                                                                        variant="outline-info"
-                                                                        size="sm"
-                                                                        className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                        onClick={() => handleQuickView(party)}
-                                                                    >
-                                                                        <FaEye size={11} />
-                                                                    </Button>
-                                                                </OverlayTrigger>
+                                                                {!isTrash ? (
+                                                                    <>
+                                                                        {/* Quick View Button */}
+                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Quick View</Tooltip>}>
+                                                                            <Button
+                                                                                variant="outline-info"
+                                                                                size="sm"
+                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                                onClick={() => handleQuickView(party)}
+                                                                            >
+                                                                                <FaEye size={11} />
+                                                                            </Button>
+                                                                        </OverlayTrigger>
 
-                                                                {/* Edit Button */}
-                                                                <OverlayTrigger placement="top" overlay={<Tooltip>Edit Party</Tooltip>}>
-                                                                    <Link to={`/parties/${party.id}/edit`}>
-                                                                        <Button
-                                                                            variant="outline-success"
-                                                                            size="sm"
-                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                        >
-                                                                            <FaPen size={10} />
-                                                                        </Button>
-                                                                    </Link>
-                                                                </OverlayTrigger>
+                                                                        {/* Edit Button */}
+                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Edit Party</Tooltip>}>
+                                                                            <Link to={`/parties/${party.id}/edit`}>
+                                                                                <Button
+                                                                                    variant="outline-success"
+                                                                                    size="sm"
+                                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                                >
+                                                                                    <FaPen size={10} />
+                                                                                </Button>
+                                                                            </Link>
+                                                                        </OverlayTrigger>
 
-                                                                {/* Delete Button */}
-                                                                <OverlayTrigger placement="top" overlay={<Tooltip>Delete Party</Tooltip>}>
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size="sm"
-                                                                        className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                        disabled={isDeleting}
-                                                                        onClick={() => handleDelete(party)}
-                                                                    >
-                                                                        <FaTrash size={10} />
-                                                                    </Button>
-                                                                </OverlayTrigger>
+                                                                        {/* Delete Button */}
+                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Move to Bin</Tooltip>}>
+                                                                            <Button
+                                                                                variant="outline-danger"
+                                                                                size="sm"
+                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                                disabled={isDeleting}
+                                                                                onClick={() => handleDelete(party)}
+                                                                            >
+                                                                                <FaTrash size={10} />
+                                                                            </Button>
+                                                                        </OverlayTrigger>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        {/* Restore Button */}
+                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Restore Party</Tooltip>}>
+                                                                            <Button
+                                                                                variant="outline-success"
+                                                                                size="sm"
+                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                                onClick={() => handleRestore(party)}
+                                                                            >
+                                                                                <FaUndo size={10} />
+                                                                            </Button>
+                                                                        </OverlayTrigger>
+
+                                                                        {/* Permanent Delete Button */}
+                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Delete Permanently</Tooltip>}>
+                                                                            <Button
+                                                                                variant="outline-danger"
+                                                                                size="sm"
+                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                                onClick={() => handlePermanentDelete(party)}
+                                                                            >
+                                                                                <FaExclamationTriangle size={10} />
+                                                                            </Button>
+                                                                        </OverlayTrigger>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
