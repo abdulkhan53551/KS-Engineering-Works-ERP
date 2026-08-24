@@ -25,33 +25,20 @@ import {
     useBulkDeleteAddressTypes,
     useBulkRestoreAddressTypes
 } from '../../hooks/useMastersApi';
-import { useUIManager } from '../../../../contexts/UIManagerContext';
-import { useDispatch } from 'react-redux';
-import { setModalLoading } from '../../../../store/uiModal.slice';
 import AddressTypeModal from '../components/AddressTypeModal';
 import TrashTabFilter from '../../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import useDebounce from '../../../../hooks/useDebounce';
+import useListManager from '../../../../hooks/useListManager';
+import useTrashActions from '../../../../hooks/useTrashActions';
 
 /**
  * AddressTypeList Component
  * Master list for Address Types with Recycle Bin, Multi-Selection, and Debounced Search.
  */
 const AddressTypeList = () => {
-    const dispatch = useDispatch();
-    const { showModal } = useUIManager();
     const [searchParams, setSearchParams] = useSearchParams();
-
-    // Local state for pagination, filters, sorting, and trash
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
-    const [isTrash, setIsTrash] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
-
-    const debouncedSearch = useDebounce(searchTerm, 400);
 
     const [modalState, setModalState] = useState({
         show: false,
@@ -59,11 +46,51 @@ const AddressTypeList = () => {
         selectedItem: null
     });
 
-    const { data: addressTypes = [], isLoading, isFetching, refetch } = useAddressTypesList({ trash: isTrash });
+    // 1. Trash Actions Hook
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete,
+        confirmBulkSoftDelete,
+        confirmBulkRestore,
+        confirmBulkPermanentDelete
+    } = useTrashActions({ entityName: 'Address Type' });
+
+    // 2. Mutations
     const { mutate: deleteType, isPending: isDeleting } = useDeleteAddressType();
     const { mutate: restoreType, isPending: isRestoring } = useRestoreAddressType();
-    const { mutate: bulkDeleteTypes, isPending: isBulkDeleting } = useBulkDeleteAddressTypes();
-    const { mutate: bulkRestoreTypes, isPending: isBulkRestoring } = useBulkRestoreAddressTypes();
+    const { mutate: bulkDeleteTypes } = useBulkDeleteAddressTypes();
+    const { mutate: bulkRestoreTypes } = useBulkRestoreAddressTypes();
+
+    // 3. Temp items for selection sync
+    const [tempItems, setTempItems] = useState([]);
+
+    // 4. List Manager Hook
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search: searchTerm,
+        debouncedSearch,
+        handleSearch,
+        clearSearch: handleClearSearch,
+        isTrash,
+        handleTabChange,
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useListManager({
+        items: tempItems,
+        idKey: 'id',
+        initialPageSize: 10
+    });
+
+    const { data: addressTypes = [], isLoading, isFetching, refetch } = useAddressTypesList({ trash: isTrash });
 
     // Auto-open modal if URL has ?action=create
     useEffect(() => {
@@ -77,13 +104,6 @@ const AddressTypeList = () => {
             setSearchParams(searchParams, { replace: true });
         }
     }, [searchParams, setSearchParams]);
-
-    // Handle Tab Switch
-    const handleTabChange = (trashState) => {
-        setIsTrash(trashState);
-        setPage(1);
-        setSelectedIds([]);
-    };
 
     // Sorting handler
     const handleSort = (key) => {
@@ -106,7 +126,7 @@ const AddressTypeList = () => {
         return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
     };
 
-    // Filter and Sort Data
+    // Filter and Sort Data (Client-side)
     const sortedAndFilteredList = useMemo(() => {
         let items = [...addressTypes];
 
@@ -164,24 +184,10 @@ const AddressTypeList = () => {
         return sortedAndFilteredList.slice(start, start + pageSize);
     }, [sortedAndFilteredList, page, pageSize]);
 
-    // Multi-selection handlers
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const pageIds = pagedList.map((item) => item.id);
-            setSelectedIds(pageIds);
-        } else {
-            setSelectedIds([]);
-        }
-    };
-
-    const handleSelectRow = (id) => {
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-        );
-    };
-
-    const isAllSelected = pagedList.length > 0 && pagedList.every((item) => selectedIds.includes(item.id));
-    const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
+    // Sync paged list with useListManager
+    useEffect(() => {
+        setTempItems(pagedList);
+    }, [pagedList]);
 
     const handleOpenModal = (mode = 'create', item = null) => {
         setModalState({
@@ -196,102 +202,6 @@ const AddressTypeList = () => {
             show: false,
             mode: 'create',
             selectedItem: null
-        });
-    };
-
-    // Action: Move to Trash (Soft Delete)
-    const handleDelete = (item) => {
-        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Move to Recycle Bin',
-            message: `Are you sure you want to move address type "${label}" to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteType({ id: item.id, isPermanentDelete: false });
-            }
-        });
-    };
-
-    // Action: Restore Single Item
-    const handleRestore = (item) => {
-        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Address Type',
-            message: `Are you sure you want to restore address type "${label}" back to active address types?`,
-            confirmText: 'Restore',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                restoreType(item.id);
-            }
-        });
-    };
-
-    // Action: Permanent Delete Single Item
-    const handlePermanentDelete = (item) => {
-        const label = item.name || item.typeName || item.code || `Address Type #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Address Type',
-            message: `Are you sure you want to PERMANENTLY delete address type "${label}"? This action cannot be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteType({ id: item.id, isPermanentDelete: true });
-            }
-        });
-    };
-
-    // Bulk: Move to Trash
-    const handleBulkDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Move Selected to Recycle Bin',
-            message: `Are you sure you want to move ${selectedIds.length} selected address types to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: false });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Bulk: Restore
-    const handleBulkRestore = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Selected Address Types',
-            message: `Are you sure you want to restore ${selectedIds.length} selected address types back to active?`,
-            confirmText: 'Restore All',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkRestoreTypes({ ids: selectedIds });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Bulk: Permanent Delete
-    const handleBulkPermanentDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Selected Address Types',
-            message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected address types? This action CANNOT be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: true });
-                setSelectedIds([]);
-            }
         });
     };
 
@@ -332,12 +242,21 @@ const AddressTypeList = () => {
 
                         {/* Bulk Action Bar */}
                         <BulkActionBar
-                            selectedCount={selectedIds.length}
+                            selectedCount={selectedCount}
                             isTrash={isTrash}
-                            onBulkDelete={handleBulkDelete}
-                            onBulkRestore={handleBulkRestore}
-                            onBulkPermanentDelete={handleBulkPermanentDelete}
-                            onDeselectAll={() => setSelectedIds([])}
+                            onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: false });
+                                handleDeselectAll();
+                            })}
+                            onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                                bulkRestoreTypes({ ids: selectedIds });
+                                handleDeselectAll();
+                            })}
+                            onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                                bulkDeleteTypes({ ids: selectedIds, isPermanentDelete: true });
+                                handleDeselectAll();
+                            })}
+                            onDeselectAll={handleDeselectAll}
                         />
 
                         <Card.Body className="px-0">
@@ -356,7 +275,7 @@ const AddressTypeList = () => {
                                         onChange={(e) => {
                                             setPageSize(Number(e.target.value));
                                             setPage(1);
-                                            setSelectedIds([]);
+                                            handleDeselectAll();
                                         }}
                                     >
                                         <option value="10">10</option>
@@ -377,11 +296,7 @@ const AddressTypeList = () => {
                                             type="search"
                                             placeholder="Search address types..."
                                             value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                setPage(1);
-                                                setSelectedIds([]);
-                                            }}
+                                            onChange={handleSearch}
                                             className="border-start-0 border-end-0 ps-0"
                                             style={{ fontSize: '0.84rem' }}
                                         />
@@ -389,11 +304,7 @@ const AddressTypeList = () => {
                                             <Button
                                                 variant="outline-secondary"
                                                 className="bg-white border-start-0 border-end-0 px-2"
-                                                onClick={() => {
-                                                    setSearchTerm('');
-                                                    setPage(1);
-                                                    setSelectedIds([]);
-                                                }}
+                                                onClick={handleClearSearch}
                                                 title="Clear search"
                                             >
                                                 <FaTimes size={11} className="text-muted" />
@@ -579,7 +490,7 @@ const AddressTypeList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isDeleting}
-                                                                            onClick={() => handleDelete(item)}
+                                                                            onClick={() => confirmSoftDelete(item.name || item.typeName || item.code, () => deleteType({ id: item.id, isPermanentDelete: false }))}
                                                                         >
                                                                             <FaTrash size={10} />
                                                                         </Button>
@@ -593,7 +504,7 @@ const AddressTypeList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isRestoring}
-                                                                            onClick={() => handleRestore(item)}
+                                                                            onClick={() => confirmRestore(item.name || item.typeName || item.code, () => restoreType(item.id))}
                                                                         >
                                                                             <FaUndo size={11} />
                                                                         </Button>
@@ -605,7 +516,7 @@ const AddressTypeList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isDeleting}
-                                                                            onClick={() => handlePermanentDelete(item)}
+                                                                            onClick={() => confirmPermanentDelete(item.name || item.typeName || item.code, () => deleteType({ id: item.id, isPermanentDelete: true }))}
                                                                         >
                                                                             <FaExclamationTriangle size={11} />
                                                                         </Button>
@@ -637,7 +548,7 @@ const AddressTypeList = () => {
                                             totalPages={totalPages}
                                             onPageChange={(newPage) => {
                                                 setPage(newPage);
-                                                setSelectedIds([]);
+                                                handleDeselectAll();
                                             }}
                                         />
                                     </Col>

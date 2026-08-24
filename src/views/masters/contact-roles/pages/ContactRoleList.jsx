@@ -25,34 +25,21 @@ import {
     useBulkDeleteContactRoles,
     useBulkRestoreContactRoles
 } from '../../hooks/useMastersApi';
-import { useUIManager } from '../../../../contexts/UIManagerContext';
-import { useDispatch } from 'react-redux';
-import { setModalLoading } from '../../../../store/uiModal.slice';
 import ContactRoleModal from '../components/ContactRoleModal';
 import TrashTabFilter from '../../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import useDebounce from '../../../../hooks/useDebounce';
+import useListManager from '../../../../hooks/useListManager';
+import useTrashActions from '../../../../hooks/useTrashActions';
 
 /**
  * ContactRoleList Component
  * Master list for Contact Roles with Recycle Bin, Multi-Selection, and Debounced Search.
  */
 const ContactRoleList = () => {
-    const dispatch = useDispatch();
-    const { showModal } = useUIManager();
     const [searchParams, setSearchParams] = useSearchParams();
-
-    // Local state for pagination, filters, sorting, and trash
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
-    const [isTrash, setIsTrash] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
-
-    const debouncedSearch = useDebounce(searchTerm, 400);
 
     const [modalState, setModalState] = useState({
         show: false,
@@ -60,11 +47,51 @@ const ContactRoleList = () => {
         selectedItem: null
     });
 
-    const { data: contactRoles = [], isLoading, isFetching, refetch } = useContactRolesList({ trash: isTrash });
+    // 1. Trash Actions Hook
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete,
+        confirmBulkSoftDelete,
+        confirmBulkRestore,
+        confirmBulkPermanentDelete
+    } = useTrashActions({ entityName: 'Contact Role' });
+
+    // 2. Mutations
     const { mutate: deleteRole, isPending: isDeleting } = useDeleteContactRole();
     const { mutate: restoreRole, isPending: isRestoring } = useRestoreContactRole();
-    const { mutate: bulkDeleteRoles, isPending: isBulkDeleting } = useBulkDeleteContactRoles();
-    const { mutate: bulkRestoreRoles, isPending: isBulkRestoring } = useBulkRestoreContactRoles();
+    const { mutate: bulkDeleteRoles } = useBulkDeleteContactRoles();
+    const { mutate: bulkRestoreRoles } = useBulkRestoreContactRoles();
+
+    // 3. Temp items for selection sync
+    const [tempItems, setTempItems] = useState([]);
+
+    // 4. List Manager Hook
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search: searchTerm,
+        debouncedSearch,
+        handleSearch,
+        clearSearch: handleClearSearch,
+        isTrash,
+        handleTabChange,
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useListManager({
+        items: tempItems,
+        idKey: 'id',
+        initialPageSize: 10
+    });
+
+    const { data: contactRoles = [], isLoading, isFetching, refetch } = useContactRolesList({ trash: isTrash });
 
     // Auto-open modal if URL has ?action=create
     useEffect(() => {
@@ -78,13 +105,6 @@ const ContactRoleList = () => {
             setSearchParams(searchParams, { replace: true });
         }
     }, [searchParams, setSearchParams]);
-
-    // Handle Tab Switch
-    const handleTabChange = (trashState) => {
-        setIsTrash(trashState);
-        setPage(1);
-        setSelectedIds([]);
-    };
 
     // Sorting handler
     const handleSort = (key) => {
@@ -107,7 +127,7 @@ const ContactRoleList = () => {
         return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
     };
 
-    // Filter and Sort Data
+    // Filter and Sort Data (Client-side)
     const sortedAndFilteredList = useMemo(() => {
         let items = [...contactRoles];
 
@@ -175,24 +195,10 @@ const ContactRoleList = () => {
         return sortedAndFilteredList.slice(start, start + pageSize);
     }, [sortedAndFilteredList, page, pageSize]);
 
-    // Multi-selection handlers
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const pageIds = pagedList.map((item) => item.id);
-            setSelectedIds(pageIds);
-        } else {
-            setSelectedIds([]);
-        }
-    };
-
-    const handleSelectRow = (id) => {
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-        );
-    };
-
-    const isAllSelected = pagedList.length > 0 && pagedList.every((item) => selectedIds.includes(item.id));
-    const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
+    // Sync paged list with useListManager
+    useEffect(() => {
+        setTempItems(pagedList);
+    }, [pagedList]);
 
     const handleOpenModal = (mode = 'create', item = null) => {
         setModalState({
@@ -207,102 +213,6 @@ const ContactRoleList = () => {
             show: false,
             mode: 'create',
             selectedItem: null
-        });
-    };
-
-    // Action: Move to Trash (Soft Delete)
-    const handleDelete = (item) => {
-        const label = item.name || item.roleName || item.code || `Contact Role #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Move to Recycle Bin',
-            message: `Are you sure you want to move contact role "${label}" to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteRole({ id: item.id, isPermanentDelete: false });
-            }
-        });
-    };
-
-    // Action: Restore Single Item
-    const handleRestore = (item) => {
-        const label = item.name || item.roleName || item.code || `Contact Role #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Contact Role',
-            message: `Are you sure you want to restore contact role "${label}" back to active contact roles?`,
-            confirmText: 'Restore',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                restoreRole(item.id);
-            }
-        });
-    };
-
-    // Action: Permanent Delete Single Item
-    const handlePermanentDelete = (item) => {
-        const label = item.name || item.roleName || item.code || `Contact Role #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Contact Role',
-            message: `Are you sure you want to PERMANENTLY delete contact role "${label}"? This action cannot be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteRole({ id: item.id, isPermanentDelete: true });
-            }
-        });
-    };
-
-    // Bulk: Move to Trash
-    const handleBulkDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Move Selected to Recycle Bin',
-            message: `Are you sure you want to move ${selectedIds.length} selected contact roles to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: false });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Bulk: Restore
-    const handleBulkRestore = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Selected Contact Roles',
-            message: `Are you sure you want to restore ${selectedIds.length} selected contact roles back to active?`,
-            confirmText: 'Restore All',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkRestoreRoles({ ids: selectedIds });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Bulk: Permanent Delete
-    const handleBulkPermanentDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Selected Contact Roles',
-            message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected contact roles? This action CANNOT be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: true });
-                setSelectedIds([]);
-            }
         });
     };
 
@@ -343,12 +253,21 @@ const ContactRoleList = () => {
 
                         {/* Bulk Action Bar */}
                         <BulkActionBar
-                            selectedCount={selectedIds.length}
+                            selectedCount={selectedCount}
                             isTrash={isTrash}
-                            onBulkDelete={handleBulkDelete}
-                            onBulkRestore={handleBulkRestore}
-                            onBulkPermanentDelete={handleBulkPermanentDelete}
-                            onDeselectAll={() => setSelectedIds([])}
+                            onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: false });
+                                handleDeselectAll();
+                            })}
+                            onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                                bulkRestoreRoles({ ids: selectedIds });
+                                handleDeselectAll();
+                            })}
+                            onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: true });
+                                handleDeselectAll();
+                            })}
+                            onDeselectAll={handleDeselectAll}
                         />
 
                         <Card.Body className="px-0">
@@ -367,7 +286,7 @@ const ContactRoleList = () => {
                                         onChange={(e) => {
                                             setPageSize(Number(e.target.value));
                                             setPage(1);
-                                            setSelectedIds([]);
+                                            handleDeselectAll();
                                         }}
                                     >
                                         <option value="10">10</option>
@@ -388,7 +307,7 @@ const ContactRoleList = () => {
                                             onChange={(e) => {
                                                 setStatusFilter(e.target.value);
                                                 setPage(1);
-                                                setSelectedIds([]);
+                                                handleDeselectAll();
                                             }}
                                         >
                                             <option value="">All Status</option>
@@ -406,11 +325,7 @@ const ContactRoleList = () => {
                                             type="search"
                                             placeholder="Search contact roles..."
                                             value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                setPage(1);
-                                                setSelectedIds([]);
-                                            }}
+                                            onChange={handleSearch}
                                             className="border-start-0 border-end-0 ps-0"
                                             style={{ fontSize: '0.84rem' }}
                                         />
@@ -418,11 +333,7 @@ const ContactRoleList = () => {
                                             <Button
                                                 variant="outline-secondary"
                                                 className="bg-white border-start-0 border-end-0 px-2"
-                                                onClick={() => {
-                                                    setSearchTerm('');
-                                                    setPage(1);
-                                                    setSelectedIds([]);
-                                                }}
+                                                onClick={handleClearSearch}
                                                 title="Clear search"
                                             >
                                                 <FaTimes size={11} className="text-muted" />
@@ -623,7 +534,7 @@ const ContactRoleList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isDeleting}
-                                                                            onClick={() => handleDelete(item)}
+                                                                            onClick={() => confirmSoftDelete(item.name || item.roleName || item.code, () => deleteRole({ id: item.id, isPermanentDelete: false }))}
                                                                         >
                                                                             <FaTrash size={10} />
                                                                         </Button>
@@ -637,7 +548,7 @@ const ContactRoleList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isRestoring}
-                                                                            onClick={() => handleRestore(item)}
+                                                                            onClick={() => confirmRestore(item.name || item.roleName || item.code, () => restoreRole(item.id))}
                                                                         >
                                                                             <FaUndo size={11} />
                                                                         </Button>
@@ -649,7 +560,7 @@ const ContactRoleList = () => {
                                                                             size="sm"
                                                                             className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                             disabled={isDeleting}
-                                                                            onClick={() => handlePermanentDelete(item)}
+                                                                            onClick={() => confirmPermanentDelete(item.name || item.roleName || item.code, () => deleteRole({ id: item.id, isPermanentDelete: true }))}
                                                                         >
                                                                             <FaExclamationTriangle size={11} />
                                                                         </Button>
@@ -681,7 +592,7 @@ const ContactRoleList = () => {
                                             totalPages={totalPages}
                                             onPageChange={(newPage) => {
                                                 setPage(newPage);
-                                                setSelectedIds([]);
+                                                handleDeselectAll();
                                             }}
                                         />
                                     </Col>

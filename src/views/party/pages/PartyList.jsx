@@ -1,13 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle, FaSyncAlt } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import PaginationBar from '../../../components/PaginationBar';
-import { useUIManager } from '../../../contexts/UIManagerContext';
-import { useDispatch } from 'react-redux';
-import { setModalLoading } from '../../../store/uiModal.slice';
 import {
     useBulkDeleteParties,
     useBulkRestoreParties,
@@ -24,7 +21,8 @@ import BulkActionBar from '../../../components/trash/BulkActionBar';
 import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
 import moment from 'moment';
-import useDebounce from '../../../hooks/useDebounce';
+import useListManager from '../../../hooks/useListManager';
+import useTrashActions from '../../../hooks/useTrashActions';
 
 /**
  * Format date string safely to DD/MM/YYYY
@@ -41,20 +39,20 @@ const formatDate = (dateStr) => {
 };
 
 const PartyList = () => {
-    const dispatch = useDispatch();
-    const { showModal } = useUIManager();
+    // 1. Trash Actions Hook
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete,
+        confirmBulkSoftDelete,
+        confirmBulkRestore,
+        confirmBulkPermanentDelete
+    } = useTrashActions({ entityName: 'Party', pluralEntityName: 'Parties' });
 
-    // Local state for pagination, filters, sorting, and details drawer
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
+    // 2. Extra Filters & Sort State
     const [statusFilter, setStatusFilter] = useState('');
     const [gstFilter, setGstFilter] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
-    const [isTrash, setIsTrash] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
-
-    const debouncedSearch = useDebounce(searchTerm, 400);
 
     // Drawer state
     const [selectedParty, setSelectedParty] = useState(null);
@@ -62,6 +60,34 @@ const PartyList = () => {
 
     // Copy indicator state for table row cells
     const [copiedKey, setCopiedKey] = useState(null);
+
+    // Temp state to sync data with useListManager
+    const [tempItems, setTempItems] = useState([]);
+
+    // 3. List Manager Hook
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search: searchTerm,
+        debouncedSearch,
+        handleSearch,
+        clearSearch: handleClearSearch,
+        isTrash,
+        handleTabChange,
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useListManager({
+        items: tempItems,
+        idKey: 'id',
+        initialPageSize: 10
+    });
 
     // Queries & Mutations
     const queryParams = {
@@ -78,141 +104,35 @@ const PartyList = () => {
         isLoading: isPartiesLoading,
         isFetching: isPartiesFetching,
         isError,
-        refetch
+        refetch: refetchParties
     } = useParties(queryParams);
 
     const {
         data: pagination = {},
-        isLoading: isPaginationLoading
+        isLoading: isPaginationLoading,
+        isFetching: isPaginationFetching,
+        refetch: refetchPagination
     } = usePartyPagination(queryParams);
+
+    const isFetching = isPartiesFetching || isPaginationFetching;
+    const isLoading = isPartiesLoading || isPaginationLoading;
+
+    const handleRefresh = () => {
+        refetchParties();
+        refetchPagination();
+    };
 
     const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
     const { mutate: restoreParty } = useRestoreParty();
     const { mutate: bulkDeleteParties } = useBulkDeleteParties();
     const { mutate: bulkRestoreParties } = useBulkRestoreParties();
 
+    // Sync fetched parties to list manager
+    useEffect(() => {
+        setTempItems(parties);
+    }, [parties]);
+
     const { total = 0, totalPages = 1, pageStart = 0, pageEnd = 0 } = pagination;
-
-    const handleTabChange = (trashState) => {
-        setIsTrash(trashState);
-        setPage(1);
-        setSelectedIds([]);
-    };
-
-    // Multi-selection handlers
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const allIds = parties.map(item => item.id);
-            setSelectedIds(allIds);
-        } else {
-            setSelectedIds([]);
-        }
-    };
-
-    const handleSelectRow = (id) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-        );
-    };
-
-    const isAllSelected = parties.length > 0 && selectedIds.length === parties.length;
-    const isIndeterminate = selectedIds.length > 0 && selectedIds.length < parties.length;
-
-    // Action: Move to Trash (Soft Delete)
-    const handleDelete = (party) => {
-        const name = party.displayName || party.legalName || `Party #${party.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Move to Recycle Bin',
-            message: `Are you sure you want to move Party "${name}" to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteParty({ id: party.id, isPermanentDelete: false });
-            }
-        });
-    };
-
-    // Action: Restore Single Item
-    const handleRestore = (party) => {
-        const name = party.displayName || party.legalName || `Party #${party.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Party',
-            message: `Are you sure you want to restore Party "${name}" back to active parties?`,
-            confirmText: 'Restore',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                restoreParty(party.id);
-            }
-        });
-    };
-
-    // Action: Permanent Delete Single Item
-    const handlePermanentDelete = (party) => {
-        const name = party.displayName || party.legalName || `Party #${party.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Party',
-            message: `Are you sure you want to PERMANENTLY delete Party "${name}"? This action cannot be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteParty({ id: party.id, isPermanentDelete: true });
-            }
-        });
-    };
-
-    // Action: Bulk Move to Trash
-    const handleBulkDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Move Selected to Recycle Bin',
-            message: `Are you sure you want to move ${selectedIds.length} selected parties to the Recycle Bin?`,
-            confirmText: 'Move to Bin',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: false });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Action: Bulk Restore
-    const handleBulkRestore = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Restore Selected Parties',
-            message: `Are you sure you want to restore ${selectedIds.length} selected parties back to active records?`,
-            confirmText: 'Restore All',
-            confirmVariant: 'success',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkRestoreParties({ ids: selectedIds });
-                setSelectedIds([]);
-            }
-        });
-    };
-
-    // Action: Bulk Permanent Delete
-    const handleBulkPermanentDelete = () => {
-        showModal('confirm', {
-            show: true,
-            title: 'Permanently Delete Selected Parties',
-            message: `Are you sure you want to PERMANENTLY delete ${selectedIds.length} selected parties? This action cannot be undone.`,
-            confirmText: 'Delete Permanently',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: true });
-                setSelectedIds([]);
-            }
-        });
-    };
 
     // Handle column sorting
     const handleSort = (key) => {
@@ -332,7 +252,6 @@ const PartyList = () => {
     };
 
     const hasActiveFilters = Boolean(searchTerm || statusFilter || gstFilter !== '');
-    const isLoading = isPartiesLoading || isPaginationLoading;
 
     return (
         <>
@@ -426,7 +345,7 @@ const PartyList = () => {
                                     </Form.Select>
 
                                     {/* Search Input */}
-                                    <InputGroup size="sm" style={{ width: '16rem' }}>
+                                    <InputGroup size="sm" style={{ width: '19rem' }}>
                                         <InputGroup.Text className="bg-white border-end-0">
                                             <FaSearch className="text-muted" size={12} />
                                         </InputGroup.Text>
@@ -434,24 +353,30 @@ const PartyList = () => {
                                             type="search"
                                             placeholder="Search parties..."
                                             value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                setPage(1);
-                                            }}
-                                            className="border-start-0 ps-0"
+                                            onChange={handleSearch}
+                                            className="border-start-0 border-end-0 ps-0"
+                                            style={{ fontSize: '0.84rem' }}
                                         />
                                         {searchTerm && (
                                             <Button
                                                 variant="outline-secondary"
-                                                className="bg-white border-start-0"
-                                                onClick={() => {
-                                                    setSearchTerm('');
-                                                    setPage(1);
-                                                }}
+                                                className="bg-white border-start-0 border-end-0 px-2"
+                                                onClick={handleClearSearch}
+                                                title="Clear search"
                                             >
                                                 <FaTimes size={11} className="text-muted" />
                                             </Button>
                                         )}
+                                        <OverlayTrigger placement="top" overlay={<Tooltip>Refresh list</Tooltip>}>
+                                            <Button
+                                                variant="outline-secondary"
+                                                className="bg-white border-start-0 px-2.5 d-flex align-items-center"
+                                                onClick={handleRefresh}
+                                                disabled={isFetching}
+                                            >
+                                                <FaSyncAlt size={11} className={isFetching ? 'fa-spin text-primary' : 'text-muted'} />
+                                            </Button>
+                                        </OverlayTrigger>
                                     </InputGroup>
 
                                     {/* Reset Filters button */}
@@ -473,12 +398,21 @@ const PartyList = () => {
                             {/* Bulk Action Bar */}
                             <div className="px-4">
                                 <BulkActionBar
-                                    selectedCount={selectedIds.length}
+                                    selectedCount={selectedCount}
                                     isTrash={isTrash}
-                                    onBulkDelete={handleBulkDelete}
-                                    onBulkRestore={handleBulkRestore}
-                                    onBulkPermanentDelete={handleBulkPermanentDelete}
-                                    onClearSelection={() => setSelectedIds([])}
+                                    onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                                        bulkDeleteParties({ ids: selectedIds, isPermanentDelete: false });
+                                        handleDeselectAll();
+                                    })}
+                                    onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                                        bulkRestoreParties({ ids: selectedIds });
+                                        handleDeselectAll();
+                                    })}
+                                    onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                                        bulkDeleteParties({ ids: selectedIds, isPermanentDelete: true });
+                                        handleDeselectAll();
+                                    })}
+                                    onDeselectAll={handleDeselectAll}
                                 />
                             </div>
 
@@ -901,7 +835,7 @@ const PartyList = () => {
                                                                                 size="sm"
                                                                                 className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
                                                                                 disabled={isDeleting}
-                                                                                onClick={() => handleDelete(party)}
+                                                                                onClick={() => confirmSoftDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: false }))}
                                                                             >
                                                                                 <FaTrash size={10} />
                                                                             </Button>
@@ -915,7 +849,7 @@ const PartyList = () => {
                                                                                 variant="outline-success"
                                                                                 size="sm"
                                                                                 className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => handleRestore(party)}
+                                                                                onClick={() => confirmRestore(party.displayName || party.legalName || party.partyCode, () => restoreParty(party.id))}
                                                                             >
                                                                                 <FaUndo size={10} />
                                                                             </Button>
@@ -927,7 +861,7 @@ const PartyList = () => {
                                                                                 variant="outline-danger"
                                                                                 size="sm"
                                                                                 className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => handlePermanentDelete(party)}
+                                                                                onClick={() => confirmPermanentDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: true }))}
                                                                             >
                                                                                 <FaExclamationTriangle size={10} />
                                                                             </Button>

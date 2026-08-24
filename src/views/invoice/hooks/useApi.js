@@ -58,13 +58,18 @@ export const useInvoice = ({ page, pageSize, search, trash = false }) => {
                 PARTIAL: 'bg-info',
                 FAILED: 'bg-danger',
                 CANCELLED: 'bg-secondary',
-                REFUNDED: 'bg-primary'
+                REFUNDED: 'bg-primary',
+                UNPAID: 'bg-warning',
+                OVERDUE: 'bg-danger'
             };
 
-            const data = result?.data?.map(item => ({
-                ...item,
-                color: paymentStatusColor[item.paymentStatusCode] ?? 'bg-secondary'
-            })) ?? [];
+            const data = result?.data?.map(item => {
+                const code = (item.paymentStatusCode || item.paymentStatus || '').toUpperCase();
+                return {
+                    ...item,
+                    color: paymentStatusColor[code] ?? 'bg-secondary'
+                };
+            }) ?? [];
 
             return data;
         }
