@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -9,7 +9,10 @@ import {
    FaExclamationTriangle,
    FaSearch,
    FaTimes,
-   FaSyncAlt
+   FaSyncAlt,
+   FaSort,
+   FaSortAlphaUpAlt,
+   FaSortAlphaDownAlt
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import {
@@ -44,8 +47,11 @@ const EwayBillList = () => {
    const { mutate: bulkDeleteEwayBills } = useBulkDeleteEwayBills();
    const { mutate: bulkRestoreEwayBills } = useBulkRestoreEwayBills();
 
+   // Sorting state
+   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+
    // Data fetching state
-   const [tempItems, setTempItems] = React.useState([]);
+   const [tempItems, setTempItems] = useState([]);
 
    // List Manager Hook
    const {
@@ -96,9 +102,61 @@ const EwayBillList = () => {
       refetchPagination();
    };
 
-   React.useEffect(() => {
-      setTempItems(ewayBill);
-   }, [ewayBill]);
+   // Handle column sorting
+   const handleSort = (key) => {
+      setSortConfig((prev) => {
+         if (prev.key === key) {
+            return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+         }
+         return { key, direction: 'asc' };
+      });
+   };
+
+   const renderSortIcon = (key) => {
+      if (sortConfig.key === key) {
+         return sortConfig.direction === 'asc' ? (
+            <FaSortAlphaUpAlt className="text-primary ms-1" size={10} />
+         ) : (
+            <FaSortAlphaDownAlt className="text-primary ms-1" size={10} />
+         );
+      }
+      return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
+   };
+
+   // Sorted list
+   const sortedList = useMemo(() => {
+      let items = [...ewayBill];
+      if (sortConfig.key) {
+         items.sort((a, b) => {
+            let aVal = a[sortConfig.key] ?? '';
+            let bVal = b[sortConfig.key] ?? '';
+
+            if (sortConfig.key === 'ewayBillId') {
+               const numA = Number(aVal) || 0;
+               const numB = Number(bVal) || 0;
+               return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+            }
+
+            if (sortConfig.key === 'ewayBillDate' || sortConfig.key === 'ewaybillValidUpto' || sortConfig.key === 'updatedAt' || sortConfig.key === 'deletedAt' || sortConfig.key === 'createdAt') {
+               const dateA = new Date(aVal).getTime() || 0;
+               const dateB = new Date(bVal).getTime() || 0;
+               return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+            }
+
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+         });
+      }
+      return items;
+   }, [ewayBill, sortConfig]);
+
+   useEffect(() => {
+      setTempItems(sortedList);
+   }, [sortedList]);
 
    const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -210,10 +268,10 @@ const EwayBillList = () => {
                      </Col>
 
                      <div className="table-responsive">
-                        <Table id="eway-list-table" className="table-striped mb-0" role="grid">
-                           <thead>
-                              <tr className="light">
-                                 <th className="text-center" style={{ width: '40px' }}>
+                        <Table id="eway-list-table" className="table-sortable table-striped mb-0 align-middle" striped bordered hover responsive role="grid">
+                           <thead className="light">
+                              <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                 <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
                                     <FormCheck
                                        type="checkbox"
                                        checked={isAllSelected}
@@ -223,53 +281,117 @@ const EwayBillList = () => {
                                        onChange={handleSelectAll}
                                     />
                                  </th>
-                                 <th className="text-center">Sr.No</th>
-                                 <th>Customer Name</th>
-                                 <th>E-Way Bill Date</th>
-                                 <th>Valid Upto</th>
-                                 <th>E-Way Bill No</th>
-                                 {!isTrash && <th>Invoice Status</th>}
-                                 <th>Created By</th>
+                                 <th
+                                    className="text-center cursor-pointer user-select-none py-2"
+                                    style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.3rem' }}
+                                    onClick={() => handleSort('ewayBillId')}
+                                 >
+                                    #ID {renderSortIcon('ewayBillId')}
+                                 </th>
+                                 <th
+                                    className="cursor-pointer user-select-none py-2"
+                                    style={{ minWidth: '200px', padding: '0.45rem 0.5rem' }}
+                                    onClick={() => handleSort('customerName')}
+                                 >
+                                    Customer Name {renderSortIcon('customerName')}
+                                 </th>
+                                 <th
+                                    className="cursor-pointer user-select-none py-2"
+                                    style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                    onClick={() => handleSort('ewayBillDate')}
+                                 >
+                                    E-Way Bill Date {renderSortIcon('ewayBillDate')}
+                                 </th>
+                                 <th
+                                    className="cursor-pointer user-select-none py-2"
+                                    style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                    onClick={() => handleSort('ewaybillValidUpto')}
+                                 >
+                                    Valid Upto {renderSortIcon('ewaybillValidUpto')}
+                                 </th>
+                                 <th
+                                    className="cursor-pointer user-select-none py-2"
+                                    style={{ minWidth: '140px', padding: '0.45rem 0.5rem' }}
+                                    onClick={() => handleSort('ewayBillNo')}
+                                 >
+                                    E-Way Bill No {renderSortIcon('ewayBillNo')}
+                                 </th>
+                                 {!isTrash && (
+                                    <th
+                                       className="cursor-pointer user-select-none py-2"
+                                       style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                       onClick={() => handleSort('invoiceStatus')}
+                                    >
+                                       Invoice Status {renderSortIcon('invoiceStatus')}
+                                    </th>
+                                 )}
+                                 <th
+                                    className="cursor-pointer user-select-none py-2"
+                                    style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                    onClick={() => handleSort('createdBy')}
+                                 >
+                                    Created By {renderSortIcon('createdBy')}
+                                 </th>
                                  {isTrash ? (
                                     <>
-                                       <th>Deleted Date</th>
-                                       <th>Deleted By</th>
+                                       <th
+                                          className="cursor-pointer user-select-none py-2"
+                                          style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}
+                                          onClick={() => handleSort('deletedAt')}
+                                       >
+                                          Deleted Date {renderSortIcon('deletedAt')}
+                                       </th>
+                                       <th
+                                          className="cursor-pointer user-select-none py-2"
+                                          style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                          onClick={() => handleSort('deletedBy')}
+                                       >
+                                          Deleted By {renderSortIcon('deletedBy')}
+                                       </th>
                                     </>
                                  ) : (
-                                    <th>Updated At</th>
+                                    <th
+                                       className="cursor-pointer user-select-none py-2"
+                                       style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                       onClick={() => handleSort('updatedAt')}
+                                    >
+                                       Updated At {renderSortIcon('updatedAt')}
+                                    </th>
                                  )}
-                                 <th style={{ minWidth: '100px' }}>Action</th>
+                                 <th className="text-center py-2" style={{ width: '100px', minWidth: '100px', padding: '0.45rem 0.5rem' }}>
+                                    Action
+                                 </th>
                               </tr>
                            </thead>
-                           <tbody>
-                              {ewayBill.length > 0 ? (
-                                 ewayBill.map((item, idx) => (
+                           <tbody style={{ fontSize: '0.86rem' }}>
+                              {sortedList.length > 0 ? (
+                                 sortedList.map((item, idx) => (
                                     <tr key={item.ewayBillId || idx} className={selectedIds.includes(item.ewayBillId) ? 'table-active' : ''}>
-                                       <td className="text-center">
+                                       <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
                                           <FormCheck
                                              type="checkbox"
                                              checked={selectedIds.includes(item.ewayBillId)}
                                              onChange={() => handleSelectRow(item.ewayBillId)}
                                           />
                                        </td>
-                                       <td className="text-center">{item.ewayBillId}</td>
-                                       <td>{item.customerName}</td>
-                                       <td>{item.ewayBillDate ? moment(item.ewayBillDate).format('DD/MM/YYYY') : '-'}</td>
-                                       <td>{item.ewaybillValidUpto ? moment(item.ewaybillValidUpto).format('DD/MM/YYYY') : '-'}</td>
-                                       <td><span className="fw-semibold text-primary">{item.ewayBillNo}</span></td>
+                                       <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.ewayBillId}</td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>{item.ewayBillDate ? moment(item.ewayBillDate).format('DD/MM/YYYY') : '-'}</td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>{item.ewaybillValidUpto ? moment(item.ewaybillValidUpto).format('DD/MM/YYYY') : '-'}</td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.ewayBillNo}</span></td>
                                        {!isTrash && (
-                                          <td><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
                                        )}
-                                       <td>{item.createdBy}</td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
                                        {isTrash ? (
                                           <>
-                                             <td>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
-                                             <td>{item.deletedBy || '-'}</td>
+                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
+                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '-'}</td>
                                           </>
                                        ) : (
-                                          <td>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
                                        )}
-                                       <td>
+                                       <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                           <div className="flex align-items-center list-user-action">
                                              {!isTrash ? (
                                                 <>

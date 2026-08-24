@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -10,7 +10,10 @@ import {
     FaExclamationTriangle,
     FaSearch,
     FaTimes,
-    FaSyncAlt
+    FaSyncAlt,
+    FaSort,
+    FaSortAlphaUpAlt,
+    FaSortAlphaDownAlt
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import {
@@ -47,8 +50,11 @@ const InvoiceList = () => {
     const { mutate: bulkRestoreInvoices } = useBulkRestoreInvoices();
     const { mutate: downloadInvoice, downloadingInvoiceId } = useDownloadInvoice();
 
+    // Sorting state
+    const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+
     // Data fetching state
-    const [tempItems, setTempItems] = React.useState([]);
+    const [tempItems, setTempItems] = useState([]);
 
     // List Manager Hook
     const {
@@ -84,7 +90,6 @@ const InvoiceList = () => {
         refetch: refetchList
     } = useInvoice({ page, pageSize, search: debouncedSearch, trash: isTrash });
 
-
     const {
         data: pagination = {},
         isLoading: isPaginationLoading,
@@ -100,9 +105,64 @@ const InvoiceList = () => {
         refetchPagination();
     };
 
-    React.useEffect(() => {
-        setTempItems(invoice);
-    }, [invoice]);
+    // Handle column sorting
+    const handleSort = (key) => {
+        setSortConfig((prev) => {
+            if (prev.key === key) {
+                return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+            }
+            return { key, direction: 'asc' };
+        });
+    };
+
+    const renderSortIcon = (key) => {
+        if (sortConfig.key === key) {
+            return sortConfig.direction === 'asc' ? (
+                <FaSortAlphaUpAlt className="text-primary ms-1" size={10} />
+            ) : (
+                <FaSortAlphaDownAlt className="text-primary ms-1" size={10} />
+            );
+        }
+        return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
+    };
+
+    // Sorted items list
+    const sortedList = useMemo(() => {
+        let items = [...invoice];
+        if (sortConfig.key) {
+            items.sort((a, b) => {
+                let aVal = a[sortConfig.key] ?? '';
+                let bVal = b[sortConfig.key] ?? '';
+
+                // Numeric comparisons (including string amounts)
+                if (sortConfig.key === 'invoiceId' || sortConfig.key === 'taxableAmount' || sortConfig.key === 'total' || sortConfig.key === 'subTotal') {
+                    const numA = Number(aVal) || 0;
+                    const numB = Number(bVal) || 0;
+                    return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+                }
+
+                // Date comparisons
+                if (sortConfig.key === 'invoiceDate' || sortConfig.key === 'dueDate' || sortConfig.key === 'updatedAt' || sortConfig.key === 'deletedAt' || sortConfig.key === 'createdAt') {
+                    const dateA = new Date(aVal).getTime() || 0;
+                    const dateB = new Date(bVal).getTime() || 0;
+                    return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+                }
+
+                // String comparisons
+                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return items;
+    }, [invoice, sortConfig]);
+
+    useEffect(() => {
+        setTempItems(sortedList);
+    }, [sortedList]);
 
     const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -214,10 +274,10 @@ const InvoiceList = () => {
                             </Col>
 
                             <div className="table-responsive">
-                                <Table id="invoice-list-table" className="table-striped mb-0" role="grid">
-                                    <thead>
-                                        <tr className="light">
-                                            <th className="text-center" style={{ width: '40px' }}>
+                                <Table id="invoice-list-table" className="table-sortable table-striped mb-0 align-middle" striped bordered hover responsive role="grid">
+                                    <thead className="light">
+                                        <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                            <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
                                                 <FormCheck
                                                     type="checkbox"
                                                     checked={isAllSelected}
@@ -227,67 +287,141 @@ const InvoiceList = () => {
                                                     onChange={handleSelectAll}
                                                 />
                                             </th>
-                                            <th className="text-center">Sr.No</th>
-                                            <th>Invoice No</th>
-                                            <th>Invoice Date</th>
-                                            <th>Customer Name</th>
+                                            <th
+                                                className="text-center cursor-pointer user-select-none py-2"
+                                                style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.3rem' }}
+                                                onClick={() => handleSort('invoiceId')}
+                                            >
+                                                #ID {renderSortIcon('invoiceId')}
+                                            </th>
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('invoiceNo')}
+                                            >
+                                                Invoice No {renderSortIcon('invoiceNo')}
+                                            </th>
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('invoiceDate')}
+                                            >
+                                                Invoice Date {renderSortIcon('invoiceDate')}
+                                            </th>
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '200px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('customerName')}
+                                            >
+                                                Customer Name {renderSortIcon('customerName')}
+                                            </th>
                                             {!isTrash && (
                                                 <>
-                                                    <th>Total Taxable</th>
-                                                    <th>Total Amount</th>
-                                                    <th>Payment Status</th>
-                                                    <th>Payment Mode</th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('taxableAmount')}
+                                                    >
+                                                        Total Taxable {renderSortIcon('taxableAmount')}
+                                                    </th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('total')}
+                                                    >
+                                                        Total Amount {renderSortIcon('total')}
+                                                    </th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('paymentStatusCode')}
+                                                    >
+                                                        Payment Status {renderSortIcon('paymentStatusCode')}
+                                                    </th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('paymentModeCode')}
+                                                    >
+                                                        Payment Mode {renderSortIcon('paymentModeCode')}
+                                                    </th>
                                                 </>
                                             )}
-                                            <th>Created By</th>
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('createdBy')}
+                                            >
+                                                Created By {renderSortIcon('createdBy')}
+                                            </th>
                                             {isTrash ? (
                                                 <>
-                                                    <th>Deleted Date</th>
-                                                    <th>Deleted By</th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('deletedAt')}
+                                                    >
+                                                        Deleted Date {renderSortIcon('deletedAt')}
+                                                    </th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('deletedBy')}
+                                                    >
+                                                        Deleted By {renderSortIcon('deletedBy')}
+                                                    </th>
                                                 </>
                                             ) : (
-                                                <th>Updated At</th>
+                                                <th
+                                                    className="cursor-pointer user-select-none py-2"
+                                                    style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                    onClick={() => handleSort('updatedAt')}
+                                                >
+                                                    Updated At {renderSortIcon('updatedAt')}
+                                                </th>
                                             )}
-                                            <th style={{ minWidth: '120px' }}>Action</th>
+                                            <th className="text-center py-2" style={{ width: '120px', minWidth: '120px', padding: '0.45rem 0.5rem' }}>
+                                                Action
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        {invoice.length > 0 ? (
-                                            invoice.map((item, idx) => (
+                                    <tbody style={{ fontSize: '0.86rem' }}>
+                                        {sortedList.length > 0 ? (
+                                            sortedList.map((item, idx) => (
                                                 <tr key={item.invoiceId || idx} className={selectedIds.includes(item.invoiceId) ? 'table-active' : ''}>
-                                                    <td className="text-center">
+                                                    <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
                                                         <FormCheck
                                                             type="checkbox"
                                                             checked={selectedIds.includes(item.invoiceId)}
                                                             onChange={() => handleSelectRow(item.invoiceId)}
                                                         />
                                                     </td>
-                                                    <td className="text-center">{item.invoiceId}</td>
-                                                    <td>{item.invoiceNo}</td>
-                                                    <td>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
-                                                    <td>{item.customerName}</td>
+                                                    <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.invoiceId}</td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span></td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
                                                     {!isTrash && (
                                                         <>
-                                                            <td>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                            <td>₹{Number(item.total ?? item.grandTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                            <td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(item.total ?? item.grandTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
                                                                 <span className={`badge ${item.color || 'bg-secondary'}`}>
                                                                     {item.paymentStatusCode || '-'}
                                                                 </span>
                                                             </td>
-                                                            <td>{item.paymentModeCode || '-'}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
                                                         </>
                                                     )}
-                                                    <td>{item.createdBy}</td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
                                                     {isTrash ? (
                                                         <>
-                                                            <td>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
-                                                            <td>{item.deletedBy || '-'}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '-'}</td>
                                                         </>
                                                     ) : (
-                                                        <td>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
                                                     )}
-                                                    <td>
+                                                    <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                                         <div className="flex align-items-center list-user-action">
                                                             {!isTrash ? (
                                                                 <>
