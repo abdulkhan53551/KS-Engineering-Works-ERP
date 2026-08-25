@@ -1,15 +1,21 @@
-import React from 'react'
-import { Row, Col, Form, Card } from 'react-bootstrap'
-import { useParams } from 'react-router-dom'
+import React from 'react';
+import { Row, Col, Form, Card } from 'react-bootstrap';
+import { useParams } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
-import { Controller, useForm } from 'react-hook-form'
-import { joiResolver } from '@hookform/resolvers/joi'
-import { useGetInvoiceChallanById } from '../hooks/useApi'
-import useHandleSubmit from '../hooks/useHandleSubmit'
-import { createInvoiceChallanValidationSchema, updateInvoiceChallanValidationSchema } from '../../../validation/invoiceChallan.validation'
-import SubmitButton from '../../../components/SubmitButton'
+import { Controller, useForm } from 'react-hook-form';
+import { joiResolver } from '@hookform/resolvers/joi';
+import { useGetInvoiceChallanById } from '../hooks/useApi';
+import useHandleSubmit from '../hooks/useHandleSubmit';
+import { createInvoiceChallanValidationSchema, updateInvoiceChallanValidationSchema } from '../../../validation/invoiceChallan.validation';
+import SubmitButton from '../../../components/SubmitButton';
 import { FaRegCalendarAlt } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
+import AttachmentManager from '../../../components/attachments/AttachmentManager';
+
+const CHALLAN_DOC_TYPES = [
+   { value: 'SIGNED_CHALLAN', label: 'Signed Delivery Challan / Gate Pass' },
+   { value: 'OTHER', label: 'General / Other Document' }
+];
 
 const InvoiceChallan = ({ mode }) => {
    const { id: challanId } = useParams();
@@ -18,7 +24,7 @@ const InvoiceChallan = ({ mode }) => {
       challanNo: '',
       challanDate: new Date(),
       customerName: '',
-   }
+   };
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
@@ -39,16 +45,16 @@ const InvoiceChallan = ({ mode }) => {
    return (
       <>
          <div>
-            <Form noValidate onSubmit={handleSubmit(onSubmit, onError)} >
+            <Form noValidate onSubmit={handleSubmit(onSubmit, onError)}>
                <Row>
                   <Col xl="12" lg="12">
-                     <Card>
-                        <Card.Header className="d-flex justify-content-between">
+                     <Card className="shadow-sm border bg-white">
+                        <Card.Header className="d-flex justify-content-between bg-transparent py-3 px-4 border-bottom">
                            <div className="header-title">
-                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} Invoice Challan</h4>
+                              <h5 className="mb-0 fw-bold text-dark">{`${isEditMode ? 'Update' : 'Create'}`} Delivery Challan</h5>
                            </div>
                         </Card.Header>
-                        <Card.Body>
+                        <Card.Body className="p-4">
                            <div className="row">
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
@@ -111,10 +117,31 @@ const InvoiceChallan = ({ mode }) => {
                   </Col>
                </Row>
             </Form>
+
+            {/* Delivery Challan Attachments */}
+            {isEditMode && challanId && (
+               <Card className="mt-4 shadow-sm border bg-white">
+                  <Card.Header className="bg-transparent py-3 px-4 border-bottom">
+                     <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                        Delivery Challan Documents & Receiver Proof
+                     </h6>
+                     <span className="text-muted" style={{ fontSize: '0.74rem' }}>
+                        Upload physical receiver-stamped challans, gate passes, or weighbridge slips
+                     </span>
+                  </Card.Header>
+                  <Card.Body className="p-4 pt-3.5">
+                     <AttachmentManager
+                        entityType="CHALLAN"
+                        entityId={challanId}
+                        docTypeOptions={CHALLAN_DOC_TYPES}
+                        folder="ks-erp/challans/documents"
+                     />
+                  </Card.Body>
+               </Card>
+            )}
          </div >
       </>
-   )
-
-}
+   );
+};
 
 export default InvoiceChallan;
