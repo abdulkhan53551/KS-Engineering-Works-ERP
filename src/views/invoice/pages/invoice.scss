@@ -207,6 +207,69 @@ body {
     }
 }
 
+.doc-action-grid-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.doc-tile {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.45rem;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        transform: translateY(-1px);
+    }
+
+    &.doc-tile-active-challan {
+        border-color: #93c5fd;
+        background: #f0f7ff;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08);
+    }
+
+    &.doc-tile-active-po {
+        border-color: #86efac;
+        background: #f0fdf4;
+        box-shadow: 0 2px 6px rgba(34, 197, 94, 0.08);
+    }
+
+    &.doc-tile-active-eway {
+        border-color: #fcd34d;
+        background: #fffbeb;
+        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);
+    }
+
+    .tile-icon-avatar {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        border-radius: 0.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pill-badge {
+        font-size: 0.68rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 1rem;
+        font-weight: 600;
+    }
+}
+
 .doc-pill-dock {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -250,10 +313,10 @@ body {
         }
 
         &.active-eway {
-            background: #fffbeb;
-            border: 1px solid #f59e0b;
-            color: #b45309;
-            box-shadow: 0 2px 5px rgba(245, 158, 11, 0.12);
+            background: #fff1f2;
+            border: 1px solid #fb7185;
+            color: #be123c;
+            box-shadow: 0 2px 5px rgba(225, 29, 72, 0.15);
         }
 
         .pill-badge {
@@ -384,6 +447,138 @@ body {
     color: #475569;
     margin-bottom: 0.4rem;
     display: block;
+}
+
+.doc-modal-list {
+    max-height: 380px;
+    overflow-y: auto;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    padding-left: 0.2rem;
+    padding-right: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.doc-modal-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        transform: translateY(-1px);
+    }
+
+    &.selected {
+        border-color: #3b82f6;
+        background: #f0f7ff;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08);
+    }
+
+    &.selected-po {
+        border-color: #22c55e;
+        background: #f0fdf4;
+        box-shadow: 0 2px 6px rgba(34, 197, 94, 0.08);
+    }
+
+    &.selected-eway {
+        border-color: #fb7185;
+        background: #fff1f2;
+        box-shadow: 0 2px 6px rgba(225, 29, 72, 0.08);
+    }
+
+    .doc-num-badge {
+        font-family: var(--bs-font-monospace, monospace);
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+}
+
+.text-rose {
+    color: #e11d48 !important;
+}
+
+.bg-rose {
+    background-color: #e11d48 !important;
+    color: #ffffff !important;
+}
+
+.border-rose-subtle {
+    border-color: #fecdd3 !important;
+}
+
+.btn-rose {
+    background-color: #e11d48;
+    border-color: #e11d48;
+    color: #ffffff;
+    &:hover, &:focus, &:active {
+        background-color: #be123c;
+        border-color: #be123c;
+        color: #ffffff;
+    }
+}
+
+.text-teal {
+    color: #0d9488 !important;
+}
+
+.bg-teal {
+    background-color: #0d9488 !important;
+    color: #ffffff !important;
+}
+
+.border-teal-subtle {
+    border-color: #99f6e4 !important;
+}
+
+.btn-teal {
+    background-color: #0d9488;
+    border-color: #0d9488;
+    color: #ffffff;
+    &:hover, &:focus, &:active {
+        background-color: #0f766e;
+        border-color: #0f766e;
+        color: #ffffff;
+    }
+}
+
+.text-indigo {
+    color: #6366f1 !important;
+}
+
+.bg-indigo {
+    background-color: #6366f1 !important;
+    color: #ffffff !important;
+}
+
+.border-indigo-subtle {
+    border-color: #c7d2fe !important;
+}
+
+.btn-indigo {
+    background-color: #6366f1;
+    border-color: #6366f1;
+    color: #ffffff;
+    &:hover, &:focus, &:active {
+        background-color: #4f46e5;
+        border-color: #4f46e5;
+        color: #ffffff;
+    }
+}
+
+.filter-tab-pill {
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 2rem;
+    transition: all 0.15s ease;
+    user-select: none;
 }
 
 .hover-scale {

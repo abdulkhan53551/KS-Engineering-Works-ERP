@@ -458,15 +458,17 @@ const InvoiceForm = ({ mode }) => {
                                        </Form.Floating>
                                     </Col>
 
-                                    {/* Option C: Quick-Action Interactive Document Pill Dock */}
+                                    {/* Reference Documents (Clean Pill Dock) */}
                                     <Col lg="12">
                                        <div className="doc-pill-dock">
                                           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                                              <div className="d-flex align-items-center gap-2">
-                                                <FaPaperclip className="text-primary" size={13} />
-                                                <span className="fw-bold text-dark small">Attach Reference Documents</span>
+                                                <div className="rounded d-flex align-items-center justify-content-center bg-primary text-white" style={{ width: '22px', height: '22px' }}>
+                                                   <FaPaperclip size={11} />
+                                                </div>
+                                                <span className="fw-bold text-dark small" style={{ fontSize: '0.82rem' }}>Attach Reference Documents</span>
                                              </div>
-                                             <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                             <small className="text-muted" style={{ fontSize: '0.74rem' }}>
                                                 Click any button to attach or manage documents
                                              </small>
                                           </div>
@@ -526,10 +528,10 @@ const InvoiceForm = ({ mode }) => {
                                                 }}
                                                 title="Click to select or manage E-Way Bills"
                                              >
-                                                <FaTruck size={13} className={currentEwayBillIds.length > 0 ? "text-warning" : "text-secondary"} />
+                                                <FaTruck size={13} className={currentEwayBillIds.length > 0 ? "text-rose" : "text-secondary"} />
                                                 <span>E-Way Bill</span>
                                                 {currentEwayBillIds.length > 0 ? (
-                                                   <span className="badge bg-warning text-dark pill-badge">
+                                                   <span className="badge bg-rose text-white pill-badge">
                                                       {currentEwayBillIds.length} Linked
                                                    </span>
                                                 ) : (
@@ -557,8 +559,8 @@ const InvoiceForm = ({ mode }) => {
                                                    </span>
                                                 ))}
                                                 {currentEwayBillIds.map(id => (
-                                                   <span key={`ewb-${id}`} className="badge bg-white text-dark border border-warning-subtle document-badge-chip">
-                                                      <FaTruck size={10} className="text-warning" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
+                                                   <span key={`ewb-${id}`} className="badge bg-white text-rose border border-rose-subtle document-badge-chip">
+                                                      <FaTruck size={10} className="text-rose" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
                                                       <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('ewayBill', id); }} />
                                                    </span>
                                                 ))}
