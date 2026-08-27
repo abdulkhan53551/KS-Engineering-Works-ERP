@@ -280,9 +280,8 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedInvoiceChallan", id],
         queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
                 documentNo: item.challanNo,
@@ -302,9 +301,8 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.poId,
                 documentNo: item.poNo,
@@ -324,9 +322,8 @@ export const useUnmappedEwayBillByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.ewayBillId,
                 documentNo: item.ewayBillNo,

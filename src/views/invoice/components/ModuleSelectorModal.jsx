@@ -139,13 +139,14 @@ export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, modul
   };
 
   const handleSubmit = () => {
-    const selectedIds = localTasks.filter(t => t.selected).map(t => t.id);
+    const selectedItems = localTasks.filter(t => t.selected);
+    const selectedIds = selectedItems.map(t => t.id);
     setSubmittedData({
       timestamp: new Date().toLocaleTimeString(),
       ids: selectedIds,
       count: selectedIds.length
     });
-    onSubmit(moduleKey, selectedIds); // Call external submit handler
+    onSubmit(moduleKey, selectedIds, selectedItems); // Call external submit handler with items
   };
 
   // If the modal is not visible, return null

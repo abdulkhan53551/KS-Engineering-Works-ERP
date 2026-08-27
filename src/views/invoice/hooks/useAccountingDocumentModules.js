@@ -68,21 +68,34 @@ export default function useAccountingDocumentModules({ invoiceId, setValue }) {
 
     const closeModule = () => setActiveModule(null);
 
+    const [docNameMap, setDocNameMap] = useState({});
+
     const updateModuleData = (key, arr) => {
         setModuleData(prev => ({ ...prev, [key]: arr }));
     };
 
-    const submitModule = (key, selectedIds = []) => {
+    const submitModule = (key, selectedIds = [], selectedItems = []) => {
         const formKey = moduleToFormKey[key];
         const flagKey = moduleToFlagKey[key];
+
+        // Store human-readable document numbers in map
+        if (Array.isArray(selectedItems) && selectedItems.length > 0) {
+            setDocNameMap(prev => {
+                const updated = { ...prev };
+                selectedItems.forEach(item => {
+                    const docNumber = item.documentNo || (item.text ? item.text.split(' - ')[0] : null);
+                    if (item.id && docNumber) {
+                        updated[`${key}-${item.id}`] = docNumber;
+                    }
+                });
+                return updated;
+            });
+        }
 
         selectedDocument.current = {
             ...selectedDocument.current,
             [key]: selectedIds
         };
-
-        console.log('selectedDocument => ', selectedDocument);
-
 
         if (formKey) {
             setValue(formKey, selectedIds, { shouldValidate: true, shouldDirty: true });
@@ -94,15 +107,34 @@ export default function useAccountingDocumentModules({ invoiceId, setValue }) {
         closeModule();
     };
 
+    const getDocumentLabel = (key, id) => {
+        if (docNameMap[`${key}-${id}`]) {
+            return docNameMap[`${key}-${id}`];
+        }
+
+        const list = key === 'challan' ? fetchChallanQuery.data :
+                     key === 'purchaseOrder' ? fetchPOQuery.data :
+                     key === 'ewayBill' ? fetchEWBQuery.data : [];
+
+        const match = list?.find(item => item.documentId === id);
+        if (match && match.documentNo) {
+            return match.documentNo;
+        }
+
+        // Generic friendly fallback without exposing database IDs
+        const title = key === 'challan' ? 'Challan' : key === 'purchaseOrder' ? 'PO' : 'E-Way';
+        return `${title} Doc`;
+    };
+
     return {
         isLoading,
         moduleData: moduleData[activeModule] || [],
         activeModule,
-        selectedDocumentIds: selectedDocument,
         fetchModuleFun,
         openModule,
         closeModule,
         updateModuleData,
-        submitModule
+        submitModule,
+        getDocumentLabel
     };
 }
