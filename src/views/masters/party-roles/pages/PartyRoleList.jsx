@@ -162,6 +162,10 @@ const PartyRoleList = () => {
                 } else if (sortConfig.key === 'description') {
                     aVal = (a.description || '').toLowerCase();
                     bVal = (b.description || '').toLowerCase();
+                } else if (sortConfig.key === 'updatedAt' || sortConfig.key === 'lastModified') {
+                    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                    return sortConfig.direction === 'asc' ? aTime - bTime : bTime - aTime;
                 }
 
                 if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -362,14 +366,21 @@ const PartyRoleList = () => {
                                             </th>
                                             <th
                                                 className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '240px', padding: '0.45rem 0.5rem' }}
+                                                style={{ minWidth: '220px', padding: '0.45rem 0.5rem' }}
                                                 onClick={() => handleSort('description')}
                                             >
                                                 Description {renderSortIcon('description')}
                                             </th>
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('updatedAt')}
+                                            >
+                                                Last Modified {renderSortIcon('updatedAt')}
+                                            </th>
                                             {isTrash && (
                                                 <>
-                                                    <th style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
+                                                    <th style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
                                                     <th style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}>Deleted By</th>
                                                 </>
                                             )}
@@ -390,6 +401,7 @@ const PartyRoleList = () => {
                                                     <td className="py-2"><span className="placeholder col-8 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-10 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-12 rounded" /></td>
+                                                    <td className="py-2"><span className="placeholder col-10 rounded" /></td>
                                                     {isTrash && (
                                                         <>
                                                             <td className="py-2"><span className="placeholder col-8 rounded" /></td>
@@ -401,7 +413,7 @@ const PartyRoleList = () => {
                                             ))
                                         ) : pagedList.length === 0 ? (
                                             <tr>
-                                                <td colSpan={isTrash ? 8 : 6} className="text-center py-5 text-muted">
+                                                <td colSpan={isTrash ? 9 : 7} className="text-center py-5 text-muted">
                                                     <div className="mb-2">
                                                         {isTrash
                                                             ? (searchTerm ? `No deleted party roles matching "${searchTerm}"` : 'Recycle Bin is empty.')
@@ -444,11 +456,16 @@ const PartyRoleList = () => {
                                                     <td style={{ padding: '0.45rem 0.5rem' }}>
                                                         <span className="text-muted small">{item.description || '—'}</span>
                                                     </td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                        <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                            {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                                        </span>
+                                                    </td>
                                                     {isTrash && (
                                                         <>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <span className="text-muted small">
-                                                                    {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '—'}
+                                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                                    {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY, hh:mm A') : '—'}
                                                                 </span>
                                                             </td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>

@@ -1,35 +1,38 @@
-import { useEffect } from "react";
-import { useCreatFirm, useUpdateFirm, useUploadFirmLogo } from "./api.hooks";
+import { toast } from "react-toastify";
+import { useCreatFirm, useUpdateFirm } from "./api.hooks";
 
 const useHandleSubmit = (props) => {
     const { firmId, isEditMode, metaIds } = props;
     const { mutate: createFirmApi, isPending: createFirmIsPending } = useCreatFirm();
     const { mutate: updateFirmApi, isPending: updateFirmIsPending } = useUpdateFirm(firmId);
-    const { mutate: uploadLogo } = useUploadFirmLogo();
 
     const onSubmit = (data) => {
         if (createFirmIsPending || updateFirmIsPending) return false;
-        const { logoUrl, ...rest } = data;
 
         const formPayload = {
-            ...rest,
-            addressId: metaIds.firmAddressId,
-            bankAccountId: metaIds.firmBankId,
-        }
+            ...data,
+            logoUrl: data.logoUrl || null,
+            logoPublicId: data.logoPublicId || null,
+            addressId: metaIds?.firmAddressId || null,
+            bankAccountId: metaIds?.firmBankId || null,
+        };
 
         if (isEditMode) {
             updateFirmApi(formPayload);
-
-            // Do not update logo in edit mode for temporary
-            // uploadLogo({ id: firmId, file: logoUrl[0] })
         } else {
-            createFirmApi({ logo: logoUrl, data: formPayload });
+            createFirmApi({ data: formPayload });
         }
-    }
+    };
 
-    const onError = (errors, e) => console.log(errors);
+    const onError = (errors, e) => {
+        console.error("Firm form validation errors:", errors);
+        const firstErrorKey = Object.keys(errors)[0];
+        if (firstErrorKey && errors[firstErrorKey]?.message) {
+            toast.error(errors[firstErrorKey].message);
+        }
+    };
 
     return { onSubmit, onError, createFirmIsPending, updateFirmIsPending };
-}
+};
 
 export default useHandleSubmit;

@@ -59,6 +59,8 @@ const FirmForm = ({ mode }) => {
 
          reset({
             ...rest,
+            logoUrl: firm.logoUrl || firm.logo || '',
+            logoPublicId: firm.logoPublicId || '',
             isGstRegistered: Boolean(firm.gstin) || false,
          });
 
@@ -140,20 +142,18 @@ const FirmForm = ({ mode }) => {
                                     <Form.Control.Feedback type="invalid">{errors.businessActivity?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
-                              {isEditMode && (
-                                 <Col lg="6" className="d-flex align-items-center mb-3">
-                                    <LogoUploadDropZone
-                                       value={logoUrl}
-                                       publicId={logoPublicId}
-                                       folder="ks-erp/firms/logos"
-                                       onChange={({ logoUrl, logoPublicId }) => {
-                                          setValue('logoUrl', logoUrl, { shouldValidate: true });
-                                          setValue('logoPublicId', logoPublicId, { shouldValidate: true });
-                                       }}
-                                       disabled={createFirmIsPending || updateFirmIsPending}
-                                    />
-                                 </Col>
-                              )}
+                              <Col lg="6" className="d-flex align-items-center mb-3">
+                                 <LogoUploadDropZone
+                                    value={logoUrl}
+                                    publicId={logoPublicId}
+                                    folder="ks-erp/firms/logos"
+                                    onChange={({ logoUrl, logoPublicId }) => {
+                                       setValue('logoUrl', logoUrl, { shouldValidate: true });
+                                       setValue('logoPublicId', logoPublicId, { shouldValidate: true });
+                                    }}
+                                    disabled={createFirmIsPending || updateFirmIsPending}
+                                 />
+                              </Col>
                               <Col lg="6">
                                  <Form.Group className={"form-group  mb-4"}>
                                     <Form.Label >GST Registered:</Form.Label>

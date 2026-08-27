@@ -19,6 +19,7 @@ import useKsSearchParam from '../../hooks/useSearchParam';
 import PageLoader from '../../components/PageLoader';
 import { useDeleteFirm, useGetFirms, useGetFirmsPagination } from './hooks/api.hooks';
 import PaginationBar from '../../components/PaginationBar';
+import moment from 'moment';
 
 // const customerList = [
 //    {
@@ -295,8 +296,9 @@ const FirmList = () => {
                                  </tr>
                               </thead>
                               <tbody>
-                                 {
+                                 {// 
                                     firms.map((item, idx) => (
+
                                        <tr key={idx} id='example-collapse-text'>
                                           <td className="text-center">{item.firmId}</td>
                                           <td className="text-center">
@@ -312,7 +314,11 @@ const FirmList = () => {
                                           <td>{item.city}</td>
                                           <td>{item.state}</td>
                                           <td>{item.createdBy}</td>
-                                          <td>{item.updatedAt}</td>
+                                          <td>
+                                             <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                             </span>
+                                          </td>
                                           <td>
                                              <div className="flex align-items-center list-user-action">
                                                 <Link className="me-2" to={`/firms/${item.firmId}/edit`}>

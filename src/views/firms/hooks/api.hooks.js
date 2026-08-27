@@ -65,24 +65,25 @@ export const useGetFirmById = (id = 0) => {
 export const useCreatFirm = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { mutate: uploadLogo } = useUploadFirmLogo();
 
     return useMutation({
         mutationKey: ["createFirm"],
         mutationFn: ({ data }) => createFirm(data),
-        onSuccess: (res, req) => {
+        onSuccess: (res) => {
             if (res.success) {
-                const { logo } = req
-                const id = res.data?.id;
-                uploadLogo({ id: id, file: logo[0] })
+                const id = res.data?.id || res.data?.firmId;
                 toast.success(res.message || "Firm created successfully.");
-                queryClient.invalidateQueries({ queryKey: ['getFirms'] })
-                queryClient.invalidateQueries({ queryKey: ['firm-pagination'] })
-                navigate(`/firms${id}/edit`, { replace: true });
+                queryClient.invalidateQueries({ queryKey: ['getFirms'] });
+                queryClient.invalidateQueries({ queryKey: ['firm-pagination'] });
+                if (id) {
+                    navigate(`/firms/${id}/edit`, { replace: true });
+                } else {
+                    navigate('/firms', { replace: true });
+                }
             }
         }
     });
-}
+};
 
 // Update firm
 export const useUpdateFirm = (id) => {

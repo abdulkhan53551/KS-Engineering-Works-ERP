@@ -352,10 +352,10 @@ const EwayBillList = () => {
                                  ) : (
                                     <th
                                        className="cursor-pointer user-select-none py-2"
-                                       style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                       style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}
                                        onClick={() => handleSort('updatedAt')}
                                     >
-                                       Updated At {renderSortIcon('updatedAt')}
+                                       Last Modified {renderSortIcon('updatedAt')}
                                     </th>
                                  )}
                                  <th className="text-center py-2" style={{ width: '100px', minWidth: '100px', padding: '0.45rem 0.5rem' }}>
@@ -385,11 +385,19 @@ const EwayBillList = () => {
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
                                        {isTrash ? (
                                           <>
-                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '-'}</td>
-                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '-'}</td>
+                                             <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                   {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY, hh:mm A') : '—'}
+                                                </span>
+                                             </td>
+                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '—'}</td>
                                           </>
                                        ) : (
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY') : '-'}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>
+                                             <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                             </span>
+                                          </td>
                                        )}
                                        <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                           <div className="flex align-items-center list-user-action">

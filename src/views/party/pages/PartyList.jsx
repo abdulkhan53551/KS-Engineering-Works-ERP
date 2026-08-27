@@ -25,14 +25,14 @@ import useListManager from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 
 /**
- * Format date string safely to DD/MM/YYYY
+ * Format date string safely to DD/MM/YYYY, hh:mm A
  */
 const formatDate = (dateStr) => {
     if (!dateStr) return '—';
     try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return '—';
-        return d.toLocaleDateString('en-GB');
+        const m = moment(dateStr);
+        if (!m.isValid()) return '—';
+        return m.format('DD/MM/YYYY, hh:mm A');
     } catch {
         return '—';
     }
@@ -497,7 +497,7 @@ const PartyList = () => {
                                             ) : (
                                                 <th
                                                     className="cursor-pointer user-select-none py-2"
-                                                    style={{ minWidth: '110px', padding: '0.45rem 0.5rem' }}
+                                                    style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}
                                                     onClick={() => handleSort('updatedAt')}
                                                 >
                                                     Last Modified {renderSortIcon('updatedAt')}

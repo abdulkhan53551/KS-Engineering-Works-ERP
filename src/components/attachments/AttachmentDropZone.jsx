@@ -152,7 +152,7 @@ const AttachmentDropZone = ({
             // 2. Save attachment record in ERP database
             const payload = {
                 entityType,
-                entityId,
+                entityId: Number(entityId) || entityId,
                 docType,
                 title: title.trim() || selectedFile.name,
                 originalName: uploadRes.originalName,
@@ -170,6 +170,7 @@ const AttachmentDropZone = ({
             if (onUploadSuccess) onUploadSuccess(uploadRes);
         } catch (err) {
             console.error('Upload flow error:', err);
+            toast.error(err.response?.data?.message || err.message || 'Upload failed');
         }
     };
 
