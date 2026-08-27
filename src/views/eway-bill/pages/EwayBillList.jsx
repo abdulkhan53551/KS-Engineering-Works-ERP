@@ -268,7 +268,7 @@ const EwayBillList = () => {
                      </Col>
 
                      <div className="table-responsive">
-                        <Table id="eway-list-table" className="table-sortable table-striped mb-0 align-middle" striped bordered hover responsive role="grid">
+                        <Table id="eway-list-table" className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive role="grid">
                            <thead className="light">
                               <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                                  <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
