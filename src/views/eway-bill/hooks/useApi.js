@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createEwayBill, deleteEwayBill, getEwayBill, getEwayBillById, getEwayBillPagination, updateEwayBill } from "../api";
+import {
+    bulkDeleteEwayBills,
+    bulkRestoreEwayBills,
+    createEwayBill,
+    deleteEwayBill,
+    getEwayBill,
+    getEwayBillById,
+    getEwayBillPagination,
+    restoreEwayBill,
+    updateEwayBill
+} from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -7,11 +17,10 @@ import { useDispatch } from "react-redux";
 import { useUIManager } from "../../../contexts/UIManagerContext";
 
 // Get eway bill pagination
-export const useEwayBillPagination = ({ page, pageSize, search }) => {
+export const useEwayBillPagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["ewayBillPagination", page, pageSize, search],
-        queryFn: () => getEwayBillPagination({ page, pageSize, search }),
-        // staleTime: 0,
+        queryKey: ["ewayBillPagination", page, pageSize, search, trash],
+        queryFn: () => getEwayBillPagination({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
@@ -27,16 +36,15 @@ export const useEwayBillPagination = ({ page, pageSize, search }) => {
             };
         }
     });
-}
+};
 
 // Get eway bill
-export const useEwayBill = ({ page, pageSize, search }) => {
+export const useEwayBill = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
-        queryKey: ["ewayBillList", page, pageSize, search],
-        queryFn: () => getEwayBill({ page, pageSize, search }),
+        queryKey: ["ewayBillList", page, pageSize, search, trash],
+        queryFn: () => getEwayBill({ page, pageSize, search, trash }),
         keepPreviousData: true,
         select: (result) => {
-            // const data = json.parse(JSON.stringify(result?.data ?? []));
             const data = result?.data?.map(item => ({
                 ...item,
                 ewaybillValidUpto: item.validUpto,
@@ -47,7 +55,7 @@ export const useEwayBill = ({ page, pageSize, search }) => {
             return data;
         }
     });
-}
+};
 
 // Get eway bill by id
 export const useEwayBillById = (id = 0) => {
@@ -59,7 +67,7 @@ export const useEwayBillById = (id = 0) => {
             return result?.data ?? {};
         }
     });
-}
+};
 
 // Create eway bill
 export const useCreatEwayBill = () => {
@@ -73,13 +81,13 @@ export const useCreatEwayBill = () => {
             if (res.success) {
                 const id = res.data?.id;
                 toast.success(res.message || "Eway bill created successfully.");
-                queryClient.invalidateQueries({ queryKey: ['ewayBillList'] })
+                queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillPagination'] });
                 navigate(`/sales/eway-bill/${id}/edit`, { replace: true });
             }
         }
     });
-}
+};
 
 // Update eway bill
 export const useUpdateEwaybill = (id) => {
@@ -97,37 +105,38 @@ export const useUpdateEwaybill = (id) => {
             }
         }
     });
-}
+};
 
-// Delete eway bill
+// Delete eway bill (Soft delete or Permanent delete)
 export const useDeleteEwayBill = () => {
     const queryClient = useQueryClient();
     const dispatch = useDispatch();
-    const { showModal, closeModal } = useUIManager();
-
+    const { closeModal } = useUIManager();
 
     return useMutation({
         mutationKey: ["deleteEwayBill"],
-        mutationFn: deleteEwayBill,
-        onSuccess: (res, { id, invoiceId, type }) => {
+        mutationFn: ({ id, isPermanentDelete = false }) => deleteEwayBill({ id, isPermanentDelete }),
+        onSuccess: (res, { id, invoiceId }) => {
             if (res.success) {
                 dispatch(clearLoading());
                 closeModal();
                 toast.success(res.message || "Eway Bill deleted successfully.");
 
-                // Refresh the list
-                queryClient.setQueryData(['unmappedEwayBill', invoiceId], (old) => {
-                    const newData = {
-                        ...old,
-                        data: old?.data?.filter(item => item.ewayBillId !== id) ?? []
-                    }
+                if (invoiceId) {
+                    queryClient.setQueryData(['unmappedEwayBill', invoiceId], (old) => {
+                        const newData = {
+                            ...old,
+                            data: old?.data?.filter(item => item.ewayBillId !== id) ?? []
+                        };
 
-                    return newData;
-                });
+                        return newData;
+                    });
+                }
 
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
                 queryClient.invalidateQueries({ queryKey: ["ewayBillPagination"] });
+                queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
             }
         },
         onError: (error) => {
@@ -137,6 +146,90 @@ export const useDeleteEwayBill = () => {
                 error?.message ||
                 "Something went wrong while deleting";
 
+            toast.error(message);
+        }
+    });
+};
+
+// Restore eway bill from trash
+export const useRestoreEwayBill = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreEwayBill"],
+        mutationFn: (id) => restoreEwayBill(id),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Eway bill restored successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore eway bill.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk delete eway bills (Soft delete or Permanent delete)
+export const useBulkDeleteEwayBills = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteEwayBills"],
+        mutationFn: ({ ids, isPermanentDelete = false }) => bulkDeleteEwayBills({ ids, isPermanentDelete }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected eway bills deleted successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to delete selected eway bills.";
+            toast.error(message);
+        }
+    });
+};
+
+// Bulk restore eway bills from trash
+export const useBulkRestoreEwayBills = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreEwayBills"],
+        mutationFn: ({ ids }) => bulkRestoreEwayBills({ ids }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Selected eway bills restored successfully.");
+
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillPagination"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to restore selected eway bills.";
             toast.error(message);
         }
     });

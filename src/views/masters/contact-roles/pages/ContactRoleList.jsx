@@ -1,29 +1,43 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
+import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, FormCheck } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import Card from '../../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaSyncAlt, FaUserTie } from 'react-icons/fa';
+import {
+    FaPen,
+    FaTrash,
+    FaEye,
+    FaPlus,
+    FaSearch,
+    FaTimes,
+    FaSort,
+    FaSortAlphaUpAlt,
+    FaSortAlphaDownAlt,
+    FaSyncAlt,
+    FaUndo,
+    FaExclamationTriangle
+} from 'react-icons/fa';
 import PageLoader from '../../../../components/PageLoader';
 import PaginationBar from '../../../../components/PaginationBar';
-import { useContactRolesList, useDeleteContactRole } from '../../hooks/useMastersApi';
-import { useUIManager } from '../../../../contexts/UIManagerContext';
-import { useDispatch } from 'react-redux';
-import { setModalLoading } from '../../../../store/uiModal.slice';
+import {
+    useContactRolesList,
+    useDeleteContactRole,
+    useRestoreContactRole,
+    useBulkDeleteContactRoles,
+    useBulkRestoreContactRoles
+} from '../../hooks/useMastersApi';
 import ContactRoleModal from '../components/ContactRoleModal';
+import TrashTabFilter from '../../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../../components/trash/BulkActionBar';
+import moment from 'moment';
+import useListManager from '../../../../hooks/useListManager';
+import useTrashActions from '../../../../hooks/useTrashActions';
 
 /**
  * ContactRoleList Component
- * Clean and professional master list for Contact Roles matching PartyList structure.
+ * Master list for Contact Roles with Recycle Bin, Multi-Selection, and Debounced Search.
  */
 const ContactRoleList = () => {
-    const dispatch = useDispatch();
-    const { showModal } = useUIManager();
     const [searchParams, setSearchParams] = useSearchParams();
-
-    // Local state for pagination, filters, and sorting
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
@@ -33,8 +47,51 @@ const ContactRoleList = () => {
         selectedItem: null
     });
 
-    const { data: contactRoles = [], isLoading, isFetching, refetch } = useContactRolesList();
+    // 1. Trash Actions Hook
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete,
+        confirmBulkSoftDelete,
+        confirmBulkRestore,
+        confirmBulkPermanentDelete
+    } = useTrashActions({ entityName: 'Contact Role' });
+
+    // 2. Mutations
     const { mutate: deleteRole, isPending: isDeleting } = useDeleteContactRole();
+    const { mutate: restoreRole, isPending: isRestoring } = useRestoreContactRole();
+    const { mutate: bulkDeleteRoles } = useBulkDeleteContactRoles();
+    const { mutate: bulkRestoreRoles } = useBulkRestoreContactRoles();
+
+    // 3. Temp items for selection sync
+    const [tempItems, setTempItems] = useState([]);
+
+    // 4. List Manager Hook
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search: searchTerm,
+        debouncedSearch,
+        handleSearch,
+        clearSearch: handleClearSearch,
+        isTrash,
+        handleTabChange,
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useListManager({
+        items: tempItems,
+        idKey: 'id',
+        initialPageSize: 10
+    });
+
+    const { data: contactRoles = [], isLoading, isFetching, refetch } = useContactRolesList({ trash: isTrash });
 
     // Auto-open modal if URL has ?action=create
     useEffect(() => {
@@ -70,24 +127,25 @@ const ContactRoleList = () => {
         return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
     };
 
-    // Filter and Sort Data
+    // Filter and Sort Data (Client-side)
     const sortedAndFilteredList = useMemo(() => {
         let items = [...contactRoles];
 
         // Search Filter
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase().trim();
+        if (debouncedSearch.trim()) {
+            const term = debouncedSearch.toLowerCase().trim();
             items = items.filter((item) => {
                 const idStr = String(item.id || '');
                 const code = (item.code || item.roleCode || '').toLowerCase();
                 const name = (item.name || item.roleName || '').toLowerCase();
                 const desc = (item.description || '').toLowerCase();
-                return idStr.includes(term) || code.includes(term) || name.includes(term) || desc.includes(term);
+                const delBy = (item.deletedBy || '').toLowerCase();
+                return idStr.includes(term) || code.includes(term) || name.includes(term) || desc.includes(term) || delBy.includes(term);
             });
         }
 
         // Status Filter
-        if (statusFilter !== '') {
+        if (!isTrash && statusFilter !== '') {
             const isActive = statusFilter === 'ACTIVE';
             items = items.filter((item) => Boolean(item.isActive !== false) === isActive);
         }
@@ -124,7 +182,7 @@ const ContactRoleList = () => {
         }
 
         return items;
-    }, [contactRoles, searchTerm, statusFilter, sortConfig]);
+    }, [contactRoles, debouncedSearch, statusFilter, sortConfig, isTrash]);
 
     // Pagination calculations
     const total = sortedAndFilteredList.length;
@@ -136,6 +194,11 @@ const ContactRoleList = () => {
         const start = (page - 1) * pageSize;
         return sortedAndFilteredList.slice(start, start + pageSize);
     }, [sortedAndFilteredList, page, pageSize]);
+
+    // Sync paged list with useListManager
+    useEffect(() => {
+        setTempItems(pagedList);
+    }, [pagedList]);
 
     const handleOpenModal = (mode = 'create', item = null) => {
         setModalState({
@@ -153,27 +216,12 @@ const ContactRoleList = () => {
         });
     };
 
-    const handleDelete = (item) => {
-        const label = item.name || item.roleName || item.code || `Role #${item.id}`;
-        showModal('confirm', {
-            show: true,
-            title: 'Delete Contact Role',
-            message: `Are you sure you want to delete "${label}"?`,
-            confirmText: 'Delete',
-            confirmVariant: 'danger',
-            onConfirm: async () => {
-                dispatch(setModalLoading({ key: 'delete', isLoading: true }));
-                deleteRole(item.id);
-            }
-        });
-    };
-
     return (
         <>
             <Row>
                 <Col sm="12">
                     <Card>
-                        {/* 1. Header with Title, Count, and Add Button */}
+                        {/* 1. Header with Title, Tabs, Count, and Add Button */}
                         <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div className="header-title d-flex align-items-center gap-2">
                                 <h4 className="card-title mb-0">Contact Roles</h4>
@@ -183,19 +231,44 @@ const ContactRoleList = () => {
                                     </Badge>
                                 )}
                             </div>
+
+                            {/* Active vs Recycle Bin Tabs */}
+                            <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
+
                             <div className="d-flex align-items-center gap-2">
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    className="d-flex align-items-center gap-1.5 shadow-sm"
-                                    onClick={() => handleOpenModal('create')}
-                                    style={{ fontSize: '0.82rem', fontWeight: 600 }}
-                                >
-                                    <FaPlus size={11} />
-                                    <span>Add Contact Role</span>
-                                </Button>
+                                {!isTrash && (
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        className="d-flex align-items-center gap-1.5 shadow-sm"
+                                        onClick={() => handleOpenModal('create')}
+                                        style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                                    >
+                                        <FaPlus size={11} />
+                                        <span>Add Contact Role</span>
+                                    </Button>
+                                )}
                             </div>
                         </Card.Header>
+
+                        {/* Bulk Action Bar */}
+                        <BulkActionBar
+                            selectedCount={selectedCount}
+                            isTrash={isTrash}
+                            onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: false });
+                                handleDeselectAll();
+                            })}
+                            onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                                bulkRestoreRoles({ ids: selectedIds });
+                                handleDeselectAll();
+                            })}
+                            onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                                bulkDeleteRoles({ ids: selectedIds, isPermanentDelete: true });
+                                handleDeselectAll();
+                            })}
+                            onDeselectAll={handleDeselectAll}
+                        />
 
                         <Card.Body className="px-0">
                             {/* PageLoader for background refetching */}
@@ -213,6 +286,7 @@ const ContactRoleList = () => {
                                         onChange={(e) => {
                                             setPageSize(Number(e.target.value));
                                             setPage(1);
+                                            handleDeselectAll();
                                         }}
                                     >
                                         <option value="10">10</option>
@@ -225,20 +299,22 @@ const ContactRoleList = () => {
 
                                 {/* Filters & Integrated Search + Refresh */}
                                 <div className="d-flex align-items-center flex-wrap gap-2">
-                                    {/* Status Filter */}
-                                    <Form.Select
-                                        size="sm"
-                                        style={{ width: '8.5rem' }}
-                                        value={statusFilter}
-                                        onChange={(e) => {
-                                            setStatusFilter(e.target.value);
-                                            setPage(1);
-                                        }}
-                                    >
-                                        <option value="">All Status</option>
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="INACTIVE">Inactive</option>
-                                    </Form.Select>
+                                    {!isTrash && (
+                                        <Form.Select
+                                            size="sm"
+                                            style={{ width: '8.5rem' }}
+                                            value={statusFilter}
+                                            onChange={(e) => {
+                                                setStatusFilter(e.target.value);
+                                                setPage(1);
+                                                handleDeselectAll();
+                                            }}
+                                        >
+                                            <option value="">All Status</option>
+                                            <option value="ACTIVE">Active</option>
+                                            <option value="INACTIVE">Inactive</option>
+                                        </Form.Select>
+                                    )}
 
                                     {/* Integrated Search & Refresh Input Group */}
                                     <InputGroup size="sm" style={{ width: '19rem' }}>
@@ -249,10 +325,7 @@ const ContactRoleList = () => {
                                             type="search"
                                             placeholder="Search contact roles..."
                                             value={searchTerm}
-                                            onChange={(e) => {
-                                                setSearchTerm(e.target.value);
-                                                setPage(1);
-                                            }}
+                                            onChange={handleSearch}
                                             className="border-start-0 border-end-0 ps-0"
                                             style={{ fontSize: '0.84rem' }}
                                         />
@@ -260,10 +333,7 @@ const ContactRoleList = () => {
                                             <Button
                                                 variant="outline-secondary"
                                                 className="bg-white border-start-0 border-end-0 px-2"
-                                                onClick={() => {
-                                                    setSearchTerm('');
-                                                    setPage(1);
-                                                }}
+                                                onClick={handleClearSearch}
                                                 title="Clear search"
                                             >
                                                 <FaTimes size={11} className="text-muted" />
@@ -283,11 +353,21 @@ const ContactRoleList = () => {
                                 </div>
                             </Col>
 
-                            {/* 3. Table Content with Thin Header, Zebra Striping and Bordered Columns */}
+                            {/* 3. Table Content */}
                             <div className="table-responsive">
                                 <Table className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive>
                                     <thead className="light">
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                            <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
+                                                <FormCheck
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    ref={(el) => {
+                                                        if (el) el.indeterminate = isIndeterminate;
+                                                    }}
+                                                    onChange={handleSelectAll}
+                                                />
+                                            </th>
                                             <th
                                                 className="text-center cursor-pointer user-select-none py-2"
                                                 style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.3rem' }}
@@ -316,13 +396,21 @@ const ContactRoleList = () => {
                                             >
                                                 Description {renderSortIcon('description')}
                                             </th>
-                                            <th
-                                                className="text-center cursor-pointer user-select-none py-2"
-                                                style={{ width: '100px', minWidth: '100px', padding: '0.45rem 0.5rem' }}
-                                                onClick={() => handleSort('status')}
-                                            >
-                                                Status {renderSortIcon('status')}
-                                            </th>
+                                            {!isTrash && (
+                                                <th
+                                                    className="cursor-pointer user-select-none py-2"
+                                                    style={{ width: '110px', minWidth: '110px', padding: '0.45rem 0.5rem' }}
+                                                    onClick={() => handleSort('status')}
+                                                >
+                                                    Status {renderSortIcon('status')}
+                                                </th>
+                                            )}
+                                            {isTrash && (
+                                                <>
+                                                    <th style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
+                                                    <th style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}>Deleted By</th>
+                                                </>
+                                            )}
                                             <th
                                                 className="text-center py-2"
                                                 style={{ width: '120px', minWidth: '120px', padding: '0.45rem 0.5rem' }}
@@ -336,20 +424,24 @@ const ContactRoleList = () => {
                                             Array.from({ length: 4 }).map((_, idx) => (
                                                 <tr key={`contact-role-skel-${idx}`}>
                                                     <td className="text-center py-2"><span className="placeholder col-6 rounded" /></td>
+                                                    <td className="text-center py-2"><span className="placeholder col-6 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-8 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-10 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-12 rounded" /></td>
-                                                    <td className="text-center py-2"><span className="placeholder col-6 rounded-pill" /></td>
+                                                    <td className="py-2"><span className="placeholder col-8 rounded" /></td>
                                                     <td className="text-center py-2"><span className="placeholder col-8 rounded" /></td>
                                                 </tr>
                                             ))
                                         ) : pagedList.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="text-center py-5 text-muted">
+                                                <td colSpan={isTrash ? 8 : 7} className="text-center py-5 text-muted">
                                                     <div className="mb-2">
-                                                        {searchTerm ? `No contact roles matching "${searchTerm}"` : 'No contact roles found.'}
+                                                        {isTrash
+                                                            ? (searchTerm ? `No deleted contact roles matching "${searchTerm}"` : 'Recycle Bin is empty.')
+                                                            : (searchTerm ? `No contact roles matching "${searchTerm}"` : 'No contact roles found.')
+                                                        }
                                                     </div>
-                                                    {!searchTerm && (
+                                                    {!searchTerm && !isTrash && (
                                                         <Button
                                                             variant="outline-primary"
                                                             size="sm"
@@ -363,7 +455,14 @@ const ContactRoleList = () => {
                                             </tr>
                                         ) : (
                                             pagedList.map((item) => (
-                                                <tr key={item.id}>
+                                                <tr key={item.id} className={selectedIds.includes(item.id) ? 'table-active' : ''}>
+                                                    <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
+                                                        <FormCheck
+                                                            type="checkbox"
+                                                            checked={selectedIds.includes(item.id)}
+                                                            onChange={() => handleSelectRow(item.id)}
+                                                        />
+                                                    </td>
                                                     <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>
                                                         {item.id}
                                                     </td>
@@ -378,48 +477,96 @@ const ContactRoleList = () => {
                                                     <td style={{ padding: '0.45rem 0.5rem' }}>
                                                         <span className="text-muted small">{item.description || '—'}</span>
                                                     </td>
-                                                    <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                                        {item.isActive !== false ? (
-                                                            <Badge bg="soft-success" className="text-success fw-semibold px-2 py-1">Active</Badge>
-                                                        ) : (
-                                                            <Badge bg="soft-danger" className="text-danger fw-semibold px-2 py-1">Inactive</Badge>
-                                                        )}
-                                                    </td>
+                                                    {!isTrash && (
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                            <Badge
+                                                                bg={item.isActive !== false ? 'soft-success' : 'soft-danger'}
+                                                                className={`px-2 py-1 ${item.isActive !== false ? 'text-success' : 'text-danger'}`}
+                                                                style={{ fontSize: '0.76rem' }}
+                                                            >
+                                                                {item.isActive !== false ? 'Active' : 'Inactive'}
+                                                            </Badge>
+                                                        </td>
+                                                    )}
+                                                    {isTrash && (
+                                                        <>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-muted small">
+                                                                    {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-dark small">
+                                                                    {item.deletedBy || '—'}
+                                                                </span>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                     <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                                         <div className="d-inline-flex align-items-center gap-1">
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>View Details</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-info"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    onClick={() => handleOpenModal('view', item)}
-                                                                >
-                                                                    <FaEye size={11} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                            {!isTrash ? (
+                                                                <>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>View Details</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-info"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => handleOpenModal('view', item)}
+                                                                        >
+                                                                            <FaEye size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
 
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>Edit Role</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-success"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    onClick={() => handleOpenModal('edit', item)}
-                                                                >
-                                                                    <FaPen size={10} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Edit Role</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => handleOpenModal('edit', item)}
+                                                                        >
+                                                                            <FaPen size={10} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
 
-                                                            <OverlayTrigger placement="top" overlay={<Tooltip>Delete Role</Tooltip>}>
-                                                                <Button
-                                                                    variant="outline-danger"
-                                                                    size="sm"
-                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                    disabled={isDeleting}
-                                                                    onClick={() => handleDelete(item)}
-                                                                >
-                                                                    <FaTrash size={10} />
-                                                                </Button>
-                                                            </OverlayTrigger>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Move to Bin</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isDeleting}
+                                                                            onClick={() => confirmSoftDelete(item.name || item.roleName || item.code, () => deleteRole({ id: item.id, isPermanentDelete: false }))}
+                                                                        >
+                                                                            <FaTrash size={10} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Restore Role</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isRestoring}
+                                                                            onClick={() => confirmRestore(item.name || item.roleName || item.code, () => restoreRole(item.id))}
+                                                                        >
+                                                                            <FaUndo size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+
+                                                                    <OverlayTrigger placement="top" overlay={<Tooltip>Permanently Delete</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isDeleting}
+                                                                            onClick={() => confirmPermanentDelete(item.name || item.roleName || item.code, () => deleteRole({ id: item.id, isPermanentDelete: true }))}
+                                                                        >
+                                                                            <FaExclamationTriangle size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -443,7 +590,10 @@ const ContactRoleList = () => {
                                             pageSize={pageSize}
                                             total={total}
                                             totalPages={totalPages}
-                                            onPageChange={setPage}
+                                            onPageChange={(newPage) => {
+                                                setPage(newPage);
+                                                handleDeselectAll();
+                                            }}
                                         />
                                     </Col>
                                 </Row>
