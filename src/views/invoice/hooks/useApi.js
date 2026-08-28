@@ -347,14 +347,17 @@ export const useDownloadInvoice = () => {
         mutationKey: ["downloadInvoice"],
         mutationFn: downloadInvoice,
 
-        onMutate: (invoiceId) => {
+        onMutate: (payload) => {
+            const invoiceId = (typeof payload === 'object' && payload !== null) ? (payload.invoiceId || payload.id) : payload;
             setDownloadingInvoiceId(invoiceId);
         },
 
-        onSuccess: (response, invoiceId) => {
+        onSuccess: (response, payload) => {
+            const invoiceId = (typeof payload === 'object' && payload !== null) ? (payload.invoiceId || payload.id) : payload;
+            const fallbackNo = (typeof payload === 'object' && payload !== null) ? payload.invoiceNo : null;
             const disposition = response.headers["content-disposition"];
 
-            let fileName = `Invoice-${invoiceId}.pdf`;
+            let fileName = fallbackNo ? `Invoice-${fallbackNo}.pdf` : `Invoice-${invoiceId}.pdf`;
 
             if (disposition) {
                 const match = disposition.match(/filename="?([^"]+)"?/);

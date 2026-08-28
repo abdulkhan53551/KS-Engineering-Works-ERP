@@ -135,9 +135,10 @@ export const getUnmappedEwayBillByInvoiceId = asyncHandler(async (id) => {
 
 // Download invoice PDF
 export const downloadInvoice = asyncHandler(async (id) => {
+    const invoiceId = (typeof id === 'object' && id !== null) ? (id.invoiceId || id.id) : id;
     try {
         const res = await api.request({
-            url: `/invoice/${id}/pdf`,
+            url: `/invoice/${invoiceId}/pdf`,
             method: requestMethod.GET,
             responseType: "blob",
         });
