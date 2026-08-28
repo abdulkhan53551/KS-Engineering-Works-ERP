@@ -173,6 +173,10 @@ const ContactRoleList = () => {
                     aVal = a.isActive !== false ? 1 : 0;
                     bVal = b.isActive !== false ? 1 : 0;
                     return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                } else if (sortConfig.key === 'updatedAt' || sortConfig.key === 'lastModified') {
+                    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+                    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+                    return sortConfig.direction === 'asc' ? aTime - bTime : bTime - aTime;
                 }
 
                 if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -391,7 +395,7 @@ const ContactRoleList = () => {
                                             </th>
                                             <th
                                                 className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '240px', padding: '0.45rem 0.5rem' }}
+                                                style={{ minWidth: '220px', padding: '0.45rem 0.5rem' }}
                                                 onClick={() => handleSort('description')}
                                             >
                                                 Description {renderSortIcon('description')}
@@ -399,15 +403,22 @@ const ContactRoleList = () => {
                                             {!isTrash && (
                                                 <th
                                                     className="cursor-pointer user-select-none py-2"
-                                                    style={{ width: '110px', minWidth: '110px', padding: '0.45rem 0.5rem' }}
+                                                    style={{ width: '105px', minWidth: '105px', padding: '0.45rem 0.5rem' }}
                                                     onClick={() => handleSort('status')}
                                                 >
                                                     Status {renderSortIcon('status')}
                                                 </th>
                                             )}
+                                            <th
+                                                className="cursor-pointer user-select-none py-2"
+                                                style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}
+                                                onClick={() => handleSort('updatedAt')}
+                                            >
+                                                Last Modified {renderSortIcon('updatedAt')}
+                                            </th>
                                             {isTrash && (
                                                 <>
-                                                    <th style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
+                                                    <th style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}>Deleted Date</th>
                                                     <th style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}>Deleted By</th>
                                                 </>
                                             )}
@@ -428,13 +439,20 @@ const ContactRoleList = () => {
                                                     <td className="py-2"><span className="placeholder col-8 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-10 rounded" /></td>
                                                     <td className="py-2"><span className="placeholder col-12 rounded" /></td>
-                                                    <td className="py-2"><span className="placeholder col-8 rounded" /></td>
+                                                    {!isTrash && <td className="py-2"><span className="placeholder col-8 rounded" /></td>}
+                                                    <td className="py-2"><span className="placeholder col-10 rounded" /></td>
+                                                    {isTrash && (
+                                                        <>
+                                                            <td className="py-2"><span className="placeholder col-8 rounded" /></td>
+                                                            <td className="py-2"><span className="placeholder col-8 rounded" /></td>
+                                                        </>
+                                                    )}
                                                     <td className="text-center py-2"><span className="placeholder col-8 rounded" /></td>
                                                 </tr>
                                             ))
                                         ) : pagedList.length === 0 ? (
                                             <tr>
-                                                <td colSpan={isTrash ? 8 : 7} className="text-center py-5 text-muted">
+                                                <td colSpan={isTrash ? 9 : 8} className="text-center py-5 text-muted">
                                                     <div className="mb-2">
                                                         {isTrash
                                                             ? (searchTerm ? `No deleted contact roles matching "${searchTerm}"` : 'Recycle Bin is empty.')
@@ -488,10 +506,15 @@ const ContactRoleList = () => {
                                                             </Badge>
                                                         </td>
                                                     )}
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                        <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                            {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                                        </span>
+                                                    </td>
                                                     {isTrash && (
                                                         <>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <span className="text-muted small">
+                                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
                                                                     {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY hh:mm A') : '—'}
                                                                 </span>
                                                             </td>

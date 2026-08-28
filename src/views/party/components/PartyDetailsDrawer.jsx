@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock } from 'react-icons/fa';
+import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt } from 'react-icons/fa';
 import PartyStatusBadge from './PartyStatusBadge';
+import PartyDocumentSection from './sections/PartyDocumentSection';
 import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
 
@@ -281,7 +282,18 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
                     </Card.Body>
                 </Card>
 
-                {/* 5. Audit & Activity */}
+                {/* 5. Attached KYC & Compliance Documents */}
+                <Card className="mb-3 border shadow-none">
+                    <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
+                        <FaFileAlt className="text-primary" />
+                        <span className="fw-semibold text-dark small text-uppercase">KYC & Compliance Documents</span>
+                    </Card.Header>
+                    <Card.Body className="p-3">
+                        <PartyDocumentSection partyId={party.id} readOnly={true} />
+                    </Card.Body>
+                </Card>
+
+                {/* 6. Audit & Activity */}
                 <Card className="border shadow-none">
                     <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
                         <FaClock className="text-primary" />

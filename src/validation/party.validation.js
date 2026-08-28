@@ -68,6 +68,8 @@ export const createPartyValidationSchema = Joi.object({
             "string.uri": "Please enter a valid website URL (e.g. https://abc.com)."
         }),
     remarks: Joi.string().max(1000).allow(null, ""),
+    logoUrl: Joi.string().allow(null, "").optional(),
+    logoPublicId: Joi.string().allow(null, "").optional(),
     status: Joi.string().valid("ACTIVE", "INACTIVE").default("ACTIVE")
 });
 

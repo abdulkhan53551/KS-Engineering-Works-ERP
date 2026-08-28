@@ -9,17 +9,26 @@ import { joiResolver } from '@hookform/resolvers/joi'
 import { useCountryState, useStateCity } from '../dashboard/hooks/api.hooks'
 import { useGetFirmById } from './hooks/api.hooks'
 import useHandleSubmit from './hooks/useHandleSubmit'
+import LogoUploadDropZone from '../../components/upload/LogoUploadDropZone'
+import AttachmentManager from '../../components/attachments/AttachmentManager'
 
 const bankAccountType = ['Savings', 'Current']
 const firmType = ['Proprietorship', 'Partnership', 'LLP', 'Pvt Ltd', 'Public Ltd', 'Other']
+
+const FIRM_DOC_TYPES = [
+   { value: 'FIRM_LOGO', label: 'Firm Logo' },
+   { value: 'LETTERHEAD_HEADER', label: 'Letterhead Header Banner' },
+   { value: 'GST_CERT', label: 'GST Registration Certificate' },
+   { value: 'PAN_CARD', label: 'PAN Card Copy' },
+   { value: 'MSME_CERT', label: 'MSME / Udyam Certificate' },
+   { value: 'OTHER', label: 'General / Other Document' }
+]
 
 const FirmForm = ({ mode }) => {
    const { id: firmId } = useParams();
    const [isGstRegistered, setIsGstRegistered] = useState(false);
    const isEditMode = !!(mode == 'edit');
    const [metaIds, setMetaIds] = useState({ firmAddressId: null, firmBankId: null });
-
-   // const hasReset = useRef(false);
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, control, formState: { errors },
@@ -32,6 +41,7 @@ const FirmForm = ({ mode }) => {
    const watchIsGstRegistered = useWatch({ control, name: "isGstRegistered" });
    const selectedState = useWatch({ control, name: "stateId" });
    const logoUrl = useWatch({ control, name: "logoUrl" });
+   const logoPublicId = useWatch({ control, name: "logoPublicId" });
 
    const { data: countryStates = [] } = useCountryState();
    const { data: cities = [], isFetching: isFetchingCities } = useStateCity(selectedState);
@@ -49,6 +59,8 @@ const FirmForm = ({ mode }) => {
 
          reset({
             ...rest,
+            logoUrl: firm.logoUrl || firm.logo || '',
+            logoPublicId: firm.logoPublicId || '',
             isGstRegistered: Boolean(firm.gstin) || false,
          });
 
@@ -130,26 +142,17 @@ const FirmForm = ({ mode }) => {
                                     <Form.Control.Feedback type="invalid">{errors.businessActivity?.message}</Form.Control.Feedback>
                                  </Form.Floating>
                               </Col>
-                              <Col lg="6">
-                                 <Form.Group className="form-group col-md-6">
-                                    <Form.Label className="custom-file-input">Firm Logo</Form.Label>
-                                    {isEditMode && (
-                                       <Card style={{ width: 100 }}>
-                                          <Card.Img
-                                             variant="top"
-                                             src={logoUrl || DEFAULT_PROFILE}
-                                             alt="Profile"
-                                             style={{ height: '100px' }}
-                                             onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = DEFAULT_PROFILE;
-                                             }}
-                                          />
-                                       </Card>
-                                    )}
-                                    <Form.Control type="file" id="logoUrl" name='logoUrl' isInvalid={!!errors.logoUrl} {...register("logoUrl")} />
-                                    <Form.Control.Feedback type="invalid">{errors.logoUrl?.message}</Form.Control.Feedback>
-                                 </Form.Group>
+                              <Col lg="6" className="d-flex align-items-center mb-3">
+                                 <LogoUploadDropZone
+                                    value={logoUrl}
+                                    publicId={logoPublicId}
+                                    folder="ks-erp/firms/logos"
+                                    onChange={({ logoUrl, logoPublicId }) => {
+                                       setValue('logoUrl', logoUrl, { shouldValidate: true });
+                                       setValue('logoPublicId', logoPublicId, { shouldValidate: true });
+                                    }}
+                                    disabled={createFirmIsPending || updateFirmIsPending}
+                                 />
                               </Col>
                               <Col lg="6">
                                  <Form.Group className={"form-group  mb-4"}>
@@ -489,6 +492,28 @@ const FirmForm = ({ mode }) => {
                   </Col>
                </Row>
             </Form>
+
+            {/* Firm Associated Documents & Compliance */}
+            {isEditMode && firmId && (
+               <Card className="mt-4 shadow-sm border bg-white">
+                  <Card.Header className="bg-transparent py-3 px-4 border-bottom">
+                     <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                        Associated Firm Documents & Compliance
+                     </h6>
+                     <span className="text-muted" style={{ fontSize: '0.74rem' }}>
+                        Upload firm logos, letterhead headers, GST & PAN tax certificates, or legal documents
+                     </span>
+                  </Card.Header>
+                  <Card.Body className="p-4 pt-3.5">
+                     <AttachmentManager
+                        entityType="FIRM"
+                        entityId={firmId}
+                        docTypeOptions={FIRM_DOC_TYPES}
+                        folder="ks-erp/firms/documents"
+                     />
+                  </Card.Body>
+               </Card>
+            )}
          </div >
       </>
    )
