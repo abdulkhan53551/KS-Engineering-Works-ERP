@@ -280,9 +280,8 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedInvoiceChallan", id],
         queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
                 documentNo: item.challanNo,
@@ -302,9 +301,8 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.poId,
                 documentNo: item.poNo,
@@ -324,9 +322,8 @@ export const useUnmappedEwayBillByInvoiceId = (id) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
-        enabled: false,
+        staleTime: 5 * 60 * 1000,
         select: (result) => {
-            // const data = result?.data ?? [];
             const structuredData = result?.data?.map(item => ({
                 documentId: item.ewayBillId,
                 documentNo: item.ewayBillNo,
@@ -350,14 +347,17 @@ export const useDownloadInvoice = () => {
         mutationKey: ["downloadInvoice"],
         mutationFn: downloadInvoice,
 
-        onMutate: (invoiceId) => {
+        onMutate: (payload) => {
+            const invoiceId = (typeof payload === 'object' && payload !== null) ? (payload.invoiceId || payload.id) : payload;
             setDownloadingInvoiceId(invoiceId);
         },
 
-        onSuccess: (response, invoiceId) => {
+        onSuccess: (response, payload) => {
+            const invoiceId = (typeof payload === 'object' && payload !== null) ? (payload.invoiceId || payload.id) : payload;
+            const fallbackNo = (typeof payload === 'object' && payload !== null) ? payload.invoiceNo : null;
             const disposition = response.headers["content-disposition"];
 
-            let fileName = `Invoice-${invoiceId}.pdf`;
+            let fileName = fallbackNo ? `Invoice-${fallbackNo}.pdf` : `Invoice-${invoiceId}.pdf`;
 
             if (disposition) {
                 const match = disposition.match(/filename="?([^"]+)"?/);

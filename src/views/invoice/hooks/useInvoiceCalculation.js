@@ -3,19 +3,60 @@ import { useWatch } from "react-hook-form";
 import useGst from "../../../hooks/useGst";
 
 const useInvoiceCalculation = (props) => {
-    const { control, setValue, getValues } = props;
+    const { control, setValue, getValues, companyStateId = 27 } = props;
     const lastEditedFieldRef = useRef(null);
 
     // Watch fields
-    const [items, roundOffManual, userRoundOff, invoiceDiscount, otherCharges] = useWatch({
+    const [
+        items,
+        roundOffManual,
+        userRoundOff,
+        invoiceDiscount,
+        otherCharges,
+        billingStateId,
+        shippingStateId,
+        gstNumber,
+        hasGst
+    ] = useWatch({
         control,
-        name: ["items", "roundOffManual", "roundOff", "discountAmount", "other"],
+        name: [
+            "items",
+            "roundOffManual",
+            "roundOff",
+            "discountAmount",
+            "other",
+            "billingAddress.stateId",
+            "shippingAddress.stateId",
+            "gstNumber",
+            "hasGst"
+        ],
     });
 
     const { getGstRate } = useGst();
 
     // --------------------------------------------------
-    // 1) DISTRIBUTE DISCOUNT TO ITEMS
+    // Determine Inter-State (IGST) vs Intra-State (CGST+SGST)
+    // --------------------------------------------------
+    const isInterState = useMemo(() => {
+        const targetStateId = Number(shippingStateId || billingStateId || 0);
+        const firmState = Number(companyStateId || 27); // Default firm state is Maharashtra (27)
+
+        if (targetStateId > 0 && firmState > 0) {
+            return targetStateId !== firmState;
+        }
+
+        if (hasGst && gstNumber && gstNumber.length >= 2) {
+            const gstStateCode = Number(gstNumber.substring(0, 2));
+            if (!isNaN(gstStateCode) && gstStateCode > 0) {
+                return gstStateCode !== firmState;
+            }
+        }
+
+        return false;
+    }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst]);
+
+    // --------------------------------------------------
+    // 1) DISTRIBUTE DISCOUNT TO ITEMS & CALCULATE TAXES
     // --------------------------------------------------
     const itemsWithDiscount = useMemo(() => {
         if (!items || items.length === 0) return [];
@@ -25,8 +66,6 @@ const useInvoiceCalculation = (props) => {
             lastEditedFieldRef.current === "description" ||
             lastEditedFieldRef.current === "hsn"
         ) {
-
-            // RESET ONLY AFTER CALCULATION
             lastEditedFieldRef.current = null;
             return items;
         }
@@ -54,18 +93,28 @@ const useInvoiceCalculation = (props) => {
                 discount += Number(tolerance.toFixed(2));
             }
 
-            const taxableAmount = subTotal - discount;
+            const taxableAmount = Math.max(0, subTotal - discount);
 
             // GST rate
             const gstRate = getGstRate(item.gstSlabId);
-            const cgstRate = Number(gstRate / 2) || 0;
-            const sgstRate = Number(gstRate / 2) || 0;
-            const igstRate = 0;
+            let cgstRate = 0;
+            let sgstRate = 0;
+            let igstRate = 0;
+
+            if (isInterState) {
+                igstRate = Number(gstRate || 0);
+                cgstRate = 0;
+                sgstRate = 0;
+            } else {
+                cgstRate = Number(gstRate / 2) || 0;
+                sgstRate = Number(gstRate / 2) || 0;
+                igstRate = 0;
+            }
 
             // TAX calculations per item
-            const cgst = taxableAmount * ((Number(cgstRate || 0)) / 100);
-            const sgst = taxableAmount * ((Number(sgstRate || 0)) / 100);
-            const igst = taxableAmount * ((Number(igstRate || 0)) / 100);
+            const cgst = taxableAmount * (Number(cgstRate || 0) / 100);
+            const sgst = taxableAmount * (Number(sgstRate || 0) / 100);
+            const igst = taxableAmount * (Number(igstRate || 0) / 100);
 
             const total = taxableAmount + cgst + sgst + igst;
 
@@ -82,7 +131,7 @@ const useInvoiceCalculation = (props) => {
         });
 
         return updatedItems;
-    }, [items, invoiceDiscount]);
+    }, [items, invoiceDiscount, isInterState, getGstRate]);
 
     // --------------------------------------------------
     // 2) INVOICE SUMMARY
@@ -90,7 +139,7 @@ const useInvoiceCalculation = (props) => {
     const invoiceSummary = useMemo(() => {
         if (!itemsWithDiscount) return {};
 
-        let subTotal = 0, taxableAmount = 0, cgst = 0, sgst = 0, igst = 0;
+        let subTotal = 0, taxableAmount = 0, cgst = 0, sgst = 0, igst = 0, totalQty = 0;
 
         itemsWithDiscount.forEach(item => {
             subTotal += Number(item.subTotal || 0);
@@ -98,6 +147,7 @@ const useInvoiceCalculation = (props) => {
             cgst += Number(item.cgst || 0);
             sgst += Number(item.sgst || 0);
             igst += Number(item.igst || 0);
+            totalQty += Number(item.qty || 0);
         });
 
         const finalOtherCharges = Number(otherCharges || 0);
@@ -111,25 +161,34 @@ const useInvoiceCalculation = (props) => {
 
         return {
             items: itemsWithDiscount,
+            totalItemsCount: itemsWithDiscount.length,
+            totalQty,
             subTotal,
             taxableAmount,
             cgst,
             sgst,
             igst,
+            isInterState,
             roundOff: finalRoundOff,
             total: finalTotal
         };
-    }, [itemsWithDiscount, roundOffManual, userRoundOff, otherCharges]);
+    }, [itemsWithDiscount, roundOffManual, userRoundOff, otherCharges, isInterState]);
 
     useEffect(() => {
-        if (!invoiceSummary.total) return;
+        if (!invoiceSummary.total && invoiceSummary.total !== 0) return;
 
         // update items with new calculation
-        invoiceSummary.items.forEach((item, index) => {
+        invoiceSummary.items?.forEach((item, index) => {
             const current = getValues(`items.${index}`);
             if (!current) return;
 
-            if (current.total !== item.total || current.taxableAmount !== item.taxableAmount) {
+            if (
+                current.total !== item.total ||
+                current.taxableAmount !== item.taxableAmount ||
+                current.cgst !== item.cgst ||
+                current.sgst !== item.sgst ||
+                current.igst !== item.igst
+            ) {
                 setValue(
                     `items.${index}`,
                     {
@@ -139,6 +198,7 @@ const useInvoiceCalculation = (props) => {
                         taxableAmount: item.taxableAmount,
                         cgst: item.cgst,
                         sgst: item.sgst,
+                        igst: item.igst,
                         total: item.total
                     },
                     {
@@ -157,22 +217,26 @@ const useInvoiceCalculation = (props) => {
             }
         };
 
-        updateIfChanged("subTotal", invoiceSummary.subTotal.toFixed(2));
-        updateIfChanged("taxableAmount", invoiceSummary.taxableAmount.toFixed(2));
-        updateIfChanged("cgst", invoiceSummary.cgst.toFixed(2));
-        updateIfChanged("sgst", invoiceSummary.sgst.toFixed(2));
-        updateIfChanged("igst", invoiceSummary.igst.toFixed(2));
+        if (invoiceSummary.subTotal !== undefined) {
+            updateIfChanged("subTotal", Number(invoiceSummary.subTotal || 0).toFixed(2));
+            updateIfChanged("taxableAmount", Number(invoiceSummary.taxableAmount || 0).toFixed(2));
+            updateIfChanged("cgst", Number(invoiceSummary.cgst || 0).toFixed(2));
+            updateIfChanged("sgst", Number(invoiceSummary.sgst || 0).toFixed(2));
+            updateIfChanged("igst", Number(invoiceSummary.igst || 0).toFixed(2));
 
-        if (!roundOffManual) {
-            updateIfChanged("roundOff", invoiceSummary.roundOff.toFixed(2));
+            if (!roundOffManual) {
+                updateIfChanged("roundOff", Number(invoiceSummary.roundOff || 0).toFixed(2));
+            }
+
+            updateIfChanged("total", Number(invoiceSummary.total || 0).toFixed(2));
         }
-
-        updateIfChanged("total", invoiceSummary.total.toFixed(2));
-    }, [invoiceSummary]);
+    }, [invoiceSummary, getValues, setValue, roundOffManual]);
 
     return {
-        lastEditedFieldRef
-    }
+        lastEditedFieldRef,
+        isInterState,
+        invoiceSummary
+    };
 };
 
 export default useInvoiceCalculation;
