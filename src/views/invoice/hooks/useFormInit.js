@@ -13,7 +13,7 @@ const useFormInit = (props) => {
 
     // Prefill form
     useEffect(() => {
-        if (invoice && isEditMode) {
+        if (invoice && isEditMode && (invoice.invoiceId || invoice.id || invoice.invoiceNo)) {
             const { invoiceId, items, ...rest } = invoice;  // invoiceId of invoice
 
             const challanIds = invoice.challanIds || [];
@@ -90,8 +90,9 @@ const useFormInit = (props) => {
                 sgst: invoice.sgst,
                 igst: invoice.igst,
                 total: invoice.total,
-                roundOff: invoice.roundOff,
-                other: invoice.other,
+                roundOff: invoice.roundOff ?? 0,
+                roundOffManual: true,
+                other: invoice.other ?? 0,
 
                 // ==== Payment Section ====
                 paymentStatusId: invoice.paymentStatusId,

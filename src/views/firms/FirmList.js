@@ -19,6 +19,7 @@ import useKsSearchParam from '../../hooks/useSearchParam';
 import PageLoader from '../../components/PageLoader';
 import { useDeleteFirm, useGetFirms, useGetFirmsPagination } from './hooks/api.hooks';
 import PaginationBar from '../../components/PaginationBar';
+import moment from 'moment';
 
 // const customerList = [
 //    {
@@ -257,63 +258,67 @@ const FirmList = () => {
                            </InputGroup> */}
                         </Col>
                         <div className="table-responsive">
-                           <Table className='table-sortable ms-1 me-1' striped bordered hover responsive>
-                              <thead>
-                                 <tr className="light">
-                                    <th>#ID</th>
-                                    <th onClick={() => handleSort('Logo')}>
+                           <Table className='table-sortable ms-1 me-1 align-middle mb-0' striped bordered hover responsive>
+                              <thead className="light">
+                                 <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                    <th className="text-center" style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.5rem' }}>#ID</th>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Logo')}>
                                        Logo {renderSortIcon('Logo')}
                                     </th>
-                                    <th onClick={() => handleSort('Firm')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Firm')}>
                                        Firm {renderSortIcon('Firm')}
                                     </th>
-                                    <th onClick={() => handleSort('Trade')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Trade')}>
                                        Trade {renderSortIcon('Trade')}
                                     </th>
-                                    <th onClick={() => handleSort('Type')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Type')}>
                                        Type {renderSortIcon('Type')}
                                     </th>
-                                    <th onClick={() => handleSort('GSTIN')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('GSTIN')}>
                                        GSTIN {renderSortIcon('GSTIN')}
                                     </th>
-                                    <th onClick={() => handleSort('Phone')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Phone')}>
                                        Phone {renderSortIcon('Phone')}
                                     </th>
-                                    <th onClick={() => handleSort('City')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('City')}>
                                        City {renderSortIcon('City')}
                                     </th>
-                                    <th onClick={() => handleSort('State')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('State')}>
                                        State {renderSortIcon('State')}
                                     </th>
-                                    <th onClick={() => handleSort('Added By')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Added By')}>
                                        Added By {renderSortIcon('Added By')}
                                     </th>
-                                    <th onClick={() => handleSort('Last Modified')}>
+                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Last Modified')}>
                                        Last Modified {renderSortIcon('Last Modified')}
                                     </th>
-                                    <th min-width="100px">Action</th>
+                                    <th className="text-center" style={{ minWidth: '100px', padding: '0.45rem 0.5rem' }}>Action</th>
                                  </tr>
                               </thead>
-                              <tbody>
+                              <tbody style={{ fontSize: '0.86rem' }}>
                                  {
                                     firms.map((item, idx) => (
                                        <tr key={idx} id='example-collapse-text'>
-                                          <td className="text-center">{item.firmId}</td>
-                                          <td className="text-center">
+                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>{item.firmId}</td>
+                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                              {/* <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.img} alt="profile" /> */}
                                              <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.logoUrl} alt="profile" />
                                           </td>
-                                          <td>{item.firmName}</td>
-                                          <td>{item.tradeName}</td>
-                                          <td>{item.firmType}</td>
-                                          <td>{item.gstin}</td>
-                                          <td>{item.phoneNumber}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.firmName}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.tradeName}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.firmType}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.gstin}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.phoneNumber}</td>
                                           {/* <td><span className={`badge ${item.color}`}>{item.status}</span></td> */}
-                                          <td>{item.city}</td>
-                                          <td>{item.state}</td>
-                                          <td>{item.createdBy}</td>
-                                          <td>{item.updatedAt}</td>
-                                          <td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.city}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.state}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
+                                          <td style={{ padding: '0.45rem 0.5rem' }}>
+                                             <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                             </span>
+                                          </td>
+                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
                                              <div className="flex align-items-center list-user-action">
                                                 <Link className="me-2" to={`/firms/${item.firmId}/edit`}>
                                                    <Button variant="outline-success" size='sm'>

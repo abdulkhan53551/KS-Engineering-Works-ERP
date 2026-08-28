@@ -5,29 +5,39 @@ import {
     createAddressType,
     updateAddressType,
     deleteAddressType,
+    restoreAddressType,
+    bulkDeleteAddressTypes,
+    bulkRestoreAddressTypes,
     getContactRoles,
     getContactRoleById,
     createContactRole,
     updateContactRole,
     deleteContactRole,
+    restoreContactRole,
+    bulkDeleteContactRoles,
+    bulkRestoreContactRoles,
     getPartyRoles,
     getPartyRoleById,
     createPartyRole,
     updatePartyRole,
-    deletePartyRole
+    deletePartyRole,
+    restorePartyRole,
+    bulkDeletePartyRoles,
+    bulkRestorePartyRoles
 } from "../api";
 import { toast } from "react-toastify";
 import { clearLoading } from "../../../store/uiModal.slice";
 import { useDispatch } from "react-redux";
+import { useUIManager } from "../../../contexts/UIManagerContext";
 
 /* =========================================================================
    1. ADDRESS TYPES HOOKS
    ========================================================================= */
 
-export const useAddressTypesList = () => {
+export const useAddressTypesList = ({ trash = false } = {}) => {
     return useQuery({
-        queryKey: ["addressTypesMaster"],
-        queryFn: getAddressTypes,
+        queryKey: ["addressTypesMaster", { trash }],
+        queryFn: () => getAddressTypes({ trash }),
         select: (result) => {
             const list = result?.data ?? result ?? [];
             return Array.isArray(list) ? list : [];
@@ -81,19 +91,98 @@ export const useUpdateAddressType = () => {
 export const useDeleteAddressType = () => {
     const queryClient = useQueryClient();
     const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
     return useMutation({
         mutationKey: ["deleteAddressType"],
-        mutationFn: deleteAddressType,
+        mutationFn: (param) => {
+            const payload = typeof param === 'object' ? param : { id: param, isPermanentDelete: false };
+            return deleteAddressType(payload);
+        },
         onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
             toast.success(res?.message || "Address type deleted successfully.");
             queryClient.invalidateQueries({ queryKey: ["addressTypesMaster"] });
             queryClient.invalidateQueries({ queryKey: ["addressTypes"] });
-            dispatch(clearLoading());
         },
         onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete address type";
             toast.error(errorMsg);
+        }
+    });
+};
+
+export const useRestoreAddressType = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreAddressType"],
+        mutationFn: restoreAddressType,
+        onSuccess: (res) => {
             dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Address type restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["addressTypesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["addressTypes"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore address type";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkDeleteAddressTypes = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteAddressTypes"],
+        mutationFn: bulkDeleteAddressTypes,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Address types deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["addressTypesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["addressTypes"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete address types";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkRestoreAddressTypes = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreAddressTypes"],
+        mutationFn: bulkRestoreAddressTypes,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Address types restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["addressTypesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["addressTypes"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore address types";
+            toast.error(errorMsg);
         }
     });
 };
@@ -102,10 +191,10 @@ export const useDeleteAddressType = () => {
    2. CONTACT ROLES HOOKS
    ========================================================================= */
 
-export const useContactRolesList = () => {
+export const useContactRolesList = ({ trash = false } = {}) => {
     return useQuery({
-        queryKey: ["contactRolesMaster"],
-        queryFn: getContactRoles,
+        queryKey: ["contactRolesMaster", { trash }],
+        queryFn: () => getContactRoles({ trash }),
         select: (result) => {
             const list = result?.data ?? result ?? [];
             return Array.isArray(list) ? list : [];
@@ -159,19 +248,98 @@ export const useUpdateContactRole = () => {
 export const useDeleteContactRole = () => {
     const queryClient = useQueryClient();
     const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
     return useMutation({
         mutationKey: ["deleteContactRole"],
-        mutationFn: deleteContactRole,
+        mutationFn: (param) => {
+            const payload = typeof param === 'object' ? param : { id: param, isPermanentDelete: false };
+            return deleteContactRole(payload);
+        },
         onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
             toast.success(res?.message || "Contact role deleted successfully.");
             queryClient.invalidateQueries({ queryKey: ["contactRolesMaster"] });
             queryClient.invalidateQueries({ queryKey: ["contactRoles"] });
-            dispatch(clearLoading());
         },
         onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete contact role";
             toast.error(errorMsg);
+        }
+    });
+};
+
+export const useRestoreContactRole = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restoreContactRole"],
+        mutationFn: restoreContactRole,
+        onSuccess: (res) => {
             dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Contact role restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["contactRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["contactRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore contact role";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkDeleteContactRoles = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeleteContactRoles"],
+        mutationFn: bulkDeleteContactRoles,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Contact roles deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["contactRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["contactRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete contact roles";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkRestoreContactRoles = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestoreContactRoles"],
+        mutationFn: bulkRestoreContactRoles,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Contact roles restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["contactRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["contactRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore contact roles";
+            toast.error(errorMsg);
         }
     });
 };
@@ -180,10 +348,10 @@ export const useDeleteContactRole = () => {
    3. PARTY ROLES HOOKS
    ========================================================================= */
 
-export const usePartyRolesList = () => {
+export const usePartyRolesList = ({ trash = false } = {}) => {
     return useQuery({
-        queryKey: ["partyRolesMaster"],
-        queryFn: getPartyRoles,
+        queryKey: ["partyRolesMaster", { trash }],
+        queryFn: () => getPartyRoles({ trash }),
         select: (result) => {
             const list = result?.data ?? result ?? [];
             return Array.isArray(list) ? list : [];
@@ -239,20 +407,102 @@ export const useUpdatePartyRole = () => {
 export const useDeletePartyRole = () => {
     const queryClient = useQueryClient();
     const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
     return useMutation({
         mutationKey: ["deletePartyRole"],
-        mutationFn: deletePartyRole,
+        mutationFn: (param) => {
+            const payload = typeof param === 'object' ? param : { id: param, isPermanentDelete: false };
+            return deletePartyRole(payload);
+        },
         onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
             toast.success(res?.message || "Party role deleted successfully.");
             queryClient.invalidateQueries({ queryKey: ["partyRolesMaster"] });
             queryClient.invalidateQueries({ queryKey: ["masterPartyRoles"] });
             queryClient.invalidateQueries({ queryKey: ["partyRoles"] });
-            dispatch(clearLoading());
         },
         onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete party role";
             toast.error(errorMsg);
+        }
+    });
+};
+
+export const useRestorePartyRole = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restorePartyRole"],
+        mutationFn: restorePartyRole,
+        onSuccess: (res) => {
             dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Party role restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["masterPartyRoles"] });
+            queryClient.invalidateQueries({ queryKey: ["partyRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore party role";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkDeletePartyRoles = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeletePartyRoles"],
+        mutationFn: bulkDeletePartyRoles,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Party roles deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["masterPartyRoles"] });
+            queryClient.invalidateQueries({ queryKey: ["partyRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete party roles";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+export const useBulkRestorePartyRoles = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestorePartyRoles"],
+        mutationFn: bulkRestorePartyRoles,
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Party roles restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyRolesMaster"] });
+            queryClient.invalidateQueries({ queryKey: ["masterPartyRoles"] });
+            queryClient.invalidateQueries({ queryKey: ["partyRoles"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore party roles";
+            toast.error(errorMsg);
         }
     });
 };

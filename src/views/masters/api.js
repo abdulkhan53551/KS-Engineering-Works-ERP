@@ -1,9 +1,6 @@
 import api from "../../lib/axios";
 import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
-// import api from "../../services/api";
-// import { requestMethod } from "../../utils/constants";
-// import { asyncHandler } from "../../utils/asyncHandler";
 
 /* =========================================================================
    1. ADDRESS TYPES API
@@ -13,10 +10,11 @@ import { asyncHandler } from "../../utilities/asyncHandler";
  * Get all address types
  * Endpoint: GET /masters/address-types
  */
-export const getAddressTypes = asyncHandler(async () => {
+export const getAddressTypes = asyncHandler(async (params = {}) => {
     const res = await api.request({
         url: '/masters/address-types',
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        params
     });
     return res.data;
 });
@@ -62,13 +60,52 @@ export const updateAddressType = asyncHandler(async ({ id, data }) => {
 });
 
 /**
- * Delete address type
- * Endpoint: DELETE /masters/address-types/:id
+ * Delete address type (soft delete or permanent delete)
+ * Endpoint: DELETE /masters/address-types/:id?isPermanentDelete=false/true
  */
-export const deleteAddressType = asyncHandler(async (id) => {
+export const deleteAddressType = asyncHandler(async ({ id, isPermanentDelete = false }) => {
     const res = await api.request({
         url: `/masters/address-types/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Restore address type from trash
+ * Endpoint: PATCH /masters/address-types/:id/restore
+ */
+export const restoreAddressType = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/masters/address-types/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+/**
+ * Bulk delete address types
+ * Endpoint: POST /masters/address-types/bulk-delete
+ */
+export const bulkDeleteAddressTypes = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/masters/address-types/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Bulk restore address types
+ * Endpoint: PATCH /masters/address-types/bulk-restore
+ */
+export const bulkRestoreAddressTypes = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/masters/address-types/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
     return res.data;
 });
@@ -81,10 +118,11 @@ export const deleteAddressType = asyncHandler(async (id) => {
  * Get all contact roles
  * Endpoint: GET /masters/contact-roles
  */
-export const getContactRoles = asyncHandler(async () => {
+export const getContactRoles = asyncHandler(async (params = {}) => {
     const res = await api.request({
         url: '/masters/contact-roles',
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        params
     });
     return res.data;
 });
@@ -130,13 +168,52 @@ export const updateContactRole = asyncHandler(async ({ id, data }) => {
 });
 
 /**
- * Delete contact role
- * Endpoint: DELETE /masters/contact-roles/:id
+ * Delete contact role (soft delete or permanent delete)
+ * Endpoint: DELETE /masters/contact-roles/:id?isPermanentDelete=false/true
  */
-export const deleteContactRole = asyncHandler(async (id) => {
+export const deleteContactRole = asyncHandler(async ({ id, isPermanentDelete = false }) => {
     const res = await api.request({
         url: `/masters/contact-roles/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Restore contact role from trash
+ * Endpoint: PATCH /masters/contact-roles/:id/restore
+ */
+export const restoreContactRole = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/masters/contact-roles/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+/**
+ * Bulk delete contact roles
+ * Endpoint: POST /masters/contact-roles/bulk-delete
+ */
+export const bulkDeleteContactRoles = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/masters/contact-roles/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Bulk restore contact roles
+ * Endpoint: PATCH /masters/contact-roles/bulk-restore
+ */
+export const bulkRestoreContactRoles = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/masters/contact-roles/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
     return res.data;
 });
@@ -149,10 +226,11 @@ export const deleteContactRole = asyncHandler(async (id) => {
  * Get all party roles
  * Endpoint: GET /parties/party-roles
  */
-export const getPartyRoles = asyncHandler(async () => {
+export const getPartyRoles = asyncHandler(async (params = {}) => {
     const res = await api.request({
         url: '/parties/party-roles',
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        params
     });
     return res.data;
 });
@@ -198,13 +276,52 @@ export const updatePartyRole = asyncHandler(async ({ id, data }) => {
 });
 
 /**
- * Delete party role
- * Endpoint: DELETE /parties/party-roles/:id
+ * Delete party role (soft delete or permanent delete)
+ * Endpoint: DELETE /parties/party-roles/:id?isPermanentDelete=false/true
  */
-export const deletePartyRole = asyncHandler(async (id) => {
+export const deletePartyRole = asyncHandler(async ({ id, isPermanentDelete = false }) => {
     const res = await api.request({
         url: `/parties/party-roles/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Restore party role from trash
+ * Endpoint: PATCH /parties/party-roles/:id/restore
+ */
+export const restorePartyRole = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/parties/party-roles/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+/**
+ * Bulk delete party roles
+ * Endpoint: POST /parties/party-roles/bulk-delete
+ */
+export const bulkDeletePartyRoles = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/parties/party-roles/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Bulk restore party roles
+ * Endpoint: PATCH /parties/party-roles/bulk-restore
+ */
+export const bulkRestorePartyRoles = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/parties/party-roles/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
     return res.data;
 });

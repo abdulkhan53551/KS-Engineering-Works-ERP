@@ -1,154 +1,165 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, CheckSquare, Square, Trash2, CheckCircle, ListChecks, Search } from 'lucide-react';
-import { usePaymentMode, usePaymentStatus } from '../../dashboard/hooks/api.hooks';
-import { Spinner } from 'react-bootstrap';
-import { useDeleteInvoiceChallan } from '../../invoice-challan/hooks/useApi';
-import { useUnmappedInvoiceChallanByInvoiceId } from '../hooks/useApi';
-import { set } from 'lodash';
+import { Spinner, Badge, Button, Modal } from 'react-bootstrap';
+import {
+  FaFileAlt,
+  FaFileInvoice,
+  FaClipboardList,
+  FaShoppingCart,
+  FaTruck,
+  FaSearch,
+  FaTimes,
+  FaCheck,
+  FaCheckSquare,
+  FaSquare,
+  FaTrashAlt,
+  FaCalendarAlt,
+  FaUser,
+  FaClock,
+  FaFolderOpen
+} from 'react-icons/fa';
+import moment from 'moment';
 
-const moduleTitles = {
-  challan: 'Challan',
-  purchaseOrder: 'Purchase Order',
-  ewayBill: 'E-Way Bill',
-}
+const moduleConfig = {
+  challan: {
+    title: 'Delivery Challans',
+    singularTitle: 'Challan',
+    icon: FaFileInvoice,
+    badgeColor: 'primary',
+    selectedClass: 'selected',
+    subtitle: 'Select customer delivery challans to attach to this invoice.'
+  },
+  purchaseOrder: {
+    title: 'Purchase Orders',
+    singularTitle: 'Purchase Order',
+    icon: FaShoppingCart,
+    badgeColor: 'success',
+    selectedClass: 'selected-po',
+    subtitle: 'Link customer purchase orders and reference POs to this invoice.'
+  },
+  ewayBill: {
+    title: 'E-Way Bills',
+    singularTitle: 'E-Way Bill',
+    icon: FaTruck,
+    badgeColor: 'rose',
+    selectedClass: 'selected-eway',
+    subtitle: 'Link valid electronic waybills associated with this delivery.'
+  }
+};
 
-// --- Reusable Modal Component ---
-export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, moduleData, selectedIds = [], fetchModuleFun, updateModuleData, onSubmit }) {
-  const [localTasks, setLocalTasks] = useState([]);
-  const [newTodo, setNewTodo] = useState('');
+export function ModuleSelectorModal({
+  moduleKey = 'challan',
+  invoiceId,
+  show,
+  onClose,
+  selectedIds = [],
+  fetchModuleFun,
+  onSubmit
+}) {
+  const [localItems, setLocalItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [submittedData, setSubmittedData] = useState(null);
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'selected' | 'unselected'
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  const totalSelected = useMemo(() => localTasks.filter(t => t.selected).length, [localTasks]);
-  const modalTitle = `Select ${moduleTitles[moduleKey]}`;
+  const config = moduleConfig[moduleKey] || moduleConfig.challan;
+  const ModuleIcon = config.icon;
 
-  const { fetchDocument, deleteDocument } = fetchModuleFun(moduleKey)
-  const { data, isLoading, isFetching, refetch } = fetchDocument()
-  const { mutate: deleteDocumentItem, isSuccess: isDeletedSuccessfully } = deleteDocument()
+  const { fetchDocument, deleteDocument } = fetchModuleFun ? fetchModuleFun(moduleKey) : { fetchDocument: () => ({}), deleteDocument: () => ({}) };
+  const { data = [], isLoading, isFetching, refetch } = fetchDocument();
+  const { mutate: deleteDocumentItem, isSuccess: isDeletedSuccessfully } = deleteDocument();
 
   useEffect(() => {
-    if (show) {
+    if (show && refetch) {
       refetch();
     }
-  }, [show])
+  }, [show]);
 
-  const newData = useMemo(() => {
-    const formatted = data?.map(item => {
+  // Format initial list
+  const formattedData = useMemo(() => {
+    return (data || []).map(item => {
       const isSelectedInForm = Array.isArray(selectedIds) && selectedIds.includes(item.documentId);
       return {
         id: item.documentId,
-        text: `${item.documentNo} - (${item.customerName})`,
+        documentNo: item.documentNo || `Doc #${item.documentId}`,
+        customerName: item.customerName || 'N/A',
+        documentDate: item.documentDate,
+        validUpto: item.validUpto,
         selected: isSelectedInForm || Boolean(item?.isInvoiced)
       };
-    }) ?? [];
-
-    return formatted;
+    });
   }, [data, selectedIds]);
 
   useEffect(() => {
-    setLocalTasks(newData);
-    setSubmittedData(null);
+    setLocalItems(formattedData);
     setSearchTerm('');
-  }, [newData, moduleKey, isFetching, isDeletedSuccessfully]);
+    setFilterTab('all');
+    setConfirmDeleteId(null);
+  }, [formattedData, moduleKey, isFetching, isDeletedSuccessfully]);
 
-  // const filteredTasks = localTasks.filter(task =>
-  //   task.text.toLowerCase().includes(searchTerm.toLowerCase())
-  // );
+  // Search & Tab filtering
+  const filteredItems = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    return localItems.filter(item => {
+      // Tab filter
+      if (filterTab === 'selected' && !item.selected) return false;
+      if (filterTab === 'unselected' && item.selected) return false;
 
-  const filteredTasks = useMemo(() => {
-    return localTasks.filter(task =>
-      task.text.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [localTasks, searchTerm]);
-
-  // const handleAddTodo = (e) => {
-  //   e.preventDefault();
-  //   if (!newTodo.trim()) return;
-
-  //   const newItem = {
-  //     // Use moduleKey + current time for better ID separation across modules
-  //     id: `${moduleKey}-${Date.now()}`,
-  //     text: newTodo.trim(),
-  //     selected: false,
-  //   };
-
-  //   const newTasks = [...localTasks, newItem];
-  //   setLocalTasks(newTasks);
-  //   updateModuleData(moduleKey, newTasks); // Update global state immediately
-  //   setNewTodo('');
-  // };
-
-  const toggleSelection = (id) => {
-    const newTasks = localTasks.map(task =>
-      task.id === id ? { ...task, selected: !task.selected } : task
-    );
-
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state
-    if (submittedData) setSubmittedData(null);
-  };
-
-  const allFilteredSelected = filteredTasks.length > 0 && filteredTasks.every(t => t.selected);
-
-  const toggleAll = () => {
-    const filteredIds = filteredTasks.map(t => t.id);
-
-    const newTasks = localTasks.map(task => {
-      if (filteredIds.includes(task.id)) {
-        // Toggle based on the state of all filtered items
-        return { ...task, selected: !allFilteredSelected };
-      }
-      return task;
+      // Search term
+      if (!term) return true;
+      const numMatch = (item.documentNo || '').toLowerCase().includes(term);
+      const customerMatch = (item.customerName || '').toLowerCase().includes(term);
+      const dateMatch = item.documentDate ? moment(item.documentDate).format('DD/MM/YYYY').includes(term) : false;
+      return numMatch || customerMatch || dateMatch;
     });
+  }, [localItems, searchTerm, filterTab]);
 
-    setLocalTasks(newTasks);
-    updateModuleData(moduleKey, newTasks); // Update global state
+  const totalSelected = useMemo(() => localItems.filter(i => i.selected).length, [localItems]);
+  const allFilteredSelected = filteredItems.length > 0 && filteredItems.every(i => i.selected);
+
+  // Toggle single item
+  const toggleSelection = (id) => {
+    setLocalItems(prev => prev.map(item =>
+      item.id === id ? { ...item, selected: !item.selected } : item
+    ));
   };
 
-  const deleteTodo = (id) => {
-    // const newTasks = localTasks.filter(t => t.id !== id);
-    // setLocalTasks(newTasks);
-    // updateModuleData(moduleKey, newTasks); // Update global state
+  // Toggle all visible filtered items
+  const toggleAll = () => {
+    const filteredIds = new Set(filteredItems.map(i => i.id));
+    const nextState = !allFilteredSelected;
+    setLocalItems(prev => prev.map(item =>
+      filteredIds.has(item.id) ? { ...item, selected: nextState } : item
+    ));
+  };
 
+  // Clear all selections
+  const handleClearAll = () => {
+    setLocalItems(prev => prev.map(item => ({ ...item, selected: false })));
+  };
+
+  // Handle Delete
+  const handleDeleteItem = (id) => {
     setDeletingId(id);
-
     deleteDocumentItem(
       { id, invoiceId, type: "invoiceChallanPopup" },
-      { onSettled: () => setDeletingId(null) }
+      {
+        onSettled: () => {
+          setDeletingId(null);
+          setConfirmDeleteId(null);
+        }
+      }
     );
-
-    // switch (moduleKey) {
-    //   case 'challan':
-    //     // deleteInvoiceChallan(id);
-    //     deleteInvoiceChallan(
-    //       {id, invoiceId, type: "invoiceChallanPopup"},
-    //       {onSettled: () => setDeletingId(null)}
-    //     );
-    //     break;
-    //   case 'purchaseOrder':
-
-    //     break;
-    //   case 'ewayBill':
-
-    //     break;
-
-    //   default:
-    //     break;
-    // }
   };
 
-  const handleSubmit = () => {
-    const selectedIds = localTasks.filter(t => t.selected).map(t => t.id);
-    setSubmittedData({
-      timestamp: new Date().toLocaleTimeString(),
-      ids: selectedIds,
-      count: selectedIds.length
-    });
-    onSubmit(moduleKey, selectedIds); // Call external submit handler
+  // Handle Submit
+  const handleApply = () => {
+    const selectedItems = localItems.filter(i => i.selected);
+    const selectedIds = selectedItems.map(i => i.id);
+    if (onSubmit) {
+      onSubmit(moduleKey, selectedIds, selectedItems);
+    }
   };
 
-  // If the modal is not visible, return null
   if (!show) return null;
 
   return (
@@ -158,183 +169,263 @@ export function ModuleSelectorModal({ moduleKey, invoiceId, show, onClose, modul
         className="modal-backdrop fade show"
         style={{ zIndex: 1040 }}
         onClick={onClose}
-      ></div>
+      />
 
       {/* Modal Container */}
       <div
         className="modal fade show d-block"
         tabIndex="-1"
-        style={{ zIndex: 1050, overflowY: 'auto' }}
+        style={{ zIndex: 1050 }}
         role="dialog"
         aria-modal="true"
       >
         <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content shadow-lg border-0">
+          <div className="modal-content shadow border-0 rounded-4 overflow-hidden">
 
-            {/* Modal Header (Fixed) */}
-            <div className="modal-header bg-white border-bottom-0 pb-0">
-              <h5 className="modal-title d-flex align-items-center gap-2 fw-bold text-primary text-capitalize">
-                <ListChecks size={24} />
-                {modalTitle}
-              </h5>
+            {/* Modal Header */}
+            <div className="modal-header bg-white border-bottom px-4 py-3 align-items-center justify-content-between">
+              <div>
+                <h5 className={`modal-title d-flex align-items-center gap-2 fw-bold text-${config.badgeColor} text-capitalize mb-1`}>
+                  <ModuleIcon size={22} />
+                  Select {config.title}
+                </h5>
+                <small className="text-muted" style={{ fontSize: '0.8rem' }}>
+                  {config.subtitle}
+                </small>
+              </div>
               <button
                 type="button"
                 className="btn-close"
                 onClick={onClose}
                 aria-label="Close"
-              ></button>
+              />
             </div>
 
             {/* Modal Body */}
-            <div className="modal-body p-4">
-
-              {/* Search Input (Fixed) */}
-              <div className="input-group mb-3">
-                <span className="input-group-text bg-light text-muted"><Search size={18} /></span>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={`Search ${moduleTitles[moduleKey]}...`}
-                  className="form-control"
-                />
-              </div>
-
-              {/* Add New & Controls (Fixed) */}
-              <div className="mb-4">
-                <div className="row g-2">
-                  <div className="col-md-9">
-                    {/* <form onSubmit={handleAddTodo} className="d-flex gap-2">
-                      <input
-                        type="text"
-                        value={newTodo}
-                        onChange={(e) => setNewTodo(e.target.value)}
-                        placeholder={`Add new ${moduleTitles[moduleKey]} task...`}
-                        className="form-control"
-                      />
+            <div className="modal-body p-4 bg-light bg-opacity-25">
+              {/* Search & Action Controls Bar */}
+              <div className="row g-2 align-items-center mb-3">
+                <div className="col-md-7">
+                  <div className="input-group input-group-sm">
+                    <span className="input-group-text bg-white border-end-0 text-muted ps-3">
+                      <FaSearch size={13} />
+                    </span>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={`Search by document no, customer, date...`}
+                      className="form-control bg-white border-start-0 py-2"
+                    />
+                    {searchTerm && (
                       <button
-                        type="submit"
-                        className="btn btn-primary d-flex align-items-center gap-2 btn-shadow"
+                        className="btn btn-outline-secondary border-start-0 bg-white"
+                        type="button"
+                        onClick={() => setSearchTerm('')}
                       >
-                        <Plus size={18} />
-                        Add
+                        <FaTimes size={11} />
                       </button>
-                    </form> */}
+                    )}
                   </div>
-                  <div className="col-md-3">
-                    <button
-                      onClick={toggleAll}
-                      // Conditional button styling based on selection state
-                      className={`btn ${allFilteredSelected ? 'btn-secondary' : 'btn-success'} w-100 btn-shadow`}
-                      disabled={filteredTasks.length === 0}
+                </div>
+
+                <div className="col-md-5 d-flex justify-content-end gap-2">
+                  <Button
+                    variant={allFilteredSelected ? "outline-secondary" : "outline-primary"}
+                    size="sm"
+                    className="fw-medium px-3 text-nowrap"
+                    onClick={toggleAll}
+                    disabled={filteredItems.length === 0}
+                  >
+                    {allFilteredSelected ? "Deselect All" : "Select All"}
+                  </Button>
+                  {totalSelected > 0 && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-danger text-decoration-none small text-nowrap p-0"
+                      onClick={handleClearAll}
                     >
-                      {allFilteredSelected ? 'Deselect All' : 'Select All'}
-                    </button>
-                  </div>
+                      Clear
+                    </Button>
+                  )}
                 </div>
               </div>
 
-              {/* Todo List Container (SCROLLABLE AREA with scroll shadow) */}
-              <div className="todo-list-scroll mb-4">
-                <ul className="list-group list-group-flush">
-                  {isLoading ? (
-                    <li className="list-group-item p-4 text-center text-muted">
-                      <Spinner
-                        as="span"
-                        animation="border"
+              {/* Filter Tabs */}
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span
+                  className={`filter-tab-pill ${filterTab === 'all' ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
+                  onClick={() => setFilterTab('all')}
+                >
+                  All ({localItems.length})
+                </span>
+                <span
+                  className={`filter-tab-pill ${filterTab === 'selected' ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
+                  onClick={() => setFilterTab('selected')}
+                >
+                  Selected ({totalSelected})
+                </span>
+                <span
+                  className={`filter-tab-pill ${filterTab === 'unselected' ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
+                  onClick={() => setFilterTab('unselected')}
+                >
+                  Available ({localItems.length - totalSelected})
+                </span>
+              </div>
+
+              {/* Scrollable Document List */}
+              <div className="doc-modal-list pt-1">
+                {isLoading || isFetching ? (
+                  <div className="p-5 text-center bg-white rounded-3 border">
+                    <Spinner animation="border" variant="primary" size="sm" className="me-2" />
+                    <span className="text-muted fw-medium small">Loading documents...</span>
+                  </div>
+                ) : filteredItems.length === 0 ? (
+                  <div className="p-5 text-center bg-white rounded-3 border">
+                    <FaFolderOpen size={36} className="text-muted mb-2 opacity-50" />
+                    <h6 className="fw-bold text-secondary mb-1">No {config.title} Found</h6>
+                    <p className="text-muted small mb-0">
+                      {searchTerm
+                        ? `No records match "${searchTerm}". Try clearing your search.`
+                        : `No available unmapped ${config.title.toLowerCase()} were found.`}
+                    </p>
+                    {searchTerm && (
+                      <Button
+                        variant="outline-primary"
                         size="sm"
-                        role="status"
-                        aria-hidden="true"
-                        className="me-2"
-                      />
-                      Loading...
-                    </li>
-                  ) : filteredTasks.length === 0 ? (
-                    <li className="list-group-item p-4 text-center text-muted">
-                      <p className="mb-0">{`No data found ${searchTerm?.trim() ? `matching "${searchTerm}"` : ""} in ${moduleTitles[moduleKey]}.`}</p>
-                    </li>
-                  ) : (
-                    filteredTasks.map((task) => (
-                      <li
-                        key={task.id}
-                        // Using custom class for compact height
-                        className={`list-group-item compact-list-item d-flex justify-content-between align-items-center ${task.selected ? 'selected' : ''}`}
-                        onClick={() => toggleSelection(task.id)}
+                        className="mt-3 px-3"
+                        onClick={() => setSearchTerm('')}
                       >
+                        Clear Search
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  filteredItems.map((item) => {
+                    const isSelected = item.selected;
+                    const isConfirmingDelete = confirmDeleteId === item.id;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`doc-modal-item d-flex align-items-center justify-content-between ${isSelected ? config.selectedClass : ''}`}
+                        onClick={() => toggleSelection(item.id)}
+                      >
+                        {/* Checkbox & Document Details */}
                         <div className="d-flex align-items-center gap-3">
-                          <div className={task.selected ? "text-primary" : "text-secondary"}>
-                            {/* Reduced icon size for a tighter fit */}
-                            {task.selected ? <CheckSquare size={18} /> : <Square size={18} />}
+                          <div className={isSelected ? `text-${config.badgeColor}` : "text-muted"}>
+                            {isSelected ? <FaCheckSquare size={19} /> : <FaSquare size={19} className="opacity-50" />}
                           </div>
+
                           <div>
-                            <span className={`fw-medium ${task.selected ? 'text-primary' : 'text-dark'}`}>
-                              {task.text}
-                            </span>
-                            {/* <div className="small text-muted">ID: {task.id}</div> */}
+                            <div className="d-flex align-items-center gap-2 mb-1">
+                              <span className={`badge ${isSelected ? `bg-${config.badgeColor}` : 'bg-light text-dark border'} doc-num-badge`}>
+                                {item.documentNo}
+                              </span>
+
+                              {item.documentDate && (
+                                <span className="small text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                                  <FaCalendarAlt size={10} className="text-secondary" />
+                                  {moment(item.documentDate).format('DD MMM YYYY')}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="d-flex align-items-center gap-2 text-secondary small" style={{ fontSize: '0.78rem' }}>
+                              <span className="d-flex align-items-center gap-1">
+                                <FaUser size={10} className="text-muted" />
+                                <span className="fw-medium text-dark">{item.customerName}</span>
+                              </span>
+
+                              {item.validUpto && (
+                                <span className="d-flex align-items-center gap-1 text-rose">
+                                  <FaClock size={10} /> Valid: {moment(item.validUpto).format('DD MMM YYYY')}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Delete Button */}
-                        {deletingId === task.id ? (
-                          <Spinner
-                            variant='light'
-                            as="span"
-                            animation="border"
-                            size="sm"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteTodo(task.id);
-                            }}
-                            className="btn btn-danger btn-sm delete-btn border-0"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </li>
-                    ))
-                  )}
-                </ul>
+                        {/* Actions (Delete with Confirmation Safeguard) */}
+                        <div className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          {isConfirmingDelete ? (
+                            <div className="d-flex align-items-center gap-1 bg-danger bg-opacity-10 p-1 rounded border border-danger">
+                              <span className="text-danger small fw-semibold px-1" style={{ fontSize: '0.72rem' }}>Delete?</span>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="py-0 px-2 small"
+                                style={{ fontSize: '0.7rem' }}
+                                disabled={deletingId === item.id}
+                                onClick={() => handleDeleteItem(item.id)}
+                              >
+                                {deletingId === item.id ? <Spinner size="sm" animation="border" /> : "Yes"}
+                              </Button>
+                              <Button
+                                variant="light"
+                                size="sm"
+                                className="py-0 px-1 border"
+                                style={{ fontSize: '0.7rem' }}
+                                onClick={() => setConfirmDeleteId(null)}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="text-muted p-1 hover-scale"
+                              title="Delete record"
+                              onClick={() => setConfirmDeleteId(item.id)}
+                            >
+                              <FaTrashAlt size={13} className="text-secondary hover-text-danger" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-
-              {/* Submission Results (Fixed) */}
-              {submittedData && (
-                <div className="alert alert-dark border-0 btn-shadow mb-0">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <strong className="text-success d-flex align-items-center gap-2 text-capitalize">
-                      <CheckCircle size={16} /> {moduleKey} Submission Successful
-                    </strong>
-                    <span className="badge bg-secondary">{submittedData.timestamp}</span>
-                  </div>
-                  <div className="bg-black p-3 rounded text-info font-monospace small overflow-auto">
-                    {JSON.stringify({ module: moduleKey, selectedIds: submittedData.ids }, null, 2)}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Modal Footer (Fixed) */}
-            <div className="modal-footer bg-light">
-              <div className="me-auto text-muted small text-capitalize">
-                {totalSelected} {moduleTitles[moduleKey]} selected
+            {/* Modal Footer */}
+            <div className="modal-footer bg-white border-top px-4 py-3 d-flex justify-content-between align-items-center">
+              <div className="text-muted small">
+                <span className="fw-bold text-dark">{totalSelected}</span> of {localItems.length} {config.title.toLowerCase()} selected
               </div>
-              <button
-                onClick={handleSubmit}
-                disabled={totalSelected === 0}
-                className="btn btn-success d-flex align-items-center gap-2 btn-shadow"
-              >
-                <CheckCircle size={18} />
-                Submit
-              </button>
+
+              <div className="d-flex align-items-center gap-2">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  className="px-3 py-1 fw-medium"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  variant={config.badgeColor}
+                  size="sm"
+                  className="px-4 py-1 fw-semibold d-flex align-items-center gap-2 text-white"
+                  onClick={handleApply}
+                >
+                  <FaCheck size={12} />
+                  {totalSelected > 0
+                    ? `Attach ${totalSelected} ${totalSelected === 1 ? config.singularTitle : config.title}`
+                    : `Attach ${config.title}`}
+                </Button>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
     </>
   );
 }
+
+export default ModuleSelectorModal;

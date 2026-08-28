@@ -1,15 +1,23 @@
-import React from 'react'
-import { Row, Col, Form, Card } from 'react-bootstrap'
-import { useParams } from 'react-router-dom'
+import React from 'react';
+import { Row, Col, Form, Card } from 'react-bootstrap';
+import { useParams } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
-import { Controller, useForm } from 'react-hook-form'
-import { joiResolver } from '@hookform/resolvers/joi'
-import { usePurchaseOrderById } from '../hooks/useApi'
-import useHandleSubmit from '../hooks/useHandleSubmit'
-import SubmitButton from '../../../components/SubmitButton'
+import { Controller, useForm } from 'react-hook-form';
+import { joiResolver } from '@hookform/resolvers/joi';
+import { usePurchaseOrderById } from '../hooks/useApi';
+import useHandleSubmit from '../hooks/useHandleSubmit';
+import SubmitButton from '../../../components/SubmitButton';
 import { FaRegCalendarAlt } from 'react-icons/fa';
 import { createPurchaseOrderValidationSchema, updatePurchaseOrderValidationSchema } from '../../../validation/purchaseOrder.validation';
 import useFormInit from '../hooks/useFormInit';
+import AttachmentManager from '../../../components/attachments/AttachmentManager';
+
+const PO_DOC_TYPES = [
+   { value: 'SIGNED_PO', label: 'Signed Purchase Order' },
+   { value: 'VENDOR_QUOTATION', label: 'Vendor Quotation' },
+   { value: 'ORDER_SPEC', label: 'Order / Technical Spec (PDF)' },
+   { value: 'OTHER', label: 'General / Other Document' }
+];
 
 const PurchaseOrderForm = ({ mode }) => {
    const { id: poId } = useParams();
@@ -19,7 +27,7 @@ const PurchaseOrderForm = ({ mode }) => {
       poDate: new Date(),
       customerName: '',
       status: 'OPEN'
-   }
+   };
 
    const {
       register, handleSubmit, setValue, watch, reset, resetField, getValues, control, formState: { errors },
@@ -37,16 +45,16 @@ const PurchaseOrderForm = ({ mode }) => {
    return (
       <>
          <div>
-            <Form noValidate onSubmit={handleSubmit(onSubmit, onError)} >
+            <Form noValidate onSubmit={handleSubmit(onSubmit, onError)}>
                <Row>
                   <Col xl="12" lg="12">
-                     <Card>
-                        <Card.Header className="d-flex justify-content-between">
+                     <Card className="shadow-sm border bg-white">
+                        <Card.Header className="d-flex justify-content-between bg-transparent py-3 px-4 border-bottom">
                            <div className="header-title">
-                              <h4 className="card-title">{`${isEditMode ? 'Update' : 'Create'}`} Purchase Order</h4>
+                              <h5 className="mb-0 fw-bold text-dark">{`${isEditMode ? 'Update' : 'Create'}`} Purchase Order</h5>
                            </div>
                         </Card.Header>
-                        <Card.Body>
+                        <Card.Body className="p-4">
                            <div className="row">
                               <Col lg="6">
                                  <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
@@ -121,10 +129,31 @@ const PurchaseOrderForm = ({ mode }) => {
                   </Col>
                </Row>
             </Form>
+
+            {/* PO Associated Documents & Attachments */}
+            {isEditMode && poId && (
+               <Card className="mt-4 shadow-sm border bg-white">
+                  <Card.Header className="bg-transparent py-3 px-4 border-bottom">
+                     <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                        Purchase Order Attachments & Quotations
+                     </h6>
+                     <span className="text-muted" style={{ fontSize: '0.74rem' }}>
+                        Upload vendor price quotations, signed PO copies, engineering specifications, or delivery schedules
+                     </span>
+                  </Card.Header>
+                  <Card.Body className="p-4 pt-3.5">
+                     <AttachmentManager
+                        entityType="PURCHASE_ORDER"
+                        entityId={poId}
+                        docTypeOptions={PO_DOC_TYPES}
+                        folder="ks-erp/purchase-orders/documents"
+                     />
+                  </Card.Body>
+               </Card>
+            )}
          </div >
       </>
-   )
-
-}
+   );
+};
 
 export default PurchaseOrderForm;

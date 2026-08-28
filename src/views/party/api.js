@@ -50,10 +50,11 @@ export const getMasterPartyRoles = asyncHandler(async () => {
  * Get parties with pagination
  * Endpoint: GET /parties/pagination
  */
-export const getPartiesPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '' }) => {
+export const getPartiesPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '', trash = false }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (status) params.status = status;
+    if (trash) params.trash = trash;
     if (gstRegistered !== '' && gstRegistered !== null && gstRegistered !== undefined) {
         params.gstRegistered = gstRegistered;
     }
@@ -71,10 +72,11 @@ export const getPartiesPagination = asyncHandler(async ({ page = 1, pageSize = 1
  * Get parties list
  * Endpoint: GET /parties
  */
-export const getParties = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '' }) => {
+export const getParties = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '', trash = false }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (status) params.status = status;
+    if (trash) params.trash = trash;
     if (gstRegistered !== '' && gstRegistered !== null && gstRegistered !== undefined) {
         params.gstRegistered = gstRegistered;
     }
@@ -155,13 +157,55 @@ export const updateParty = asyncHandler(async (id, data) => {
 });
 
 /**
- * Delete party
+ * Delete party (Soft delete or Permanent delete)
  * Endpoint: DELETE /parties/:id
  */
-export const deleteParty = asyncHandler(async (id) => {
+export const deleteParty = asyncHandler(async (id, isPermanentDelete = false) => {
     const res = await api.request({
         url: `/parties/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+
+    return res.data;
+});
+
+/**
+ * Restore party from trash
+ * Endpoint: PATCH /parties/:id/restore
+ */
+export const restoreParty = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/parties/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+
+    return res.data;
+});
+
+/**
+ * Bulk delete parties (Soft delete or Permanent delete)
+ * Endpoint: POST /parties/bulk-delete
+ */
+export const bulkDeleteParties = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/parties/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+
+    return res.data;
+});
+
+/**
+ * Bulk restore parties from trash
+ * Endpoint: PATCH /parties/bulk-restore
+ */
+export const bulkRestoreParties = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/parties/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
 
     return res.data;
