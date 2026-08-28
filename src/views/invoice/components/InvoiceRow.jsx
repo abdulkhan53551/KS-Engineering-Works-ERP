@@ -1,121 +1,221 @@
-import { memo, useEffect } from "react";
-import { Form } from "react-bootstrap";
-import { useFormContext, useWatch } from "react-hook-form";
-import { FaWindowClose } from "react-icons/fa";
+import { memo } from "react";
+import { Form, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { useFormContext } from "react-hook-form";
+import { FaCopy, FaTrashAlt } from "react-icons/fa";
 
-const InvoiceRow = ({ index, remove, productUnit, gstSlab, lastEditedFieldRef }) => {
-    // const { control, register, setValue, formState: { errors }, } = useFormContext();
-    const { register, formState: { errors }, } = useFormContext();
-    // const row = useWatch({ control, name: `items.${index}` });
+const InvoiceRow = ({
+    index,
+    remove,
+    onDuplicate,
+    totalRows,
+    productUnit,
+    gstSlab,
+    lastEditedFieldRef
+}) => {
+    const { register, setValue, formState: { errors } } = useFormContext();
 
-    // console.log('row => ', row);
-    
-
-    // useEffect(() => {
-    //     if (!row) return;
-
-    //     const qty = Number(row.qty) || 0;
-    //     const rate = Number(row.rate) || 0;
-    //     const discount = Number(row.discountAmount) || 0;
-    //     const gstSlabId = row.gstSlabId;
-    //     const gst = Number(getGstRate(gstSlabId)) || 0;
-
-    //     const subTotal = qty * rate;
-    //     const taxable = subTotal - discount;
-    //     const gstAmt = (taxable * gst) / 100;
-
-    //     const cgst = gstAmt / 2;
-    //     const sgst = gstAmt / 2;
-
-    //     const total = taxable + gstAmt;
-
-    //     setValue(`items.${index}.taxableAmount`, taxable.toFixed(2), { shouldDirty: true });
-    //     setValue(`items.${index}.cgst`, cgst.toFixed(2), { shouldDirty: true });
-    //     setValue(`items.${index}.sgst`, sgst.toFixed(2), { shouldDirty: true });
-    //     setValue(`items.${index}.total`, total.toFixed(2), { shouldDirty: true });
-
-    // }, [row?.qty, row?.rate, row?.discountAmount, row?.gstSlabId]);
-
-    // const getGstRate = (gstSlabId) => {
-    //     const slab = gstSlab.find((s) => s.id == gstSlabId);
-    //     return slab ? slab.gstRate : 0;
-    // };
+    const isSingleRow = totalRows <= 1;
 
     return (
-        <tr>
-            <td>
-                <Form.Control type="text" placeholder="Item Description" isInvalid={!!errors.items?.[index]?.description} {...register(`items.${index}.description`, {
-                    onChange: () => {
-                        lastEditedFieldRef.current = "description";
-                    }
-                })} />
+        <tr className="align-middle">
+            {/* Index # Column */}
+            <td className="text-center fw-semibold text-muted" style={{ width: '40px', minWidth: '40px', fontSize: '0.85rem' }}>
+                <span className="badge bg-light text-dark border px-2 py-1">
+                    {index + 1}
+                </span>
+            </td>
+
+            {/* Description */}
+            <td style={{ minWidth: '280px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Enter item / service description..."
+                    isInvalid={!!errors.items?.[index]?.description}
+                    {...register(`items.${index}.description`, {
+                        onChange: () => {
+                            lastEditedFieldRef.current = "description";
+                        }
+                    })}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.description?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="HSC/SAC Code" isInvalid={!!errors.items?.[index]?.hsnSacCode} {...register(`items.${index}.hsnSacCode`, {
-                    onChange: () => {
-                        lastEditedFieldRef.current = "hsn";
-                    }
-                })} />
+
+            {/* HSN/SAC */}
+            <td style={{ width: '130px', minWidth: '120px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="HSN/SAC"
+                    isInvalid={!!errors.items?.[index]?.hsnSacCode}
+                    {...register(`items.${index}.hsnSacCode`, {
+                        onChange: () => {
+                            lastEditedFieldRef.current = "hsn";
+                        }
+                    })}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.hsnSacCode?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Qty" className="text-end" isInvalid={!!errors.items?.[index]?.qty} {...register(`items.${index}.qty`)} />
+
+            {/* Quantity */}
+            <td style={{ width: '130px', minWidth: '120px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Qty"
+                    className="text-end"
+                    isInvalid={!!errors.items?.[index]?.qty}
+                    {...register(`items.${index}.qty`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.qty?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Select name="itemUnitId" isInvalid={!!errors.items?.[index]?.itemUnitId} {...register(`items.${index}.itemUnitId`)}>
-                    <option value="">--Select Unit--</option>
-                    {productUnit.map((item) => (<option key={item.id} value={item.id}>{item.uqc}</option>))}
+
+            {/* Unit */}
+            <td style={{ width: '150px', minWidth: '140px' }}>
+                <Form.Select
+                    name="itemUnitId"
+                    isInvalid={!!errors.items?.[index]?.itemUnitId}
+                    {...register(`items.${index}.itemUnitId`)}
+                >
+                    <option value="">-- Unit --</option>
+                    {productUnit.map((item) => (
+                        <option key={item.id} value={item.id}>{item.uqc}</option>
+                    ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.itemUnitId?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Rate" className="text-end" isInvalid={!!errors.items?.[index]?.rate} {...register(`items.${index}.rate`)} />
+
+            {/* Rate */}
+            <td style={{ width: '160px', minWidth: '150px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Rate"
+                    className="text-end"
+                    isInvalid={!!errors.items?.[index]?.rate}
+                    {...register(`items.${index}.rate`, {
+                        onBlur: (e) => {
+                            const val = e.target.value;
+                            if (val !== '' && val !== null && val !== undefined && !Number.isNaN(Number(val))) {
+                                setValue(`items.${index}.rate`, Number(val).toFixed(2), { shouldValidate: true });
+                            }
+                        }
+                    })}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.rate?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Sub Total" className="text-end" disabled={true} isInvalid={!!errors.items?.[index]?.subTotal} {...register(`items.${index}.subTotal`)} />
+
+            {/* Sub Total */}
+            <td style={{ width: '150px', minWidth: '140px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Sub Total"
+                    className="text-end bg-light fw-medium"
+                    disabled={true}
+                    isInvalid={!!errors.items?.[index]?.subTotal}
+                    {...register(`items.${index}.subTotal`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.subTotal?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Select name="gstSlabId" isInvalid={!!errors.items?.[index]?.gstSlabId} {...register(`items.${index}.gstSlabId`)}>
-                    <option value="">--GST--</option>
-                    {gstSlab.map((item) => (<option key={item.id} value={item.id}>{item.gstRate}</option>))}
+
+            {/* GST Slab */}
+            <td style={{ width: '140px', minWidth: '130px' }}>
+                <Form.Select
+                    name="gstSlabId"
+                    isInvalid={!!errors.items?.[index]?.gstSlabId}
+                    {...register(`items.${index}.gstSlabId`)}
+                >
+                    <option value="">-- GST --</option>
+                    {gstSlab.map((item) => (
+                        <option key={item.id} value={item.id}>{item.gstRate}%</option>
+                    ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.gstSlabId?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Taxable Amt" className="text-end" disabled={true} isInvalid={!!errors.items?.[index]?.taxableAmount} {...register(`items.${index}.taxableAmount`)} />
+
+            {/* Taxable Amount */}
+            <td style={{ width: '150px', minWidth: '140px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Taxable Amt"
+                    className="text-end bg-light"
+                    disabled={true}
+                    isInvalid={!!errors.items?.[index]?.taxableAmount}
+                    {...register(`items.${index}.taxableAmount`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.taxableAmount?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Qty" className="text-end" disabled={true} isInvalid={!!errors.items?.[index]?.cgst} {...register(`items.${index}.cgst`)} />
+
+            {/* CGST */}
+            <td style={{ width: '130px', minWidth: '120px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="CGST"
+                    className="text-end bg-light text-muted"
+                    disabled={true}
+                    isInvalid={!!errors.items?.[index]?.cgst}
+                    {...register(`items.${index}.cgst`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.cgst?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Qty" className="text-end" disabled={true} isInvalid={!!errors.items?.[index]?.sgst} {...register(`items.${index}.sgst`)} />
+
+            {/* SGST */}
+            <td style={{ width: '130px', minWidth: '120px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="SGST"
+                    className="text-end bg-light text-muted"
+                    disabled={true}
+                    isInvalid={!!errors.items?.[index]?.sgst}
+                    {...register(`items.${index}.sgst`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.sgst?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <Form.Control type="text" placeholder="Qty" className="text-end" disabled={true} isInvalid={!!errors.items?.[index]?.total} {...register(`items.${index}.total`)} />
+
+            {/* Total */}
+            <td style={{ width: '180px', minWidth: '170px' }}>
+                <Form.Control
+                    type="text"
+                    placeholder="Total"
+                    className="text-end bg-light fw-bold text-dark"
+                    disabled={true}
+                    isInvalid={!!errors.items?.[index]?.total}
+                    {...register(`items.${index}.total`)}
+                />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.total?.message}</Form.Control.Feedback>
             </td>
-            <td>
-                <FaWindowClose
-                    size={22}
-                    color="#bb2124"
-                    className="transition-colors cursor-pointer"
-                    style={{ cursor: 'pointer', transition: 'color 0.2s ease' }}
-                    onClick={() => {
-                        if (index > 0) {
-                            remove(index);
-                        }
-                    }}
-                />
+
+            {/* Actions: Compact Clone & Delete */}
+            <td style={{ width: '65px', minWidth: '65px', padding: '0.4rem 0.1rem' }} className="text-center">
+                <div className="d-flex align-items-center justify-content-center gap-1">
+                    {/* Duplicate Row */}
+                    <OverlayTrigger placement="top" overlay={<Tooltip>Duplicate Row</Tooltip>}>
+                        <button
+                            type="button"
+                            className="btn btn-sm p-1 border-0 rounded text-primary hover-scale"
+                            onClick={() => onDuplicate && onDuplicate(index)}
+                            title="Duplicate Row"
+                            style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                            <FaCopy size={13} />
+                        </button>
+                    </OverlayTrigger>
+
+                    {/* Delete Row */}
+                    <OverlayTrigger placement="top" overlay={<Tooltip>{isSingleRow ? "Cannot remove single item" : "Delete Row"}</Tooltip>}>
+                        <span>
+                            <button
+                                type="button"
+                                className={`btn btn-sm p-1 border-0 rounded ${isSingleRow ? 'text-muted opacity-25' : 'text-danger hover-scale'}`}
+                                onClick={() => !isSingleRow && remove(index)}
+                                disabled={isSingleRow}
+                                title={isSingleRow ? "Cannot delete the only row" : "Delete Row"}
+                                style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <FaTrashAlt size={13} />
+                            </button>
+                        </span>
+                    </OverlayTrigger>
+                </div>
             </td>
         </tr>
     );
-}
+};
 
-export default memo(InvoiceRow)
+export default memo(InvoiceRow);

@@ -13,9 +13,22 @@ import PartyRoleSelector from '../components/PartyRoleSelector';
 import PartyAddressSection from '../components/sections/PartyAddressSection';
 import PartyContactSection from '../components/sections/PartyContactSection';
 import PartyBankAccountSection from '../components/sections/PartyBankAccountSection';
+import PartyDocumentSection from '../components/sections/PartyDocumentSection';
 import PartyStatusBadge from '../components/PartyStatusBadge';
 import FloatingLabelDropdown from '../components/FloatingLabelDropdown';
-import { FaArrowLeft, FaSave, FaBuilding, FaPhoneAlt, FaFileInvoiceDollar, FaMapMarkerAlt, FaUserCheck, FaUniversity, FaInfoCircle } from 'react-icons/fa';
+import LogoUploadDropZone from '../../../components/upload/LogoUploadDropZone';
+import {
+    FaArrowLeft,
+    FaSave,
+    FaBuilding,
+    FaPhoneAlt,
+    FaFileInvoiceDollar,
+    FaMapMarkerAlt,
+    FaUserCheck,
+    FaUniversity,
+    FaFileAlt,
+    FaInfoCircle
+} from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import { toast } from 'react-toastify';
 
@@ -65,11 +78,15 @@ const PartyForm = ({ mode = 'create' }) => {
             tanNumber: '',
             website: '',
             remarks: '',
+            logoUrl: '',
+            logoPublicId: '',
             status: 'ACTIVE'
         }
     });
 
     const watchGstRegistered = useWatch({ control, name: 'gstRegistered' });
+    const watchLogoUrl = useWatch({ control, name: 'logoUrl' });
+    const watchLogoPublicId = useWatch({ control, name: 'logoPublicId' });
 
     // Populate party form data and roles when in edit mode
     useEffect(() => {
@@ -88,6 +105,8 @@ const PartyForm = ({ mode = 'create' }) => {
                 tanNumber: party.tanNumber || '',
                 website: party.website || '',
                 remarks: party.remarks || '',
+                logoUrl: party.logoUrl || party.logo || '',
+                logoPublicId: party.logoPublicId || '',
                 status: party.status || 'ACTIVE'
             });
 
@@ -128,9 +147,11 @@ const PartyForm = ({ mode = 'create' }) => {
             gstin: formData.gstRegistered && formData.gstin ? formData.gstin.trim() : null,
             panNumber: formData.panNumber ? formData.panNumber.trim().toUpperCase() : null,
             cinNumber: formData.cinNumber ? formData.cinNumber.trim() : null,
-            tanNumber: formData.tanNumber ? formData.tanNumber.trim() : null,
+            tanNumber: formData.tanNumber ? formData.tanNumber.trim().toUpperCase() : null,
             website: formData.website ? formData.website.trim() : null,
             remarks: formData.remarks ? formData.remarks.trim() : null,
+            logoUrl: formData.logoUrl || null,
+            logoPublicId: formData.logoPublicId || null,
             status: formData.status || 'ACTIVE'
         };
 
@@ -141,56 +162,75 @@ const PartyForm = ({ mode = 'create' }) => {
         }
     };
 
-    if (isEditMode && isLoadingParty) {
-        return (
-            <div className="text-center py-5">
-                <Spinner animation="border" variant="primary" />
-                <div className="text-muted mt-2 small">Loading party information...</div>
-            </div>
-        );
-    }
-
     return (
         <>
-            <PageLoader loading={isFetchingParty && !isLoadingParty} />
+            <PageLoader loading={isLoadingParty || isFetchingParty} />
 
-            {/* Top Navigation & Page Title Bar */}
-            <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2 bg-white p-3 rounded border shadow-sm">
-                <div className="d-flex align-items-center gap-3">
-                    <Link to="/parties" className="btn btn-outline-secondary btn-sm p-1.5 px-3 d-flex align-items-center gap-2 shadow-none">
-                        <FaArrowLeft size={11} />
-                        <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Back to List</span>
-                    </Link>
-                    <div className="vr d-none d-sm-block my-1" />
-                    <h5 className="mb-0 text-dark fw-bold" style={{ fontSize: '1.15rem' }}>
-                        {isEditMode ? 'Update Party' : 'Create New Party'}
-                    </h5>
-                    {isEditMode && party?.partyCode && (
-                        <Badge bg="primary" className="text-white font-monospace ms-1 px-2.5 py-1" style={{ fontSize: '0.78rem' }}>
-                            {party.partyCode}
-                        </Badge>
-                    )}
-                    {isEditMode && party?.status && (
-                        <PartyStatusBadge status={party.status} />
-                    )}
-                </div>
-            </div>
+            {/* Page Header Card with White Background */}
+            <Card className="mb-4 shadow-sm border bg-white">
+                <Card.Body className="py-3 px-4">
+                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <Link
+                                to="/parties"
+                                className="btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm text-dark border bg-light"
+                                style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    borderColor: '#cbd5e1'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#3a57e8';
+                                    e.currentTarget.style.color = '#ffffff';
+                                    e.currentTarget.style.borderColor = '#3a57e8';
+                                    e.currentTarget.style.transform = 'translateX(-2px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                    e.currentTarget.style.color = '#1e293b';
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.transform = 'translateX(0)';
+                                }}
+                                title="Back to Parties List"
+                            >
+                                <FaArrowLeft size={14} />
+                            </Link>
+                            <div>
+                                <h5 className="mb-0 fw-bold text-dark">
+                                    {isEditMode ? `Edit Party: ${party.displayName || party.legalName || 'Party'}` : 'Create New Party'}
+                                </h5>
+                                <span className="text-muted" style={{ fontSize: '0.78rem' }}>
+                                    {isEditMode ? 'Update party information, logos, KYC documents, addresses, and contacts' : 'Register a new customer, vendor, or supplier profile'}
+                                </span>
+                            </div>
+                        </div>
 
-            {/* Main Party Form */}
-            <Form onSubmit={handleSubmit(onSubmit)} noValidate>
-                {/* 1. Basic & Organization Details Card */}
-                <Card className="mb-4 shadow-sm border">
+                        {isEditMode && party.status && (
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="text-muted small fw-medium">Status:</span>
+                                <PartyStatusBadge status={party.status} />
+                            </div>
+                        )}
+                    </div>
+                </Card.Body>
+            </Card>
+
+            {/* Main Form */}
+            <Form onSubmit={handleSubmit(onSubmit)}>
+                {/* 1. General & Brand Information Card */}
+                <Card className="mb-4 shadow-sm border bg-white">
                     <Card.Header className="bg-transparent py-3 px-4 border-bottom">
                         <div className="d-flex align-items-center gap-3">
                             <div className="avatar-35 bg-soft-primary rounded d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px' }}>
-                                <FaBuilding className="text-primary" size={15} />
+                                <FaBuilding className="text-primary" size={14} />
                             </div>
                             <div>
                                 <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
-                                    1. Basic & Organization Details
+                                    1. General & Brand Information
                                 </h6>
                                 <span className="text-muted" style={{ fontSize: '0.74rem' }}>
-                                    Core legal entity, display name, and role associations
+                                    Basic identity, trade name, company logo, and party role categorization
                                 </span>
                             </div>
                         </div>
@@ -198,80 +238,180 @@ const PartyForm = ({ mode = 'create' }) => {
 
                     <Card.Body className="p-4 pt-3.5">
                         <Row className="g-3">
-                            {/* Party Code */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
-                                    <Form.Control
-                                        type="text"
-                                        id="partyCode"
-                                        placeholder="Party Code"
-                                        style={{ fontSize: '0.84rem' }}
-                                        isInvalid={!!errors.partyCode}
-                                        {...register('partyCode')}
-                                    />
-                                    <Form.Label htmlFor="partyCode" style={{ fontSize: '0.78rem' }}>
-                                        Party Code <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
-                                        {errors.partyCode?.message}
-                                    </Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
+                            {isEditMode ? (
+                                <>
+                                    {/* Edit Mode: Compact Auto-width Logo Column */}
+                                    <Col xs="auto" className="d-flex align-items-center mb-2">
+                                        <LogoUploadDropZone
+                                            value={watchLogoUrl}
+                                            publicId={watchLogoPublicId}
+                                            onChange={({ logoUrl, logoPublicId }) => {
+                                                setValue('logoUrl', logoUrl, { shouldValidate: true });
+                                                setValue('logoPublicId', logoPublicId, { shouldValidate: true });
+                                            }}
+                                            disabled={isSubmitting}
+                                        />
+                                    </Col>
 
-                            {/* Status Dropdown (Floating Label Pattern) */}
-                            <Col lg={4} md={6}>
-                                <FloatingLabelDropdown
-                                    id="status"
-                                    label="Status"
-                                    required
-                                    isInvalid={!!errors.status}
-                                    errorMessage={errors.status?.message}
-                                    {...register('status')}
-                                >
-                                    <option value="ACTIVE">ACTIVE</option>
-                                    <option value="INACTIVE">INACTIVE</option>
-                                </FloatingLabelDropdown>
-                            </Col>
+                                    {/* Edit Mode: Key Identity Fields Column */}
+                                    <Col className="flex-grow-1">
+                                        <Row className="g-2">
+                                            {/* Party Code */}
+                                            <Col md={4} sm={12}>
+                                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                                    <Form.Control
+                                                        type="text"
+                                                        id="partyCode"
+                                                        placeholder="Party Code"
+                                                        style={{ fontSize: '0.84rem' }}
+                                                        isInvalid={!!errors.partyCode}
+                                                        {...register('partyCode')}
+                                                    />
+                                                    <Form.Label htmlFor="partyCode" style={{ fontSize: '0.78rem' }}>
+                                                        Party Code <span className="text-danger label-required">*</span>
+                                                    </Form.Label>
+                                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                        {errors.partyCode?.message}
+                                                    </Form.Control.Feedback>
+                                                </Form.Floating>
+                                            </Col>
 
-                            {/* Display Name */}
-                            <Col lg={4} md={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
-                                    <Form.Control
-                                        type="text"
-                                        id="displayName"
-                                        placeholder="Display Name"
-                                        style={{ fontSize: '0.84rem' }}
-                                        isInvalid={!!errors.displayName}
-                                        {...register('displayName')}
-                                    />
-                                    <Form.Label htmlFor="displayName" style={{ fontSize: '0.78rem' }}>
-                                        Display Name (Trade Name) <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
-                                        {errors.displayName?.message}
-                                    </Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
+                                            {/* Status Dropdown */}
+                                            <Col md={4} sm={12}>
+                                                <FloatingLabelDropdown
+                                                    id="status"
+                                                    label="Status"
+                                                    required
+                                                    isInvalid={!!errors.status}
+                                                    errorMessage={errors.status?.message}
+                                                    {...register('status')}
+                                                >
+                                                    <option value="ACTIVE">ACTIVE</option>
+                                                    <option value="INACTIVE">INACTIVE</option>
+                                                </FloatingLabelDropdown>
+                                            </Col>
 
-                            {/* Legal Name */}
-                            <Col xs={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
-                                    <Form.Control
-                                        type="text"
-                                        id="legalName"
-                                        placeholder="Legal Name"
-                                        style={{ fontSize: '0.84rem' }}
-                                        isInvalid={!!errors.legalName}
-                                        {...register('legalName')}
-                                    />
-                                    <Form.Label htmlFor="legalName" style={{ fontSize: '0.78rem' }}>
-                                        Legal / Registered Entity Name <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
-                                        {errors.legalName?.message}
-                                    </Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
+                                            {/* Display Name */}
+                                            <Col md={4} sm={12}>
+                                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                                    <Form.Control
+                                                        type="text"
+                                                        id="displayName"
+                                                        placeholder="Display Name"
+                                                        style={{ fontSize: '0.84rem' }}
+                                                        isInvalid={!!errors.displayName}
+                                                        {...register('displayName')}
+                                                    />
+                                                    <Form.Label htmlFor="displayName" style={{ fontSize: '0.78rem' }}>
+                                                        Display Name (Trade Name) <span className="text-danger label-required">*</span>
+                                                    </Form.Label>
+                                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                        {errors.displayName?.message}
+                                                    </Form.Control.Feedback>
+                                                </Form.Floating>
+                                            </Col>
+
+                                            {/* Legal Name */}
+                                            <Col xs={12}>
+                                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                                    <Form.Control
+                                                        type="text"
+                                                        id="legalName"
+                                                        placeholder="Legal Name"
+                                                        style={{ fontSize: '0.84rem' }}
+                                                        isInvalid={!!errors.legalName}
+                                                        {...register('legalName')}
+                                                    />
+                                                    <Form.Label htmlFor="legalName" style={{ fontSize: '0.78rem' }}>
+                                                        Legal / Registered Entity Name <span className="text-danger label-required">*</span>
+                                                    </Form.Label>
+                                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                        {errors.legalName?.message}
+                                                    </Form.Control.Feedback>
+                                                </Form.Floating>
+                                            </Col>
+                                        </Row>
+                                    </Col>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Create Mode: Clean Top Row without Logo */}
+                                    {/* Party Code */}
+                                    <Col lg={4} md={6}>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                            <Form.Control
+                                                type="text"
+                                                id="partyCode"
+                                                placeholder="Party Code"
+                                                style={{ fontSize: '0.84rem' }}
+                                                isInvalid={!!errors.partyCode}
+                                                {...register('partyCode')}
+                                            />
+                                            <Form.Label htmlFor="partyCode" style={{ fontSize: '0.78rem' }}>
+                                                Party Code <span className="text-danger label-required">*</span>
+                                            </Form.Label>
+                                            <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                {errors.partyCode?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Floating>
+                                    </Col>
+
+                                    {/* Status Dropdown */}
+                                    <Col lg={4} md={6}>
+                                        <FloatingLabelDropdown
+                                            id="status"
+                                            label="Status"
+                                            required
+                                            isInvalid={!!errors.status}
+                                            errorMessage={errors.status?.message}
+                                            {...register('status')}
+                                        >
+                                            <option value="ACTIVE">ACTIVE</option>
+                                            <option value="INACTIVE">INACTIVE</option>
+                                        </FloatingLabelDropdown>
+                                    </Col>
+
+                                    {/* Display Name */}
+                                    <Col lg={4} md={12}>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                            <Form.Control
+                                                type="text"
+                                                id="displayName"
+                                                placeholder="Display Name"
+                                                style={{ fontSize: '0.84rem' }}
+                                                isInvalid={!!errors.displayName}
+                                                {...register('displayName')}
+                                            />
+                                            <Form.Label htmlFor="displayName" style={{ fontSize: '0.78rem' }}>
+                                                Display Name (Trade Name) <span className="text-danger label-required">*</span>
+                                            </Form.Label>
+                                            <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                {errors.displayName?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Floating>
+                                    </Col>
+
+                                    {/* Legal Name */}
+                                    <Col xs={12}>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                            <Form.Control
+                                                type="text"
+                                                id="legalName"
+                                                placeholder="Legal Name"
+                                                style={{ fontSize: '0.84rem' }}
+                                                isInvalid={!!errors.legalName}
+                                                {...register('legalName')}
+                                            />
+                                            <Form.Label htmlFor="legalName" style={{ fontSize: '0.78rem' }}>
+                                                Legal / Registered Entity Name <span className="text-danger label-required">*</span>
+                                            </Form.Label>
+                                            <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                {errors.legalName?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Floating>
+                                    </Col>
+                                </>
+                            )}
 
                             {/* Embedded Party Roles Selection with Professional Check Chips */}
                             <Col xs={12}>
@@ -288,7 +428,7 @@ const PartyForm = ({ mode = 'create' }) => {
                 </Card>
 
                 {/* 2. Contact & Digital Channels Card */}
-                <Card className="mb-4 shadow-sm border">
+                <Card className="mb-4 shadow-sm border bg-white">
                     <Card.Header className="bg-transparent py-3 px-4 border-bottom">
                         <div className="d-flex align-items-center gap-3">
                             <div className="avatar-35 bg-soft-primary rounded d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px' }}>
@@ -358,12 +498,12 @@ const PartyForm = ({ mode = 'create' }) => {
                                     <Form.Control
                                         type="url"
                                         id="website"
-                                        placeholder="Website URL"
+                                        placeholder="https://example.com"
                                         style={{ fontSize: '0.84rem' }}
                                         isInvalid={!!errors.website}
                                         {...register('website')}
                                     />
-                                    <Form.Label htmlFor="website" style={{ fontSize: '0.78rem' }}>Website URL (e.g. https://abc.com)</Form.Label>
+                                    <Form.Label htmlFor="website" style={{ fontSize: '0.78rem' }}>Website URL (https://...)</Form.Label>
                                     <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                         {errors.website?.message}
                                     </Form.Control.Feedback>
@@ -371,86 +511,101 @@ const PartyForm = ({ mode = 'create' }) => {
                             </Col>
 
                             {/* Remarks */}
-                            <Col lg={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                            <Col xs={12}>
+                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-1">
                                     <Form.Control
                                         as="textarea"
                                         id="remarks"
-                                        placeholder="Remarks / Notes"
+                                        placeholder="Remarks or internal notes..."
                                         style={{ height: '76px', fontSize: '0.84rem' }}
                                         isInvalid={!!errors.remarks}
                                         {...register('remarks')}
                                     />
-                                    <Form.Label htmlFor="remarks" style={{ fontSize: '0.78rem' }}>Remarks / Special Notes</Form.Label>
+                                    <Form.Label htmlFor="remarks" style={{ fontSize: '0.78rem' }}>Internal Remarks / Notes</Form.Label>
+                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                        {errors.remarks?.message}
+                                    </Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
                         </Row>
                     </Card.Body>
                 </Card>
 
-                {/* 3. Statutory & Tax Identifiers Card */}
-                <Card className="mb-4 shadow-sm border">
+                {/* 3. Statutory & Tax Registration Card */}
+                <Card className="mb-4 shadow-sm border bg-white">
                     <Card.Header className="bg-transparent py-3 px-4 border-bottom">
                         <div className="d-flex align-items-center gap-3">
                             <div className="avatar-35 bg-soft-primary rounded d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px' }}>
-                                <FaFileInvoiceDollar className="text-primary" size={15} />
+                                <FaFileInvoiceDollar className="text-primary" size={14} />
                             </div>
                             <div>
                                 <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
-                                    3. Statutory & Tax Identification
+                                    3. Statutory & Tax Registration
                                 </h6>
                                 <span className="text-muted" style={{ fontSize: '0.74rem' }}>
-                                    GST compliance, PAN, CIN, and TAN records
+                                    GST compliance, PAN, CIN, and corporate tax identification details
                                 </span>
                             </div>
                         </div>
                     </Card.Header>
 
                     <Card.Body className="p-4 pt-3.5">
-                        <Row className="g-3">
-                            {/* GST Registered Toggle */}
-                            <Col lg={12}>
-                                <div className="p-2.5 px-3 rounded bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                                    <div>
-                                        <span className="fw-semibold text-dark d-block" style={{ fontSize: '0.83rem' }}>GST Registration Status</span>
-                                        <span className="text-muted" style={{ fontSize: '0.74rem' }}>Enable if the party is registered under Goods and Services Tax (GST).</span>
-                                    </div>
-                                    <Form.Check
-                                        type="switch"
-                                        id="gst-registered-switch"
-                                        label={watchGstRegistered ? 'GST Registered (Regular / Composition)' : 'Unregistered / Non-GST'}
-                                        className="fw-semibold text-primary"
-                                        style={{ fontSize: '0.82rem' }}
-                                        {...register('gstRegistered')}
-                                    />
-                                </div>
-                            </Col>
+                        {/* GST Registration Switch */}
+                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded border mb-3">
+                            <div>
+                                <span className="fw-semibold text-dark d-block" style={{ fontSize: '0.86rem' }}>
+                                    GST Registered Entity
+                                </span>
+                                <span className="text-muted small" style={{ fontSize: '0.74rem' }}>
+                                    Enable if this party has a registered GST identification number in India
+                                </span>
+                            </div>
+                            <Form.Check
+                                type="switch"
+                                id="gstRegisteredSwitch"
+                                className="fs-5"
+                                {...register('gstRegistered')}
+                            />
+                        </div>
 
-                            {/* GSTIN */}
-                            <Col lg={6} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
-                                    <Form.Control
-                                        type="text"
-                                        id="gstin"
-                                        placeholder="GSTIN Number"
-                                        maxLength={15}
-                                        className="font-monospace text-uppercase"
-                                        style={{ fontSize: '0.84rem' }}
-                                        disabled={!watchGstRegistered}
-                                        isInvalid={!!errors.gstin}
-                                        {...register('gstin')}
-                                    />
-                                    <Form.Label htmlFor="gstin" style={{ fontSize: '0.78rem' }}>
-                                        GSTIN No. {watchGstRegistered && <span className="text-danger label-required">*</span>}
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
-                                        {errors.gstin?.message}
-                                    </Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
+                        <Row className="g-3">
+                            {/* GSTIN (Only if GST is enabled) */}
+                            {watchGstRegistered && (
+                                <Col lg={6} md={12}>
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                        <Form.Control
+                                            type="text"
+                                            id="gstin"
+                                            placeholder="GSTIN"
+                                            maxLength={15}
+                                            className="font-monospace text-uppercase"
+                                            style={{ fontSize: '0.84rem', letterSpacing: '0.04em' }}
+                                            isInvalid={!!errors.gstin}
+                                            {...register('gstin')}
+                                            onChange={(e) => {
+                                                const upper = e.target.value.toUpperCase();
+                                                e.target.value = upper;
+                                                setValue('gstin', upper, { shouldValidate: true });
+
+                                                // Auto-derive PAN from GSTIN (Characters 3 to 12)
+                                                if (upper.length >= 12 && !party.panNumber) {
+                                                    const derivedPan = upper.substring(2, 12);
+                                                    setValue('panNumber', derivedPan, { shouldValidate: true });
+                                                }
+                                            }}
+                                        />
+                                        <Form.Label htmlFor="gstin" style={{ fontSize: '0.78rem' }}>
+                                            GST Identification Number (GSTIN) <span className="text-danger label-required">*</span>
+                                        </Form.Label>
+                                        <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                            {errors.gstin?.message}
+                                        </Form.Control.Feedback>
+                                    </Form.Floating>
+                                </Col>
+                            )}
 
                             {/* PAN Number */}
-                            <Col lg={6} md={6}>
+                            <Col lg={watchGstRegistered ? 6 : 4} md={6}>
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                     <Form.Control
                                         type="text"
@@ -458,11 +613,16 @@ const PartyForm = ({ mode = 'create' }) => {
                                         placeholder="PAN Number"
                                         maxLength={10}
                                         className="font-monospace text-uppercase"
-                                        style={{ fontSize: '0.84rem' }}
+                                        style={{ fontSize: '0.84rem', letterSpacing: '0.04em' }}
                                         isInvalid={!!errors.panNumber}
                                         {...register('panNumber')}
+                                        onChange={(e) => {
+                                            const upper = e.target.value.toUpperCase();
+                                            e.target.value = upper;
+                                            setValue('panNumber', upper, { shouldValidate: true });
+                                        }}
                                     />
-                                    <Form.Label htmlFor="panNumber" style={{ fontSize: '0.78rem' }}>PAN Number</Form.Label>
+                                    <Form.Label htmlFor="panNumber" style={{ fontSize: '0.78rem' }}>Permanent Account Number (PAN)</Form.Label>
                                     <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                         {errors.panNumber?.message}
                                     </Form.Control.Feedback>
@@ -470,7 +630,7 @@ const PartyForm = ({ mode = 'create' }) => {
                             </Col>
 
                             {/* CIN Number */}
-                            <Col lg={6} md={6}>
+                            <Col lg={watchGstRegistered ? 6 : 4} md={6}>
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                     <Form.Control
                                         type="text"
@@ -482,7 +642,7 @@ const PartyForm = ({ mode = 'create' }) => {
                                         isInvalid={!!errors.cinNumber}
                                         {...register('cinNumber')}
                                     />
-                                    <Form.Label htmlFor="cinNumber" style={{ fontSize: '0.78rem' }}>CIN Number (Corporate ID)</Form.Label>
+                                    <Form.Label htmlFor="cinNumber" style={{ fontSize: '0.78rem' }}>CIN (Corporate Identification)</Form.Label>
                                     <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                         {errors.cinNumber?.message}
                                     </Form.Control.Feedback>
@@ -490,7 +650,7 @@ const PartyForm = ({ mode = 'create' }) => {
                             </Col>
 
                             {/* TAN Number */}
-                            <Col lg={6} md={6}>
+                            <Col lg={watchGstRegistered ? 6 : 4} md={12}>
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                     <Form.Control
                                         type="text"
@@ -512,7 +672,7 @@ const PartyForm = ({ mode = 'create' }) => {
                     </Card.Body>
                 </Card>
 
-                {/* Bottom Action Bar (Cancel button removed from update mode) */}
+                {/* Bottom Action Bar */}
                 <div className="d-flex align-items-center justify-content-end gap-2.5 mb-4 p-3 bg-white rounded border shadow-sm">
                     {!isEditMode && (
                         <Link to="/parties" className="btn btn-outline-secondary btn-sm px-3.5" style={{ fontSize: '0.82rem', fontWeight: 500 }}>
@@ -542,8 +702,8 @@ const PartyForm = ({ mode = 'create' }) => {
                 </div>
             </Form>
 
-            {/* 4. Sub-Sections (Addresses, Contacts, Bank Accounts) */}
-            <Card className="mb-4 shadow-sm border">
+            {/* 4. Sub-Sections (Addresses, Contacts, Bank Accounts, KYC & Documents) */}
+            <Card className="mb-4 shadow-sm border bg-white">
                 <Card.Header className="bg-transparent py-3 px-4 border-bottom">
                     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
@@ -551,7 +711,7 @@ const PartyForm = ({ mode = 'create' }) => {
                                 4. Associated Party Details
                             </h6>
                             <span className="text-muted" style={{ fontSize: '0.74rem' }}>
-                                Manage branch addresses, contact persons, and settlement bank accounts
+                                Manage branch addresses, contact persons, bank accounts, and KYC/compliance documents
                             </span>
                         </div>
                         {!isEditMode && (
@@ -569,12 +729,12 @@ const PartyForm = ({ mode = 'create' }) => {
                             <h6 className="fw-semibold text-dark mb-1" style={{ fontSize: '0.92rem' }}>Party Sub-Sections are Locked</h6>
                             <p className="text-muted small mb-0" style={{ maxWidth: '500px', margin: '0 auto', fontSize: '0.80rem' }}>
                                 Please fill in the basic details and click <strong>"Create & Proceed"</strong> above.
-                                Once the party record is created, you will be able to manage Addresses, Contacts, and Bank Accounts in separate transactions.
+                                Once the party record is created, you will be able to manage Addresses, Contacts, Bank Accounts, and KYC Documents in separate transactions.
                             </p>
                         </div>
                     ) : (
                         <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
-                            <Nav variant="pills" className="mb-3.5 gap-2 border-bottom pb-2.5">
+                            <Nav variant="pills" className="mb-3.5 gap-2 border-bottom pb-2.5 flex-wrap">
                                 <Nav.Item>
                                     <Nav.Link eventKey="addresses" className="d-flex align-items-center gap-2 px-3 py-1.5" style={{ fontSize: '0.82rem', fontWeight: 500 }}>
                                         <FaMapMarkerAlt size={12} />
@@ -593,6 +753,12 @@ const PartyForm = ({ mode = 'create' }) => {
                                         <span>Bank Accounts</span>
                                     </Nav.Link>
                                 </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="documents" className="d-flex align-items-center gap-2 px-3 py-1.5" style={{ fontSize: '0.82rem', fontWeight: 500 }}>
+                                        <FaFileAlt size={12} />
+                                        <span>Documents & KYC</span>
+                                    </Nav.Link>
+                                </Nav.Item>
                             </Nav>
 
                             <Tab.Content className="pt-2">
@@ -604,6 +770,9 @@ const PartyForm = ({ mode = 'create' }) => {
                                 </Tab.Pane>
                                 <Tab.Pane eventKey="banks">
                                     <PartyBankAccountSection partyId={partyId} />
+                                </Tab.Pane>
+                                <Tab.Pane eventKey="documents">
+                                    <PartyDocumentSection partyId={partyId} />
                                 </Tab.Pane>
                             </Tab.Content>
                         </Tab.Container>
