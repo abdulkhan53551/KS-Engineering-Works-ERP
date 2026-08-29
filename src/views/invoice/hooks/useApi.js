@@ -276,7 +276,7 @@ export const useBulkRestoreInvoices = () => {
 };
 
 // Get unmapped invoice challan by invoice id
-export const useUnmappedInvoiceChallanByInvoiceId = (id) => {
+export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
     return useQuery({
         queryKey: ["unmappedInvoiceChallan", id],
         queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
@@ -297,7 +297,7 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id) => {
 }
 
 // Get unmapped purchase order by invoice id
-export const useUnmappedPurchaseOrderByInvoiceId = (id) => {
+export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
@@ -318,7 +318,7 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id) => {
 }
 
 // Get unmapped eway bill by invoice id
-export const useUnmappedEwayBillByInvoiceId = (id) => {
+export const useUnmappedEwayBillByInvoiceId = (id = 0) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
