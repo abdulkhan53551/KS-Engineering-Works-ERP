@@ -106,6 +106,7 @@ export const DefaultRouter = [
                     { path: 'sales/invoice', element: <InvoiceList /> },
                     { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
                     { path: 'sales/invoice/:id/edit', element: <InvoiceForm mode="edit" /> },
+                    { path: 'sales/invoice/:id/duplicate', element: <InvoiceForm mode="duplicate" /> },
 
                     // Challan Routes
                     { path: 'sales/challans', element: <InvoiceChallanList /> },

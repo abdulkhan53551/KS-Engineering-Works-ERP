@@ -20,7 +20,8 @@ import {
    FaCoins,
    FaMapMarkerAlt,
    FaPaperclip,
-   FaExternalLinkAlt
+   FaExternalLinkAlt,
+   FaCopy
 } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
@@ -105,6 +106,7 @@ const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
+   const isDuplicateMode = !!(mode === 'duplicate');
    const [sameAsBilling, setSameAsBilling] = useState(false);
 
    const formMethods = useForm({
@@ -303,7 +305,7 @@ const InvoiceForm = ({ mode }) => {
    const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate]);
 
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
-   useFormInit({ invoice, isEditMode, setValue, reset, control, defaultFormValue });
+   useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
    const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({ control, setValue, getValues, companyStateId: invoice?.companyStateId || 27 });
 
    const { data: productUnit = [] } = useProductUnit();
@@ -358,7 +360,7 @@ const InvoiceForm = ({ mode }) => {
                <Row>
                   <Col xl="12" lg="12">
                      <Card className="border-0 shadow-sm mb-4">
-                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3">
+                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3 flex-wrap gap-2">
                            <div className="header-title d-flex align-items-center gap-2">
                               <Button
                                  variant="outline-secondary"
@@ -370,11 +372,42 @@ const InvoiceForm = ({ mode }) => {
                               >
                                  <FaArrowLeft size={13} />
                               </Button>
-                              <h4 className="card-title mb-0 fw-bold text-dark">
-                                 {isEditMode ? 'Update' : 'Create'} Invoice
+                              <h4 className="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2 flex-wrap">
+                                 {isEditMode ? (
+                                    <>
+                                       <span>Update Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <span className="text-muted fs-6 fw-normal">#{invoice.invoiceNo}</span>
+                                       )}
+                                    </>
+                                 ) : isDuplicateMode ? (
+                                    <>
+                                       <span>Duplicate Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <Badge bg="soft-primary" className="text-primary border border-primary-subtle fs-7 fw-normal py-1 px-2">
+                                             Cloned from #{invoice.invoiceNo}
+                                          </Badge>
+                                       )}
+                                    </>
+                                 ) : (
+                                    'Create Invoice'
+                                 )}
                               </h4>
                            </div>
                            <div className="d-flex align-items-center gap-2">
+                              {isEditMode && invoiceId && (
+                                 <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="d-flex align-items-center gap-2 px-3 py-1.5 rounded-2 fw-medium shadow-none"
+                                    style={{ fontSize: '0.82rem' }}
+                                    onClick={() => navigate(`/sales/invoice/${invoiceId}/duplicate`)}
+                                    title="Duplicate / Clone this invoice"
+                                 >
+                                    <FaCopy size={13} />
+                                    <span>Duplicate Invoice</span>
+                                 </Button>
+                              )}
                               {isInterState ? (
                                  <Badge bg="info" className="px-3 py-2 fw-medium">
                                     🌐 Inter-State (IGST)
