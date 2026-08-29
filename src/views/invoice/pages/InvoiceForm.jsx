@@ -31,6 +31,8 @@ import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
+import usePartyAddressSync from '../hooks/usePartyAddressSync';
+import useInvoiceDates, { DUE_PRESET_DAYS } from '../hooks/useInvoiceDates';
 import './invoice.scss';
 import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
@@ -100,14 +102,11 @@ const defaultFormValue = {
    paymentModeId: 0
 };
 
-const DUE_PRESET_DAYS = [0, 15, 30, 45, 60, 90];
-
 const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
    const isDuplicateMode = !!(mode === 'duplicate');
-   const [sameAsBilling, setSameAsBilling] = useState(false);
 
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
@@ -132,11 +131,6 @@ const InvoiceForm = ({ mode }) => {
       customerName,
       hasGst,
       dueDays,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      billingPincode,
-      billingCityId,
       watchedTotal,
       watchedSubTotal,
       watchedTaxableAmount,
@@ -159,11 +153,6 @@ const InvoiceForm = ({ mode }) => {
          "customerName",
          "hasGst",
          "dueDays",
-         "billingAddress.addressLine1",
-         "billingAddress.phoneNumber",
-         "billingAddress.email",
-         "billingAddress.pincode",
-         "billingAddress.cityId",
          "total",
          "subTotal",
          "taxableAmount",
@@ -179,135 +168,23 @@ const InvoiceForm = ({ mode }) => {
 
    const { data: invoice = {} } = useInvoiceById(invoiceId);
 
-   // Sync Shipping Address when "Same as Billing" toggle is clicked
-   const handleSameAsBillingChange = (checked) => {
-      setSameAsBilling(checked);
-      if (checked) {
-         const billing = getValues("billingAddress") || {};
-         setValue("shippingAddress.addressLine1", billing.addressLine1 || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.phoneNumber", billing.phoneNumber || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.email", billing.email || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.stateId", billing.stateId ? Number(billing.stateId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.cityId", billing.cityId ? Number(billing.cityId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.pincode", billing.pincode ? String(billing.pincode) : "", { shouldValidate: false, shouldDirty: true });
-      }
-   };
+   // 1. Party Selection & Address Live Synchronization
+   const { sameAsBilling, handleSameAsBillingChange, handlePartySelect } = usePartyAddressSync({ setValue, getValues, control });
 
-   // Sync live updates from billing to shipping ONLY when sameAsBilling is active and values differ
-   useEffect(() => {
-      if (!sameAsBilling) return;
+   // 2. Invoice Dates & Due Date Presets
+   const { handleDuePresetClick, invoiceDateOptons, dueDateOptons } = useInvoiceDates({ invoiceDate, setValue });
 
-      const currentShipping = getValues("shippingAddress") || {};
-      const bAddr = billingAddress1 || "";
-      const bPhone = billingPhone || "";
-      const bEmail = billingEmail || "";
-      const bState = selectedBillingState ? Number(selectedBillingState) : null;
-      const bCity = billingCityId ? Number(billingCityId) : null;
-      const bPin = billingPincode ? String(billingPincode) : "";
-
-      if (currentShipping.addressLine1 !== bAddr) {
-         setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.phoneNumber !== bPhone) {
-         setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.email !== bEmail) {
-         setValue("shippingAddress.email", bEmail, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
-         setValue("shippingAddress.stateId", bState, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
-         setValue("shippingAddress.cityId", bCity, { shouldValidate: false, shouldDirty: true });
-      }
-      if (String(currentShipping.pincode || "") !== bPin) {
-         setValue("shippingAddress.pincode", bPin, { shouldValidate: false, shouldDirty: true });
-      }
-   }, [
-      sameAsBilling,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      selectedBillingState,
-      billingCityId,
-      billingPincode,
-      setValue,
-      getValues
-   ]);
-
-   const handlePartySelect = (party) => {
-      if (!party) return;
-      const chosenName = party.displayName || party.legalName || "";
-      setValue("customerName", chosenName, { shouldValidate: true, shouldDirty: true });
-
-      const partyHasGst = Boolean(party.gstRegistered && party.gstin);
-      setValue("hasGst", partyHasGst, { shouldValidate: true, shouldDirty: true });
-      setValue("gstNumber", party.gstin || "", { shouldValidate: true, shouldDirty: true });
-
-      if (party.billingAddress) {
-         setValue("billingAddress.addressLine1", party.billingAddress.address || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.website", party.website || "", { shouldValidate: true, shouldDirty: true });
-         if (party.billingAddress.stateId) {
-            setValue("billingAddress.stateId", Number(party.billingAddress.stateId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (party.billingAddress.cityId) {
-            setValue("billingAddress.cityId", Number(party.billingAddress.cityId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (party.billingAddress.pincode) {
-            setValue("billingAddress.pincode", String(party.billingAddress.pincode), { shouldValidate: true, shouldDirty: true });
-         }
-      } else {
-         if (party.mobile) setValue("billingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
-         if (party.email) setValue("billingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
-         if (party.website) setValue("billingAddress.website", party.website, { shouldValidate: true, shouldDirty: true });
-      }
-
-      const shippingSource = (sameAsBilling || !party.shippingAddress) ? party.billingAddress : party.shippingAddress;
-      if (shippingSource) {
-         setValue("shippingAddress.addressLine1", shippingSource.address || "", { shouldValidate: true, shouldDirty: true });
-         setValue("shippingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
-         setValue("shippingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
-         if (shippingSource.stateId) {
-            setValue("shippingAddress.stateId", Number(shippingSource.stateId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (shippingSource.cityId) {
-            setValue("shippingAddress.cityId", Number(shippingSource.cityId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (shippingSource.pincode) {
-            setValue("shippingAddress.pincode", String(shippingSource.pincode), { shouldValidate: true, shouldDirty: true });
-         }
-      } else {
-         if (party.mobile) setValue("shippingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
-         if (party.email) setValue("shippingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
-      }
-   };
-
-   // Due Date presets handler
-   const handleDuePresetClick = (days) => {
-      setValue("dueDays", days, { shouldValidate: true, shouldDirty: true });
-      if (invoiceDate) {
-         setValue(
-            "dueDate",
-            moment(invoiceDate).add(days, "days").toDate(),
-            { shouldDirty: true, shouldValidate: true }
-         );
-      }
-   };
-
-   // Reset roundoff to auto
+   // 3. Reset Roundoff to Auto
    const handleResetRoundOffToAuto = () => {
       setValue("roundOffManual", false, { shouldDirty: true });
    };
 
-   const invoiceDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"] }), []);
-   const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate]);
-
+   // 4. Form Lifecycle, Calculation & Submit
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
    useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
    const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({ control, setValue, getValues, companyStateId: invoice?.companyStateId || 27 });
 
+   // 5. Master Data Queries
    const { data: productUnit = [] } = useProductUnit();
    const { data: gstSlab = [] } = useGstSlab();
    const { data: billingStates = [] } = useCountryState();
@@ -316,37 +193,9 @@ const InvoiceForm = ({ mode }) => {
    const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
-   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel } = useAccountingDocumentModules({ invoiceId, setValue });
 
-   const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
-   const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
-   const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
-
-   const activeSelectedIds = useMemo(() => {
-      switch (activeModule) {
-         case 'challan': return currentChallanIds;
-         case 'purchaseOrder': return currentPoIds;
-         case 'ewayBill': return currentEwayBillIds;
-         default: return [];
-      }
-   }, [activeModule, currentChallanIds, currentPoIds, currentEwayBillIds]);
-
-   // Remove single linked document chip
-   const handleRemoveLinkedDoc = (key, idToRemove) => {
-      if (key === 'challan') {
-         const updated = currentChallanIds.filter(id => id !== idToRemove);
-         setValue('challanIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasChallan', false, { shouldValidate: true });
-      } else if (key === 'purchaseOrder') {
-         const updated = currentPoIds.filter(id => id !== idToRemove);
-         setValue('poIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasPo', false, { shouldValidate: true });
-      } else if (key === 'ewayBill') {
-         const updated = currentEwayBillIds.filter(id => id !== idToRemove);
-         setValue('ewayBillIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasEwayBill', false, { shouldValidate: true });
-      }
-   };
+   // 6. Linked Document Modules (Challan, PO, E-Way Bill)
+   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel, activeSelectedIds, handleRemoveLinkedDoc, currentChallanIds, currentPoIds, currentEwayBillIds } = useAccountingDocumentModules({ invoiceId, setValue, control });
 
    // Amount in words
    const amountInWords = useMemo(() => {
