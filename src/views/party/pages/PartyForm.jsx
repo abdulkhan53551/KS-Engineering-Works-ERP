@@ -245,6 +245,8 @@ const PartyForm = ({ mode = 'create' }) => {
                                         <LogoUploadDropZone
                                             value={watchLogoUrl}
                                             publicId={watchLogoPublicId}
+                                            folder="parties/logos"
+                                            tags="ks-erp,party,logo"
                                             onChange={({ logoUrl, logoPublicId }) => {
                                                 setValue('logoUrl', logoUrl, { shouldValidate: true });
                                                 setValue('logoPublicId', logoPublicId, { shouldValidate: true });
