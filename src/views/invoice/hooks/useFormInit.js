@@ -4,6 +4,42 @@ import { useStateCity, usePaymentStatus } from "../../dashboard/hooks/api.hooks"
 import { useGetNextInvoiceNumber } from "./useApi";
 import moment from "moment";
 
+/**
+ * Calculates auto round-off and determines if backend round-off is manual or auto
+ * @param {Object} invoice 
+ * @returns {{ roundOff: number, isRoundOffManual: boolean, autoRoundOff: number, backendRoundOff: number }}
+ */
+export const calculateInvoiceRoundOffInfo = (invoice = {}) => {
+    let computedTaxable = 0;
+    let computedTaxes = 0;
+
+    if (Array.isArray(invoice.items) && invoice.items.length > 0) {
+        invoice.items.forEach(item => {
+            computedTaxable += Number(item.taxableAmount || 0);
+            computedTaxes += Number(item.cgst || 0) + Number(item.sgst || 0) + Number(item.igst || 0);
+        });
+    } else {
+        computedTaxable = Number(invoice.taxableAmount || 0);
+        computedTaxes = Number(invoice.cgst || 0) + Number(invoice.sgst || 0) + Number(invoice.igst || 0);
+    }
+
+    const other = Number(invoice.other || 0);
+    const totalBeforeRound = computedTaxable + computedTaxes + other;
+    const autoRoundedTotal = Math.round(totalBeforeRound);
+    const autoRoundOff = Number((autoRoundedTotal - totalBeforeRound).toFixed(2));
+    const backendRoundOff = Number(Number(invoice.roundOff || 0).toFixed(2));
+
+    // If backend roundoff differs from auto-calculated roundoff, treat as manual/custom (strictly !==)
+    const isRoundOffManual = backendRoundOff.toFixed(2) !== autoRoundOff.toFixed(2);
+
+    return {
+        roundOff: isRoundOffManual ? backendRoundOff : autoRoundOff,
+        isRoundOffManual,
+        autoRoundOff,
+        backendRoundOff
+    };
+};
+
 const useFormInit = (props) => {
     const { invoice, mode = "create", reset = Function(), setValue = Function(), control, defaultFormValue } = props;
     const isEditMode = mode === "edit";
@@ -34,6 +70,9 @@ const useFormInit = (props) => {
                 const hasChallan = Boolean(invoice.hasChallan || challanIds.length > 0);
                 const hasPo = Boolean(invoice.hasPo || poIds.length > 0);
                 const hasEwayBill = Boolean(invoice.hasEwayBill || ewayBillIds.length > 0);
+
+                // Calculate round-off info
+                const { roundOff: resolvedRoundOff, isRoundOffManual } = calculateInvoiceRoundOffInfo(invoice);
 
                 const cleanedInvoice = {
                     invoiceNo: invoice.invoiceNo,
@@ -100,8 +139,8 @@ const useFormInit = (props) => {
                     sgst: invoice.sgst,
                     igst: invoice.igst,
                     total: invoice.total,
-                    roundOff: invoice.roundOff ?? 0,
-                    roundOffManual: true,
+                    roundOff: resolvedRoundOff,
+                    roundOffManual: isRoundOffManual,
                     other: invoice.other ?? 0,
 
                     // Payment Section
