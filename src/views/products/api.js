@@ -7,8 +7,30 @@ import { asyncHandler } from "../../utilities/asyncHandler";
    ========================================================================= */
 
 /**
- * Get products with pagination and filters
+ * Get products list with filters and sorting
  * Endpoint: GET /products
+ */
+export const getProducts = asyncHandler(async ({ page = 1, pageSize = 10, search = '', itemType = '', status = '', trash = false, sortBy = 'created_at', sortOrder = 'desc' }) => {
+    const params = { page, pageSize };
+    if (search) params.search = search;
+    if (itemType) params.itemType = itemType;
+    if (status) params.status = status;
+    if (trash) params.trash = trash;
+    if (sortBy) params.sortBy = sortBy;
+    if (sortOrder) params.sortOrder = sortOrder;
+
+    const res = await api.request({
+        url: '/products',
+        method: requestMethod.GET,
+        params
+    });
+
+    return res.data;
+});
+
+/**
+ * Get products pagination metadata
+ * Endpoint: GET /products/pagination
  */
 export const getProductsPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', itemType = '', status = '', trash = false }) => {
     const params = { page, pageSize };
@@ -18,7 +40,7 @@ export const getProductsPagination = asyncHandler(async ({ page = 1, pageSize = 
     if (trash) params.trash = trash;
 
     const res = await api.request({
-        url: '/products',
+        url: '/products/pagination',
         method: requestMethod.GET,
         params
     });
@@ -128,12 +150,12 @@ export const bulkDeleteProducts = asyncHandler(async ({ ids = [], isPermanentDel
 
 /**
  * Bulk restore products
- * Endpoint: POST /products/bulk-restore
+ * Endpoint: PATCH /products/bulk-restore
  */
 export const bulkRestoreProducts = asyncHandler(async ({ ids = [] }) => {
     const res = await api.request({
         url: '/products/bulk-restore',
-        method: requestMethod.POST,
+        method: requestMethod.PATCH,
         data: { ids }
     });
 

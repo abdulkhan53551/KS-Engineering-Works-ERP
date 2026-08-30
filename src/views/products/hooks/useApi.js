@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+    getProducts,
     getProductsPagination,
     searchProducts,
     getProductById,
@@ -21,18 +22,32 @@ import { useNavigate } from "react-router-dom";
    ========================================================================= */
 
 /**
- * Hook to fetch paginated products
+ * Hook to fetch products list
+ */
+export const useProducts = ({ page = 1, pageSize = 10, search = '', itemType = '', status = '', trash = false, sortBy = 'created_at', sortOrder = 'desc' }) => {
+    return useQuery({
+        queryKey: ["productList", page, pageSize, search, itemType, status, trash, sortBy, sortOrder],
+        queryFn: () => getProducts({ page, pageSize, search, itemType, status, trash, sortBy, sortOrder }),
+        staleTime: 5 * 60 * 1000,
+        keepPreviousData: true,
+        select: (result) => {
+            const list = result?.data ?? result ?? [];
+            return Array.isArray(list) ? list : [];
+        }
+    });
+};
+
+/**
+ * Hook to fetch paginated products metadata
  */
 export const useProductPagination = ({ page = 1, pageSize = 10, search = '', itemType = '', status = '', trash = false }) => {
     return useQuery({
         queryKey: ["productPagination", page, pageSize, search, itemType, status, trash],
         queryFn: () => getProductsPagination({ page, pageSize, search, itemType, status, trash }),
         staleTime: 5 * 60 * 1000,
+        keepPreviousData: true,
         select: (result) => {
-            return {
-                data: result?.data ?? [],
-                pagination: result?.pagination ?? { page, pageSize, total: 0, totalPages: 1 }
-            };
+            return result?.pagination?.pagination ?? result?.data?.pagination?.pagination ?? result?.pagination ?? result?.data?.pagination ?? result ?? {};
         }
     });
 };
@@ -81,6 +96,7 @@ export const useCreateProduct = () => {
         onSuccess: (res) => {
             dispatch(clearLoading());
             toast.success(res.message || "Product created successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
             navigate("/masters/products");
@@ -109,6 +125,7 @@ export const useQuickCreateProduct = ({ onSuccessCallback } = {}) => {
         onSuccess: (res) => {
             dispatch(clearLoading());
             toast.success(res.message || "Product created successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
             if (onSuccessCallback) {
@@ -140,6 +157,7 @@ export const useUpdateProduct = () => {
         onSuccess: (res) => {
             dispatch(clearLoading());
             toast.success(res.message || "Product updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productById"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
@@ -171,6 +189,7 @@ export const useDeleteProduct = () => {
             dispatch(clearLoading());
             closeModal();
             toast.success(res.message || "Product deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
         },
@@ -200,6 +219,7 @@ export const useRestoreProduct = () => {
             dispatch(clearLoading());
             closeModal();
             toast.success(res.message || "Product restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
         },
@@ -229,6 +249,7 @@ export const useBulkDeleteProducts = () => {
             dispatch(clearLoading());
             closeModal();
             toast.success(res.message || "Selected products deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
         },
@@ -258,6 +279,7 @@ export const useBulkRestoreProducts = () => {
             dispatch(clearLoading());
             closeModal();
             toast.success(res.message || "Selected products restored successfully.");
+            queryClient.invalidateQueries({ queryKey: ["productList"] });
             queryClient.invalidateQueries({ queryKey: ["productPagination"] });
             queryClient.invalidateQueries({ queryKey: ["productSearch"] });
         },
