@@ -115,6 +115,7 @@ const useFormInit = (props) => {
 
                     // Items Array
                     items: invoice.items?.map(item => ({
+                        productId: item.productId || item.product_id || null,
                         description: item.description,
                         hsnSacCode: item.hsnSacCode,
                         qty: item.qty,
@@ -196,6 +197,7 @@ const useFormInit = (props) => {
 
                     // Items Array
                     items: invoice.items?.map(item => ({
+                        productId: item.productId || item.product_id || null,
                         description: item.description || "",
                         hsnSacCode: item.hsnSacCode || "",
                         qty: item.qty || 1,

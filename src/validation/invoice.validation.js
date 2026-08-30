@@ -124,6 +124,7 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
 
     items: Joi.array().items(
         Joi.object({
+            productId: Joi.number().integer().positive().allow(null, 0).optional(),
             description: Joi.string().max(255).required(),
             hsnSacCode: Joi.string()
                 .allow(null, "")

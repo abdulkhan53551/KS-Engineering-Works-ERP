@@ -110,6 +110,13 @@ const PartyAutocompleteInput = ({
     };
 
     const handleKeyDown = (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(false);
+            return;
+        }
+
         if (!isOpen || suggestions.length === 0) return;
 
         if (e.key === 'ArrowDown') {
@@ -123,12 +130,14 @@ const PartyAutocompleteInput = ({
             if (activeIndex >= 0 && activeIndex < suggestions.length) {
                 handleSelectParty(suggestions[activeIndex]);
             }
-        } else if (e.key === 'Escape') {
-            setIsOpen(false);
         }
     };
 
-    const handleClear = () => {
+    const handleClear = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         setSearchTerm('');
         setSuggestions([]);
         setIsOpen(false);
@@ -168,20 +177,24 @@ const PartyAutocompleteInput = ({
                 </Form.Control.Feedback>
 
                 {/* Right side status indicator */}
-                <div className="party-autocomplete-spinner">
-                    {isLoading || isFetchingDetails ? (
+                {isLoading || isFetchingDetails ? (
+                    <div className="party-autocomplete-spinner">
                         <Spinner animation="border" size="sm" variant="primary" style={{ width: '0.85rem', height: '0.85rem' }} />
-                    ) : searchTerm && !disabled ? (
-                        <button
-                            type="button"
-                            className="party-autocomplete-clear-btn"
-                            onClick={handleClear}
-                            title="Clear search"
-                        >
-                            <FaTimes size={11} />
-                        </button>
-                    ) : null}
-                </div>
+                    </div>
+                ) : searchTerm && !disabled ? (
+                    <button
+                        type="button"
+                        className="party-autocomplete-clear-btn"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onClick={handleClear}
+                        title="Clear search"
+                    >
+                        <FaTimes size={11} />
+                    </button>
+                ) : null}
             </Form.Floating>
 
             {/* Suggestions Dropdown */}
