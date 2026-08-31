@@ -31,10 +31,13 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             ? Joi.number().integer().required()   // required only in edit
             : Joi.number().integer().optional(), // optional in add
         email: Joi.string().email().allow(null, ''),
-        phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).allow(null, '').messages({
-            'string.pattern.base': 'Billing phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
-            'string.base': 'Billing phone must be text',
-        }),
+        phoneNumber: Joi.string()
+            .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
+            .allow(null, '')
+            .messages({
+                'string.pattern.base': 'Please enter a valid mobile, landline (with STD code), or 1800 toll-free number.',
+                'string.base': 'Billing phone must be text',
+            }),
         website: Joi.string().uri().allow(null, ''),
         addressLine1: Joi.string().max(255).required().messages({
             'any.required': 'Billing address is required',
@@ -53,10 +56,13 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
             ? Joi.number().integer().required()   // required only in edit
             : Joi.number().integer().optional(), // optional in add
         email: Joi.string().email().allow(null, ''),
-        phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).allow(null, '').messages({
-            'string.pattern.base': 'Shipping phone number must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
-            'string.base': 'Shipping phone must be text',
-        }),
+        phoneNumber: Joi.string()
+            .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
+            .allow(null, '')
+            .messages({
+                'string.pattern.base': 'Please enter a valid mobile, landline (with STD code), or 1800 toll-free number.',
+                'string.base': 'Shipping phone must be text',
+            }),
         addressLine1: Joi.string().max(255).messages({
             'any.required': 'Shipping address is required',
             'string.empty': 'Shipping address is required'
@@ -76,50 +82,17 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
     // Challans
     challanIds: Joi.array()
         .items(Joi.number().integer().positive())
-        .default([])
-        .when('hasChallan', {
-            is: true,
-            then: Joi.array().min(1).required().messages({
-                'any.required': 'Challan IDs are required when challan is selected.',
-                'array.min': 'Please select at least one challan.'
-            }),
-            otherwise: Joi.array()
-                .items(Joi.number().integer().positive())
-                .default([])
-                .custom(() => [])
-        }),
+        .default([]),
 
     // Purchase Orders
     poIds: Joi.array()
         .items(Joi.number().integer().positive())
-        .default([])
-        .when('hasPo', {
-            is: true,
-            then: Joi.array().min(1).required().messages({
-                'any.required': 'Purchase order IDs are required when PO is selected.',
-                'array.min': 'Please select at least one PO.'
-            }),
-            otherwise: Joi.array()
-                .items(Joi.number().integer().positive())
-                .default([])
-                .custom(() => [])
-        }),
+        .default([]),
 
     // E-Way Bills
     ewayBillIds: Joi.array()
         .items(Joi.number().integer().positive())
-        .default([])
-        .when('hasEwayBill', {
-            is: true,
-            then: Joi.array().min(1).required().messages({
-                'any.required': 'E-way bill IDs are required when e-way bill is selected.',
-                'array.min': 'Please select at least one e-way bill.'
-            }),
-            otherwise: Joi.array()
-                .items(Joi.number().integer().positive())
-                .default([])
-                .custom(() => [])
-        }),
+        .default([]),
 
 
     items: Joi.array().items(

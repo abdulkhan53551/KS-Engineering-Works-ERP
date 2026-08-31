@@ -14,11 +14,18 @@ const useHandleSubmit = (props) => {
 
         if (createInvoiceIsPending || updateInvoiceIsPending) return false;
 
+        const challanIds = Array.isArray(data.challanIds) ? data.challanIds : [];
+        const poIds = Array.isArray(data.poIds) ? data.poIds : [];
+        const ewayBillIds = Array.isArray(data.ewayBillIds) ? data.ewayBillIds : [];
+
         const formPayload = {
             ...data,
-            challanIds: data.hasChallan ? (data.challanIds || []) : [],
-            poIds: data.hasPo ? (data.poIds || []) : [],
-            ewayBillIds: data.hasEwayBill ? (data.ewayBillIds || []) : [],
+            hasChallan: challanIds.length > 0,
+            hasPo: poIds.length > 0,
+            hasEwayBill: ewayBillIds.length > 0,
+            challanIds,
+            poIds,
+            ewayBillIds,
             invoiceDate,
             dueDate
         };
