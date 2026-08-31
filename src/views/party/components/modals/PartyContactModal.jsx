@@ -70,7 +70,7 @@ const PartyContactModal = ({ show, onHide, partyId, mode = 'create', initialData
             contactRoleId: Number(formData.contactRoleId),
             contactName: formData.contactName.trim(),
             designation: formData.designation ? formData.designation.trim() : null,
-            mobile: formData.mobile.trim(),
+            mobile: formData.mobile ? formData.mobile.trim() : null,
             email: formData.email ? formData.email.trim() : null,
             isPrimary: Boolean(formData.isPrimary)
         };
@@ -98,11 +98,11 @@ const PartyContactModal = ({ show, onHide, partyId, mode = 'create', initialData
     return (
         <Modal show={show} onHide={onHide} backdrop="static" centered size="lg">
             <Form onSubmit={handleSubmit(onSubmit)} noValidate>
-                <Modal.Header closeButton className="py-2.5 px-3.5 border-bottom">
-                    <Modal.Title className="h6 mb-0 fw-bold" style={{ fontSize: '0.95rem' }}>{modalTitle}</Modal.Title>
+                <Modal.Header closeButton className="py-3 px-4 bg-white border-bottom">
+                    <Modal.Title className="h6 mb-0 fw-bold text-dark">{modalTitle}</Modal.Title>
                 </Modal.Header>
 
-                <Modal.Body className="p-3.5">
+                <Modal.Body className="p-4 bg-white">
                     <Row className="g-3">
                         {/* Contact Role (Floating Dropdown) */}
                         <Col md={6}>
@@ -165,8 +165,8 @@ const PartyContactModal = ({ show, onHide, partyId, mode = 'create', initialData
                                 <Form.Control
                                     type="text"
                                     id="contactMobile"
-                                    placeholder="Mobile Number"
-                                    maxLength={10}
+                                    placeholder="Mobile, Landline or 1800 No."
+                                    maxLength={15}
                                     inputMode="numeric"
                                     style={{ fontSize: '0.84rem' }}
                                     isInvalid={!!errors.mobile}
@@ -179,7 +179,7 @@ const PartyContactModal = ({ show, onHide, partyId, mode = 'create', initialData
                                     }}
                                 />
                                 <Form.Label htmlFor="contactMobile" style={{ fontSize: '0.78rem' }}>
-                                    Mobile Number <span className="text-danger label-required">*</span>
+                                    Mobile / Phone Number
                                 </Form.Label>
                                 <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                     {errors.mobile?.message}
