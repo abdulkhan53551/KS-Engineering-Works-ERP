@@ -453,8 +453,8 @@ const PartyForm = ({ mode = 'create' }) => {
                                     <Form.Control
                                         type="text"
                                         id="mobile"
-                                        placeholder="Mobile Number"
-                                        maxLength={10}
+                                        placeholder="Mobile, Landline or 1800 No."
+                                        maxLength={15}
                                         inputMode="numeric"
                                         style={{ fontSize: '0.84rem' }}
                                         isInvalid={!!errors.mobile}
@@ -466,7 +466,7 @@ const PartyForm = ({ mode = 'create' }) => {
                                         }}
                                     />
                                     <Form.Label htmlFor="mobile" style={{ fontSize: '0.78rem' }}>
-                                        Primary Mobile Number <span className="text-danger label-required">*</span>
+                                        Primary Phone / Mobile Number <span className="text-danger label-required">*</span>
                                     </Form.Label>
                                     <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                         {errors.mobile?.message}
