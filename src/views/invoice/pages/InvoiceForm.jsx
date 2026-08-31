@@ -479,7 +479,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasChallan", true, { shouldValidate: true });
                                                    openModule('challan');
                                                 }}
                                                 title="Click to select or manage Challans"
@@ -501,7 +500,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasPo", true, { shouldValidate: true });
                                                    openModule('purchaseOrder');
                                                 }}
                                                 title="Click to select or manage Purchase Orders"
@@ -523,7 +521,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasEwayBill", true, { shouldValidate: true });
                                                    openModule('ewayBill');
                                                 }}
                                                 title="Click to select or manage E-Way Bills"
@@ -783,9 +780,9 @@ const InvoiceForm = ({ mode }) => {
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
                                           <Form.Control
                                              type="text"
-                                             placeholder="Billing Phone Number"
+                                             placeholder="Phone, Landline or 1800 No."
                                              isInvalid={!!errors?.billingAddress?.phoneNumber}
-                                             maxLength={10}
+                                             maxLength={15}
                                              {...register("billingAddress.phoneNumber", {
                                                 onChange: (e) => {
                                                    const onlyNumbers = e.target.value.replace(/\D/g, "");
@@ -794,7 +791,7 @@ const InvoiceForm = ({ mode }) => {
                                              })}
                                           />
                                           <Form.Label htmlFor="billingAddress.phoneNumber">
-                                             Phone Number <span className="text-danger">*</span>
+                                             Phone Number
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors?.billingAddress?.phoneNumber?.message}</Form.Control.Feedback>
                                        </Form.Floating>
@@ -903,7 +900,7 @@ const InvoiceForm = ({ mode }) => {
                                              placeholder="Shipping Phone Number"
                                              disabled={sameAsBilling}
                                              isInvalid={!!errors?.shippingAddress?.phoneNumber}
-                                             maxLength={10}
+                                             maxLength={15}
                                              {...register("shippingAddress.phoneNumber", {
                                                 onChange: (e) => {
                                                    const onlyNumbers = e.target.value.replace(/\D/g, "");
@@ -912,7 +909,7 @@ const InvoiceForm = ({ mode }) => {
                                              })}
                                           />
                                           <Form.Label htmlFor="shippingAddress.phoneNumber">
-                                             Phone Number <span className="text-danger">*</span>
+                                             Phone Number
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.phoneNumber?.message}</Form.Control.Feedback>
                                        </Form.Floating>

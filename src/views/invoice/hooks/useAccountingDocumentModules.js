@@ -66,7 +66,16 @@ export default function useAccountingDocumentModules({ invoiceId, setValue }) {
         setActiveModule(key);
     };
 
-    const closeModule = () => setActiveModule(null);
+    const closeModule = () => {
+        if (activeModule) {
+            const flagKey = moduleToFlagKey[activeModule];
+            const currentIds = selectedDocument.current[activeModule] || [];
+            if (flagKey) {
+                setValue(flagKey, currentIds.length > 0, { shouldValidate: true });
+            }
+        }
+        setActiveModule(null);
+    };
 
     const [docNameMap, setDocNameMap] = useState({});
 

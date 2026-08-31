@@ -19,11 +19,11 @@ export const createPartyValidationSchema = Joi.object({
         "any.required": "Display name is required."
     }),
     mobile: Joi.string()
-        .pattern(/^[6-9]\d{9}$/)
+        .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
         .required()
         .messages({
-            "string.empty": "Mobile number is required.",
-            "string.pattern.base": "Please enter a valid 10-digit mobile number starting with 6-9."
+            "string.empty": "Primary phone/mobile number is required.",
+            "string.pattern.base": "Please enter a valid mobile, landline (with STD code), or 1800 toll-free number."
         }),
     email: Joi.string()
         .email({ tlds: { allow: false } })
@@ -117,11 +117,11 @@ export const partyContactValidationSchema = Joi.object({
     }),
     designation: Joi.string().max(255).allow(null, ""),
     mobile: Joi.string()
-        .pattern(/^[6-9]\d{9}$/)
-        .required()
+        .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
+        .allow(null, "")
+        .optional()
         .messages({
-            "string.empty": "Mobile number is required.",
-            "string.pattern.base": "Please enter a valid 10-digit mobile number."
+            "string.pattern.base": "Please enter a valid mobile, landline (with STD code), or 1800 toll-free number."
         }),
     email: Joi.string()
         .email({ tlds: { allow: false } })
