@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Row, Col, Form, Card, FormCheck, Button, Badge } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
@@ -34,6 +34,7 @@ import './invoice.scss';
 import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
 import { numberToIndianRupeesWords } from '../../../utilities/numberToWords';
+import { findDbStateByGstCode } from '../../../utilities/gstStateHelper';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -95,8 +96,8 @@ const defaultFormValue = {
    roundOff: 0,
    roundOffManual: false,
    other: 0,
-   paymentStatusId: 1,
-   paymentModeId: 0
+   paymentStatusId: "",
+   paymentModeId: ""
 };
 
 const DUE_PRESET_DAYS = [0, 15, 30, 45, 60, 90];
@@ -106,6 +107,8 @@ const InvoiceForm = ({ mode }) => {
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
    const [sameAsBilling, setSameAsBilling] = useState(false);
+   const pendingBillingCityIdRef = useRef(null);
+   const pendingShippingCityIdRef = useRef(null);
 
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
@@ -242,44 +245,55 @@ const InvoiceForm = ({ mode }) => {
       setValue("hasGst", partyHasGst, { shouldValidate: true, shouldDirty: true });
       setValue("gstNumber", party.gstin || "", { shouldValidate: true, shouldDirty: true });
 
-      if (party.billingAddress) {
-         setValue("billingAddress.addressLine1", party.billingAddress.address || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
-         setValue("billingAddress.website", party.website || "", { shouldValidate: true, shouldDirty: true });
-         if (party.billingAddress.stateId) {
-            setValue("billingAddress.stateId", Number(party.billingAddress.stateId), { shouldValidate: true, shouldDirty: true });
+      // Resolve real DB state ID from party GSTIN if party address has no state
+      let derivedPartyDbStateId = null;
+      if (party.gstin && String(party.gstin).length >= 2) {
+         const code = String(party.gstin).substring(0, 2);
+         const foundDbState = findDbStateByGstCode(code, billingStates);
+         if (foundDbState?.id) {
+            derivedPartyDbStateId = Number(foundDbState.id);
          }
-         if (party.billingAddress.cityId) {
-            setValue("billingAddress.cityId", Number(party.billingAddress.cityId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (party.billingAddress.pincode) {
-            setValue("billingAddress.pincode", String(party.billingAddress.pincode), { shouldValidate: true, shouldDirty: true });
-         }
-      } else {
-         if (party.mobile) setValue("billingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
-         if (party.email) setValue("billingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
-         if (party.website) setValue("billingAddress.website", party.website, { shouldValidate: true, shouldDirty: true });
       }
 
-      const shippingSource = (sameAsBilling || !party.shippingAddress) ? party.billingAddress : party.shippingAddress;
-      if (shippingSource) {
-         setValue("shippingAddress.addressLine1", shippingSource.address || "", { shouldValidate: true, shouldDirty: true });
-         setValue("shippingAddress.phoneNumber", party.mobile || "", { shouldValidate: true, shouldDirty: true });
-         setValue("shippingAddress.email", party.email || "", { shouldValidate: true, shouldDirty: true });
-         if (shippingSource.stateId) {
-            setValue("shippingAddress.stateId", Number(shippingSource.stateId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (shippingSource.cityId) {
-            setValue("shippingAddress.cityId", Number(shippingSource.cityId), { shouldValidate: true, shouldDirty: true });
-         }
-         if (shippingSource.pincode) {
-            setValue("shippingAddress.pincode", String(shippingSource.pincode), { shouldValidate: true, shouldDirty: true });
-         }
-      } else {
-         if (party.mobile) setValue("shippingAddress.phoneNumber", party.mobile, { shouldValidate: true, shouldDirty: true });
-         if (party.email) setValue("shippingAddress.email", party.email, { shouldValidate: true, shouldDirty: true });
-      }
+      // Billing Address resolution
+      const bAddr = party.billingAddress || null;
+      const bStateId = bAddr?.stateId
+         ? Number(bAddr.stateId)
+         : (derivedPartyDbStateId || null);
+      const bCityId = bAddr?.cityId ? Number(bAddr.cityId) : null;
+      const bPincode = bAddr?.pincode ? String(bAddr.pincode) : "";
+      const bAddressLine1 = bAddr?.address || "";
+      const bPhone = bAddr?.phoneNumber || party.mobile || "";
+      const bEmail = bAddr?.email || party.email || "";
+      const bWebsite = bAddr?.website || party.website || "";
+
+      pendingBillingCityIdRef.current = bCityId;
+
+      setValue("billingAddress.addressLine1", bAddressLine1, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.website", bWebsite, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.stateId", bStateId, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.cityId", bCityId, { shouldValidate: true, shouldDirty: true });
+      setValue("billingAddress.pincode", bPincode, { shouldValidate: true, shouldDirty: true });
+
+      // Shipping Address resolution
+      const sAddr = (sameAsBilling || !party.shippingAddress) ? bAddr : party.shippingAddress;
+      const sStateId = sAddr?.stateId ? Number(sAddr.stateId) : bStateId;
+      const sCityId = sAddr?.cityId ? Number(sAddr.cityId) : bCityId;
+      const sPincode = sAddr?.pincode ? String(sAddr.pincode) : bPincode;
+      const sAddressLine1 = sAddr?.address || bAddressLine1;
+      const sPhone = sAddr?.phoneNumber || party.mobile || "";
+      const sEmail = sAddr?.email || party.email || "";
+
+      pendingShippingCityIdRef.current = sCityId;
+
+      setValue("shippingAddress.addressLine1", sAddressLine1, { shouldValidate: true, shouldDirty: true });
+      setValue("shippingAddress.phoneNumber", sPhone, { shouldValidate: true, shouldDirty: true });
+      setValue("shippingAddress.email", sEmail, { shouldValidate: true, shouldDirty: true });
+      setValue("shippingAddress.stateId", sStateId, { shouldValidate: true, shouldDirty: true });
+      setValue("shippingAddress.cityId", sCityId, { shouldValidate: true, shouldDirty: true });
+      setValue("shippingAddress.pincode", sPincode, { shouldValidate: true, shouldDirty: true });
    };
 
    // Due Date presets handler
@@ -304,7 +318,6 @@ const InvoiceForm = ({ mode }) => {
 
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
    useFormInit({ invoice, isEditMode, setValue, reset, control, defaultFormValue });
-   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({ control, setValue, getValues, companyStateId: invoice?.companyStateId || 27 });
 
    const { data: productUnit = [] } = useProductUnit();
    const { data: gstSlab = [] } = useGstSlab();
@@ -314,6 +327,38 @@ const InvoiceForm = ({ mode }) => {
    const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
+
+   // Asynchronously re-apply billing city once cities arrive for the selected state
+   useEffect(() => {
+      const targetCityId = pendingBillingCityIdRef.current || getValues("billingAddress.cityId");
+      if (!targetCityId || !billingCities || billingCities.length === 0) return;
+
+      const cityExists = billingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
+      if (cityExists) {
+         setValue("billingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
+         pendingBillingCityIdRef.current = null;
+      }
+   }, [billingCities, selectedBillingState, setValue, getValues]);
+
+   // Asynchronously re-apply shipping city once cities arrive for the selected state
+   useEffect(() => {
+      const targetCityId = pendingShippingCityIdRef.current || getValues("shippingAddress.cityId");
+      if (!targetCityId || !shippingCities || shippingCities.length === 0) return;
+
+      const cityExists = shippingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
+      if (cityExists) {
+         setValue("shippingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
+         pendingShippingCityIdRef.current = null;
+      }
+   }, [shippingCities, selectedShippingState, setValue, getValues]);
+
+   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({
+      control,
+      setValue,
+      getValues,
+      companyStateId: invoice?.companyStateId || 27,
+      statesList: billingStates
+   });
    const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel } = useAccountingDocumentModules({ invoiceId, setValue });
 
    const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
@@ -448,8 +493,26 @@ const InvoiceForm = ({ mode }) => {
                                              id="gstNumber"
                                              placeholder="GSTIN No."
                                              disabled={!hasGst}
+                                             maxLength={15}
+                                             className="text-uppercase font-monospace"
                                              isInvalid={!!errors.gstNumber}
-                                             {...register("gstNumber")}
+                                             {...register("gstNumber", {
+                                                onChange: (e) => {
+                                                   const upper = (e.target.value || "").toUpperCase();
+                                                   setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                   if (upper.length >= 2) {
+                                                      const stateCode = upper.substring(0, 2);
+                                                      const dbState = findDbStateByGstCode(stateCode, billingStates);
+                                                      if (dbState?.id) {
+                                                         const dbStateId = Number(dbState.id);
+                                                         setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                         if (sameAsBilling) {
+                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: false, shouldDirty: true });
+                                                         }
+                                                      }
+                                                   }
+                                                }
+                                             })}
                                           />
                                           <Form.Label htmlFor="gstNumber">
                                              GSTIN No. {hasGst && <span className="text-danger">*</span>}
