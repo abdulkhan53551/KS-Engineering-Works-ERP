@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Row, Col, Form, Card, FormCheck, Button, Badge } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
@@ -37,6 +37,7 @@ import './invoice.scss';
 import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
 import { numberToIndianRupeesWords } from '../../../utilities/numberToWords';
+import { findDbStateByGstCode } from '../../../utilities/gstStateHelper';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -98,8 +99,8 @@ const defaultFormValue = {
    roundOff: 0,
    roundOffManual: false,
    other: 0,
-   paymentStatusId: 1,
-   paymentModeId: 0
+   paymentStatusId: "",
+   paymentModeId: ""
 };
 
 const InvoiceForm = ({ mode }) => {
@@ -168,8 +169,25 @@ const InvoiceForm = ({ mode }) => {
 
    const { data: invoice = {} } = useInvoiceById(invoiceId);
 
-   // 1. Party Selection & Address Live Synchronization
-   const { sameAsBilling, handleSameAsBillingChange, handlePartySelect } = usePartyAddressSync({ setValue, getValues, control });
+   // Master Data Queries
+   const { data: productUnit = [] } = useProductUnit();
+   const { data: gstSlab = [] } = useGstSlab();
+   const { data: billingStates = [] } = useCountryState();
+   const { data: billingCities = [], isFetching: isFetchingBillingCities } = useStateCity(selectedBillingState);
+   const { data: shippingStates = [] } = useCountryState();
+   const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
+   const { data: paymentStatus = [] } = usePaymentStatus();
+   const { data: paymentMode = [] } = usePaymentMode();
+
+   // 1. Party Selection & Address Live Synchronization (with GST Code derivation & async city auto-fill)
+   const { sameAsBilling, handleSameAsBillingChange, handlePartySelect } = usePartyAddressSync({
+      setValue,
+      getValues,
+      control,
+      billingStates,
+      billingCities,
+      shippingCities
+   });
 
    // 2. Invoice Dates & Due Date Presets
    const { handleDuePresetClick, invoiceDateOptons, dueDateOptons } = useInvoiceDates({ invoiceDate, setValue });
@@ -182,19 +200,15 @@ const InvoiceForm = ({ mode }) => {
    // 4. Form Lifecycle, Calculation & Submit
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
    useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
-   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({ control, setValue, getValues, companyStateId: invoice?.companyStateId || 27 });
+   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({
+      control,
+      setValue,
+      getValues,
+      companyStateId: invoice?.companyStateId || 27,
+      statesList: billingStates
+   });
 
-   // 5. Master Data Queries
-   const { data: productUnit = [] } = useProductUnit();
-   const { data: gstSlab = [] } = useGstSlab();
-   const { data: billingStates = [] } = useCountryState();
-   const { data: billingCities = [], isFetching: isFetchingBillingCities } = useStateCity(selectedBillingState);
-   const { data: shippingStates = [] } = useCountryState();
-   const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
-   const { data: paymentStatus = [] } = usePaymentStatus();
-   const { data: paymentMode = [] } = usePaymentMode();
-
-   // 6. Linked Document Modules (Challan, PO, E-Way Bill)
+   // 5. Linked Document Modules (Challan, PO, E-Way Bill)
    const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel, activeSelectedIds, handleRemoveLinkedDoc, currentChallanIds, currentPoIds, currentEwayBillIds } = useAccountingDocumentModules({ invoiceId, setValue, control });
 
    // Amount in words
@@ -330,8 +344,26 @@ const InvoiceForm = ({ mode }) => {
                                              id="gstNumber"
                                              placeholder="GSTIN No."
                                              disabled={!hasGst}
+                                             maxLength={15}
+                                             className="text-uppercase font-monospace"
                                              isInvalid={!!errors.gstNumber}
-                                             {...register("gstNumber")}
+                                             {...register("gstNumber", {
+                                                onChange: (e) => {
+                                                   const upper = (e.target.value || "").toUpperCase();
+                                                   setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                   if (upper.length >= 2) {
+                                                      const stateCode = upper.substring(0, 2);
+                                                      const dbState = findDbStateByGstCode(stateCode, billingStates);
+                                                      if (dbState?.id) {
+                                                         const dbStateId = Number(dbState.id);
+                                                         setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                         if (sameAsBilling) {
+                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: false, shouldDirty: true });
+                                                         }
+                                                      }
+                                                   }
+                                                }
+                                             })}
                                           />
                                           <Form.Label htmlFor="gstNumber">
                                              GSTIN No. {hasGst && <span className="text-danger">*</span>}
@@ -361,7 +393,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasChallan", true, { shouldValidate: true });
                                                    openModule('challan');
                                                 }}
                                                 title="Click to select or manage Challans"
@@ -383,7 +414,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasPo", true, { shouldValidate: true });
                                                    openModule('purchaseOrder');
                                                 }}
                                                 title="Click to select or manage Purchase Orders"
@@ -405,7 +435,6 @@ const InvoiceForm = ({ mode }) => {
                                              <div
                                                 className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
                                                 onClick={() => {
-                                                   setValue("hasEwayBill", true, { shouldValidate: true });
                                                    openModule('ewayBill');
                                                 }}
                                                 title="Click to select or manage E-Way Bills"
@@ -665,9 +694,9 @@ const InvoiceForm = ({ mode }) => {
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
                                           <Form.Control
                                              type="text"
-                                             placeholder="Billing Phone Number"
+                                             placeholder="Phone, Landline or 1800 No."
                                              isInvalid={!!errors?.billingAddress?.phoneNumber}
-                                             maxLength={10}
+                                             maxLength={15}
                                              {...register("billingAddress.phoneNumber", {
                                                 onChange: (e) => {
                                                    const onlyNumbers = e.target.value.replace(/\D/g, "");
@@ -676,7 +705,7 @@ const InvoiceForm = ({ mode }) => {
                                              })}
                                           />
                                           <Form.Label htmlFor="billingAddress.phoneNumber">
-                                             Phone Number <span className="text-danger">*</span>
+                                             Phone Number
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors?.billingAddress?.phoneNumber?.message}</Form.Control.Feedback>
                                        </Form.Floating>
@@ -785,7 +814,7 @@ const InvoiceForm = ({ mode }) => {
                                              placeholder="Shipping Phone Number"
                                              disabled={sameAsBilling}
                                              isInvalid={!!errors?.shippingAddress?.phoneNumber}
-                                             maxLength={10}
+                                             maxLength={15}
                                              {...register("shippingAddress.phoneNumber", {
                                                 onChange: (e) => {
                                                    const onlyNumbers = e.target.value.replace(/\D/g, "");
@@ -794,7 +823,7 @@ const InvoiceForm = ({ mode }) => {
                                              })}
                                           />
                                           <Form.Label htmlFor="shippingAddress.phoneNumber">
-                                             Phone Number <span className="text-danger">*</span>
+                                             Phone Number
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.phoneNumber?.message}</Form.Control.Feedback>
                                        </Form.Floating>
