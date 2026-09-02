@@ -457,7 +457,7 @@ const InvoiceChallan = () => {
                               page={page}
                               pageSize={pageSize}
                               total={totalItems}
-                              totalPages={pagination.totalPage}
+                              totalPages={pagination.totalPages}
                               onPageChange={handlePageChange}
                            />
                         </div>

@@ -78,7 +78,7 @@ const SignIn = () => {
                                  <Row>
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="email" value={"sabirkhan@gmail.com"} autoComplete="username email" placeholder="Email" isInvalid={!!errors.email} {...register("email")} />
+                                          <Form.Control type="email" autoComplete="username email" placeholder="Email" isInvalid={!!errors.email} {...register("email")} />
                                           <Form.Label htmlFor="email" >
                                              Email <span className="text-danger label-required">*</span>
                                           </Form.Label>
@@ -87,7 +87,7 @@ const SignIn = () => {
                                     </Col>
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                          <Form.Control type="password" value={123456} autoComplete="current-password" placeholder="Password" isInvalid={!!errors.password} {...register("password")} />
+                                          <Form.Control type="password" autoComplete="current-password" placeholder="Password" isInvalid={!!errors.password} {...register("password")} />
                                           <Form.Label htmlFor="password" >
                                              Password <span className="text-danger" style={{ marginLeft: "-2px" }}>*</span>
                                           </Form.Label>

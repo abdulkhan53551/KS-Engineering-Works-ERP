@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { Form, OverlayTrigger, Tooltip } from "react-bootstrap";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 import { FaCopy, FaTrashAlt } from "react-icons/fa";
+import ProductAutocompleteInput from "../../products/components/ProductAutocompleteInput";
 
 const InvoiceRow = ({
     index,
@@ -12,9 +13,27 @@ const InvoiceRow = ({
     gstSlab,
     lastEditedFieldRef
 }) => {
-    const { register, setValue, formState: { errors } } = useFormContext();
+    const { register, setValue, control, formState: { errors } } = useFormContext();
+    const descriptionValue = useWatch({ control, name: `items.${index}.description` });
 
     const isSingleRow = totalRows <= 1;
+
+    const handleSelectProduct = (product) => {
+        if (!product) return;
+        setValue(`items.${index}.productId`, product.id || null, { shouldDirty: true });
+        setValue(`items.${index}.description`, product.name || '', { shouldValidate: true, shouldDirty: true });
+        setValue(`items.${index}.hsnSacCode`, product.hsnSacCode || '', { shouldValidate: true, shouldDirty: true });
+        setValue(`items.${index}.rate`, Number(product.sellingPrice || 0).toFixed(2), { shouldValidate: true, shouldDirty: true });
+        if (product.itemUnitId) {
+            setValue(`items.${index}.itemUnitId`, product.itemUnitId, { shouldValidate: true, shouldDirty: true });
+        }
+        if (product.gstSlabId) {
+            setValue(`items.${index}.gstSlabId`, product.gstSlabId, { shouldValidate: true, shouldDirty: true });
+        }
+        if (lastEditedFieldRef) {
+            lastEditedFieldRef.current = "product_select";
+        }
+    };
 
     return (
         <tr className="align-middle">
@@ -25,19 +44,28 @@ const InvoiceRow = ({
                 </span>
             </td>
 
-            {/* Description */}
+            {/* Description with Product Autocomplete */}
             <td style={{ minWidth: '280px' }}>
-                <Form.Control
-                    type="text"
-                    placeholder="Enter item / service description..."
-                    isInvalid={!!errors.items?.[index]?.description}
-                    {...register(`items.${index}.description`, {
-                        onChange: () => {
+                <ProductAutocompleteInput
+                    value={descriptionValue}
+                    onChange={(e) => {
+                        setValue(`items.${index}.description`, e.target.value, { shouldValidate: true, shouldDirty: true });
+                        if (lastEditedFieldRef) {
                             lastEditedFieldRef.current = "description";
                         }
-                    })}
+                    }}
+                    onClear={() => {
+                        setValue(`items.${index}.productId`, null, { shouldDirty: true });
+                        setValue(`items.${index}.description`, '', { shouldValidate: true, shouldDirty: true });
+                        if (lastEditedFieldRef) {
+                            lastEditedFieldRef.current = "description";
+                        }
+                    }}
+                    onSelectProduct={handleSelectProduct}
+                    placeholder="Enter or search item / service..."
+                    isInvalid={!!errors.items?.[index]?.description}
+                    errorMessage={errors.items?.[index]?.description?.message}
                 />
-                <Form.Control.Feedback type="invalid">{errors.items?.[index]?.description?.message}</Form.Control.Feedback>
             </td>
 
             {/* HSN/SAC */}
@@ -45,6 +73,8 @@ const InvoiceRow = ({
                 <Form.Control
                     type="text"
                     placeholder="HSN/SAC"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.hsnSacCode}
                     {...register(`items.${index}.hsnSacCode`, {
                         onChange: () => {
@@ -61,6 +91,8 @@ const InvoiceRow = ({
                     type="text"
                     placeholder="Qty"
                     className="text-end"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.qty}
                     {...register(`items.${index}.qty`)}
                 />
@@ -88,6 +120,8 @@ const InvoiceRow = ({
                     type="text"
                     placeholder="Rate"
                     className="text-end"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.rate}
                     {...register(`items.${index}.rate`, {
                         onBlur: (e) => {
