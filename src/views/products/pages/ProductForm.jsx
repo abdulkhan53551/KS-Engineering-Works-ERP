@@ -466,20 +466,36 @@ const ProductForm = ({ mode = 'create' }) => {
                                     </h6>
                                 </Card.Header>
                                 <Card.Body className="p-3 text-center">
-                                    <LogoUploadDropZone
-                                        value={watchImageUrl}
-                                        publicId={watchImagePublicId}
-                                        folder="products/images"
-                                        tags="ks-erp,product,image"
-                                        onChange={({ logoUrl, logoPublicId }) => {
-                                            setValue('imageUrl', logoUrl, { shouldValidate: true, shouldDirty: true });
-                                            setValue('imagePublicId', logoPublicId, { shouldValidate: true, shouldDirty: true });
-                                        }}
-                                        disabled={isSubmitting}
-                                    />
-                                    <div className="text-muted small mt-2" style={{ fontSize: '0.74rem' }}>
-                                        Upload product component photo or 3D rendering (JPG, PNG, WebP)
-                                    </div>
+                                    {isEditMode && id ? (
+                                        <>
+                                            <LogoUploadDropZone
+                                                value={watchImageUrl}
+                                                publicId={watchImagePublicId}
+                                                folder={`ks-erp/products/${id}/images`}
+                                                tags="ks-erp,product,image"
+                                                category="IMAGE"
+                                                label="Product Image"
+                                                onChange={({ logoUrl, logoPublicId }) => {
+                                                    setValue('imageUrl', logoUrl, { shouldValidate: true, shouldDirty: true });
+                                                    setValue('imagePublicId', logoPublicId, { shouldValidate: true, shouldDirty: true });
+                                                }}
+                                                disabled={isSubmitting}
+                                            />
+                                            <div className="text-muted small mt-2" style={{ fontSize: '0.74rem' }}>
+                                                Upload component photo or 3D rendering (JPG, PNG, WebP &bull; Max 2 MB)
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="py-4 px-3 border border-dashed rounded bg-light text-center">
+                                            <div className="avatar-45 bg-soft-primary rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                                                <FaImage className="text-primary" size={18} />
+                                            </div>
+                                            <div className="text-dark fw-semibold small mb-1">Image & File Upload</div>
+                                            <div className="text-muted" style={{ fontSize: '0.74rem' }}>
+                                                Save product first to generate a Product ID and upload component photos, CAD models & drawings.
+                                            </div>
+                                        </div>
+                                    )}
                                 </Card.Body>
                             </Card>
 
@@ -651,7 +667,7 @@ const ProductForm = ({ mode = 'create' }) => {
                             entityType="PRODUCT"
                             entityId={Number(id)}
                             docTypeOptions={PRODUCT_DOC_TYPES}
-                            folder="products/documents"
+                            folder={`ks-erp/products/${id}/documents`}
                         />
                     </Card.Body>
                 </Card>

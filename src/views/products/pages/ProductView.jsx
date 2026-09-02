@@ -84,42 +84,52 @@ const ProductView = () => {
 
     return (
         <div className="product-view-page">
-            {/* Header & Actions */}
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <div className="d-flex align-items-center gap-3">
-                    <Button
-                        variant="soft-secondary"
-                        size="sm"
-                        className="btn-icon rounded-circle p-2 d-flex align-items-center justify-content-center"
-                        onClick={() => navigate('/masters/products')}
-                        title="Back to Products List"
-                    >
-                        <FaArrowLeft size={13} />
-                    </Button>
-                    <div>
-                        <div className="d-flex align-items-center gap-2">
-                            <h4 className="mb-0 fw-bold">{product.name}</h4>
-                            <span className="badge bg-light text-dark font-monospace border px-2 py-1">
-                                #{product.id}
-                            </span>
+            {/* Header & Actions with White Card Background */}
+            <Card className="mb-3 shadow-sm border bg-white">
+                <Card.Body className="py-3 px-4">
+                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                className="btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm text-dark border bg-light"
+                                style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    borderColor: '#cbd5e1'
+                                }}
+                                onClick={() => navigate('/masters/products')}
+                                title="Back to Products List"
+                            >
+                                <FaArrowLeft size={13} />
+                            </Button>
+                            <div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <h4 className="mb-0 fw-bold text-dark">{product.name}</h4>
+                                    <span className="badge bg-light text-dark font-monospace border px-2 py-1">
+                                        #{product.id}
+                                    </span>
+                                </div>
+                                <Breadcrumb className="mb-0 small mt-1">
+                                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/dashboard' }}>Dashboard</Breadcrumb.Item>
+                                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/masters/products' }}>Products</Breadcrumb.Item>
+                                    <Breadcrumb.Item active>{product.name}</Breadcrumb.Item>
+                                </Breadcrumb>
+                            </div>
                         </div>
-                        <Breadcrumb className="mb-0 small mt-1">
-                            <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/dashboard' }}>Dashboard</Breadcrumb.Item>
-                            <Breadcrumb.Item linkAs={Link} linkProps={{ to: '/masters/products' }}>Products</Breadcrumb.Item>
-                            <Breadcrumb.Item active>{product.name}</Breadcrumb.Item>
-                        </Breadcrumb>
-                    </div>
-                </div>
 
-                <div className="d-flex align-items-center gap-2">
-                    <Link to={`/masters/products/${id}/edit`}>
-                        <Button variant="primary" size="sm" className="d-flex align-items-center gap-2 px-3">
-                            <FaPen size={11} />
-                            <span>Edit Product</span>
-                        </Button>
-                    </Link>
-                </div>
-            </div>
+                        <div className="d-flex align-items-center gap-2">
+                            <Link to={`/masters/products/${id}/edit`}>
+                                <Button variant="primary" size="sm" className="d-flex align-items-center gap-2 px-3">
+                                    <FaPen size={11} />
+                                    <span>Edit Product</span>
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </Card.Body>
+            </Card>
 
             {/* Hero Profile Card */}
             <Card className="border-0 shadow-sm mb-3 overflow-hidden">
@@ -364,7 +374,8 @@ const ProductView = () => {
                         entityType="PRODUCT"
                         entityId={Number(id)}
                         docTypeOptions={PRODUCT_DOC_TYPES}
-                        folder="products/documents"
+                        folder={`ks-erp/products/${id}/documents`}
+                        readOnly={true}
                     />
                 </Card.Body>
             </Card>
