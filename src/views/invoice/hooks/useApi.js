@@ -32,12 +32,14 @@ export const useInvoicePagination = ({ page, pageSize, search, trash = false }) 
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
             const total = pagination.total ?? 0;
+            const totalPages = pagination.totalPages ?? (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1);
 
             const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
             const pageEnd = Math.min(page * pageSize, total);
 
             return {
                 ...pagination,
+                totalPages,
                 pageStart,
                 pageEnd
             };
