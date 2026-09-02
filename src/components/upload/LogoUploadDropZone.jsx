@@ -13,7 +13,8 @@ const LogoUploadDropZone = ({
     publicId, // logoPublicId
     onChange, // ({ logoUrl, logoPublicId }) => void
     disabled = false,
-    folder = 'ks-erp/parties/logos'
+    folder = 'parties/logos',
+    tags = 'ks-erp,logo'
 }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const { uploadFile, isUploading, uploadProgress, resetUpload } = useCloudinaryUpload();
@@ -50,7 +51,7 @@ const LogoUploadDropZone = ({
             try {
                 const res = await uploadFile(file, {
                     folder,
-                    tags: 'ks-erp,party,logo',
+                    tags,
                     category: 'LOGO'
                 });
 
@@ -59,6 +60,10 @@ const LogoUploadDropZone = ({
                         await destroyCloudinaryAssetApi({ publicId: oldPublicId, resourceType: 'image' });
                     } catch (cleanErr) {
                         console.warn('Could not clean previous Cloudinary logo:', cleanErr);
+                        const cleanMsg = cleanErr.response?.data?.message || cleanErr.message;
+                        if (cleanMsg) {
+                            toast.warning(`Cloud storage notice: ${cleanMsg}`);
+                        }
                     }
                 }
 
@@ -71,7 +76,7 @@ const LogoUploadDropZone = ({
                 toast.success('Logo updated!');
             } catch (err) {
                 console.error('Logo upload error:', err);
-                toast.error(err.message || 'Failed to upload logo');
+                toast.error(err.response?.data?.message || err.message || 'Failed to upload logo');
             }
         }
     }, [folder, onChange, publicId, uploadFile]);
@@ -94,9 +99,14 @@ const LogoUploadDropZone = ({
         if (currentPublicId) {
             try {
                 await destroyCloudinaryAssetApi({ publicId: currentPublicId, resourceType: 'image' });
+                toast.info('Logo removed successfully');
             } catch (err) {
                 console.warn('Failed to destroy Cloudinary logo asset:', err);
+                const errMsg = err.response?.data?.message || err.message || 'Could not delete logo from cloud storage';
+                toast.warning(errMsg);
             }
+        } else {
+            toast.info('Logo removed');
         }
 
         if (onChange) {
@@ -107,7 +117,6 @@ const LogoUploadDropZone = ({
         }
 
         setIsDeleting(false);
-        toast.info('Logo removed');
     };
 
     const isBusy = isUploading || isDeleting;

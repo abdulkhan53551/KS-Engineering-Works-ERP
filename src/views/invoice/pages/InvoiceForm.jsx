@@ -20,7 +20,8 @@ import {
    FaCoins,
    FaMapMarkerAlt,
    FaPaperclip,
-   FaExternalLinkAlt
+   FaExternalLinkAlt,
+   FaCopy
 } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
@@ -30,6 +31,8 @@ import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
+import usePartyAddressSync from '../hooks/usePartyAddressSync';
+import useInvoiceDates, { DUE_PRESET_DAYS } from '../hooks/useInvoiceDates';
 import './invoice.scss';
 import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
@@ -100,15 +103,11 @@ const defaultFormValue = {
    paymentModeId: ""
 };
 
-const DUE_PRESET_DAYS = [0, 15, 30, 45, 60, 90];
-
 const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
-   const [sameAsBilling, setSameAsBilling] = useState(false);
-   const pendingBillingCityIdRef = useRef(null);
-   const pendingShippingCityIdRef = useRef(null);
+   const isDuplicateMode = !!(mode === 'duplicate');
 
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
@@ -133,11 +132,6 @@ const InvoiceForm = ({ mode }) => {
       customerName,
       hasGst,
       dueDays,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      billingPincode,
-      billingCityId,
       watchedTotal,
       watchedSubTotal,
       watchedTaxableAmount,
@@ -160,11 +154,6 @@ const InvoiceForm = ({ mode }) => {
          "customerName",
          "hasGst",
          "dueDays",
-         "billingAddress.addressLine1",
-         "billingAddress.phoneNumber",
-         "billingAddress.email",
-         "billingAddress.pincode",
-         "billingAddress.cityId",
          "total",
          "subTotal",
          "taxableAmount",
@@ -180,145 +169,7 @@ const InvoiceForm = ({ mode }) => {
 
    const { data: invoice = {} } = useInvoiceById(invoiceId);
 
-   // Sync Shipping Address when "Same as Billing" toggle is clicked
-   const handleSameAsBillingChange = (checked) => {
-      setSameAsBilling(checked);
-      if (checked) {
-         const billing = getValues("billingAddress") || {};
-         setValue("shippingAddress.addressLine1", billing.addressLine1 || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.phoneNumber", billing.phoneNumber || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.email", billing.email || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.stateId", billing.stateId ? Number(billing.stateId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.cityId", billing.cityId ? Number(billing.cityId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.pincode", billing.pincode ? String(billing.pincode) : "", { shouldValidate: false, shouldDirty: true });
-      }
-   };
-
-   // Sync live updates from billing to shipping ONLY when sameAsBilling is active and values differ
-   useEffect(() => {
-      if (!sameAsBilling) return;
-
-      const currentShipping = getValues("shippingAddress") || {};
-      const bAddr = billingAddress1 || "";
-      const bPhone = billingPhone || "";
-      const bEmail = billingEmail || "";
-      const bState = selectedBillingState ? Number(selectedBillingState) : null;
-      const bCity = billingCityId ? Number(billingCityId) : null;
-      const bPin = billingPincode ? String(billingPincode) : "";
-
-      if (currentShipping.addressLine1 !== bAddr) {
-         setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.phoneNumber !== bPhone) {
-         setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.email !== bEmail) {
-         setValue("shippingAddress.email", bEmail, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
-         setValue("shippingAddress.stateId", bState, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
-         setValue("shippingAddress.cityId", bCity, { shouldValidate: false, shouldDirty: true });
-      }
-      if (String(currentShipping.pincode || "") !== bPin) {
-         setValue("shippingAddress.pincode", bPin, { shouldValidate: false, shouldDirty: true });
-      }
-   }, [
-      sameAsBilling,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      selectedBillingState,
-      billingCityId,
-      billingPincode,
-      setValue,
-      getValues
-   ]);
-
-   const handlePartySelect = (party) => {
-      if (!party) return;
-      const chosenName = party.displayName || party.legalName || "";
-      setValue("customerName", chosenName, { shouldValidate: true, shouldDirty: true });
-
-      const partyHasGst = Boolean(party.gstRegistered && party.gstin);
-      setValue("hasGst", partyHasGst, { shouldValidate: true, shouldDirty: true });
-      setValue("gstNumber", party.gstin || "", { shouldValidate: true, shouldDirty: true });
-
-      // Resolve real DB state ID from party GSTIN if party address has no state
-      let derivedPartyDbStateId = null;
-      if (party.gstin && String(party.gstin).length >= 2) {
-         const code = String(party.gstin).substring(0, 2);
-         const foundDbState = findDbStateByGstCode(code, billingStates);
-         if (foundDbState?.id) {
-            derivedPartyDbStateId = Number(foundDbState.id);
-         }
-      }
-
-      // Billing Address resolution
-      const bAddr = party.billingAddress || null;
-      const bStateId = bAddr?.stateId
-         ? Number(bAddr.stateId)
-         : (derivedPartyDbStateId || null);
-      const bCityId = bAddr?.cityId ? Number(bAddr.cityId) : null;
-      const bPincode = bAddr?.pincode ? String(bAddr.pincode) : "";
-      const bAddressLine1 = bAddr?.address || "";
-      const bPhone = bAddr?.phoneNumber || party.mobile || "";
-      const bEmail = bAddr?.email || party.email || "";
-      const bWebsite = bAddr?.website || party.website || "";
-
-      pendingBillingCityIdRef.current = bCityId;
-
-      setValue("billingAddress.addressLine1", bAddressLine1, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.website", bWebsite, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.stateId", bStateId, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.cityId", bCityId, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.pincode", bPincode, { shouldValidate: true, shouldDirty: true });
-
-      // Shipping Address resolution
-      const sAddr = (sameAsBilling || !party.shippingAddress) ? bAddr : party.shippingAddress;
-      const sStateId = sAddr?.stateId ? Number(sAddr.stateId) : bStateId;
-      const sCityId = sAddr?.cityId ? Number(sAddr.cityId) : bCityId;
-      const sPincode = sAddr?.pincode ? String(sAddr.pincode) : bPincode;
-      const sAddressLine1 = sAddr?.address || bAddressLine1;
-      const sPhone = sAddr?.phoneNumber || party.mobile || "";
-      const sEmail = sAddr?.email || party.email || "";
-
-      pendingShippingCityIdRef.current = sCityId;
-
-      setValue("shippingAddress.addressLine1", sAddressLine1, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.phoneNumber", sPhone, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.email", sEmail, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.stateId", sStateId, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.cityId", sCityId, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.pincode", sPincode, { shouldValidate: true, shouldDirty: true });
-   };
-
-   // Due Date presets handler
-   const handleDuePresetClick = (days) => {
-      setValue("dueDays", days, { shouldValidate: true, shouldDirty: true });
-      if (invoiceDate) {
-         setValue(
-            "dueDate",
-            moment(invoiceDate).add(days, "days").toDate(),
-            { shouldDirty: true, shouldValidate: true }
-         );
-      }
-   };
-
-   // Reset roundoff to auto
-   const handleResetRoundOffToAuto = () => {
-      setValue("roundOffManual", false, { shouldDirty: true });
-   };
-
-   const invoiceDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"] }), []);
-   const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate]);
-
-   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
-   useFormInit({ invoice, isEditMode, setValue, reset, control, defaultFormValue });
-
+   // Master Data Queries
    const { data: productUnit = [] } = useProductUnit();
    const { data: gstSlab = [] } = useGstSlab();
    const { data: billingStates = [] } = useCountryState();
@@ -328,30 +179,27 @@ const InvoiceForm = ({ mode }) => {
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
 
-   // Asynchronously re-apply billing city once cities arrive for the selected state
-   useEffect(() => {
-      const targetCityId = pendingBillingCityIdRef.current || getValues("billingAddress.cityId");
-      if (!targetCityId || !billingCities || billingCities.length === 0) return;
+   // 1. Party Selection & Address Live Synchronization (with GST Code derivation & async city auto-fill)
+   const { sameAsBilling, handleSameAsBillingChange, handlePartySelect } = usePartyAddressSync({
+      setValue,
+      getValues,
+      control,
+      billingStates,
+      billingCities,
+      shippingCities
+   });
 
-      const cityExists = billingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
-      if (cityExists) {
-         setValue("billingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
-         pendingBillingCityIdRef.current = null;
-      }
-   }, [billingCities, selectedBillingState, setValue, getValues]);
+   // 2. Invoice Dates & Due Date Presets
+   const { handleDuePresetClick, invoiceDateOptons, dueDateOptons } = useInvoiceDates({ invoiceDate, setValue });
 
-   // Asynchronously re-apply shipping city once cities arrive for the selected state
-   useEffect(() => {
-      const targetCityId = pendingShippingCityIdRef.current || getValues("shippingAddress.cityId");
-      if (!targetCityId || !shippingCities || shippingCities.length === 0) return;
+   // 3. Reset Roundoff to Auto
+   const handleResetRoundOffToAuto = () => {
+      setValue("roundOffManual", false, { shouldDirty: true });
+   };
 
-      const cityExists = shippingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
-      if (cityExists) {
-         setValue("shippingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
-         pendingShippingCityIdRef.current = null;
-      }
-   }, [shippingCities, selectedShippingState, setValue, getValues]);
-
+   // 4. Form Lifecycle, Calculation & Submit
+   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
+   useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
    const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({
       control,
       setValue,
@@ -359,37 +207,9 @@ const InvoiceForm = ({ mode }) => {
       companyStateId: invoice?.companyStateId || 27,
       statesList: billingStates
    });
-   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel } = useAccountingDocumentModules({ invoiceId, setValue });
 
-   const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
-   const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
-   const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
-
-   const activeSelectedIds = useMemo(() => {
-      switch (activeModule) {
-         case 'challan': return currentChallanIds;
-         case 'purchaseOrder': return currentPoIds;
-         case 'ewayBill': return currentEwayBillIds;
-         default: return [];
-      }
-   }, [activeModule, currentChallanIds, currentPoIds, currentEwayBillIds]);
-
-   // Remove single linked document chip
-   const handleRemoveLinkedDoc = (key, idToRemove) => {
-      if (key === 'challan') {
-         const updated = currentChallanIds.filter(id => id !== idToRemove);
-         setValue('challanIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasChallan', false, { shouldValidate: true });
-      } else if (key === 'purchaseOrder') {
-         const updated = currentPoIds.filter(id => id !== idToRemove);
-         setValue('poIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasPo', false, { shouldValidate: true });
-      } else if (key === 'ewayBill') {
-         const updated = currentEwayBillIds.filter(id => id !== idToRemove);
-         setValue('ewayBillIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasEwayBill', false, { shouldValidate: true });
-      }
-   };
+   // 5. Linked Document Modules (Challan, PO, E-Way Bill)
+   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel, activeSelectedIds, handleRemoveLinkedDoc, currentChallanIds, currentPoIds, currentEwayBillIds } = useAccountingDocumentModules({ invoiceId, setValue, control });
 
    // Amount in words
    const amountInWords = useMemo(() => {
@@ -403,7 +223,7 @@ const InvoiceForm = ({ mode }) => {
                <Row>
                   <Col xl="12" lg="12">
                      <Card className="border-0 shadow-sm mb-4">
-                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3">
+                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3 flex-wrap gap-2">
                            <div className="header-title d-flex align-items-center gap-2">
                               <Button
                                  variant="outline-secondary"
@@ -415,11 +235,42 @@ const InvoiceForm = ({ mode }) => {
                               >
                                  <FaArrowLeft size={13} />
                               </Button>
-                              <h4 className="card-title mb-0 fw-bold text-dark">
-                                 {isEditMode ? 'Update' : 'Create'} Invoice
+                              <h4 className="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2 flex-wrap">
+                                 {isEditMode ? (
+                                    <>
+                                       <span>Update Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <span className="text-muted fs-6 fw-normal">#{invoice.invoiceNo}</span>
+                                       )}
+                                    </>
+                                 ) : isDuplicateMode ? (
+                                    <>
+                                       <span>Duplicate Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <Badge bg="soft-primary" className="text-primary border border-primary-subtle fs-7 fw-normal py-1 px-2">
+                                             Cloned from #{invoice.invoiceNo}
+                                          </Badge>
+                                       )}
+                                    </>
+                                 ) : (
+                                    'Create Invoice'
+                                 )}
                               </h4>
                            </div>
                            <div className="d-flex align-items-center gap-2">
+                              {isEditMode && invoiceId && (
+                                 <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="d-flex align-items-center gap-2 px-3 py-1.5 rounded-2 fw-medium shadow-none"
+                                    style={{ fontSize: '0.82rem' }}
+                                    onClick={() => navigate(`/sales/invoice/${invoiceId}/duplicate`)}
+                                    title="Duplicate / Clone this invoice"
+                                 >
+                                    <FaCopy size={13} />
+                                    <span>Duplicate Invoice</span>
+                                 </Button>
+                              )}
                               {isInterState ? (
                                  <Badge bg="info" className="px-3 py-2 fw-medium">
                                     🌐 Inter-State (IGST)

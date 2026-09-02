@@ -168,7 +168,15 @@ const useInvoiceCalculation = (props) => {
     }, [itemsWithDiscount, roundOffManual, userRoundOff, otherCharges, isInterState]);
 
     useEffect(() => {
-        if (!invoiceSummary.total && invoiceSummary.total !== 0) return;
+        if (!invoiceSummary || invoiceSummary.total === undefined) return;
+
+        const totalSub = Number(invoiceSummary.subTotal || 0);
+        const otherCh = Number(otherCharges || 0);
+
+        // Do not stomp over form fields on initial empty render when items are not populated
+        if (totalSub === 0 && otherCh === 0 && (!items || items.length <= 1) && !roundOffManual) {
+            return;
+        }
 
         // update items with new calculation
         invoiceSummary.items?.forEach((item, index) => {
@@ -217,13 +225,13 @@ const useInvoiceCalculation = (props) => {
             updateIfChanged("sgst", Number(invoiceSummary.sgst || 0).toFixed(2));
             updateIfChanged("igst", Number(invoiceSummary.igst || 0).toFixed(2));
 
-            if (!roundOffManual) {
+            if (!roundOffManual && totalSub > 0) {
                 updateIfChanged("roundOff", Number(invoiceSummary.roundOff || 0).toFixed(2));
             }
 
             updateIfChanged("total", Number(invoiceSummary.total || 0).toFixed(2));
         }
-    }, [invoiceSummary, getValues, setValue, roundOffManual]);
+    }, [invoiceSummary, getValues, setValue, roundOffManual, items, otherCharges]);
 
     return {
         lastEditedFieldRef,
