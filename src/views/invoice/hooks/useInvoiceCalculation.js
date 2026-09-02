@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useWatch } from "react-hook-form";
 import useGst from "../../../hooks/useGst";
+import { resolveSupplierGstCode, resolveRecipientGstCode, determineIsInterState } from "../../../utilities/gstStateHelper";
 
 const useInvoiceCalculation = (props) => {
-    const { control, setValue, getValues, companyStateId = 27 } = props;
+    const { control, setValue, getValues, companyStateId = 27, statesList = [] } = props;
     const lastEditedFieldRef = useRef(null);
 
     // Watch fields
@@ -38,22 +39,14 @@ const useInvoiceCalculation = (props) => {
     // Determine Inter-State (IGST) vs Intra-State (CGST+SGST)
     // --------------------------------------------------
     const isInterState = useMemo(() => {
-        const targetStateId = Number(shippingStateId || billingStateId || 0);
-        const firmState = Number(companyStateId || 27); // Default firm state is Maharashtra (27)
+        const supplierGstCode = resolveSupplierGstCode(companyStateId, statesList);
+        const recipientGstCode = resolveRecipientGstCode(
+            { hasGst, gstNumber, shippingStateId, billingStateId },
+            statesList
+        );
 
-        if (targetStateId > 0 && firmState > 0) {
-            return targetStateId !== firmState;
-        }
-
-        if (hasGst && gstNumber && gstNumber.length >= 2) {
-            const gstStateCode = Number(gstNumber.substring(0, 2));
-            if (!isNaN(gstStateCode) && gstStateCode > 0) {
-                return gstStateCode !== firmState;
-            }
-        }
-
-        return false;
-    }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst]);
+        return determineIsInterState(supplierGstCode, recipientGstCode);
+    }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst, statesList]);
 
     // --------------------------------------------------
     // 1) DISTRIBUTE DISCOUNT TO ITEMS & CALCULATE TAXES
