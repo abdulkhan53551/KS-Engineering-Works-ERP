@@ -125,7 +125,7 @@ const QuickAddProductModal = ({
                                     {...register('itemCode')}
                                 />
                                 <Form.Label htmlFor="quickItemCode" style={{ fontSize: '0.78rem' }}>
-                                    Part Code / SKU <span className="text-danger label-required">*</span>
+                                    Part Code / SKU
                                 </Form.Label>
                                 <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                     {errors.itemCode?.message}

@@ -9,9 +9,7 @@ export const productValidationSchema = () => Joi.object({
         'any.required': 'Product / Part Name is required',
         'string.min': 'Product name must be at least 2 characters'
     }),
-    itemCode: Joi.string().trim().min(1).max(100).required().messages({
-        'string.empty': 'Part Code / SKU is required',
-        'any.required': 'Part Code / SKU is required',
+    itemCode: Joi.string().trim().max(100).allow('', null).optional().messages({
         'string.max': 'Part Code / SKU cannot exceed 100 characters'
     }),
     itemType: Joi.string()
