@@ -73,6 +73,8 @@ const InvoiceRow = ({
                 <Form.Control
                     type="text"
                     placeholder="HSN/SAC"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.hsnSacCode}
                     {...register(`items.${index}.hsnSacCode`, {
                         onChange: () => {
@@ -89,6 +91,8 @@ const InvoiceRow = ({
                     type="text"
                     placeholder="Qty"
                     className="text-end"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.qty}
                     {...register(`items.${index}.qty`)}
                 />
@@ -116,6 +120,8 @@ const InvoiceRow = ({
                     type="text"
                     placeholder="Rate"
                     className="text-end"
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.rate}
                     {...register(`items.${index}.rate`, {
                         onBlur: (e) => {

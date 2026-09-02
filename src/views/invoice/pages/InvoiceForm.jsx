@@ -939,6 +939,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="discountAmount"
                                                    placeholder="0.00"
                                                    className="text-end fw-semibold"
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.discountAmount}
                                                    {...register("discountAmount", {
                                                       onBlur: (e) => {
@@ -969,6 +971,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="other"
                                                    placeholder="0.00"
                                                    className="text-end fw-semibold"
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.other}
                                                    {...register("other", {
                                                       onBlur: (e) => {
@@ -1015,6 +1019,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="roundOff"
                                                    placeholder="0.00"
                                                    className={`text-end fw-semibold ${roundOffManual ? 'border-primary bg-primary-subtle bg-opacity-10' : ''}`}
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.roundOff}
                                                    {...register("roundOff", {
                                                       onChange: () => setValue("roundOffManual", true),

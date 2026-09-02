@@ -190,13 +190,15 @@ const ProductAutocompleteInput = ({
                     placeholder={placeholder}
                     value={searchTerm}
                     onChange={handleInputChange}
-                    onFocus={() => {
+                    onFocus={(e) => {
+                        e.target.select();
                         if (searchTerm && suggestions.length > 0) {
                             setIsOpen(true);
                         } else if (searchTerm && searchTerm.trim().length >= 1) {
                             performSearch(searchTerm);
                         }
                     }}
+                    onClick={(e) => e.target.select()}
                     onKeyDown={handleKeyDown}
                     disabled={disabled}
                     isInvalid={isInvalid}
