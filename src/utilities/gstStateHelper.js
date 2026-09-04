@@ -141,7 +141,7 @@ export const GST_STATE_DATA = {
     },
     "31": {
         name: "Lakshadweep",
-        aliases: ["lakshadweep", "lakshadeep", "ld"]
+        aliases: ["lakshadweep", "lakshdweep", "lakshadeep", "lakshadweep islands", "ld"]
     },
     "32": {
         name: "Kerala",
@@ -153,7 +153,7 @@ export const GST_STATE_DATA = {
     },
     "34": {
         name: "Puducherry",
-        aliases: ["puducherry", "pondicherry", "py"]
+        aliases: ["puducherry", "pondicherry", "pondichery", "pondy", "py"]
     },
     "35": {
         name: "Andaman and Nicobar Islands",
@@ -308,13 +308,45 @@ export const getGstCodeByDbState = (stateIdOrObj, statesList = []) => {
 
 /**
  * Derives the Supplier Firm's 2-digit GST State Code
- * @param {number|string|Object} companyStateId - Firm's state ID or firm state object (default: Maharashtra 27)
+ * @param {number|string|Object} companyStateIdOrObj - Firm GSTIN, 2-digit GST code, DB state ID, or firm object (default: Maharashtra 27)
  * @param {Array} statesList - Master states list from API
  * @returns {string} - 2-digit GST code (e.g., "27")
  */
-export const resolveSupplierGstCode = (companyStateId, statesList = []) => {
-    const code = getGstCodeByDbState(companyStateId, statesList);
-    return code || "27"; // Default firm is Maharashtra (27)
+export const resolveSupplierGstCode = (companyStateIdOrObj, statesList = []) => {
+    // 1. If an object is passed (e.g. firm object or invoice master with firm_gstin)
+    if (typeof companyStateIdOrObj === 'object' && companyStateIdOrObj !== null) {
+        const gstin = companyStateIdOrObj.gstin || companyStateIdOrObj.firm_gstin || companyStateIdOrObj.firmGstin;
+        if (gstin && String(gstin).trim().length >= 2) {
+            const prefix = String(gstin).trim().substring(0, 2).toUpperCase();
+            if (GST_STATE_DATA[prefix]) return prefix;
+        }
+        if (companyStateIdOrObj.stateId) {
+            return resolveSupplierGstCode(companyStateIdOrObj.stateId, statesList);
+        }
+    }
+
+    // 2. If a string is passed
+    if (typeof companyStateIdOrObj === 'string') {
+        const str = companyStateIdOrObj.trim().toUpperCase();
+        // 15-character GSTIN
+        if (str.length >= 15 && GST_STATE_DATA[str.substring(0, 2)]) {
+            return str.substring(0, 2);
+        }
+        // Explicit 2-digit GST Code string (e.g. "27", "24")
+        if (str.length === 2 && GST_STATE_DATA[str]) {
+            return str;
+        }
+    }
+
+    // 3. If a DB State ID is passed, resolve via database statesList
+    // (Excluding 27, which in legacy usage represented Maharashtra's GST code rather than Pondicherry's DB ID)
+    if (companyStateIdOrObj && companyStateIdOrObj !== 27) {
+        const code = getGstCodeByDbState(companyStateIdOrObj, statesList);
+        if (code) return code;
+    }
+
+    // Default supplier firm is Maharashtra (GST code "27")
+    return "27";
 };
 
 /**

@@ -10,6 +10,7 @@ export const usePartyAddressSync = ({
     setValue,
     getValues,
     control,
+    clearErrors,
     billingStates = [],
     billingCities = [],
     shippingCities = [],
@@ -63,13 +64,20 @@ export const usePartyAddressSync = ({
         const billing = getValues("billingAddress") || {};
         setValue("shippingAddress.branchName", billing.branchName || "", { shouldValidate: false, shouldDirty: true });
         setValue("shippingAddress.gstin", billing.gstin || "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.addressLine1", billing.addressLine1 || "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.phoneNumber", billing.phoneNumber || "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.email", billing.email || "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.stateId", billing.stateId ? Number(billing.stateId) : null, { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.cityId", billing.cityId ? Number(billing.cityId) : null, { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.pincode", billing.pincode ? String(billing.pincode) : "", { shouldValidate: false, shouldDirty: true });
-    }, [getValues, setValue]);
+        setValue("shippingAddress.addressLine1", billing.addressLine1 || "", { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.phoneNumber", billing.phoneNumber || "", { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.email", billing.email || "", { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.stateId", billing.stateId ? Number(billing.stateId) : null, { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.cityId", billing.cityId ? Number(billing.cityId) : null, { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.pincode", billing.pincode ? String(billing.pincode) : "", { shouldValidate: true, shouldDirty: true });
+
+        if (clearErrors) {
+            if (billing.addressLine1) clearErrors("shippingAddress.addressLine1");
+            if (billing.stateId) clearErrors("shippingAddress.stateId");
+            if (billing.cityId) clearErrors("shippingAddress.cityId");
+            if (billing.pincode) clearErrors("shippingAddress.pincode");
+        }
+    }, [getValues, setValue, clearErrors]);
 
     // Helper: Apply a branch object to Shipping Address form fields
     const applyBranchToShipping = useCallback((branch, party) => {
@@ -145,22 +153,28 @@ export const usePartyAddressSync = ({
             setValue("shippingAddress.gstin", bGstin, { shouldValidate: false, shouldDirty: true });
         }
         if (currentShipping.addressLine1 !== bAddr) {
-            setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: true, shouldDirty: true });
+            if (bAddr && clearErrors) clearErrors("shippingAddress.addressLine1");
         }
         if (currentShipping.phoneNumber !== bPhone) {
-            setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
+            if (bPhone && clearErrors) clearErrors("shippingAddress.phoneNumber");
         }
         if (currentShipping.email !== bEmail) {
-            setValue("shippingAddress.email", bEmail, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
+            if (bEmail && clearErrors) clearErrors("shippingAddress.email");
         }
         if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
-            setValue("shippingAddress.stateId", bState, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.stateId", bState, { shouldValidate: true, shouldDirty: true });
+            if (bState && clearErrors) clearErrors("shippingAddress.stateId");
         }
         if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
-            setValue("shippingAddress.cityId", bCity, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.cityId", bCity, { shouldValidate: true, shouldDirty: true });
+            if (bCity && clearErrors) clearErrors("shippingAddress.cityId");
         }
         if (String(currentShipping.pincode || "") !== bPin) {
-            setValue("shippingAddress.pincode", bPin, { shouldValidate: false, shouldDirty: true });
+            setValue("shippingAddress.pincode", bPin, { shouldValidate: true, shouldDirty: true });
+            if (bPin && clearErrors) clearErrors("shippingAddress.pincode");
         }
     }, [
         sameAsBilling,
@@ -174,7 +188,8 @@ export const usePartyAddressSync = ({
         billingBranchName,
         billingGstin,
         setValue,
-        getValues
+        getValues,
+        clearErrors
     ]);
 
     // Asynchronously re-apply billing city once cities arrive for the selected state
@@ -364,34 +379,51 @@ export const usePartyAddressSync = ({
         pendingShippingCityIdRef.current = null;
 
         // Clear party & branch relational pointers
-        setValue("partyId", null, { shouldValidate: true, shouldDirty: true });
+        setValue("partyId", null, { shouldValidate: false, shouldDirty: true });
         setValue("branchId", null, { shouldValidate: false, shouldDirty: true });
 
         // Reset GST
-        setValue("hasGst", false, { shouldValidate: true, shouldDirty: true });
-        setValue("gstNumber", "", { shouldValidate: true, shouldDirty: true });
+        setValue("hasGst", false, { shouldValidate: false, shouldDirty: true });
+        setValue("gstNumber", "", { shouldValidate: false, shouldDirty: true });
 
         // Clear Billing Address fields
         setValue("billingAddress.branchName", "", { shouldValidate: false, shouldDirty: true });
         setValue("billingAddress.gstin", "", { shouldValidate: false, shouldDirty: true });
-        setValue("billingAddress.addressLine1", "", { shouldValidate: true, shouldDirty: true });
+        setValue("billingAddress.addressLine1", "", { shouldValidate: false, shouldDirty: true });
         setValue("billingAddress.phoneNumber", "", { shouldValidate: false, shouldDirty: true });
         setValue("billingAddress.email", "", { shouldValidate: false, shouldDirty: true });
         setValue("billingAddress.website", "", { shouldValidate: false, shouldDirty: true });
-        setValue("billingAddress.stateId", null, { shouldValidate: true, shouldDirty: true });
-        setValue("billingAddress.cityId", null, { shouldValidate: true, shouldDirty: true });
-        setValue("billingAddress.pincode", "", { shouldValidate: true, shouldDirty: true });
+        setValue("billingAddress.stateId", null, { shouldValidate: false, shouldDirty: true });
+        setValue("billingAddress.cityId", null, { shouldValidate: false, shouldDirty: true });
+        setValue("billingAddress.pincode", "", { shouldValidate: false, shouldDirty: true });
 
         // Clear Shipping Address fields
         setValue("shippingAddress.branchName", "", { shouldValidate: false, shouldDirty: true });
         setValue("shippingAddress.gstin", "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.addressLine1", "", { shouldValidate: true, shouldDirty: true });
+        setValue("shippingAddress.addressLine1", "", { shouldValidate: false, shouldDirty: true });
         setValue("shippingAddress.phoneNumber", "", { shouldValidate: false, shouldDirty: true });
         setValue("shippingAddress.email", "", { shouldValidate: false, shouldDirty: true });
-        setValue("shippingAddress.stateId", null, { shouldValidate: true, shouldDirty: true });
-        setValue("shippingAddress.cityId", null, { shouldValidate: true, shouldDirty: true });
-        setValue("shippingAddress.pincode", "", { shouldValidate: true, shouldDirty: true });
-    }, [setValue]);
+        setValue("shippingAddress.stateId", null, { shouldValidate: false, shouldDirty: true });
+        setValue("shippingAddress.cityId", null, { shouldValidate: false, shouldDirty: true });
+        setValue("shippingAddress.pincode", "", { shouldValidate: false, shouldDirty: true });
+
+        if (clearErrors) {
+            clearErrors(["billingAddress", "shippingAddress", "partyId", "branchId", "customerName", "gstNumber"]);
+        }
+    }, [setValue, clearErrors]);
+
+    // Detach party database association without erasing already filled address fields
+    const handleDetachParty = useCallback(() => {
+        if (selectedParty || getValues("partyId")) {
+            setSelectedParty(null);
+            setPartyBranches([]);
+            setSelectedBillingBranchId(null);
+            setSelectedShippingBranchId(null);
+            setShippingMode('SAME_AS_BILLING');
+            setValue("partyId", null, { shouldValidate: true, shouldDirty: true });
+            setValue("branchId", null, { shouldValidate: false, shouldDirty: true });
+        }
+    }, [selectedParty, getValues, setValue]);
 
     /**
      * Resolves and restores the shipping mode and selected branch from the invoice snapshot
@@ -498,6 +530,7 @@ export const usePartyAddressSync = ({
         handleSelectShippingBranch,
         handlePartySelect,
         handleClearParty,
+        handleDetachParty,
         resolveAndApplyShippingMode
     };
 };

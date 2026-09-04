@@ -127,7 +127,7 @@ const InvoiceForm = ({ mode }) => {
       }
    });
 
-   const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors } } = formMethods;
+   const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors }, clearErrors } = formMethods;
 
    // Watch primitive scalar values only to prevent infinite re-render loops
    const [
@@ -204,12 +204,14 @@ const InvoiceForm = ({ mode }) => {
       handleSelectBillingBranch,
       handleSelectShippingBranch,
       handleClearParty,
+      handleDetachParty,
       resolveAndApplyShippingMode,
       setSelectedParty
    } = usePartyAddressSync({
       setValue,
       getValues,
       control,
+      clearErrors,
       billingStates,
       billingCities,
       shippingCities,
@@ -240,7 +242,9 @@ const InvoiceForm = ({ mode }) => {
       control,
       setValue,
       getValues,
-      companyStateId: invoice?.companyStateId || 27,
+      companyGstin: invoice?.firm_gstin || invoice?.companyGstin,
+      companyStateId: invoice?.companyStateId || 12,
+      supplierGstCode: invoice?.firm_gstin ? invoice.firm_gstin.substring(0, 2) : "27",
       statesList: billingStates
    });
 
@@ -347,6 +351,7 @@ const InvoiceForm = ({ mode }) => {
                                           onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
                                           onSelectParty={handlePartySelect}
                                           onClearParty={handleClearParty}
+                                          onDetachParty={handleDetachParty}
                                           isInvalid={!!errors.customerName}
                                           errorMessage={errors.customerName?.message}
                                           placeholder="Search party by name or code..."
@@ -396,7 +401,8 @@ const InvoiceForm = ({ mode }) => {
                                                          const dbStateId = Number(dbState.id);
                                                          setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
                                                          if (sameAsBilling) {
-                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: false, shouldDirty: true });
+                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                            clearErrors("shippingAddress.stateId");
                                                          }
                                                       }
                                                    }

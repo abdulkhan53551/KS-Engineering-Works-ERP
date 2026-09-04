@@ -14,6 +14,7 @@ const PartyAutocompleteInput = ({
     onChange,
     onSelectParty,
     onClearParty,
+    onDetachParty,
     isInvalid = false,
     errorMessage = '',
     placeholder = 'Customer Name',
@@ -84,9 +85,20 @@ const PartyAutocompleteInput = ({
         if (onChange) {
             onChange(e);
         }
-        if (onClearParty) {
-            onClearParty();
+
+        const trimmed = (query || '').trim();
+        if (!trimmed) {
+            // Input completely cleared/empty -> wipe party & address data
+            if (onClearParty) {
+                onClearParty();
+            }
+        } else {
+            // User is typing/editing -> detach DB party linkage without wiping filled address fields
+            if (onDetachParty) {
+                onDetachParty();
+            }
         }
+
         performSearch(query);
     };
 
@@ -146,6 +158,9 @@ const PartyAutocompleteInput = ({
         setSearchTerm('');
         setSuggestions([]);
         setIsOpen(false);
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
         if (onChange) {
             onChange({ target: { name: 'customerName', value: '' } });
         }
