@@ -95,10 +95,14 @@ export const getParties = asyncHandler(async ({ page = 1, pageSize = 10, search 
  * Endpoint: GET /parties/search?search=abc
  */
 export const searchParties = asyncHandler(async (search) => {
+    const query = typeof search === 'string' ? search.trim() : '';
+    if (query.length < 2) {
+        return { success: true, data: [] };
+    }
     const res = await api.request({
         url: '/parties/search',
         method: requestMethod.GET,
-        params: { search }
+        params: { search: query }
     });
     return res.data;
 });
@@ -424,3 +428,88 @@ export const deletePartyBankAccount = asyncHandler(async (partyId, bankAccountId
 
     return res.data;
 });
+
+/* =========================================================================
+   8. PARTY BRANCHES APIS
+   ========================================================================= */
+
+/**
+ * Get all branches for a party
+ * Endpoint: GET /parties/:partyId/branches
+ */
+export const getPartyBranches = asyncHandler(async (partyId) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches`,
+        method: requestMethod.GET
+    });
+
+    return res.data;
+});
+
+/**
+ * Get party branch by ID
+ * Endpoint: GET /parties/:partyId/branches/:id
+ */
+export const getPartyBranchById = asyncHandler(async (partyId, branchId) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches/${branchId}`,
+        method: requestMethod.GET
+    });
+
+    return res.data;
+});
+
+/**
+ * Create party branch
+ * Endpoint: POST /parties/:partyId/branches
+ */
+export const createPartyBranch = asyncHandler(async (partyId, data) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches`,
+        method: requestMethod.POST,
+        data
+    });
+
+    return res.data;
+});
+
+/**
+ * Update party branch
+ * Endpoint: PATCH /parties/:partyId/branches/:id
+ */
+export const updatePartyBranch = asyncHandler(async (partyId, branchId, data) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches/${branchId}`,
+        method: requestMethod.PATCH,
+        data
+    });
+
+    return res.data;
+});
+
+/**
+ * Set a branch as default branch
+ * Endpoint: PATCH /parties/:partyId/branches/:id/set-default
+ */
+export const setDefaultPartyBranch = asyncHandler(async (partyId, branchId) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches/${branchId}/set-default`,
+        method: requestMethod.PATCH
+    });
+
+    return res.data;
+});
+
+/**
+ * Delete party branch
+ * Endpoint: DELETE /parties/:partyId/branches/:id
+ */
+export const deletePartyBranch = asyncHandler(async (partyId, branchId) => {
+    const res = await api.request({
+        url: `/parties/${partyId}/branches/${branchId}`,
+        method: requestMethod.DELETE
+    });
+
+    return res.data;
+});
+

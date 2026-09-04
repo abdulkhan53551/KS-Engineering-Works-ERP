@@ -38,6 +38,8 @@ import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
 import { numberToIndianRupeesWords } from '../../../utilities/numberToWords';
 import { findDbStateByGstCode } from '../../../utilities/gstStateHelper';
+import usePartyBranchLoader from '../hooks/usePartyBranchLoader';
+import { FaBuilding, FaCheckCircle } from 'react-icons/fa';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -45,9 +47,13 @@ const defaultFormValue = {
    dueDays: 0,
    dueDate: new Date(),
    customerName: "",
+   partyId: null,
+   branchId: null,
    hasGst: false,
    gstNumber: "",
    billingAddress: {
+      branchName: "",
+      gstin: "",
       email: "",
       phoneNumber: "",
       website: "",
@@ -57,6 +63,8 @@ const defaultFormValue = {
       pincode: null
    },
    shippingAddress: {
+      branchName: "",
+      gstin: "",
       email: "",
       phoneNumber: "",
       addressLine1: "",
@@ -125,6 +133,7 @@ const InvoiceForm = ({ mode }) => {
    const [
       selectedBillingState,
       selectedShippingState,
+      billingBranchName,
       hasChallan,
       hasPo,
       hasEwayBill,
@@ -147,6 +156,7 @@ const InvoiceForm = ({ mode }) => {
       name: [
          "billingAddress.stateId",
          "shippingAddress.stateId",
+         "billingAddress.branchName",
          "hasChallan",
          "hasPo",
          "hasEwayBill",
@@ -179,28 +189,54 @@ const InvoiceForm = ({ mode }) => {
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
 
-   // 1. Party Selection & Address Live Synchronization (with GST Code derivation & async city auto-fill)
-   const { sameAsBilling, handleSameAsBillingChange, handlePartySelect } = usePartyAddressSync({
+   // 1. Party Selection & Address Live Synchronization (with Multi-Branch & GST code derivation)
+   const {
+      sameAsBilling,
+      handleSameAsBillingChange,
+      handlePartySelect,
+      partyBranches,
+      setPartyBranches,
+      selectedBillingBranchId,
+      setSelectedBillingBranchId,
+      selectedShippingBranchId,
+      shippingMode,
+      handleShippingModeChange,
+      handleSelectBillingBranch,
+      handleSelectShippingBranch,
+      handleClearParty,
+      resolveAndApplyShippingMode,
+      setSelectedParty
+   } = usePartyAddressSync({
       setValue,
       getValues,
       control,
       billingStates,
       billingCities,
-      shippingCities
+      shippingCities,
+      isEditMode: isEditMode || isDuplicateMode
    });
 
-   // 2. Invoice Dates & Due Date Presets
+   // 2. Hydrate Party Branches & Facility Selection in Edit / Duplicate Mode
+   usePartyBranchLoader({
+      invoice,
+      setSelectedParty,
+      setPartyBranches,
+      setSelectedBillingBranchId,
+      resolveAndApplyShippingMode
+   });
+
+   // 3. Invoice Dates & Due Date Presets
    const { handleDuePresetClick, invoiceDateOptons, dueDateOptons } = useInvoiceDates({ invoiceDate, setValue });
 
-   // 3. Reset Roundoff to Auto
+   // 4. Reset Roundoff to Auto
    const handleResetRoundOffToAuto = () => {
       setValue("roundOffManual", false, { shouldDirty: true });
    };
 
-   // 4. Form Lifecycle, Calculation & Submit
+   // 5. Form Lifecycle, Calculation & Submit
    const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
    useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
-   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({
+   const { lastEditedFieldRef, isInterState, placeOfSupplyCode } = useInvoiceCalculation({
       control,
       setValue,
       getValues,
@@ -273,11 +309,11 @@ const InvoiceForm = ({ mode }) => {
                               )}
                               {isInterState ? (
                                  <Badge bg="info" className="px-3 py-2 fw-medium">
-                                    🌐 Inter-State (IGST)
+                                    🌐 Inter-State (IGST) {placeOfSupplyCode ? `• POS: ${placeOfSupplyCode}` : ''}
                                  </Badge>
                               ) : (
                                  <Badge bg="primary" className="px-3 py-2 fw-medium">
-                                    📍 Intra-State (CGST + SGST)
+                                    📍 Intra-State (CGST + SGST) {placeOfSupplyCode ? `• POS: ${placeOfSupplyCode}` : ''}
                                  </Badge>
                               )}
                            </div>
@@ -310,6 +346,7 @@ const InvoiceForm = ({ mode }) => {
                                           value={customerName || ''}
                                           onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
                                           onSelectParty={handlePartySelect}
+                                          onClearParty={handleClearParty}
                                           isInvalid={!!errors.customerName}
                                           errorMessage={errors.customerName?.message}
                                           placeholder="Search party by name or code..."
@@ -351,6 +388,7 @@ const InvoiceForm = ({ mode }) => {
                                                 onChange: (e) => {
                                                    const upper = (e.target.value || "").toUpperCase();
                                                    setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                   setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
                                                    if (upper.length >= 2) {
                                                       const stateCode = upper.substring(0, 2);
                                                       const dbState = findDbStateByGstCode(stateCode, billingStates);
@@ -663,16 +701,58 @@ const InvoiceForm = ({ mode }) => {
                            <hr className="my-4 border-light-subtle" />
 
                            {/* SECTION 2: BILLING & SHIPPING ADDRESSES (WITH PROPER MARGINS & OVERLAP FIX) */}
+                           {/* Hidden snapshot inputs to ensure full registration with react-hook-form */}
+                           <input type="hidden" {...register("partyId")} />
+                           <input type="hidden" {...register("branchId")} />
+                           <input type="hidden" {...register("billingAddress.branchName")} />
+                           <input type="hidden" {...register("billingAddress.gstin")} />
+                           <input type="hidden" {...register("shippingAddress.branchName")} />
+                           <input type="hidden" {...register("shippingAddress.gstin")} />
+
                            <Row className="g-4">
                               {/* Billing Address */}
                               <Col lg="6">
-                                 <div className="address-section-header">
+                                 <div className="address-section-header flex-wrap gap-2">
                                     <div className="d-flex align-items-center gap-2">
                                        <FaMapMarkerAlt className="text-primary" />
                                        <h6 className="fw-bold text-dark mb-0">Billing Address</h6>
                                     </div>
-                                    <span className="badge bg-light text-secondary border">Buyer Information</span>
+                                    <span className="badge bg-soft-primary text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style={{ fontSize: '0.72rem' }}>
+                                       Buyer Location
+                                    </span>
                                  </div>
+
+                                 {/* Symmetrical Billing Facility Selector */}
+                                 <div className="facility-select-card active-billing">
+                                    <div className="d-flex align-items-center gap-2 text-truncate">
+                                       <FaBuilding className="text-primary flex-shrink-0" size={13} />
+                                       <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Billing Facility:</span>
+                                    </div>
+                                    {partyBranches && partyBranches.length > 1 ? (
+                                       <Form.Select
+                                          size="sm"
+                                          value={selectedBillingBranchId || ''}
+                                          onChange={(e) => handleSelectBillingBranch(Number(e.target.value))}
+                                          className="facility-select"
+                                       >
+                                          {partyBranches.map((branch) => (
+                                             <option key={branch.id} value={branch.id}>
+                                                {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
+                                             </option>
+                                          ))}
+                                       </Form.Select>
+                                    ) : partyBranches && partyBranches.length === 1 ? (
+                                       <span className="fw-semibold text-dark small text-truncate d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                          {partyBranches[0]?.branchName || 'Head Office'}
+                                          {partyBranches[0]?.isDefault && <span className="badge bg-soft-primary text-primary rounded-pill px-1.5 py-0.5 ms-1" style={{ fontSize: '0.68rem' }}>Default ★</span>}
+                                       </span>
+                                    ) : (
+                                       <span className="text-muted small fst-italic" style={{ fontSize: '0.78rem' }}>
+                                          {customerName ? 'Primary Location' : 'Select Customer'}
+                                       </span>
+                                    )}
+                                 </div>
+
                                  <Row className="g-3">
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
@@ -746,7 +826,7 @@ const InvoiceForm = ({ mode }) => {
                                              isInvalid={!!errors?.billingAddress?.cityId}
                                              {...register("billingAddress.cityId")}
                                           >
-                                             <option value="">{isFetchingBillingCities ? "Loading..." : "-- City --"}</option>
+                                             <option value="">{isFetchingBillingCities ? "Loading cities..." : "-- City --"}</option>
                                              {billingCities.map((city) => (
                                                 <option key={city.id} value={city.id}>{city.name}</option>
                                              ))}
@@ -775,20 +855,90 @@ const InvoiceForm = ({ mode }) => {
 
                               {/* Shipping Address */}
                               <Col lg="6">
-                                 <div className="address-section-header">
+                                 <div className="address-section-header flex-wrap gap-2">
                                     <div className="d-flex align-items-center gap-2">
                                        <FaTruck className="text-primary" />
                                        <h6 className="fw-bold text-dark mb-0">Shipping Address</h6>
                                     </div>
-                                    <FormCheck
-                                       type="switch"
-                                       id="sameAsBillingSwitch"
-                                       label="Same as Billing"
-                                       className="small fw-semibold cursor-pointer text-primary"
-                                       checked={sameAsBilling}
-                                       onChange={(e) => handleSameAsBillingChange(e.target.checked)}
-                                    />
+                                    {/* Modern Segmented Pill Selector when party has branches, otherwise fallback to simple Same-As-Billing toggle */}
+                                    {partyBranches && partyBranches.length > 0 ? (
+                                       <div className="ship-mode-pills">
+                                          <button
+                                             type="button"
+                                             className={`ship-mode-pill ${shippingMode === 'SAME_AS_BILLING' ? 'active-same' : ''}`}
+                                             onClick={() => handleShippingModeChange('SAME_AS_BILLING')}
+                                          >
+                                             Same as Billing
+                                          </button>
+                                          {partyBranches.length > 1 && (
+                                             <button
+                                                type="button"
+                                                className={`ship-mode-pill ${shippingMode === 'OTHER_BRANCH' ? 'active-branch' : ''}`}
+                                                onClick={() => handleShippingModeChange('OTHER_BRANCH')}
+                                             >
+                                                Other Branch
+                                             </button>
+                                          )}
+                                          <button
+                                             type="button"
+                                             className={`ship-mode-pill ${shippingMode === 'CUSTOM_SITE' ? 'active-custom' : ''}`}
+                                             onClick={() => handleShippingModeChange('CUSTOM_SITE')}
+                                          >
+                                             Custom Site
+                                          </button>
+                                       </div>
+                                    ) : (
+                                       <FormCheck
+                                          type="checkbox"
+                                          id="sameAsBilling"
+                                          label="Same as Billing"
+                                          className="small fw-semibold text-secondary cursor-pointer mb-0"
+                                          style={{ fontSize: '0.82rem' }}
+                                          checked={sameAsBilling}
+                                          onChange={(e) => handleSameAsBillingChange(e.target.checked)}
+                                       />
+                                    )}
                                  </div>
+
+                                 {/* Symmetrical Shipping Facility Bar */}
+                                 <div className="facility-select-card active-shipping">
+                                    {shippingMode === 'SAME_AS_BILLING' ? (
+                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                          <FaCheckCircle className="text-primary flex-shrink-0" size={13} />
+                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                             Deliver to: <strong className="text-dark">{billingBranchName || partyBranches?.find(b => Number(b.id) === Number(selectedBillingBranchId))?.branchName || 'Billing Facility'}</strong>
+                                          </span>
+                                       </div>
+                                    ) : shippingMode === 'OTHER_BRANCH' ? (
+                                       <>
+                                          <div className="d-flex align-items-center gap-2 text-truncate">
+                                             <FaBuilding className="text-success flex-shrink-0" size={13} />
+                                             <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Ship To Branch:</span>
+                                          </div>
+                                          <Form.Select
+                                             size="sm"
+                                             value={selectedShippingBranchId || ''}
+                                             onChange={(e) => handleSelectShippingBranch(Number(e.target.value))}
+                                             className="facility-select border-success-subtle"
+                                          >
+                                             <option value="" disabled>-- Select Shipping Branch --</option>
+                                             {partyBranches.map((branch) => (
+                                                <option key={branch.id} value={branch.id}>
+                                                   {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
+                                                </option>
+                                             ))}
+                                          </Form.Select>
+                                       </>
+                                    ) : (
+                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                          <FaMapMarkerAlt className="text-secondary flex-shrink-0" size={13} />
+                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                             Custom delivery site / consignee address specified below
+                                          </span>
+                                       </div>
+                                    )}
+                                 </div>
+
                                  <Row className="g-3">
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
@@ -907,6 +1057,7 @@ const InvoiceForm = ({ mode }) => {
                                  productUnit={productUnit}
                                  gstSlab={gstSlab}
                                  lastEditedFieldRef={lastEditedFieldRef}
+                                 isInterState={isInterState}
                               />
                            </div>
 

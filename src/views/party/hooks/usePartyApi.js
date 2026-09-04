@@ -28,7 +28,13 @@ import {
     updateParty,
     updatePartyAddress,
     updatePartyBankAccount,
-    updatePartyContact
+    updatePartyContact,
+    getPartyBranches,
+    getPartyBranchById,
+    createPartyBranch,
+    updatePartyBranch,
+    setDefaultPartyBranch,
+    deletePartyBranch
 } from "../api";
 import { toast } from "react-toastify";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -123,7 +129,7 @@ export const useSearchParties = (searchTerm) => {
     return useQuery({
         queryKey: ["partiesSearch", searchTerm],
         queryFn: () => searchParties(searchTerm),
-        enabled: Boolean(searchTerm && searchTerm.trim().length >= 1),
+        enabled: Boolean(searchTerm && searchTerm.trim().length >= 2),
         staleTime: 30000,
         select: (result) => {
             const list = result?.data ?? result ?? [];
@@ -527,3 +533,116 @@ export const useDeletePartyBankAccount = (partyId) => {
         }
     });
 };
+
+/* =========================================================================
+   8. PARTY BRANCHES HOOKS
+   ========================================================================= */
+
+export const usePartyBranches = (partyId) => {
+    return useQuery({
+        queryKey: ["partyBranches", partyId],
+        queryFn: () => getPartyBranches(partyId),
+        enabled: Boolean(partyId && partyId !== "create"),
+        select: (result) => {
+            const list = result?.data ?? result ?? [];
+            return Array.isArray(list) ? list : [];
+        }
+    });
+};
+
+export const usePartyBranchById = (partyId, branchId) => {
+    return useQuery({
+        queryKey: ["partyBranch", partyId, branchId],
+        queryFn: () => getPartyBranchById(partyId, branchId),
+        enabled: Boolean(partyId && branchId),
+        select: (result) => result?.data ?? result ?? {}
+    });
+};
+
+export const useCreatePartyBranch = (partyId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["createPartyBranch", partyId],
+        mutationFn: (args) => {
+            const targetPartyId = args?.partyId || partyId;
+            const targetData = args?.data || args;
+            return createPartyBranch(targetPartyId, targetData);
+        },
+        onSuccess: (res) => {
+            toast.success(res?.message || "Branch added successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyBranches"] });
+            queryClient.invalidateQueries({ queryKey: ["partyDetails"] });
+        },
+        onError: (error) => {
+            const message = error?.response?.data?.message || error?.message || "Failed to add branch.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useUpdatePartyBranch = (partyId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["updatePartyBranch", partyId],
+        mutationFn: ({ partyId: pId, branchId, data }) => {
+            const targetPartyId = pId || partyId;
+            return updatePartyBranch(targetPartyId, branchId, data);
+        },
+        onSuccess: (res) => {
+            toast.success(res?.message || "Branch updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyBranches"] });
+            queryClient.invalidateQueries({ queryKey: ["partyDetails"] });
+            queryClient.invalidateQueries({ queryKey: ["partyBranch"] });
+        },
+        onError: (error) => {
+            const message = error?.response?.data?.message || error?.message || "Failed to update branch.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useSetDefaultPartyBranch = (partyId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["setDefaultPartyBranch", partyId],
+        mutationFn: (branchId) => setDefaultPartyBranch(partyId, branchId),
+        onSuccess: (res) => {
+            toast.success(res?.message || "Default branch updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyBranches", partyId] });
+            queryClient.invalidateQueries({ queryKey: ["partyDetails", partyId] });
+            queryClient.invalidateQueries({ queryKey: ["partyAddresses", partyId] });
+        },
+        onError: (error) => {
+            const message = error?.response?.data?.message || error?.message || "Failed to set default branch.";
+            toast.error(message);
+        }
+    });
+};
+
+export const useDeletePartyBranch = (partyId) => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["deletePartyBranch", partyId],
+        mutationFn: (branchId) => deletePartyBranch(partyId, branchId),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Branch deleted successfully.");
+            queryClient.invalidateQueries({ queryKey: ["partyBranches", partyId] });
+            queryClient.invalidateQueries({ queryKey: ["partyDetails", partyId] });
+            queryClient.invalidateQueries({ queryKey: ["partyAddresses", partyId] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            const message = error?.response?.data?.message || error?.message || "Failed to delete branch.";
+            toast.error(message);
+        }
+    });
+};
+

@@ -171,3 +171,66 @@ export const partyBankAccountValidationSchema = Joi.object({
         }),
     isPrimary: Joi.boolean().default(false)
 });
+
+/**
+ * Party Branch validation schema
+ */
+export const partyBranchValidationSchema = Joi.object({
+    branchName: Joi.string().max(150).required().messages({
+        "string.empty": "Branch name is required.",
+        "any.required": "Branch name is required."
+    }),
+    branchCode: Joi.string().max(50).allow(null, "").optional(),
+    gstin: Joi.string()
+        .pattern(/^([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1})$/)
+        .allow(null, "")
+        .optional()
+        .messages({
+            "string.pattern.base": "Please enter a valid 15-character GSTIN (e.g. 24ABCDE1234F1Z5)."
+        }),
+    stateId: Joi.alternatives().try(
+        Joi.number().integer().positive(),
+        Joi.string().trim()
+    ).required().messages({
+        "number.base": "Please select a state.",
+        "any.required": "State is required."
+    }),
+    cityId: Joi.alternatives().try(
+        Joi.number().integer().positive(),
+        Joi.string().trim()
+    ).required().messages({
+        "number.base": "Please select a city.",
+        "any.required": "City is required."
+    }),
+    address: Joi.string().max(500).required().messages({
+        "string.empty": "Address line is required.",
+        "any.required": "Address line is required."
+    }),
+    pincode: Joi.alternatives().try(
+        Joi.string().pattern(/^[1-9][0-9]{5}$/),
+        Joi.number().integer()
+    ).required().messages({
+        "string.empty": "Pincode is required.",
+        "string.pattern.base": "Pincode must be a 6-digit number."
+    }),
+    country: Joi.string().allow(null, "").default("India").optional(),
+    mobile: Joi.string()
+        .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
+        .allow(null, "")
+        .optional()
+        .messages({
+            "string.pattern.base": "Please enter a valid phone or mobile number."
+        }),
+    email: Joi.string()
+        .email({ tlds: { allow: false } })
+        .allow(null, "")
+        .optional()
+        .messages({
+            "string.email": "Please enter a valid email address."
+        }),
+    remarks: Joi.string().max(1000).allow(null, "").optional(),
+    isDefault: Joi.boolean().default(false),
+    isHeadOffice: Joi.boolean().default(false)
+}).unknown(true);
+
+

@@ -13,6 +13,7 @@ const PartyAutocompleteInput = ({
     value,
     onChange,
     onSelectParty,
+    onClearParty,
     isInvalid = false,
     errorMessage = '',
     placeholder = 'Customer Name',
@@ -48,7 +49,12 @@ const PartyAutocompleteInput = ({
 
     // Perform debounced search
     const performSearch = (query) => {
-        if (!query || query.trim().length < 1) {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        const trimmed = (query || '').trim();
+        if (trimmed.length < 2) {
             setSuggestions([]);
             setIsOpen(false);
             setIsLoading(false);
@@ -56,13 +62,9 @@ const PartyAutocompleteInput = ({
         }
 
         setIsLoading(true);
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
-        }
-
         debounceTimerRef.current = setTimeout(async () => {
             try {
-                const res = await searchParties(query.trim());
+                const res = await searchParties(trimmed);
                 const list = res?.data ?? res ?? [];
                 setSuggestions(Array.isArray(list) ? list : []);
                 setIsOpen(true);
@@ -81,6 +83,9 @@ const PartyAutocompleteInput = ({
         setSearchTerm(query);
         if (onChange) {
             onChange(e);
+        }
+        if (onClearParty) {
+            onClearParty();
         }
         performSearch(query);
     };
@@ -144,6 +149,9 @@ const PartyAutocompleteInput = ({
         if (onChange) {
             onChange({ target: { name: 'customerName', value: '' } });
         }
+        if (onClearParty) {
+            onClearParty();
+        }
     };
 
     return (
@@ -157,10 +165,11 @@ const PartyAutocompleteInput = ({
                     value={searchTerm}
                     onChange={handleInputChange}
                     onFocus={() => {
-                        if (searchTerm && suggestions.length > 0) {
+                        const trimmed = (searchTerm || '').trim();
+                        if (trimmed && suggestions.length > 0) {
                             setIsOpen(true);
-                        } else if (searchTerm && searchTerm.trim().length >= 1) {
-                            performSearch(searchTerm);
+                        } else if (trimmed.length >= 2) {
+                            performSearch(trimmed);
                         }
                     }}
                     onKeyDown={handleKeyDown}

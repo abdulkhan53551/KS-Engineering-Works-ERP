@@ -38,14 +38,18 @@ const useInvoiceCalculation = (props) => {
     // --------------------------------------------------
     // Determine Inter-State (IGST) vs Intra-State (CGST+SGST)
     // --------------------------------------------------
-    const isInterState = useMemo(() => {
-        const supplierGstCode = resolveSupplierGstCode(companyStateId, statesList);
-        const recipientGstCode = resolveRecipientGstCode(
-            { hasGst, gstNumber, shippingStateId, billingStateId },
+    const { supplierGstCode, recipientGstCode, isInterState } = useMemo(() => {
+        const supCode = resolveSupplierGstCode(companyStateId, statesList);
+        const recCode = resolveRecipientGstCode(
+            { hasGst, gstNumber, billingStateId, shippingStateId },
             statesList
         );
 
-        return determineIsInterState(supplierGstCode, recipientGstCode);
+        return {
+            supplierGstCode: supCode,
+            recipientGstCode: recCode,
+            isInterState: determineIsInterState(supCode, recCode)
+        };
     }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst, statesList]);
 
     // --------------------------------------------------
@@ -236,6 +240,8 @@ const useInvoiceCalculation = (props) => {
     return {
         lastEditedFieldRef,
         isInterState,
+        placeOfSupplyCode: recipientGstCode,
+        supplierGstCode,
         invoiceSummary
     };
 };

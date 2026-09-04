@@ -11,6 +11,8 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
     dueDate: Joi.date().required(),
 
     customerName: Joi.string().max(255).required(),
+    partyId: Joi.number().integer().positive().allow(null).optional(),
+    branchId: Joi.number().integer().positive().allow(null).optional(),
     hasGst: Joi.boolean().default(false),
     gstNumber: Joi.string()
         .allow(null, '')
@@ -30,6 +32,8 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
         id: isEditMode
             ? Joi.number().integer().required()   // required only in edit
             : Joi.number().integer().optional(), // optional in add
+        branchName: Joi.string().max(100).allow(null, '').optional(),
+        gstin: Joi.string().max(20).allow(null, '').optional(),
         email: Joi.string().email().allow(null, ''),
         phoneNumber: Joi.string()
             .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)
@@ -55,6 +59,8 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
         id: isEditMode
             ? Joi.number().integer().required()   // required only in edit
             : Joi.number().integer().optional(), // optional in add
+        branchName: Joi.string().max(100).allow(null, '').optional(),
+        gstin: Joi.string().max(20).allow(null, '').optional(),
         email: Joi.string().email().allow(null, ''),
         phoneNumber: Joi.string()
             .pattern(/^(?:(?:\+91|0)?[6-9]\d{9}|1800\d{6,7}|1860\d{6,7}|0\d{8,10}|\d{8,12})$/)

@@ -319,18 +319,22 @@ export const resolveSupplierGstCode = (companyStateId, statesList = []) => {
 
 /**
  * Derives the Recipient / Place of Supply 2-digit GST State Code
- * @param {Object} params - { hasGst, gstNumber, shippingStateId, billingStateId }
+ * Strictly adheres to Chapter V of the IGST Act, 2017:
+ * - Sec 10(1)(b) & Sec 12(2)(a): In Bill-To / Ship-To transactions and registered B2B supplies,
+ *   the Place of Supply (POS) is legally deemed to be the Buyer's principal place of business (Bill-To State / GSTIN).
+ * - Sec 10(1)(a): Direct supplies terminate at the buyer's destination.
+ * 
+ * Hierarchy:
+ * 1. Registered Buyer GSTIN: The 2-digit state code prefix of the Bill-To GSTIN (Sec 12(2)(a) & Sec 10(1)(b)).
+ * 2. Billing Address State ID: Buyer's registered/principal place of business (Sec 10(1)(b)).
+ * 3. Shipping Address State ID: Destination fallback if billing state is unspecified.
+ *
+ * @param {Object} params - { hasGst, gstNumber, billingStateId, shippingStateId }
  * @param {Array} statesList - Master states list from API
  * @returns {string|null} - 2-digit GST code of Place of Supply
  */
-export const resolveRecipientGstCode = ({ hasGst, gstNumber, shippingStateId, billingStateId }, statesList = []) => {
-    // 1. If explicit shipping destination state is given, goods destination takes priority for Place of Supply
-    if (shippingStateId) {
-        const shippingGstCode = getGstCodeByDbState(shippingStateId, statesList);
-        if (shippingGstCode) return shippingGstCode;
-    }
-
-    // 2. If GST is enabled and valid 2-digit GSTIN prefix is present, registered buyer GSTIN governs
+export const resolveRecipientGstCode = ({ hasGst, gstNumber, billingStateId, shippingStateId }, statesList = []) => {
+    // 1. If GST is enabled and valid 2-digit GSTIN prefix is present, registered buyer GSTIN strictly defines POS
     if (hasGst && gstNumber && String(gstNumber).trim().length >= 2) {
         const gstPrefix = String(gstNumber).trim().substring(0, 2).toUpperCase();
         if (GST_STATE_DATA[gstPrefix]) {
@@ -338,10 +342,16 @@ export const resolveRecipientGstCode = ({ hasGst, gstNumber, shippingStateId, bi
         }
     }
 
-    // 3. Fallback to Billing State ID
+    // 2. Billing State ID: In "Bill-To / Ship-To" (Sec 10(1)(b)), POS is deemed to be the Buyer's principal place of business (Bill-To State)
     if (billingStateId) {
         const billingGstCode = getGstCodeByDbState(billingStateId, statesList);
         if (billingGstCode) return billingGstCode;
+    }
+
+    // 3. Fallback to Shipping State ID if billing state is not provided
+    if (shippingStateId) {
+        const shippingGstCode = getGstCodeByDbState(shippingStateId, statesList);
+        if (shippingGstCode) return shippingGstCode;
     }
 
     return null;
