@@ -12,7 +12,7 @@ export const addressTypeValidationSchema = Joi.object({
         .pattern(/^[A-Z0-9_-]+$/)
         .required()
         .messages({
-            "string.empty": "Address Type Code is required ",
+            "string.empty": "Address Type Code is required",
             "string.min": "Code must be at least 2 characters",
             "string.max": "Code cannot exceed 50 characters",
             "string.pattern.base": "Code must be uppercase alphanumeric (e.g. BILLING, SHIPPING)",
