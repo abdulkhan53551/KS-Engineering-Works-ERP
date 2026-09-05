@@ -78,6 +78,8 @@ const useFormInit = (props) => {
                     invoiceNo: invoice.invoiceNo,
                     invoiceDate: invoice.invoiceDate,
                     customerName: invoice.customerName,
+                    partyId: invoice.party_id || invoice.partyId || null,
+                    branchId: invoice.branch_id || invoice.branchId || null,
 
                     dueDays: invoice.dueDays,
                     dueDate: invoice.dueDate,
@@ -87,6 +89,8 @@ const useFormInit = (props) => {
 
                     billingAddress: {
                         id: invoice.billingAddress?.id,
+                        branchName: invoice.billing_branch_name || invoice.billingAddress?.branchName || "",
+                        gstin: invoice.billing_gstin || invoice.billingAddress?.gstin || "",
                         email: invoice.billingAddress?.email,
                         phoneNumber: invoice.billingAddress?.phoneNumber,
                         website: invoice.billingAddress?.website,
@@ -98,6 +102,8 @@ const useFormInit = (props) => {
 
                     shippingAddress: {
                         id: invoice.shippingAddress?.id,
+                        branchName: invoice.shipping_branch_name || invoice.shippingAddress?.branchName || "",
+                        gstin: invoice.shipping_gstin || invoice.shippingAddress?.gstin || "",
                         email: invoice.shippingAddress?.email,
                         phoneNumber: invoice.shippingAddress?.phoneNumber,
                         addressLine1: invoice.shippingAddress?.addressLine1,
@@ -161,6 +167,8 @@ const useFormInit = (props) => {
                     invoiceNo: nextInvoiceNumber?.invoiceNo || "",
                     invoiceDate: today,
                     customerName: invoice.customerName || "",
+                    partyId: invoice.party_id || invoice.partyId || null,
+                    branchId: invoice.branch_id || invoice.branchId || null,
 
                     dueDays: dueDaysCount,
                     dueDate: calculatedDueDate,
@@ -169,6 +177,8 @@ const useFormInit = (props) => {
                     gstNumber: invoice.gstNumber || "",
 
                     billingAddress: {
+                        branchName: invoice.billing_branch_name || invoice.billingAddress?.branchName || "",
+                        gstin: invoice.billing_gstin || invoice.billingAddress?.gstin || "",
                         email: invoice.billingAddress?.email || "",
                         phoneNumber: invoice.billingAddress?.phoneNumber || "",
                         website: invoice.billingAddress?.website || "",
@@ -179,6 +189,8 @@ const useFormInit = (props) => {
                     },
 
                     shippingAddress: {
+                        branchName: invoice.shipping_branch_name || invoice.shippingAddress?.branchName || "",
+                        gstin: invoice.shipping_gstin || invoice.shippingAddress?.gstin || "",
                         email: invoice.shippingAddress?.email || "",
                         phoneNumber: invoice.shippingAddress?.phoneNumber || "",
                         addressLine1: invoice.shippingAddress?.addressLine1 || "",

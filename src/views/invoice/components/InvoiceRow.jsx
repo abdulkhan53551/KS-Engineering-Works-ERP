@@ -11,7 +11,8 @@ const InvoiceRow = ({
     totalRows,
     productUnit,
     gstSlab,
-    lastEditedFieldRef
+    lastEditedFieldRef,
+    isInterState = false
 }) => {
     const { register, setValue, control, formState: { errors } } = useFormContext();
     const descriptionValue = useWatch({ control, name: `items.${index}.description` });
@@ -176,31 +177,49 @@ const InvoiceRow = ({
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.taxableAmount?.message}</Form.Control.Feedback>
             </td>
 
-            {/* CGST */}
-            <td style={{ width: '130px', minWidth: '120px' }}>
-                <Form.Control
-                    type="text"
-                    placeholder="CGST"
-                    className="text-end bg-light text-muted"
-                    disabled={true}
-                    isInvalid={!!errors.items?.[index]?.cgst}
-                    {...register(`items.${index}.cgst`)}
-                />
-                <Form.Control.Feedback type="invalid">{errors.items?.[index]?.cgst?.message}</Form.Control.Feedback>
-            </td>
+            {/* Tax Columns: CGST + SGST (Intra-State) or IGST (Inter-State) */}
+            {!isInterState ? (
+                <>
+                    {/* CGST */}
+                    <td style={{ width: '130px', minWidth: '120px' }}>
+                        <Form.Control
+                            type="text"
+                            placeholder="CGST"
+                            className="text-end bg-light text-muted"
+                            disabled={true}
+                            isInvalid={!!errors.items?.[index]?.cgst}
+                            {...register(`items.${index}.cgst`)}
+                        />
+                        <Form.Control.Feedback type="invalid">{errors.items?.[index]?.cgst?.message}</Form.Control.Feedback>
+                    </td>
 
-            {/* SGST */}
-            <td style={{ width: '130px', minWidth: '120px' }}>
-                <Form.Control
-                    type="text"
-                    placeholder="SGST"
-                    className="text-end bg-light text-muted"
-                    disabled={true}
-                    isInvalid={!!errors.items?.[index]?.sgst}
-                    {...register(`items.${index}.sgst`)}
-                />
-                <Form.Control.Feedback type="invalid">{errors.items?.[index]?.sgst?.message}</Form.Control.Feedback>
-            </td>
+                    {/* SGST */}
+                    <td style={{ width: '130px', minWidth: '120px' }}>
+                        <Form.Control
+                            type="text"
+                            placeholder="SGST"
+                            className="text-end bg-light text-muted"
+                            disabled={true}
+                            isInvalid={!!errors.items?.[index]?.sgst}
+                            {...register(`items.${index}.sgst`)}
+                        />
+                        <Form.Control.Feedback type="invalid">{errors.items?.[index]?.sgst?.message}</Form.Control.Feedback>
+                    </td>
+                </>
+            ) : (
+                /* IGST */
+                <td style={{ width: '160px', minWidth: '140px' }}>
+                    <Form.Control
+                        type="text"
+                        placeholder="IGST"
+                        className="text-end bg-light text-primary fw-semibold"
+                        disabled={true}
+                        isInvalid={!!errors.items?.[index]?.igst}
+                        {...register(`items.${index}.igst`)}
+                    />
+                    <Form.Control.Feedback type="invalid">{errors.items?.[index]?.igst?.message}</Form.Control.Feedback>
+                </td>
+            )}
 
             {/* Total */}
             <td style={{ width: '180px', minWidth: '170px' }}>

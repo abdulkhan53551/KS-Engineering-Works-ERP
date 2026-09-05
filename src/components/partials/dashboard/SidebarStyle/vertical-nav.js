@@ -745,30 +745,6 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
-                                <Link className={`${location.pathname.includes('/masters/address-types') ? 'active' : ''} nav-link`} to="/masters/address-types">
-                                    <i className="icon">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
-                                            <g>
-                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
-                                            </g>
-                                        </svg>
-                                    </i>
-                                    <span className="item-name">Address Types</span>
-                                    <Link className="me-2" to="/masters/address-types?action=create">
-                                        <Button
-                                            className="d-flex align-items-center justify-content-center p-1 rounded"
-                                            style={{ transition: 'all 0.2s ease' }}
-                                        >
-                                            <MdAddBox
-                                                size={20}
-                                                color="white"
-                                                className="transition-colors"
-                                            />
-                                        </Button>
-                                    </Link>
-                                </Link>
-                            </li>
-                            <li className="nav-item">
                                 <Link className={`${location.pathname.includes('/masters/contact-roles') ? 'active' : ''} nav-link`} to="/masters/contact-roles">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">

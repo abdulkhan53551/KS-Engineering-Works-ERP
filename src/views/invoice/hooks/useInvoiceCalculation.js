@@ -4,7 +4,15 @@ import useGst from "../../../hooks/useGst";
 import { resolveSupplierGstCode, resolveRecipientGstCode, determineIsInterState } from "../../../utilities/gstStateHelper";
 
 const useInvoiceCalculation = (props) => {
-    const { control, setValue, getValues, companyStateId = 27, statesList = [] } = props;
+    const {
+        control,
+        setValue,
+        getValues,
+        companyStateId = 12,
+        companyGstin,
+        supplierGstCode: explicitSupplierGstCode,
+        statesList = []
+    } = props;
     const lastEditedFieldRef = useRef(null);
 
     // Watch fields
@@ -38,15 +46,22 @@ const useInvoiceCalculation = (props) => {
     // --------------------------------------------------
     // Determine Inter-State (IGST) vs Intra-State (CGST+SGST)
     // --------------------------------------------------
-    const isInterState = useMemo(() => {
-        const supplierGstCode = resolveSupplierGstCode(companyStateId, statesList);
-        const recipientGstCode = resolveRecipientGstCode(
-            { hasGst, gstNumber, shippingStateId, billingStateId },
+    const { supplierGstCode, recipientGstCode, isInterState } = useMemo(() => {
+        const supCode = resolveSupplierGstCode(
+            explicitSupplierGstCode || companyGstin || companyStateId,
+            statesList
+        );
+        const recCode = resolveRecipientGstCode(
+            { hasGst, gstNumber, billingStateId, shippingStateId },
             statesList
         );
 
-        return determineIsInterState(supplierGstCode, recipientGstCode);
-    }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst, statesList]);
+        return {
+            supplierGstCode: supCode,
+            recipientGstCode: recCode,
+            isInterState: determineIsInterState(supCode, recCode)
+        };
+    }, [shippingStateId, billingStateId, companyStateId, companyGstin, explicitSupplierGstCode, gstNumber, hasGst, statesList]);
 
     // --------------------------------------------------
     // 1) DISTRIBUTE DISCOUNT TO ITEMS & CALCULATE TAXES
@@ -236,6 +251,8 @@ const useInvoiceCalculation = (props) => {
     return {
         lastEditedFieldRef,
         isInterState,
+        placeOfSupplyCode: recipientGstCode,
+        supplierGstCode,
         invoiceSummary
     };
 };

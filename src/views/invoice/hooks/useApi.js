@@ -86,26 +86,65 @@ export const useInvoiceById = (id = 0) => {
         enabled: !!id,
         select: (result) => {
             const data = result?.data ?? {};
+
+            // Inspect invoice contacts array if returned by backend
+            const contactsList = Array.isArray(data.invoice_contacts)
+                ? data.invoice_contacts
+                : (Array.isArray(data.invoiceContacts) ? data.invoiceContacts : (Array.isArray(data.contacts) ? data.contacts : []));
+
+            const billingContact = contactsList.find(c =>
+                String(c.type || c.contactType || '').toUpperCase() === 'BILLING' || c.isBilling === true
+            ) || {};
+
+            const shippingContact = contactsList.find(c =>
+                String(c.type || c.contactType || '').toUpperCase() === 'SHIPPING' || c.isShipping === true
+            ) || {};
+
+            const rawBilling = (typeof data.billingAddress === 'object' && data.billingAddress !== null) ? data.billingAddress : {};
+            const rawShipping = (typeof data.shippingAddress === 'object' && data.shippingAddress !== null) ? data.shippingAddress : {};
+
+            const billingBranchName = data.billing_branch_name || data.billingBranchName || rawBilling.branchName || rawBilling.branch_name || billingContact.branch_name || billingContact.branchName || "";
+            const billingGstin = data.billing_gstin || data.billingGstin || rawBilling.gstin || billingContact.gstin || "";
+
+            const shippingBranchName = data.shipping_branch_name || data.shippingBranchName || rawShipping.branchName || rawShipping.branch_name || shippingContact.branch_name || shippingContact.branchName || "";
+            const shippingGstin = data.shipping_gstin || data.shippingGstin || rawShipping.gstin || shippingContact.gstin || "";
+
             const invoiceData = {
                 ...result?.data,
+                // Normalized root-level branch snapshot names for easy access
+                billing_branch_name: billingBranchName,
+                shipping_branch_name: shippingBranchName,
+                billing_gstin: billingGstin,
+                shipping_gstin: shippingGstin,
+
                 billingAddress: {
-                    id: data.billingId,
-                    email: data.billingEmail,
-                    phoneNumber: data.billingPhoneNumber,
-                    website: data.billingWebsite,
-                    addressLine1: data.billingAddress,
-                    cityId: data.billingCityId,
-                    stateId: data.billingStateId,
-                    pincode: data.billingPincode
+                    ...rawBilling,
+                    id: data.billingId ?? rawBilling.id ?? billingContact.id,
+                    branchName: billingBranchName,
+                    gstin: billingGstin,
+                    email: data.billingEmail ?? rawBilling.email ?? billingContact.email,
+                    phoneNumber: data.billingPhoneNumber ?? rawBilling.phoneNumber ?? rawBilling.mobile ?? billingContact.phoneNumber ?? billingContact.mobile,
+                    website: data.billingWebsite ?? rawBilling.website ?? billingContact.website,
+                    addressLine1: typeof data.billingAddress === 'string'
+                        ? data.billingAddress
+                        : (rawBilling.addressLine1 || rawBilling.address || billingContact.address || billingContact.addressLine1 || ""),
+                    cityId: data.billingCityId ?? rawBilling.cityId ?? rawBilling.city_id ?? billingContact.cityId ?? billingContact.city_id,
+                    stateId: data.billingStateId ?? rawBilling.stateId ?? rawBilling.state_id ?? billingContact.stateId ?? billingContact.state_id,
+                    pincode: data.billingPincode ?? rawBilling.pincode ?? billingContact.pincode
                 },
                 shippingAddress: {
-                    id: data.shippingId,
-                    email: data.shippingEmail,
-                    phoneNumber: data.shippingPhoneNumber,
-                    addressLine1: data.shippingAddress,
-                    cityId: data.shippingCityId,
-                    stateId: data.shippingStateId,
-                    pincode: data.shippingPincode
+                    ...rawShipping,
+                    id: data.shippingId ?? rawShipping.id ?? shippingContact.id,
+                    branchName: shippingBranchName,
+                    gstin: shippingGstin,
+                    email: data.shippingEmail ?? rawShipping.email ?? shippingContact.email,
+                    phoneNumber: data.shippingPhoneNumber ?? rawShipping.phoneNumber ?? rawShipping.mobile ?? shippingContact.phoneNumber ?? shippingContact.mobile,
+                    addressLine1: typeof data.shippingAddress === 'string'
+                        ? data.shippingAddress
+                        : (rawShipping.addressLine1 || rawShipping.address || shippingContact.address || shippingContact.addressLine1 || ""),
+                    cityId: data.shippingCityId ?? rawShipping.cityId ?? rawShipping.city_id ?? shippingContact.cityId ?? shippingContact.city_id,
+                    stateId: data.shippingStateId ?? rawShipping.stateId ?? rawShipping.state_id ?? shippingContact.stateId ?? shippingContact.state_id,
+                    pincode: data.shippingPincode ?? rawShipping.pincode ?? shippingContact.pincode
                 }
             };
 
