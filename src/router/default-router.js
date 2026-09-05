@@ -65,7 +65,6 @@ import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 import PartyList from '../views/party/pages/PartyList';
 import PartyForm from '../views/party/pages/PartyForm';
-import AddressTypeList from '../views/masters/address-types/pages/AddressTypeList';
 import ContactRoleList from '../views/masters/contact-roles/pages/ContactRoleList';
 import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
 import ProductList from '../views/products/pages/ProductList';
@@ -105,7 +104,6 @@ export const DefaultRouter = [
                     { path: 'masters/products/create', element: <ProductForm mode="create" /> },
                     { path: 'masters/products/:id/edit', element: <ProductForm mode="edit" /> },
                     { path: 'masters/products/:id', element: <ProductView /> },
-                    { path: 'masters/address-types', element: <AddressTypeList /> },
                     { path: 'masters/contact-roles', element: <ContactRoleList /> },
 
                     /* Sales */

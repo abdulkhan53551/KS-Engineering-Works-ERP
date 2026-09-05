@@ -74,36 +74,6 @@ export const createPartyValidationSchema = Joi.object({
 });
 
 /**
- * Party Address validation schema
- */
-export const partyAddressValidationSchema = Joi.object({
-    addressTypeId: Joi.number().integer().required().messages({
-        "number.base": "Please select an address type.",
-        "any.required": "Address type is required."
-    }),
-    address: Joi.string().max(500).required().messages({
-        "string.empty": "Address line is required.",
-        "any.required": "Address line is required."
-    }),
-    stateId: Joi.number().integer().required().messages({
-        "number.base": "Please select a state.",
-        "any.required": "State is required."
-    }),
-    cityId: Joi.number().integer().required().messages({
-        "number.base": "Please select a city.",
-        "any.required": "City is required."
-    }),
-    country: Joi.string().default("India"),
-    pincode: Joi.string()
-        .pattern(/^[1-9][0-9]{5}$/)
-        .required()
-        .messages({
-            "string.empty": "Pincode is required.",
-            "string.pattern.base": "Please enter a valid 6-digit Indian pincode."
-        })
-});
-
-/**
  * Party Contact validation schema
  */
 export const partyContactValidationSchema = Joi.object({

@@ -3,20 +3,15 @@ import {
     bulkDeleteParties,
     bulkRestoreParties,
     createParty,
-    createPartyAddress,
     createPartyBankAccount,
     createPartyContact,
     deleteParty,
-    deletePartyAddress,
     deletePartyBankAccount,
     deletePartyContact,
-    getAddressTypes,
     getContactRoles,
     getMasterPartyRoles,
     getParties,
     getPartiesPagination,
-    getPartyAddresses,
-    getPartyAddressById,
     getPartyBankAccounts,
     getPartyBankAccountById,
     getPartyById,
@@ -26,7 +21,6 @@ import {
     restoreParty,
     searchParties,
     updateParty,
-    updatePartyAddress,
     updatePartyBankAccount,
     updatePartyContact,
     getPartyBranches,
@@ -43,17 +37,8 @@ import { useUIManager } from "../../../contexts/UIManagerContext";
 import { useNavigate } from "react-router-dom";
 
 /* =========================================================================
-   1. MASTER HOOKS (Address Types, Contact Roles, Party Roles)
+   1. MASTER HOOKS (Contact Roles, Party Roles)
    ========================================================================= */
-
-export const useAddressTypes = () => {
-    return useQuery({
-        queryKey: ["addressTypes"],
-        queryFn: getAddressTypes,
-        staleTime: Infinity,
-        select: (result) => result?.data ?? result ?? []
-    });
-};
 
 export const useContactRoles = () => {
     return useQuery({
@@ -290,87 +275,6 @@ export const useBulkRestoreParties = () => {
     });
 };
 
-
-/* =========================================================================
-   4. PARTY ADDRESSES HOOKS
-   ========================================================================= */
-
-export const usePartyAddresses = (partyId) => {
-    return useQuery({
-        queryKey: ["partyAddresses", partyId],
-        queryFn: () => getPartyAddresses(partyId),
-        enabled: Boolean(partyId && partyId !== "create"),
-        select: (result) => {
-            const list = result?.data ?? result ?? [];
-            return Array.isArray(list) ? list : [];
-        }
-    });
-};
-
-export const usePartyAddressById = (partyId, addressId) => {
-    return useQuery({
-        queryKey: ["partyAddress", partyId, addressId],
-        queryFn: () => getPartyAddressById(partyId, addressId),
-        enabled: Boolean(partyId && addressId),
-        select: (result) => result?.data ?? result ?? {}
-    });
-};
-
-export const useCreatePartyAddress = (partyId) => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationKey: ["createPartyAddress", partyId],
-        mutationFn: (data) => createPartyAddress(partyId, data),
-        onSuccess: (res) => {
-            toast.success(res?.message || "Address added successfully.");
-            queryClient.invalidateQueries({ queryKey: ["partyAddresses", partyId] });
-        },
-        onError: (error) => {
-            const message = error?.response?.data?.message || error?.message || "Failed to add address.";
-            toast.error(message);
-        }
-    });
-};
-
-export const useUpdatePartyAddress = (partyId) => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationKey: ["updatePartyAddress", partyId],
-        mutationFn: ({ addressId, data }) => updatePartyAddress(partyId, addressId, data),
-        onSuccess: (res) => {
-            toast.success(res?.message || "Address updated successfully.");
-            queryClient.invalidateQueries({ queryKey: ["partyAddresses", partyId] });
-        },
-        onError: (error) => {
-            const message = error?.response?.data?.message || error?.message || "Failed to update address.";
-            toast.error(message);
-        }
-    });
-};
-
-export const useDeletePartyAddress = (partyId) => {
-    const queryClient = useQueryClient();
-    const dispatch = useDispatch();
-    const { closeModal } = useUIManager();
-
-    return useMutation({
-        mutationKey: ["deletePartyAddress", partyId],
-        mutationFn: (addressId) => deletePartyAddress(partyId, addressId),
-        onSuccess: (res) => {
-            dispatch(clearLoading());
-            closeModal();
-            toast.success(res?.message || "Address deleted successfully.");
-            queryClient.invalidateQueries({ queryKey: ["partyAddresses", partyId] });
-        },
-        onError: (error) => {
-            dispatch(clearLoading());
-            const message = error?.response?.data?.message || error?.message || "Failed to delete address.";
-            toast.error(message);
-        }
-    });
-};
 
 /* =========================================================================
    5. PARTY CONTACTS HOOKS

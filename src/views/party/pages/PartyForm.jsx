@@ -10,7 +10,6 @@ import {
     useUpdateParty
 } from '../hooks/usePartyApi';
 import PartyRoleSelector from '../components/PartyRoleSelector';
-import PartyAddressSection from '../components/sections/PartyAddressSection';
 import PartyBranchSection from '../components/sections/PartyBranchSection';
 import PartyContactSection from '../components/sections/PartyContactSection';
 import PartyBankAccountSection from '../components/sections/PartyBankAccountSection';

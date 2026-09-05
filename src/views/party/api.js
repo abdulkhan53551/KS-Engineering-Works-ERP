@@ -3,20 +3,8 @@ import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
 /* =========================================================================
-   1. MASTER APIS (Address Types, Contact Roles, Party Roles)
+   1. MASTER APIS (Contact Roles, Party Roles)
    ========================================================================= */
-
-/**
- * Get address types master
- * Endpoint: GET /masters/address-types
- */
-export const getAddressTypes = asyncHandler(async () => {
-    const res = await api.request({
-        url: '/masters/address-types',
-        method: requestMethod.GET
-    });
-    return res.data;
-});
 
 /**
  * Get contact roles master
@@ -215,77 +203,6 @@ export const bulkRestoreParties = asyncHandler(async ({ ids = [] }) => {
     return res.data;
 });
 
-
-/* =========================================================================
-   4. PARTY ADDRESSES APIS
-   ========================================================================= */
-
-/**
- * Get all addresses for a party
- * Endpoint: GET /parties/:partyId/addresses
- */
-export const getPartyAddresses = asyncHandler(async (partyId) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/addresses`,
-        method: requestMethod.GET
-    });
-
-    return res.data;
-});
-
-/**
- * Get party address by ID
- * Endpoint: GET /parties/:partyId/addresses/:id
- */
-export const getPartyAddressById = asyncHandler(async (partyId, addressId) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/addresses/${addressId}`,
-        method: requestMethod.GET
-    });
-
-    return res.data;
-});
-
-/**
- * Create party address
- * Endpoint: POST /parties/:partyId/addresses
- */
-export const createPartyAddress = asyncHandler(async (partyId, data) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/addresses`,
-        method: requestMethod.POST,
-        data
-    });
-
-    return res.data;
-});
-
-/**
- * Update party address
- * Endpoint: PATCH /parties/:partyId/addresses/:id
- */
-export const updatePartyAddress = asyncHandler(async (partyId, addressId, data) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/addresses/${addressId}`,
-        method: requestMethod.PATCH,
-        data
-    });
-
-    return res.data;
-});
-
-/**
- * Delete party address
- * Endpoint: DELETE /parties/:partyId/addresses/:id
- */
-export const deletePartyAddress = asyncHandler(async (partyId, addressId) => {
-    const res = await api.request({
-        url: `/parties/${partyId}/addresses/${addressId}`,
-        method: requestMethod.DELETE
-    });
-
-    return res.data;
-});
 
 /* =========================================================================
    5. PARTY CONTACTS APIS
