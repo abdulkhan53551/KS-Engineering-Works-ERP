@@ -13,6 +13,8 @@ const PartyAutocompleteInput = ({
     value,
     onChange,
     onSelectParty,
+    onClearParty,
+    onDetachParty,
     isInvalid = false,
     errorMessage = '',
     placeholder = 'Customer Name',
@@ -48,7 +50,12 @@ const PartyAutocompleteInput = ({
 
     // Perform debounced search
     const performSearch = (query) => {
-        if (!query || query.trim().length < 1) {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        const trimmed = (query || '').trim();
+        if (trimmed.length < 2) {
             setSuggestions([]);
             setIsOpen(false);
             setIsLoading(false);
@@ -56,13 +63,9 @@ const PartyAutocompleteInput = ({
         }
 
         setIsLoading(true);
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current);
-        }
-
         debounceTimerRef.current = setTimeout(async () => {
             try {
-                const res = await searchParties(query.trim());
+                const res = await searchParties(trimmed);
                 const list = res?.data ?? res ?? [];
                 setSuggestions(Array.isArray(list) ? list : []);
                 setIsOpen(true);
@@ -82,6 +85,20 @@ const PartyAutocompleteInput = ({
         if (onChange) {
             onChange(e);
         }
+
+        const trimmed = (query || '').trim();
+        if (!trimmed) {
+            // Input completely cleared/empty -> wipe party & address data
+            if (onClearParty) {
+                onClearParty();
+            }
+        } else {
+            // User is typing/editing -> detach DB party linkage without wiping filled address fields
+            if (onDetachParty) {
+                onDetachParty();
+            }
+        }
+
         performSearch(query);
     };
 
@@ -110,6 +127,13 @@ const PartyAutocompleteInput = ({
     };
 
     const handleKeyDown = (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(false);
+            return;
+        }
+
         if (!isOpen || suggestions.length === 0) return;
 
         if (e.key === 'ArrowDown') {
@@ -123,17 +147,25 @@ const PartyAutocompleteInput = ({
             if (activeIndex >= 0 && activeIndex < suggestions.length) {
                 handleSelectParty(suggestions[activeIndex]);
             }
-        } else if (e.key === 'Escape') {
-            setIsOpen(false);
         }
     };
 
-    const handleClear = () => {
+    const handleClear = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         setSearchTerm('');
         setSuggestions([]);
         setIsOpen(false);
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
         if (onChange) {
             onChange({ target: { name: 'customerName', value: '' } });
+        }
+        if (onClearParty) {
+            onClearParty();
         }
     };
 
@@ -148,10 +180,11 @@ const PartyAutocompleteInput = ({
                     value={searchTerm}
                     onChange={handleInputChange}
                     onFocus={() => {
-                        if (searchTerm && suggestions.length > 0) {
+                        const trimmed = (searchTerm || '').trim();
+                        if (trimmed && suggestions.length > 0) {
                             setIsOpen(true);
-                        } else if (searchTerm && searchTerm.trim().length >= 1) {
-                            performSearch(searchTerm);
+                        } else if (trimmed.length >= 2) {
+                            performSearch(trimmed);
                         }
                     }}
                     onKeyDown={handleKeyDown}
@@ -168,20 +201,24 @@ const PartyAutocompleteInput = ({
                 </Form.Control.Feedback>
 
                 {/* Right side status indicator */}
-                <div className="party-autocomplete-spinner">
-                    {isLoading || isFetchingDetails ? (
+                {isLoading || isFetchingDetails ? (
+                    <div className="party-autocomplete-spinner">
                         <Spinner animation="border" size="sm" variant="primary" style={{ width: '0.85rem', height: '0.85rem' }} />
-                    ) : searchTerm && !disabled ? (
-                        <button
-                            type="button"
-                            className="party-autocomplete-clear-btn"
-                            onClick={handleClear}
-                            title="Clear search"
-                        >
-                            <FaTimes size={11} />
-                        </button>
-                    ) : null}
-                </div>
+                    </div>
+                ) : searchTerm && !disabled ? (
+                    <button
+                        type="button"
+                        className="party-autocomplete-clear-btn"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onClick={handleClear}
+                        title="Clear search"
+                    >
+                        <FaTimes size={11} />
+                    </button>
+                ) : null}
             </Form.Floating>
 
             {/* Suggestions Dropdown */}

@@ -5,7 +5,7 @@ import { FaCamera, FaTrash, FaPen } from 'react-icons/fa';
 import useCloudinaryUpload from '../../hooks/useCloudinaryUpload';
 import { destroyCloudinaryAssetApi } from '../../views/attachments/api';
 import defaultLogo from '../../assets/images/shapes/01.png';
-import { validateFileBeforeUpload, FILE_LIMITS } from '../../utils/fileValidator';
+import { validateFileBeforeUpload, FILE_LIMITS, formatSizeLimit } from '../../utils/fileValidator';
 import { toast } from 'react-toastify';
 
 const LogoUploadDropZone = ({
@@ -13,10 +13,14 @@ const LogoUploadDropZone = ({
     publicId, // logoPublicId
     onChange, // ({ logoUrl, logoPublicId }) => void
     disabled = false,
-    folder = 'ks-erp/parties/logos'
+    folder = 'parties/logos',
+    tags = 'ks-erp,logo',
+    category = 'LOGO',
+    label = 'Image'
 }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const { uploadFile, isUploading, uploadProgress, resetUpload } = useCloudinaryUpload();
+    const effectiveMaxSize = FILE_LIMITS[category] || FILE_LIMITS.LOGO;
 
     const onDrop = useCallback(async (acceptedFiles, fileRejections) => {
         if (fileRejections && fileRejections.length > 0) {
@@ -24,9 +28,9 @@ const LogoUploadDropZone = ({
             const file = rejection.file;
             const error = rejection.errors[0];
 
-            let errMsg = `Logo file "${file.name}" was rejected.`;
+            let errMsg = `${label} file "${file.name}" was rejected.`;
             if (error?.code === 'file-too-large') {
-                errMsg = `Logo exceeds 5 MB limit.`;
+                errMsg = `${label} exceeds ${formatSizeLimit(effectiveMaxSize)} limit.`;
             } else if (error?.code === 'file-invalid-type') {
                 errMsg = `Invalid image format. Allowed: JPG, PNG, WebP, SVG.`;
             } else if (error?.message) {
@@ -41,7 +45,7 @@ const LogoUploadDropZone = ({
             const file = acceptedFiles[0];
             const oldPublicId = publicId;
 
-            const validation = await validateFileBeforeUpload(file, 'LOGO');
+            const validation = await validateFileBeforeUpload(file, category);
             if (!validation.isValid) {
                 toast.error(validation.error);
                 return;
@@ -50,8 +54,8 @@ const LogoUploadDropZone = ({
             try {
                 const res = await uploadFile(file, {
                     folder,
-                    tags: 'ks-erp,party,logo',
-                    category: 'LOGO'
+                    tags,
+                    category
                 });
 
                 if (oldPublicId && oldPublicId !== res.publicId) {
@@ -59,6 +63,10 @@ const LogoUploadDropZone = ({
                         await destroyCloudinaryAssetApi({ publicId: oldPublicId, resourceType: 'image' });
                     } catch (cleanErr) {
                         console.warn('Could not clean previous Cloudinary logo:', cleanErr);
+                        const cleanMsg = cleanErr.response?.data?.message || cleanErr.message;
+                        if (cleanMsg) {
+                            toast.warning(`Cloud storage notice: ${cleanMsg}`);
+                        }
                     }
                 }
 
@@ -68,19 +76,19 @@ const LogoUploadDropZone = ({
                         logoPublicId: res.publicId
                     });
                 }
-                toast.success('Logo updated!');
+                toast.success(`${label} updated!`);
             } catch (err) {
-                console.error('Logo upload error:', err);
-                toast.error(err.message || 'Failed to upload logo');
+                console.error(`${label} upload error:`, err);
+                toast.error(err.response?.data?.message || err.message || `Failed to upload ${label.toLowerCase()}`);
             }
         }
-    }, [folder, onChange, publicId, uploadFile]);
+    }, [category, effectiveMaxSize, folder, label, onChange, publicId, tags, uploadFile]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         multiple: false,
         disabled: disabled || isUploading || isDeleting,
-        maxSize: FILE_LIMITS.LOGO, // 5 MB max
+        maxSize: effectiveMaxSize,
         accept: 'image/jpeg, image/png, image/webp, image/svg+xml, .jpg, .jpeg, .png, .webp, .svg'
     });
 
@@ -94,9 +102,14 @@ const LogoUploadDropZone = ({
         if (currentPublicId) {
             try {
                 await destroyCloudinaryAssetApi({ publicId: currentPublicId, resourceType: 'image' });
+                toast.info('Logo removed successfully');
             } catch (err) {
                 console.warn('Failed to destroy Cloudinary logo asset:', err);
+                const errMsg = err.response?.data?.message || err.message || 'Could not delete logo from cloud storage';
+                toast.warning(errMsg);
             }
+        } else {
+            toast.info('Logo removed');
         }
 
         if (onChange) {
@@ -107,7 +120,6 @@ const LogoUploadDropZone = ({
         }
 
         setIsDeleting(false);
-        toast.info('Logo removed');
     };
 
     const isBusy = isUploading || isDeleting;

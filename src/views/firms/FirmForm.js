@@ -146,7 +146,8 @@ const FirmForm = ({ mode }) => {
                                  <LogoUploadDropZone
                                     value={logoUrl}
                                     publicId={logoPublicId}
-                                    folder="ks-erp/firms/logos"
+                                    folder="firms/logos"
+                                    tags="ks-erp,firm,logo"
                                     onChange={({ logoUrl, logoPublicId }) => {
                                        setValue('logoUrl', logoUrl, { shouldValidate: true });
                                        setValue('logoPublicId', logoPublicId, { shouldValidate: true });

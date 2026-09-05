@@ -22,14 +22,15 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 5;
+  z-index: 6;
   background: transparent;
   border: none;
   color: #adb5bd;
   font-size: 14px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 2px 4px;
   line-height: 1;
+  pointer-events: auto;
   transition: color 0.15s ease-in-out;
 }
 

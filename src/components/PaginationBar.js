@@ -5,27 +5,20 @@ import { Box, Pagination, Typography } from '@mui/material';
 const PaginationBar = ({ page, pageSize, total, totalPages, onPageChange }) => {
     if (!total) return null;
 
-    // const totalPages = Math.ceil(total / pageSize);
-    // const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-    // const pageEnd = Math.min(page * pageSize, total);
+    const count = Number(totalPages) || (total && pageSize ? Math.ceil(total / pageSize) : 1) || 1;
 
     return (
         <Box
             display="flex"
             justifyContent="space-between"
             alignItems="center"
-            // mt={2}
             flexWrap="wrap"
             gap={1}
         >
-            {/* <Typography variant="body2" color="text.secondary">
-                Showing {pageStart}–{pageEnd} of {total} entries
-            </Typography> */}
-
             <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(e, value) => onPageChange(value)}
+                count={count}
+                page={Number(page) || 1}
+                onChange={(e, value) => onPageChange && onPageChange(value)}
                 color="primary"
                 shape="rounded"
                 size="medium"

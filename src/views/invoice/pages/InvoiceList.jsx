@@ -13,7 +13,8 @@ import {
     FaSyncAlt,
     FaSort,
     FaSortAlphaUpAlt,
-    FaSortAlphaDownAlt
+    FaSortAlphaDownAlt,
+    FaCopy
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import {
@@ -452,6 +453,11 @@ const InvoiceList = () => {
                                                                             <FaPen />
                                                                         </Button>
                                                                     </Link>
+                                                                    <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/duplicate`}>
+                                                                        <Button variant="outline-info" size='sm' title="Duplicate / Clone Invoice">
+                                                                            <FaCopy />
+                                                                        </Button>
+                                                                    </Link>
                                                                     <Button
                                                                         variant="outline-danger"
                                                                         size='sm'
@@ -509,7 +515,7 @@ const InvoiceList = () => {
                                         page={page}
                                         pageSize={pageSize}
                                         total={totalItems}
-                                        totalPages={pagination.totalPage}
+                                        totalPages={pagination.totalPages}
                                         onPageChange={handlePageChange}
                                     />
                                 </div>

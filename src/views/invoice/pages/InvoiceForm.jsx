@@ -20,7 +20,8 @@ import {
    FaCoins,
    FaMapMarkerAlt,
    FaPaperclip,
-   FaExternalLinkAlt
+   FaExternalLinkAlt,
+   FaCopy
 } from 'react-icons/fa';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
@@ -30,11 +31,15 @@ import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
 import useAccountingDocumentModules from '../hooks/useAccountingDocumentModules';
+import usePartyAddressSync from '../hooks/usePartyAddressSync';
+import useInvoiceDates, { DUE_PRESET_DAYS } from '../hooks/useInvoiceDates';
 import './invoice.scss';
 import PartyAutocompleteInput from '../components/PartyAutocompleteInput';
 import moment from 'moment';
 import { numberToIndianRupeesWords } from '../../../utilities/numberToWords';
 import { findDbStateByGstCode } from '../../../utilities/gstStateHelper';
+import usePartyBranchLoader from '../hooks/usePartyBranchLoader';
+import { FaBuilding, FaCheckCircle } from 'react-icons/fa';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -42,9 +47,13 @@ const defaultFormValue = {
    dueDays: 0,
    dueDate: new Date(),
    customerName: "",
+   partyId: null,
+   branchId: null,
    hasGst: false,
    gstNumber: "",
    billingAddress: {
+      branchName: "",
+      gstin: "",
       email: "",
       phoneNumber: "",
       website: "",
@@ -54,6 +63,8 @@ const defaultFormValue = {
       pincode: null
    },
    shippingAddress: {
+      branchName: "",
+      gstin: "",
       email: "",
       phoneNumber: "",
       addressLine1: "",
@@ -100,15 +111,11 @@ const defaultFormValue = {
    paymentModeId: ""
 };
 
-const DUE_PRESET_DAYS = [0, 15, 30, 45, 60, 90];
-
 const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
-   const [sameAsBilling, setSameAsBilling] = useState(false);
-   const pendingBillingCityIdRef = useRef(null);
-   const pendingShippingCityIdRef = useRef(null);
+   const isDuplicateMode = !!(mode === 'duplicate');
 
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
@@ -120,12 +127,13 @@ const InvoiceForm = ({ mode }) => {
       }
    });
 
-   const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors } } = formMethods;
+   const { register, handleSubmit, setValue, reset, getValues, control, formState: { errors }, clearErrors } = formMethods;
 
    // Watch primitive scalar values only to prevent infinite re-render loops
    const [
       selectedBillingState,
       selectedShippingState,
+      billingBranchName,
       hasChallan,
       hasPo,
       hasEwayBill,
@@ -133,11 +141,6 @@ const InvoiceForm = ({ mode }) => {
       customerName,
       hasGst,
       dueDays,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      billingPincode,
-      billingCityId,
       watchedTotal,
       watchedSubTotal,
       watchedTaxableAmount,
@@ -153,6 +156,7 @@ const InvoiceForm = ({ mode }) => {
       name: [
          "billingAddress.stateId",
          "shippingAddress.stateId",
+         "billingAddress.branchName",
          "hasChallan",
          "hasPo",
          "hasEwayBill",
@@ -160,11 +164,6 @@ const InvoiceForm = ({ mode }) => {
          "customerName",
          "hasGst",
          "dueDays",
-         "billingAddress.addressLine1",
-         "billingAddress.phoneNumber",
-         "billingAddress.email",
-         "billingAddress.pincode",
-         "billingAddress.cityId",
          "total",
          "subTotal",
          "taxableAmount",
@@ -180,145 +179,7 @@ const InvoiceForm = ({ mode }) => {
 
    const { data: invoice = {} } = useInvoiceById(invoiceId);
 
-   // Sync Shipping Address when "Same as Billing" toggle is clicked
-   const handleSameAsBillingChange = (checked) => {
-      setSameAsBilling(checked);
-      if (checked) {
-         const billing = getValues("billingAddress") || {};
-         setValue("shippingAddress.addressLine1", billing.addressLine1 || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.phoneNumber", billing.phoneNumber || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.email", billing.email || "", { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.stateId", billing.stateId ? Number(billing.stateId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.cityId", billing.cityId ? Number(billing.cityId) : null, { shouldValidate: false, shouldDirty: true });
-         setValue("shippingAddress.pincode", billing.pincode ? String(billing.pincode) : "", { shouldValidate: false, shouldDirty: true });
-      }
-   };
-
-   // Sync live updates from billing to shipping ONLY when sameAsBilling is active and values differ
-   useEffect(() => {
-      if (!sameAsBilling) return;
-
-      const currentShipping = getValues("shippingAddress") || {};
-      const bAddr = billingAddress1 || "";
-      const bPhone = billingPhone || "";
-      const bEmail = billingEmail || "";
-      const bState = selectedBillingState ? Number(selectedBillingState) : null;
-      const bCity = billingCityId ? Number(billingCityId) : null;
-      const bPin = billingPincode ? String(billingPincode) : "";
-
-      if (currentShipping.addressLine1 !== bAddr) {
-         setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.phoneNumber !== bPhone) {
-         setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: false, shouldDirty: true });
-      }
-      if (currentShipping.email !== bEmail) {
-         setValue("shippingAddress.email", bEmail, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
-         setValue("shippingAddress.stateId", bState, { shouldValidate: false, shouldDirty: true });
-      }
-      if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
-         setValue("shippingAddress.cityId", bCity, { shouldValidate: false, shouldDirty: true });
-      }
-      if (String(currentShipping.pincode || "") !== bPin) {
-         setValue("shippingAddress.pincode", bPin, { shouldValidate: false, shouldDirty: true });
-      }
-   }, [
-      sameAsBilling,
-      billingAddress1,
-      billingPhone,
-      billingEmail,
-      selectedBillingState,
-      billingCityId,
-      billingPincode,
-      setValue,
-      getValues
-   ]);
-
-   const handlePartySelect = (party) => {
-      if (!party) return;
-      const chosenName = party.displayName || party.legalName || "";
-      setValue("customerName", chosenName, { shouldValidate: true, shouldDirty: true });
-
-      const partyHasGst = Boolean(party.gstRegistered && party.gstin);
-      setValue("hasGst", partyHasGst, { shouldValidate: true, shouldDirty: true });
-      setValue("gstNumber", party.gstin || "", { shouldValidate: true, shouldDirty: true });
-
-      // Resolve real DB state ID from party GSTIN if party address has no state
-      let derivedPartyDbStateId = null;
-      if (party.gstin && String(party.gstin).length >= 2) {
-         const code = String(party.gstin).substring(0, 2);
-         const foundDbState = findDbStateByGstCode(code, billingStates);
-         if (foundDbState?.id) {
-            derivedPartyDbStateId = Number(foundDbState.id);
-         }
-      }
-
-      // Billing Address resolution
-      const bAddr = party.billingAddress || null;
-      const bStateId = bAddr?.stateId
-         ? Number(bAddr.stateId)
-         : (derivedPartyDbStateId || null);
-      const bCityId = bAddr?.cityId ? Number(bAddr.cityId) : null;
-      const bPincode = bAddr?.pincode ? String(bAddr.pincode) : "";
-      const bAddressLine1 = bAddr?.address || "";
-      const bPhone = bAddr?.phoneNumber || party.mobile || "";
-      const bEmail = bAddr?.email || party.email || "";
-      const bWebsite = bAddr?.website || party.website || "";
-
-      pendingBillingCityIdRef.current = bCityId;
-
-      setValue("billingAddress.addressLine1", bAddressLine1, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.website", bWebsite, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.stateId", bStateId, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.cityId", bCityId, { shouldValidate: true, shouldDirty: true });
-      setValue("billingAddress.pincode", bPincode, { shouldValidate: true, shouldDirty: true });
-
-      // Shipping Address resolution
-      const sAddr = (sameAsBilling || !party.shippingAddress) ? bAddr : party.shippingAddress;
-      const sStateId = sAddr?.stateId ? Number(sAddr.stateId) : bStateId;
-      const sCityId = sAddr?.cityId ? Number(sAddr.cityId) : bCityId;
-      const sPincode = sAddr?.pincode ? String(sAddr.pincode) : bPincode;
-      const sAddressLine1 = sAddr?.address || bAddressLine1;
-      const sPhone = sAddr?.phoneNumber || party.mobile || "";
-      const sEmail = sAddr?.email || party.email || "";
-
-      pendingShippingCityIdRef.current = sCityId;
-
-      setValue("shippingAddress.addressLine1", sAddressLine1, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.phoneNumber", sPhone, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.email", sEmail, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.stateId", sStateId, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.cityId", sCityId, { shouldValidate: true, shouldDirty: true });
-      setValue("shippingAddress.pincode", sPincode, { shouldValidate: true, shouldDirty: true });
-   };
-
-   // Due Date presets handler
-   const handleDuePresetClick = (days) => {
-      setValue("dueDays", days, { shouldValidate: true, shouldDirty: true });
-      if (invoiceDate) {
-         setValue(
-            "dueDate",
-            moment(invoiceDate).add(days, "days").toDate(),
-            { shouldDirty: true, shouldValidate: true }
-         );
-      }
-   };
-
-   // Reset roundoff to auto
-   const handleResetRoundOffToAuto = () => {
-      setValue("roundOffManual", false, { shouldDirty: true });
-   };
-
-   const invoiceDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"] }), []);
-   const dueDateOptons = useMemo(() => ({ dateFormat: "d/m/Y", defaultDate: ["today"], minDate: invoiceDate || "today" }), [invoiceDate]);
-
-   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
-   useFormInit({ invoice, isEditMode, setValue, reset, control, defaultFormValue });
-
+   // Master Data Queries
    const { data: productUnit = [] } = useProductUnit();
    const { data: gstSlab = [] } = useGstSlab();
    const { data: billingStates = [] } = useCountryState();
@@ -328,68 +189,67 @@ const InvoiceForm = ({ mode }) => {
    const { data: paymentStatus = [] } = usePaymentStatus();
    const { data: paymentMode = [] } = usePaymentMode();
 
-   // Asynchronously re-apply billing city once cities arrive for the selected state
-   useEffect(() => {
-      const targetCityId = pendingBillingCityIdRef.current || getValues("billingAddress.cityId");
-      if (!targetCityId || !billingCities || billingCities.length === 0) return;
+   // 1. Party Selection & Address Live Synchronization (with Multi-Branch & GST code derivation)
+   const {
+      sameAsBilling,
+      handleSameAsBillingChange,
+      handlePartySelect,
+      partyBranches,
+      setPartyBranches,
+      selectedBillingBranchId,
+      setSelectedBillingBranchId,
+      selectedShippingBranchId,
+      shippingMode,
+      handleShippingModeChange,
+      handleSelectBillingBranch,
+      handleSelectShippingBranch,
+      handleClearParty,
+      handleDetachParty,
+      resolveAndApplyShippingMode,
+      setSelectedParty
+   } = usePartyAddressSync({
+      setValue,
+      getValues,
+      control,
+      clearErrors,
+      billingStates,
+      billingCities,
+      shippingCities,
+      isEditMode: isEditMode || isDuplicateMode
+   });
 
-      const cityExists = billingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
-      if (cityExists) {
-         setValue("billingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
-         pendingBillingCityIdRef.current = null;
-      }
-   }, [billingCities, selectedBillingState, setValue, getValues]);
+   // 2. Hydrate Party Branches & Facility Selection in Edit / Duplicate Mode
+   usePartyBranchLoader({
+      invoice,
+      setSelectedParty,
+      setPartyBranches,
+      setSelectedBillingBranchId,
+      resolveAndApplyShippingMode
+   });
 
-   // Asynchronously re-apply shipping city once cities arrive for the selected state
-   useEffect(() => {
-      const targetCityId = pendingShippingCityIdRef.current || getValues("shippingAddress.cityId");
-      if (!targetCityId || !shippingCities || shippingCities.length === 0) return;
+   // 3. Invoice Dates & Due Date Presets
+   const { handleDuePresetClick, invoiceDateOptons, dueDateOptons } = useInvoiceDates({ invoiceDate, setValue });
 
-      const cityExists = shippingCities.some((c) => Number(c.id || c.cityId) === Number(targetCityId));
-      if (cityExists) {
-         setValue("shippingAddress.cityId", Number(targetCityId), { shouldValidate: true, shouldDirty: true });
-         pendingShippingCityIdRef.current = null;
-      }
-   }, [shippingCities, selectedShippingState, setValue, getValues]);
+   // 4. Reset Roundoff to Auto
+   const handleResetRoundOffToAuto = () => {
+      setValue("roundOffManual", false, { shouldDirty: true });
+   };
 
-   const { lastEditedFieldRef, isInterState } = useInvoiceCalculation({
+   // 5. Form Lifecycle, Calculation & Submit
+   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
+   useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
+   const { lastEditedFieldRef, isInterState, placeOfSupplyCode } = useInvoiceCalculation({
       control,
       setValue,
       getValues,
-      companyStateId: invoice?.companyStateId || 27,
+      companyGstin: invoice?.firm_gstin || invoice?.companyGstin,
+      companyStateId: invoice?.companyStateId || 12,
+      supplierGstCode: invoice?.firm_gstin ? invoice.firm_gstin.substring(0, 2) : "27",
       statesList: billingStates
    });
-   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel } = useAccountingDocumentModules({ invoiceId, setValue });
 
-   const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
-   const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
-   const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
-
-   const activeSelectedIds = useMemo(() => {
-      switch (activeModule) {
-         case 'challan': return currentChallanIds;
-         case 'purchaseOrder': return currentPoIds;
-         case 'ewayBill': return currentEwayBillIds;
-         default: return [];
-      }
-   }, [activeModule, currentChallanIds, currentPoIds, currentEwayBillIds]);
-
-   // Remove single linked document chip
-   const handleRemoveLinkedDoc = (key, idToRemove) => {
-      if (key === 'challan') {
-         const updated = currentChallanIds.filter(id => id !== idToRemove);
-         setValue('challanIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasChallan', false, { shouldValidate: true });
-      } else if (key === 'purchaseOrder') {
-         const updated = currentPoIds.filter(id => id !== idToRemove);
-         setValue('poIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasPo', false, { shouldValidate: true });
-      } else if (key === 'ewayBill') {
-         const updated = currentEwayBillIds.filter(id => id !== idToRemove);
-         setValue('ewayBillIds', updated, { shouldValidate: true, shouldDirty: true });
-         if (updated.length === 0) setValue('hasEwayBill', false, { shouldValidate: true });
-      }
-   };
+   // 5. Linked Document Modules (Challan, PO, E-Way Bill)
+   const { activeModule, moduleData, fetchModuleFun, openModule, closeModule, updateModuleData, submitModule, getDocumentLabel, activeSelectedIds, handleRemoveLinkedDoc, currentChallanIds, currentPoIds, currentEwayBillIds } = useAccountingDocumentModules({ invoiceId, setValue, control });
 
    // Amount in words
    const amountInWords = useMemo(() => {
@@ -403,7 +263,7 @@ const InvoiceForm = ({ mode }) => {
                <Row>
                   <Col xl="12" lg="12">
                      <Card className="border-0 shadow-sm mb-4">
-                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3">
+                        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3 flex-wrap gap-2">
                            <div className="header-title d-flex align-items-center gap-2">
                               <Button
                                  variant="outline-secondary"
@@ -415,18 +275,49 @@ const InvoiceForm = ({ mode }) => {
                               >
                                  <FaArrowLeft size={13} />
                               </Button>
-                              <h4 className="card-title mb-0 fw-bold text-dark">
-                                 {isEditMode ? 'Update' : 'Create'} Invoice
+                              <h4 className="card-title mb-0 fw-bold text-dark d-flex align-items-center gap-2 flex-wrap">
+                                 {isEditMode ? (
+                                    <>
+                                       <span>Update Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <span className="text-muted fs-6 fw-normal">#{invoice.invoiceNo}</span>
+                                       )}
+                                    </>
+                                 ) : isDuplicateMode ? (
+                                    <>
+                                       <span>Duplicate Invoice</span>
+                                       {invoice.invoiceNo && (
+                                          <Badge bg="soft-primary" className="text-primary border border-primary-subtle fs-7 fw-normal py-1 px-2">
+                                             Cloned from #{invoice.invoiceNo}
+                                          </Badge>
+                                       )}
+                                    </>
+                                 ) : (
+                                    'Create Invoice'
+                                 )}
                               </h4>
                            </div>
                            <div className="d-flex align-items-center gap-2">
+                              {isEditMode && invoiceId && (
+                                 <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="d-flex align-items-center gap-2 px-3 py-1.5 rounded-2 fw-medium shadow-none"
+                                    style={{ fontSize: '0.82rem' }}
+                                    onClick={() => navigate(`/sales/invoice/${invoiceId}/duplicate`)}
+                                    title="Duplicate / Clone this invoice"
+                                 >
+                                    <FaCopy size={13} />
+                                    <span>Duplicate Invoice</span>
+                                 </Button>
+                              )}
                               {isInterState ? (
                                  <Badge bg="info" className="px-3 py-2 fw-medium">
-                                    🌐 Inter-State (IGST)
+                                    🌐 Inter-State (IGST) {placeOfSupplyCode ? `• POS: ${placeOfSupplyCode}` : ''}
                                  </Badge>
                               ) : (
                                  <Badge bg="primary" className="px-3 py-2 fw-medium">
-                                    📍 Intra-State (CGST + SGST)
+                                    📍 Intra-State (CGST + SGST) {placeOfSupplyCode ? `• POS: ${placeOfSupplyCode}` : ''}
                                  </Badge>
                               )}
                            </div>
@@ -459,6 +350,8 @@ const InvoiceForm = ({ mode }) => {
                                           value={customerName || ''}
                                           onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
                                           onSelectParty={handlePartySelect}
+                                          onClearParty={handleClearParty}
+                                          onDetachParty={handleDetachParty}
                                           isInvalid={!!errors.customerName}
                                           errorMessage={errors.customerName?.message}
                                           placeholder="Search party by name or code..."
@@ -500,6 +393,7 @@ const InvoiceForm = ({ mode }) => {
                                                 onChange: (e) => {
                                                    const upper = (e.target.value || "").toUpperCase();
                                                    setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                   setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
                                                    if (upper.length >= 2) {
                                                       const stateCode = upper.substring(0, 2);
                                                       const dbState = findDbStateByGstCode(stateCode, billingStates);
@@ -507,7 +401,8 @@ const InvoiceForm = ({ mode }) => {
                                                          const dbStateId = Number(dbState.id);
                                                          setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
                                                          if (sameAsBilling) {
-                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: false, shouldDirty: true });
+                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                            clearErrors("shippingAddress.stateId");
                                                          }
                                                       }
                                                    }
@@ -812,16 +707,58 @@ const InvoiceForm = ({ mode }) => {
                            <hr className="my-4 border-light-subtle" />
 
                            {/* SECTION 2: BILLING & SHIPPING ADDRESSES (WITH PROPER MARGINS & OVERLAP FIX) */}
+                           {/* Hidden snapshot inputs to ensure full registration with react-hook-form */}
+                           <input type="hidden" {...register("partyId")} />
+                           <input type="hidden" {...register("branchId")} />
+                           <input type="hidden" {...register("billingAddress.branchName")} />
+                           <input type="hidden" {...register("billingAddress.gstin")} />
+                           <input type="hidden" {...register("shippingAddress.branchName")} />
+                           <input type="hidden" {...register("shippingAddress.gstin")} />
+
                            <Row className="g-4">
                               {/* Billing Address */}
                               <Col lg="6">
-                                 <div className="address-section-header">
+                                 <div className="address-section-header flex-wrap gap-2">
                                     <div className="d-flex align-items-center gap-2">
                                        <FaMapMarkerAlt className="text-primary" />
                                        <h6 className="fw-bold text-dark mb-0">Billing Address</h6>
                                     </div>
-                                    <span className="badge bg-light text-secondary border">Buyer Information</span>
+                                    <span className="badge bg-soft-primary text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style={{ fontSize: '0.72rem' }}>
+                                       Buyer Location
+                                    </span>
                                  </div>
+
+                                 {/* Symmetrical Billing Facility Selector */}
+                                 <div className="facility-select-card active-billing">
+                                    <div className="d-flex align-items-center gap-2 text-truncate">
+                                       <FaBuilding className="text-primary flex-shrink-0" size={13} />
+                                       <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Billing Facility:</span>
+                                    </div>
+                                    {partyBranches && partyBranches.length > 1 ? (
+                                       <Form.Select
+                                          size="sm"
+                                          value={selectedBillingBranchId || ''}
+                                          onChange={(e) => handleSelectBillingBranch(Number(e.target.value))}
+                                          className="facility-select"
+                                       >
+                                          {partyBranches.map((branch) => (
+                                             <option key={branch.id} value={branch.id}>
+                                                {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
+                                             </option>
+                                          ))}
+                                       </Form.Select>
+                                    ) : partyBranches && partyBranches.length === 1 ? (
+                                       <span className="fw-semibold text-dark small text-truncate d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                          {partyBranches[0]?.branchName || 'Head Office'}
+                                          {partyBranches[0]?.isDefault && <span className="badge bg-soft-primary text-primary rounded-pill px-1.5 py-0.5 ms-1" style={{ fontSize: '0.68rem' }}>Default ★</span>}
+                                       </span>
+                                    ) : (
+                                       <span className="text-muted small fst-italic" style={{ fontSize: '0.78rem' }}>
+                                          {customerName ? 'Primary Location' : 'Select Customer'}
+                                       </span>
+                                    )}
+                                 </div>
+
                                  <Row className="g-3">
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
@@ -895,7 +832,7 @@ const InvoiceForm = ({ mode }) => {
                                              isInvalid={!!errors?.billingAddress?.cityId}
                                              {...register("billingAddress.cityId")}
                                           >
-                                             <option value="">{isFetchingBillingCities ? "Loading..." : "-- City --"}</option>
+                                             <option value="">{isFetchingBillingCities ? "Loading cities..." : "-- City --"}</option>
                                              {billingCities.map((city) => (
                                                 <option key={city.id} value={city.id}>{city.name}</option>
                                              ))}
@@ -924,20 +861,90 @@ const InvoiceForm = ({ mode }) => {
 
                               {/* Shipping Address */}
                               <Col lg="6">
-                                 <div className="address-section-header">
+                                 <div className="address-section-header flex-wrap gap-2">
                                     <div className="d-flex align-items-center gap-2">
                                        <FaTruck className="text-primary" />
                                        <h6 className="fw-bold text-dark mb-0">Shipping Address</h6>
                                     </div>
-                                    <FormCheck
-                                       type="switch"
-                                       id="sameAsBillingSwitch"
-                                       label="Same as Billing"
-                                       className="small fw-semibold cursor-pointer text-primary"
-                                       checked={sameAsBilling}
-                                       onChange={(e) => handleSameAsBillingChange(e.target.checked)}
-                                    />
+                                    {/* Modern Segmented Pill Selector when party has branches, otherwise fallback to simple Same-As-Billing toggle */}
+                                    {partyBranches && partyBranches.length > 0 ? (
+                                       <div className="ship-mode-pills">
+                                          <button
+                                             type="button"
+                                             className={`ship-mode-pill ${shippingMode === 'SAME_AS_BILLING' ? 'active-same' : ''}`}
+                                             onClick={() => handleShippingModeChange('SAME_AS_BILLING')}
+                                          >
+                                             Same as Billing
+                                          </button>
+                                          {partyBranches.length > 1 && (
+                                             <button
+                                                type="button"
+                                                className={`ship-mode-pill ${shippingMode === 'OTHER_BRANCH' ? 'active-branch' : ''}`}
+                                                onClick={() => handleShippingModeChange('OTHER_BRANCH')}
+                                             >
+                                                Other Branch
+                                             </button>
+                                          )}
+                                          <button
+                                             type="button"
+                                             className={`ship-mode-pill ${shippingMode === 'CUSTOM_SITE' ? 'active-custom' : ''}`}
+                                             onClick={() => handleShippingModeChange('CUSTOM_SITE')}
+                                          >
+                                             Custom Site
+                                          </button>
+                                       </div>
+                                    ) : (
+                                       <FormCheck
+                                          type="checkbox"
+                                          id="sameAsBilling"
+                                          label="Same as Billing"
+                                          className="small fw-semibold text-secondary cursor-pointer mb-0"
+                                          style={{ fontSize: '0.82rem' }}
+                                          checked={sameAsBilling}
+                                          onChange={(e) => handleSameAsBillingChange(e.target.checked)}
+                                       />
+                                    )}
                                  </div>
+
+                                 {/* Symmetrical Shipping Facility Bar */}
+                                 <div className="facility-select-card active-shipping">
+                                    {shippingMode === 'SAME_AS_BILLING' ? (
+                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                          <FaCheckCircle className="text-primary flex-shrink-0" size={13} />
+                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                             Deliver to: <strong className="text-dark">{billingBranchName || partyBranches?.find(b => Number(b.id) === Number(selectedBillingBranchId))?.branchName || 'Billing Facility'}</strong>
+                                          </span>
+                                       </div>
+                                    ) : shippingMode === 'OTHER_BRANCH' ? (
+                                       <>
+                                          <div className="d-flex align-items-center gap-2 text-truncate">
+                                             <FaBuilding className="text-success flex-shrink-0" size={13} />
+                                             <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Ship To Branch:</span>
+                                          </div>
+                                          <Form.Select
+                                             size="sm"
+                                             value={selectedShippingBranchId || ''}
+                                             onChange={(e) => handleSelectShippingBranch(Number(e.target.value))}
+                                             className="facility-select border-success-subtle"
+                                          >
+                                             <option value="" disabled>-- Select Shipping Branch --</option>
+                                             {partyBranches.map((branch) => (
+                                                <option key={branch.id} value={branch.id}>
+                                                   {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
+                                                </option>
+                                             ))}
+                                          </Form.Select>
+                                       </>
+                                    ) : (
+                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                          <FaMapMarkerAlt className="text-secondary flex-shrink-0" size={13} />
+                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                             Custom delivery site / consignee address specified below
+                                          </span>
+                                       </div>
+                                    )}
+                                 </div>
+
                                  <Row className="g-3">
                                     <Col lg="12">
                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
@@ -1056,6 +1063,7 @@ const InvoiceForm = ({ mode }) => {
                                  productUnit={productUnit}
                                  gstSlab={gstSlab}
                                  lastEditedFieldRef={lastEditedFieldRef}
+                                 isInterState={isInterState}
                               />
                            </div>
 
@@ -1088,6 +1096,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="discountAmount"
                                                    placeholder="0.00"
                                                    className="text-end fw-semibold"
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.discountAmount}
                                                    {...register("discountAmount", {
                                                       onBlur: (e) => {
@@ -1118,6 +1128,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="other"
                                                    placeholder="0.00"
                                                    className="text-end fw-semibold"
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.other}
                                                    {...register("other", {
                                                       onBlur: (e) => {
@@ -1164,6 +1176,8 @@ const InvoiceForm = ({ mode }) => {
                                                    id="roundOff"
                                                    placeholder="0.00"
                                                    className={`text-end fw-semibold ${roundOffManual ? 'border-primary bg-primary-subtle bg-opacity-10' : ''}`}
+                                                   onFocus={(e) => e.target.select()}
+                                                   onClick={(e) => e.target.select()}
                                                    isInvalid={!!errors.roundOff}
                                                    {...register("roundOff", {
                                                       onChange: () => setValue("roundOffManual", true),

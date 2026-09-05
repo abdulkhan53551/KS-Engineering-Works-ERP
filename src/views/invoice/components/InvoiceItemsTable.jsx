@@ -5,7 +5,7 @@ import InvoiceRow from "./InvoiceRow";
 import { Table, Button } from "react-bootstrap";
 import { useMemo, useCallback } from "react";
 
-export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFieldRef }) {
+export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFieldRef, isInterState = false }) {
     const { control, getValues } = useFormContext();
     const { fields, append, remove, insert } = useFieldArray({ control, name: "items" });
 
@@ -57,8 +57,14 @@ export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFiel
                             <th style={{ width: '150px', minWidth: '140px' }} className="py-2">Sub Total (₹)</th>
                             <th style={{ width: '140px', minWidth: '130px' }} className="py-2">GST Slab</th>
                             <th style={{ width: '150px', minWidth: '140px' }} className="py-2">Taxable Amt (₹)</th>
-                            <th style={{ width: '130px', minWidth: '120px' }} className="py-2">CGST (₹)</th>
-                            <th style={{ width: '130px', minWidth: '120px' }} className="py-2">SGST (₹)</th>
+                            {!isInterState ? (
+                                <>
+                                    <th style={{ width: '130px', minWidth: '120px' }} className="py-2">CGST (₹)</th>
+                                    <th style={{ width: '130px', minWidth: '120px' }} className="py-2">SGST (₹)</th>
+                                </>
+                            ) : (
+                                <th style={{ width: '160px', minWidth: '140px' }} className="py-2">IGST (₹)</th>
+                            )}
                             <th style={{ width: '180px', minWidth: '170px' }} className="py-2">Total (₹)</th>
                             <th style={{ width: '65px', minWidth: '65px', padding: '0.4rem 0.1rem' }} className="text-center py-2">
                                 <span title="Add New Row" className="cursor-pointer" onClick={() => append(defaultItem)}>
@@ -81,6 +87,7 @@ export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFiel
                                 productUnit={productUnit}
                                 gstSlab={gstSlab}
                                 lastEditedFieldRef={lastEditedFieldRef}
+                                isInterState={isInterState}
                             />
                         ))}
                     </tbody>
