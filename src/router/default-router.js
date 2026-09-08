@@ -70,6 +70,9 @@ import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
 import ProductList from '../views/products/pages/ProductList';
 import ProductForm from '../views/products/pages/ProductForm';
 import ProductView from '../views/products/pages/ProductView';
+import PaymentReceiptList from '../views/payments/pages/PaymentReceiptList';
+import PaymentReceiptForm from '../views/payments/pages/PaymentReceiptForm';
+import PaymentReceiptDetail from '../views/payments/pages/PaymentReceiptDetail';
 
 
 export const DefaultRouter = [
@@ -128,6 +131,13 @@ export const DefaultRouter = [
                     { path: 'purchase/purchase-order', element: <PurchaseOrderList /> },
                     { path: 'purchase/purchase-order/create', element: <PurchaseOrderForm mode="create" /> },
                     { path: 'purchase/purchase-order/:id/edit', element: <PurchaseOrderForm mode="edit" /> },
+
+                    /* Payments */
+                    // Customer Receipts
+                    { path: 'payments', element: <PaymentReceiptList /> },
+                    { path: 'payments/receipts', element: <PaymentReceiptList /> },
+                    { path: 'payments/receipts/create', element: <PaymentReceiptForm /> },
+                    { path: 'payments/receipts/:id', element: <PaymentReceiptDetail /> },
                 ]
             },
             {

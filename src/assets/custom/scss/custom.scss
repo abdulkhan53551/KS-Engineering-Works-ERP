@@ -69,3 +69,20 @@
     left: -2px;
     font-size: 14px;
 }
+
+/* Suppress number input spinner buttons globally for financial and amount inputs */
+input.no-spinners::-webkit-outer-spin-button,
+input.no-spinners::-webkit-inner-spin-button,
+.no-spinners input[type="number"]::-webkit-outer-spin-button,
+.no-spinners input[type="number"]::-webkit-inner-spin-button,
+.quick-payment-modal input[type="number"]::-webkit-outer-spin-button,
+.quick-payment-modal input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input.no-spinners,
+.no-spinners input[type="number"],
+.quick-payment-modal input[type="number"] {
+    -moz-appearance: textfield !important;
+}

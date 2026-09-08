@@ -1,0 +1,394 @@
+/* =========================================================================
+   Quick Payment Modal - Flawless Financial Alignment & Compact Spacing Theme
+   ========================================================================= */
+
+.quick-payment-modal {
+    .modal-dialog {
+        max-width: 640px;
+        margin: 1.5rem auto;
+        max-height: calc(100vh - 3rem);
+    }
+
+    .modal-content {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        background: #ffffff;
+        max-height: calc(100vh - 3rem);
+        display: flex;
+        flex-direction: column;
+
+        > form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+    }
+
+    /* Fixed Modal Header */
+    .modal-header {
+        background: #fafbfc;
+        border-bottom: 1px solid #e9ecef;
+        padding: 0.75rem 1.25rem;
+        flex-shrink: 0;
+
+        .receipt-icon-badge {
+            width: 38px;
+            height: 38px;
+            margin-right: 0.85rem;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dbeafe;
+            flex-shrink: 0;
+        }
+
+        .customer-info-row {
+            font-size: 0.80rem;
+            display: flex;
+            align-items: center;
+
+            .customer-logo-pill {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                background: #eff6ff;
+                border: 1px solid #dbeafe;
+                color: #2563eb;
+                margin-right: 0.35rem !important; // Reduced, compact gap between logo & label
+                flex-shrink: 0;
+            }
+
+            .customer-title-label {
+                color: #64748b;
+                font-weight: 600;
+                margin-right: 0.35rem !important; // Proportional gap to customer name
+            }
+
+            .customer-display-name {
+                color: #1e293b;
+                font-size: 0.84rem;
+            }
+        }
+
+        .btn-close {
+            opacity: 0.5;
+            transition: opacity 0.15s ease;
+            padding: 0.4rem;
+            margin: -0.4rem -0.4rem -0.4rem auto;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+    }
+
+    /* Modal Body with smooth, dedicated scrolling for better user UX */
+    .modal-body {
+        padding: 0.85rem 1.15rem;
+        background: #ffffff;
+        overflow-y: auto !important;
+        flex: 1 1 auto;
+        max-height: calc(100vh - 200px);
+
+        /* Slim sleek scrollbar */
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+        &::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+            &:hover {
+                background: #94a3b8;
+            }
+        }
+    }
+
+    /* Invoice Summary Ribbon */
+    .invoice-summary-ribbon {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.78rem;
+
+        .summary-col {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+
+            .summary-title {
+                color: #64748b;
+                font-weight: 500;
+            }
+
+            .summary-val {
+                font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-weight: 700;
+            }
+        }
+    }
+
+    /* Hero Amount Input Card */
+    .hero-amount-card {
+        background: #f8fafc;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 0.65rem 0.95rem;
+        transition: all 0.15s ease-in-out;
+
+        &:hover {
+            border-color: #94a3b8;
+        }
+
+        &:focus-within {
+            background: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        &.has-error {
+            border-color: #ef4444;
+            background: #fffafa;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .hero-label {
+            font-size: 0.66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+
+        .hero-input-row {
+            display: flex;
+            align-items: center;
+            margin-top: 0.15rem;
+
+            .hero-currency {
+                font-size: 1.55rem;
+                font-weight: 600;
+                color: #64748b;
+                line-height: 1;
+                user-select: none;
+                margin-right: 0.35rem;
+            }
+
+            .hero-input {
+                border: none;
+                background: transparent;
+                font-size: 1.55rem;
+                font-weight: 700;
+                color: #0f172a;
+                padding: 0;
+                line-height: 1.1;
+                width: 100%;
+                font-variant-numeric: tabular-nums;
+                font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+                &:focus {
+                    outline: none;
+                    box-shadow: none;
+                }
+
+                &::placeholder {
+                    color: #cbd5e1;
+                }
+            }
+        }
+
+        .amount-words-pill {
+            display: inline-block;
+            margin-top: 0.35rem;
+            font-size: 0.70rem;
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            padding: 0.15rem 0.5rem;
+            border-radius: 5px;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .quick-action-pill {
+            font-size: 0.70rem;
+            padding: 0.15rem 0.50rem;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+
+            &.btn-pill-primary {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+
+                &:hover {
+                    background: #2563eb;
+                    color: #ffffff;
+                }
+            }
+
+            &.btn-pill-secondary {
+                background: #ffffff;
+                color: #475569;
+                border-color: #cbd5e1;
+
+                &:hover {
+                    background: #f1f5f9;
+                    color: #0f172a;
+                }
+            }
+        }
+    }
+
+    /* Standard Floating Label System (Hope UI custom-form-floating integration) */
+    .form-grid-row {
+        row-gap: 0.65rem !important;
+        margin-top: 0.65rem !important; // Little top margin for payment date & mode section
+    }
+
+    .custom-form-floating.custom-form-floating-sm {
+        margin-bottom: 0;
+
+        > .form-control,
+        > .form-select {
+            border-color: #d1d5db;
+            border-radius: 7px;
+            font-weight: 500;
+            color: #1e293b;
+
+            &:hover {
+                border-color: #9ca3af;
+            }
+
+            &:focus {
+                border-color: #2563eb;
+                box-shadow: 0 0 0 2.5px rgba(37, 99, 235, 0.12);
+            }
+        }
+
+        > label {
+            color: #64748b;
+            font-weight: 500;
+            background-color: #ffffff;
+        }
+    }
+
+    /* Deductions Panel */
+    .deductions-panel {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.50rem 0.85rem;
+        transition: all 0.15s ease;
+
+        &.is-active {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+    }
+
+    /* Reconciliation Card */
+    .reconciliation-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.50rem 0.85rem;
+
+        .recon-item {
+            .recon-label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #64748b;
+                font-weight: 600;
+                display: block;
+                margin-bottom: 1px;
+            }
+
+            .recon-value {
+                font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-weight: 700;
+                font-size: 0.86rem;
+            }
+        }
+    }
+
+    /* Fixed Modal Footer with Professional Action Buttons */
+    .modal-footer {
+        background: #fafbfc;
+        border-top: 1px solid #e9ecef;
+        padding: 0.70rem 1.25rem;
+        flex-shrink: 0;
+
+        .btn-modal-cancel {
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.84rem;
+            padding: 0.42rem 1.15rem;
+            border-radius: 7px;
+            transition: all 0.15s ease-in-out;
+
+            &:hover:not(:disabled) {
+                background-color: #e2e8f0;
+                border-color: #94a3b8;
+                color: #1e293b;
+            }
+
+            &:disabled {
+                opacity: 0.6;
+            }
+        }
+
+        .btn-modal-submit {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            border: 1px solid #1d4ed8;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.84rem;
+            padding: 0.42rem 1.25rem;
+            border-radius: 7px;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transition: all 0.15s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+
+            &:hover:not(:disabled) {
+                background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+                border-color: #1e40af;
+                box-shadow: 0 3px 8px rgba(37, 99, 235, 0.4);
+                transform: translateY(-0.5px);
+            }
+
+            &:active:not(:disabled) {
+                transform: translateY(0);
+                box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+            }
+
+            &:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+                box-shadow: none;
+                transform: none;
+            }
+        }
+    }
+}
