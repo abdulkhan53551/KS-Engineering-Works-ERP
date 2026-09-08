@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -11,9 +11,6 @@ import {
     FaSearch,
     FaTimes,
     FaSyncAlt,
-    FaSort,
-    FaSortAlphaUpAlt,
-    FaSortAlphaDownAlt,
     FaCopy,
     FaMoneyCheckAlt,
     FaHistory
@@ -30,6 +27,7 @@ import {
     useInvoicePagination,
     useRestoreInvoice
 } from '../hooks/useApi';
+import useInvoiceSort from '../hooks/useInvoiceSort';
 import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
@@ -54,9 +52,6 @@ const InvoiceList = () => {
     const { mutate: bulkDeleteInvoices } = useBulkDeleteInvoices();
     const { mutate: bulkRestoreInvoices } = useBulkRestoreInvoices();
     const { mutate: downloadInvoice, downloadingInvoiceId } = useDownloadInvoice();
-
-    // Sorting state
-    const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
     // Payment Modals State
     const [quickPaymentInvoice, setQuickPaymentInvoice] = useState(null);
@@ -114,60 +109,14 @@ const InvoiceList = () => {
         refetchPagination();
     };
 
-    // Handle column sorting
-    const handleSort = (key) => {
-        setSortConfig((prev) => {
-            if (prev.key === key) {
-                return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-            }
-            return { key, direction: 'asc' };
-        });
-    };
-
-    const renderSortIcon = (key) => {
-        if (sortConfig.key === key) {
-            return sortConfig.direction === 'asc' ? (
-                <FaSortAlphaUpAlt className="text-primary ms-1" size={10} />
-            ) : (
-                <FaSortAlphaDownAlt className="text-primary ms-1" size={10} />
-            );
-        }
-        return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
-    };
-
-    // Sorted items list
-    const sortedList = useMemo(() => {
-        let items = [...invoice];
-        if (sortConfig.key) {
-            items.sort((a, b) => {
-                let aVal = a[sortConfig.key] ?? '';
-                let bVal = b[sortConfig.key] ?? '';
-
-                // Numeric comparisons (including string amounts)
-                if (sortConfig.key === 'invoiceId' || sortConfig.key === 'taxableAmount' || sortConfig.key === 'total' || sortConfig.key === 'subTotal' || sortConfig.key === 'paidAmount' || sortConfig.key === 'balanceAmount') {
-                    const numA = Number(aVal) || 0;
-                    const numB = Number(bVal) || 0;
-                    return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
-                }
-
-                // Date comparisons
-                if (sortConfig.key === 'invoiceDate' || sortConfig.key === 'dueDate' || sortConfig.key === 'updatedAt' || sortConfig.key === 'deletedAt' || sortConfig.key === 'createdAt') {
-                    const dateA = new Date(aVal).getTime() || 0;
-                    const dateB = new Date(bVal).getTime() || 0;
-                    return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
-                }
-
-                // String comparisons
-                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-
-                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-        return items;
-    }, [invoice, sortConfig]);
+    // Column Sorting Custom Hook
+    const {
+        sortConfig,
+        setSortConfig,
+        handleSort,
+        renderSortIcon,
+        sortedList
+    } = useInvoiceSort({ items: invoice });
 
     useEffect(() => {
         setTempItems(sortedList);
