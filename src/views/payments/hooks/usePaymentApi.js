@@ -8,7 +8,15 @@ import {
     getPayments,
     getPaymentsMeta,
     getPaymentsSummary,
-    getUnpaidInvoices
+    getUnpaidInvoices,
+    createVendorPayment,
+    updateVendorPayment,
+    getVendorPayments,
+    getVendorPaymentsSummary,
+    getNextOutwardPaymentNumber,
+    cancelVendorPayment,
+    getCustomerAdvances,
+    applyAdvanceReceipt
 } from "../api";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
@@ -201,3 +209,186 @@ export const useInvoicePaymentHistory = (invoiceId) => {
         select: (res) => res?.data ?? res ?? { history: [] }
     });
 };
+
+/* =========================================================================
+   OUTWARD VENDOR PAYMENTS HOOKS
+   ========================================================================= */
+
+/**
+ * Hook to preview next sequential outward payment voucher number (PAY-XXXX)
+ */
+export const useNextOutwardPaymentNumber = () => {
+    return useQuery({
+        queryKey: ["nextOutwardPaymentNumber"],
+        queryFn: getNextOutwardPaymentNumber,
+        staleTime: 60 * 1000,
+        select: (res) => res?.data?.nextPaymentNo || res?.nextPaymentNo || res?.data?.nextNumber || res?.data || ""
+    });
+};
+
+/**
+ * Hook to list outward vendor payments with pagination and filters
+ */
+export const useVendorPayments = (filters = {}) => {
+    return useQuery({
+        queryKey: ["vendorPayments", filters],
+        queryFn: () => getVendorPayments(filters),
+        placeholderData: (prev) => prev,
+        select: (res) => {
+            const list = res?.data ?? res?.payments ?? res ?? [];
+            return Array.isArray(list) ? list : [];
+        }
+    });
+};
+
+/**
+ * Hook to fetch outward vendor payments summary KPIs
+ */
+export const useVendorPaymentsSummary = (filters = {}) => {
+    const { startDate, endDate, partyId, paymentModeId, status, search } = filters;
+    return useQuery({
+        queryKey: ["vendorPaymentsSummary", { startDate, endDate, partyId, paymentModeId, status, search }],
+        queryFn: () => getVendorPaymentsSummary({ startDate, endDate, partyId, paymentModeId, status, search }),
+        placeholderData: (prev) => prev,
+        staleTime: 60 * 1000,
+        select: (res) => {
+            const data = res?.data ?? res ?? {};
+            return {
+                totalDisbursements: Number(data.totalDisbursements ?? data.total_disbursements ?? 0),
+                totalAllocated: Number(data.totalAllocated ?? data.total_allocated ?? 0),
+                totalUnallocated: Number(data.totalUnallocated ?? data.total_unallocated ?? 0),
+                completedCount: Number(data.completedCount ?? data.completed_count ?? 0),
+                cancelledCount: Number(data.cancelledCount ?? data.cancelled_count ?? 0),
+                totalCount: Number(data.totalCount ?? data.total_count ?? 0)
+            };
+        }
+    });
+};
+
+/**
+ * Hook to record a new outward vendor payment
+ */
+export const useCreateVendorPayment = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["createVendorPayment"],
+        mutationFn: createVendorPayment,
+        onSuccess: (res) => {
+            toast.success(res?.message || "Vendor payment voucher recorded successfully.");
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBillsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidVendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["nextOutwardPaymentNumber"] });
+        },
+        onError: (err) => {
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to record vendor payment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to update an existing outward vendor payment
+ */
+export const useUpdateVendorPayment = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["updateVendorPayment"],
+        mutationFn: ({ id, data }) => updateVendorPayment(id, data),
+        onSuccess: (res) => {
+            toast.success(res?.message || "Vendor payment updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBillsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidVendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+        },
+        onError: (err) => {
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to update vendor payment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to cancel an outward vendor payment voucher (atomic rollback)
+ */
+export const useCancelVendorPayment = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["cancelVendorPayment"],
+        mutationFn: ({ id, reason }) => cancelVendorPayment(id, reason),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Vendor payment cancelled successfully and bill balances restored.");
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBillsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidVendorBills"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to cancel vendor payment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/* =========================================================================
+   CUSTOMER ADVANCE ADJUSTMENT (KNOCK-OFF) HOOKS
+   ========================================================================= */
+
+/**
+ * Hook to fetch available unallocated advances for a specific customer
+ */
+export const useCustomerAdvances = (partyId) => {
+    return useQuery({
+        queryKey: ["customerAdvances", partyId],
+        queryFn: () => getCustomerAdvances(partyId),
+        enabled: Boolean(partyId && Number(partyId) > 0),
+        staleTime: 30 * 1000,
+        select: (res) => {
+            const list = res?.data ?? res ?? [];
+            return Array.isArray(list) ? list : [];
+        }
+    });
+};
+
+/**
+ * Hook to knock off customer advance receipt against unpaid invoices
+ */
+export const useApplyCustomerAdvance = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["applyCustomerAdvance"],
+        mutationFn: ({ receiptId, allocations }) => applyAdvanceReceipt(receiptId, allocations),
+        onSuccess: (res) => {
+            toast.success(res?.message || "Advance adjusted successfully against invoices.");
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["customerAdvances"] });
+        },
+        onError: (err) => {
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to apply advance adjustment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+

@@ -604,6 +604,30 @@ const VerticalNav = memo((props) => {
                                     </Link>
                                 </Link>
                             </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/purchase/vendor-bills') ? 'active' : ''} nav-link`} to="/purchase/vendor-bills">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Vendor Bills</span>
+                                    <Link className="me-2" to="/purchase/vendor-bills/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
@@ -636,6 +660,30 @@ const VerticalNav = memo((props) => {
                                     </i>
                                     <span className="item-name">Customer Receipts</span>
                                     <Link className="me-2" to="/payments/receipts/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/payments/vendor-payments') ? 'active' : ''} nav-link`} to="/payments/vendor-payments">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Vendor Payments</span>
+                                    <Link className="me-2" to="/payments/vendor-payments/create">
                                         <Button
                                             className="d-flex align-items-center justify-content-center p-1 rounded"
                                             style={{ transition: 'all 0.2s ease' }}
