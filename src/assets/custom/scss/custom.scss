@@ -1,48 +1,52 @@
 //blog-treding
 .my-masonry-grid {
-    display: -webkit-box; 
-    display: -ms-flexbox; 
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
-    margin-left: -30px; 
+    margin-left: -30px;
     width: auto;
-  }
-  .my-masonry-grid_column {
-    padding-left: 30px; 
+}
+
+.my-masonry-grid_column {
+    padding-left: 30px;
     background-clip: padding-box;
-  }
+}
 
 //modals
-.iq-modal{
+.iq-modal {
     >.modal-dialog {
         max-width: 1400px;
     }
 }
 
 //file-manager dropzone
-.file-manager-modal{
-    .dzu-dropzone{
-        min-height:500px;
-        overflow: hidden; 
-        border:1px solid #8a92a6;
+.file-manager-modal {
+    .dzu-dropzone {
+        min-height: 500px;
+        overflow: hidden;
+        border: 1px solid #8a92a6;
     }
 }
-.dark{
-    .file-manager-modal{
-        .dzu-dropzone{
-            background-color:#151824;
+
+.dark {
+    .file-manager-modal {
+        .dzu-dropzone {
+            background-color: #151824;
+        }
     }
 }
-}
-.btn-upload{
-    input[type="file"]::file-selector-button{
+
+.btn-upload {
+    input[type="file"]::file-selector-button {
         background-color: var(--bs-primary);
         border-radius: 0.25rem;
         box-shadow: none;
-        color:white;
-        border:1px solid var(--bs-primary);
-    
+        color: white;
+        border: 1px solid var(--bs-primary);
+
     }
-    input[type="file"]::file-selector-button:hover{
+
+    input[type="file"]::file-selector-button:hover {
         background-color: rgba(var(--bs-primary), 0.9);
     }
 }
@@ -51,15 +55,15 @@
 
 //dark choices
 
-.dark .choices[data-type*=select-one]{
-    .choices__input{
-       background: #222738;
-       border-color: rgba(255,255,255,.1) !important;
+.dark .choices[data-type*=select-one] {
+    .choices__input {
+        background: #222738;
+        border-color: rgba(255, 255, 255, .1) !important;
     }
 }
 
-.dark .is-open .choices__list[aria-expanded]{
-    border-color: rgba(#ffff,.1);
+.dark .is-open .choices__list[aria-expanded] {
+    border-color: rgba(#ffff, .1);
 }
 
 .label-required {
@@ -85,4 +89,372 @@ input.no-spinners,
 .no-spinners input[type="number"],
 .quick-payment-modal input[type="number"] {
     -moz-appearance: textfield !important;
+}
+
+/* Horizontal space between brand logo and brand label */
+.navbar-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+
+    .logo-title {
+        margin-left: 0.65rem !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* Modern Professional Flatpickr Datepicker Theme */
+.flatpickr-calendar {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e2e8f0 !important;
+    font-family: inherit !important;
+    padding: 6px !important;
+
+    .flatpickr-months {
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 6px;
+
+        .flatpickr-month {
+            color: #0f172a !important;
+        }
+
+        .flatpickr-current-month {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+    }
+
+    .flatpickr-day {
+        border-radius: 8px !important;
+        font-weight: 500;
+        transition: all 0.15s ease;
+
+        &:hover {
+            background: #eff6ff !important;
+            border-color: #dbeafe !important;
+            color: #2563eb !important;
+        }
+
+        &.selected,
+        &.startRange,
+        &.endRange {
+            background: #3a57e8 !important;
+            border-color: #3a57e8 !important;
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+
+        &.today {
+            border-color: #3a57e8 !important;
+            color: #3a57e8 !important;
+            font-weight: 600;
+            background: transparent;
+
+            &.selected {
+                color: #ffffff !important;
+                background: #3a57e8 !important;
+            }
+        }
+    }
+}
+
+/* Crispy, Sharp & Clear Form Controls (Eliminate oversized / bulky fields) */
+.custom-form-floating-sm {
+    position: relative;
+
+    > .form-control:not(textarea),
+    > .form-select {
+        height: 42px !important;
+        min-height: 42px !important;
+        font-size: 0.84rem !important;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.35rem !important;
+        padding-left: 0.75rem !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+
+        &:focus {
+            border-color: #3a57e8 !important;
+            box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.15) !important;
+            outline: none !important;
+        }
+
+        &.is-invalid {
+            border-color: #dc3545 !important;
+        }
+    }
+
+    /* Proper Multi-line Textarea in Floating Labels */
+    > textarea.form-control {
+        min-height: 80px !important;
+        font-size: 0.84rem !important;
+        padding-top: 0.65rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        line-height: 1.45 !important;
+        resize: vertical !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+
+        &:focus {
+            border-color: #3a57e8 !important;
+            box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.15) !important;
+            outline: none !important;
+        }
+
+        &.is-invalid {
+            border-color: #dc3545 !important;
+        }
+    }
+
+    > label {
+        font-size: 0.78rem !important;
+        color: #64748b !important;
+    }
+
+    > textarea.form-control:not(:placeholder-shown) ~ label {
+        transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        padding: 0 0.25rem !important;
+        z-index: 3;
+    }
+
+    > textarea.form-control:focus ~ label {
+        transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        color: #3a57e8 !important;
+        padding: 0 0.25rem !important;
+        z-index: 3;
+    }
+}
+
+/* Floating Datepicker Field */
+.custom-form-floating-sm.floating-date-field {
+    position: relative;
+
+    .form-control.flatpickrdate {
+        height: 42px !important;
+        min-height: 42px !important;
+        font-size: 0.84rem !important;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.35rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 2.25rem !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        background-color: #ffffff !important;
+        cursor: pointer;
+
+        &:focus {
+            border-color: #3a57e8 !important;
+            box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.15) !important;
+            outline: none !important;
+        }
+
+        &.is-invalid {
+            border-color: #dc3545 !important;
+        }
+    }
+
+    > label {
+        font-size: 0.78rem !important;
+        padding: 0 0.25rem !important;
+        color: #64748b !important;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .form-control.flatpickrdate:focus ~ label,
+    .form-control.flatpickrdate:not(:placeholder-shown) ~ label,
+    &.has-value label {
+        transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        color: #3a57e8 !important;
+    }
+
+    .floating-date-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        pointer-events: none;
+        z-index: 4;
+        font-size: 0.85rem;
+    }
+}
+
+/* Global suppression of scroll counter and spinner arrows for numbers */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button,
+input.no-spinners::-webkit-outer-spin-button,
+input.no-spinners::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+input[type="number"],
+input.no-spinners {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}
+
+/* Restore proper vertical space between label and light horizontal border in card headers */
+.card .card-header,
+.card-header.border-bottom,
+.card .card-header.border-bottom {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+}
+
+/* Sleek, Crisp Meta Info Bar (GST / Phone) */
+.vendor-meta-chip,
+.customer-meta-chip {
+    margin-top: 7px !important;
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.76rem !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    transition: all 0.15s ease;
+
+    &:hover {
+        border-color: #cbd5e1 !important;
+    }
+}
+
+/* Fractional gap utilities so icons and labels never collapse */
+.gap-1\.5 {
+    gap: 0.5rem !important;
+}
+.gap-2\.5 {
+    gap: 0.75rem !important;
+}
+
+/* =========================================================================
+   PAYMENT DETAIL & VOUCHER VIEW (Crisp Typography & Professional Styling)
+   ========================================================================= */
+.vendor-payment-detail-view,
+.payment-detail-page,
+.vendor-bill-detail-view,
+.vendor-bills-page {
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+
+    .font-monospace {
+        font-family: 'SF Mono', 'Roboto Mono', Menlo, Consolas, Monaco, monospace !important;
+        font-variant-numeric: tabular-nums !important;
+        letter-spacing: -0.015em !important;
+    }
+
+    /* KPI Metric Cards */
+    .metric-summary-card {
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07) !important;
+        }
+
+        .metric-title {
+            font-size: 0.70rem !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            color: #64748b !important;
+        }
+
+        .metric-value {
+            font-size: 1.45rem !important;
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+        }
+
+        .metric-subtext {
+            font-size: 0.74rem !important;
+            color: #94a3b8 !important;
+        }
+    }
+
+    /* Info Table & Data Rows */
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #f1f5f9;
+
+        &:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-label {
+            font-size: 0.78rem;
+            color: #64748b;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+
+            svg {
+                flex-shrink: 0;
+                margin-right: 0.5rem !important;
+            }
+        }
+
+        .info-value {
+            font-size: 0.86rem;
+            color: #0f172a;
+            font-weight: 600;
+            text-align: right;
+        }
+    }
+
+    /* Clean detail table */
+    .bills-detail-table {
+        th {
+            font-size: 0.72rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.04em !important;
+            text-transform: uppercase !important;
+            color: #475569 !important;
+            background-color: #f8fafc !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 0.65rem 0.85rem !important;
+        }
+
+        td {
+            font-size: 0.84rem !important;
+            color: #1e293b !important;
+            padding: 0.65rem 0.85rem !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+        }
+
+        tfoot td {
+            font-size: 0.84rem !important;
+            font-weight: 700 !important;
+            background-color: #f8fafc !important;
+            border-top: 2px solid #e2e8f0 !important;
+            padding: 0.75rem 0.85rem !important;
+        }
+
+        tbody tr:hover td {
+            background-color: #f8fafc !important;
+        }
+    }
 }

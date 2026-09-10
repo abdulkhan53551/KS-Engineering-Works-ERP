@@ -73,6 +73,12 @@ import ProductView from '../views/products/pages/ProductView';
 import PaymentReceiptList from '../views/payments/pages/PaymentReceiptList';
 import PaymentReceiptForm from '../views/payments/pages/PaymentReceiptForm';
 import PaymentReceiptDetail from '../views/payments/pages/PaymentReceiptDetail';
+import VendorBillList from '../views/vendor-bills/pages/VendorBillList';
+import VendorBillForm from '../views/vendor-bills/pages/VendorBillForm';
+import VendorBillDetail from '../views/vendor-bills/pages/VendorBillDetail';
+import VendorPaymentList from '../views/payments/pages/VendorPaymentList';
+import VendorPaymentForm from '../views/payments/pages/VendorPaymentForm';
+import VendorPaymentDetail from '../views/payments/pages/VendorPaymentDetail';
 
 
 export const DefaultRouter = [
@@ -132,12 +138,23 @@ export const DefaultRouter = [
                     { path: 'purchase/purchase-order/create', element: <PurchaseOrderForm mode="create" /> },
                     { path: 'purchase/purchase-order/:id/edit', element: <PurchaseOrderForm mode="edit" /> },
 
+                    // Vendor Bills (Accounts Payable) Routes
+                    { path: 'purchase/vendor-bills', element: <VendorBillList /> },
+                    { path: 'purchase/vendor-bills/create', element: <VendorBillForm mode="create" /> },
+                    { path: 'purchase/vendor-bills/:id', element: <VendorBillDetail /> },
+                    { path: 'purchase/vendor-bills/:id/edit', element: <VendorBillForm mode="edit" /> },
+
                     /* Payments */
-                    // Customer Receipts
+                    // Customer Receipts (Inward)
                     { path: 'payments', element: <PaymentReceiptList /> },
                     { path: 'payments/receipts', element: <PaymentReceiptList /> },
                     { path: 'payments/receipts/create', element: <PaymentReceiptForm /> },
                     { path: 'payments/receipts/:id', element: <PaymentReceiptDetail /> },
+
+                    // Vendor Payments (Outward)
+                    { path: 'payments/vendor-payments', element: <VendorPaymentList /> },
+                    { path: 'payments/vendor-payments/create', element: <VendorPaymentForm /> },
+                    { path: 'payments/vendor-payments/:id', element: <VendorPaymentDetail /> },
                 ]
             },
             {

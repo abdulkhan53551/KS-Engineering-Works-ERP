@@ -5,6 +5,7 @@ import { usePaymentById } from '../hooks/usePaymentApi';
 import { downloadPaymentPdf } from '../api';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import CancelPaymentModal from '../components/modals/CancelPaymentModal';
+import ApplyAdvanceModal from '../components/modals/ApplyAdvanceModal';
 import {
     FaArrowLeft,
     FaFileDownload,
@@ -14,7 +15,8 @@ import {
     FaFileInvoice,
     FaInfoCircle,
     FaCheckCircle,
-    FaUniversity
+    FaUniversity,
+    FaBolt
 } from 'react-icons/fa';
 import moment from 'moment';
 import { toast } from 'react-toastify';
@@ -28,6 +30,7 @@ const PaymentReceiptDetail = () => {
     const navigate = useNavigate();
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [showApplyAdvanceModal, setShowApplyAdvanceModal] = useState(false);
 
     const { data: payment, isLoading, isError, error } = usePaymentById(id);
 
@@ -118,6 +121,19 @@ const PaymentReceiptDetail = () => {
                         </div>
 
                         <div className="d-flex align-items-center gap-2">
+                            {!isCancelled && unallocatedAmount > 0 && (
+                                <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => setShowApplyAdvanceModal(true)}
+                                    className="d-flex align-items-center shadow-sm text-white"
+                                    style={{ fontSize: '0.84rem', fontWeight: 600 }}
+                                >
+                                    <FaBolt size={12} style={{ marginRight: '0.45rem' }} />
+                                    <span>Apply Advance (₹{unallocatedAmount.toLocaleString('en-IN')})</span>
+                                </Button>
+                            )}
+
                             <Button
                                 variant="outline-primary"
                                 size="sm"
@@ -336,6 +352,15 @@ const PaymentReceiptDetail = () => {
                 onHide={() => setCancelModalOpen(false)}
                 payment={payment}
             />
+
+            {/* Apply Advance Modal */}
+            {payment && (
+                <ApplyAdvanceModal
+                    show={showApplyAdvanceModal}
+                    onHide={() => setShowApplyAdvanceModal(false)}
+                    receipt={payment}
+                />
+            )}
         </Container>
     );
 };

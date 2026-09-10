@@ -6,6 +6,7 @@ import { usePaymentMode } from '../../dashboard/hooks/api.hooks';
 import { downloadPaymentPdf } from '../api';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import CancelPaymentModal from '../components/modals/CancelPaymentModal';
+import ApplyAdvanceModal from '../components/modals/ApplyAdvanceModal';
 import {
     FaPlus,
     FaSearch,
@@ -22,7 +23,8 @@ import {
     FaCalendarAlt,
     FaCreditCard,
     FaCheckCircle,
-    FaWallet
+    FaWallet,
+    FaBolt
 } from 'react-icons/fa';
 import moment from 'moment';
 import { toast } from 'react-toastify';
@@ -46,8 +48,11 @@ const PaymentReceiptList = () => {
     const [sortBy, setSortBy] = useState('payment_date');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Modals
+    // Cancel modal state
     const [cancelModalState, setCancelModalState] = useState({ show: false, payment: null });
+
+    // Apply Advance modal state
+    const [applyAdvanceReceipt, setApplyAdvanceReceipt] = useState(null);
 
     // Payment Modes master
     const { data: paymentModes = [] } = usePaymentMode();
@@ -471,7 +476,13 @@ const PaymentReceiptList = () => {
                                             {/* Advance Retained */}
                                             <td className="px-3 py-2.5 text-end">
                                                 {advance > 0 ? (
-                                                    <Badge bg="soft-success" className="text-success font-monospace px-2 py-0.5" style={{ fontSize: '0.78rem' }}>
+                                                    <Badge
+                                                        bg="soft-success"
+                                                        className="text-success font-monospace px-2 py-0.5 cursor-pointer"
+                                                        style={{ fontSize: '0.78rem', cursor: 'pointer' }}
+                                                        title="Click to apply advance to invoices"
+                                                        onClick={() => !isCancelled && setApplyAdvanceReceipt(item)}
+                                                    >
                                                         +₹{advance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                     </Badge>
                                                 ) : (
@@ -498,6 +509,22 @@ const PaymentReceiptList = () => {
                                                             <FaEye size={13} />
                                                         </Link>
                                                     </OverlayTrigger>
+
+                                                    {/* Apply Advance Action (if unallocated funds exist) */}
+                                                    {advance > 0 && !isCancelled && (
+                                                        <OverlayTrigger overlay={<Tooltip>Apply Advance to Invoices</Tooltip>}>
+                                                            <Button
+                                                                variant="outline-success"
+                                                                size="sm"
+                                                                className="d-inline-flex align-items-center justify-content-center"
+                                                                style={{ width: '32px', height: '32px', borderRadius: '7px', padding: 0 }}
+                                                                onClick={() => setApplyAdvanceReceipt(item)}
+                                                                title="Apply Advance"
+                                                            >
+                                                                <FaBolt size={12} />
+                                                            </Button>
+                                                        </OverlayTrigger>
+                                                    )}
 
                                                     {/* Download PDF */}
                                                     <OverlayTrigger overlay={<Tooltip>Download PDF Voucher</Tooltip>}>
@@ -588,6 +615,15 @@ const PaymentReceiptList = () => {
                 onHide={() => setCancelModalState({ show: false, payment: null })}
                 payment={cancelModalState.payment}
             />
+
+            {/* Apply Advance Modal */}
+            {applyAdvanceReceipt && (
+                <ApplyAdvanceModal
+                    show={Boolean(applyAdvanceReceipt)}
+                    onHide={() => setApplyAdvanceReceipt(null)}
+                    receipt={applyAdvanceReceipt}
+                />
+            )}
         </Container>
     );
 };

@@ -210,7 +210,7 @@ const PaymentReceiptForm = () => {
                                         required
                                     />
                                     {selectedParty && (
-                                        <div className="customer-meta-chip mt-2.5 p-2 rounded-2 d-flex flex-wrap align-items-center" style={{ gap: '1rem', fontSize: '0.76rem' }}>
+                                        <div className="customer-meta-chip mt-2 p-2 rounded-2 d-flex flex-wrap align-items-center" style={{ marginTop: '7px', gap: '1rem', fontSize: '0.76rem' }}>
                                             <span className="d-inline-flex align-items-center text-secondary">
                                                 <FaIdCard className="text-muted" size={13} style={{ marginRight: '0.45rem' }} />
                                                 <span style={{ marginRight: '0.35rem' }}>GSTIN:</span>
