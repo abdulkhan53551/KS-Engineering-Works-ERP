@@ -147,6 +147,10 @@ export const useVendorBillForm = ({ mode = 'create' } = {}) => {
         setValue('partyId', pId, { shouldValidate: true, shouldDirty: true });
         setValue('vendorName', name, { shouldValidate: true, shouldDirty: true });
         setBillNoConflictError('');
+
+        // Auto-update due days and due date from vendor's agreed credit period
+        const creditDays = Math.max(0, parseInt(party.creditPeriodDays, 10) || 0);
+        handleDueDaysChange(creditDays);
     };
 
     const handleClearParty = () => {
