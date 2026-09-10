@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -11,12 +11,13 @@ import {
     FaSearch,
     FaTimes,
     FaSyncAlt,
-    FaSort,
-    FaSortAlphaUpAlt,
-    FaSortAlphaDownAlt,
-    FaCopy
+    FaCopy,
+    FaMoneyCheckAlt,
+    FaHistory
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
+import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
+import InvoicePaymentHistoryModal from '../../payments/components/modals/InvoicePaymentHistoryModal';
 import {
     useBulkDeleteInvoices,
     useBulkRestoreInvoices,
@@ -26,6 +27,7 @@ import {
     useInvoicePagination,
     useRestoreInvoice
 } from '../hooks/useApi';
+import useInvoiceSort from '../hooks/useInvoiceSort';
 import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
@@ -51,8 +53,9 @@ const InvoiceList = () => {
     const { mutate: bulkRestoreInvoices } = useBulkRestoreInvoices();
     const { mutate: downloadInvoice, downloadingInvoiceId } = useDownloadInvoice();
 
-    // Sorting state
-    const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
+    // Payment Modals State
+    const [quickPaymentInvoice, setQuickPaymentInvoice] = useState(null);
+    const [historyModalState, setHistoryModalState] = useState({ show: false, invoiceId: null, invoiceNo: '' });
 
     // Data fetching state
     const [tempItems, setTempItems] = useState([]);
@@ -106,60 +109,14 @@ const InvoiceList = () => {
         refetchPagination();
     };
 
-    // Handle column sorting
-    const handleSort = (key) => {
-        setSortConfig((prev) => {
-            if (prev.key === key) {
-                return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-            }
-            return { key, direction: 'asc' };
-        });
-    };
-
-    const renderSortIcon = (key) => {
-        if (sortConfig.key === key) {
-            return sortConfig.direction === 'asc' ? (
-                <FaSortAlphaUpAlt className="text-primary ms-1" size={10} />
-            ) : (
-                <FaSortAlphaDownAlt className="text-primary ms-1" size={10} />
-            );
-        }
-        return <FaSort className="text-muted ms-1 opacity-25" size={10} />;
-    };
-
-    // Sorted items list
-    const sortedList = useMemo(() => {
-        let items = [...invoice];
-        if (sortConfig.key) {
-            items.sort((a, b) => {
-                let aVal = a[sortConfig.key] ?? '';
-                let bVal = b[sortConfig.key] ?? '';
-
-                // Numeric comparisons (including string amounts)
-                if (sortConfig.key === 'invoiceId' || sortConfig.key === 'taxableAmount' || sortConfig.key === 'total' || sortConfig.key === 'subTotal') {
-                    const numA = Number(aVal) || 0;
-                    const numB = Number(bVal) || 0;
-                    return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
-                }
-
-                // Date comparisons
-                if (sortConfig.key === 'invoiceDate' || sortConfig.key === 'dueDate' || sortConfig.key === 'updatedAt' || sortConfig.key === 'deletedAt' || sortConfig.key === 'createdAt') {
-                    const dateA = new Date(aVal).getTime() || 0;
-                    const dateB = new Date(bVal).getTime() || 0;
-                    return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
-                }
-
-                // String comparisons
-                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-
-                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-        return items;
-    }, [invoice, sortConfig]);
+    // Column Sorting Custom Hook
+    const {
+        sortConfig,
+        setSortConfig,
+        handleSort,
+        renderSortIcon,
+        sortedList
+    } = useInvoiceSort({ items: invoice });
 
     useEffect(() => {
         setTempItems(sortedList);
@@ -334,6 +291,13 @@ const InvoiceList = () => {
                                                     </th>
                                                     <th
                                                         className="cursor-pointer user-select-none py-2"
+                                                        style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                        onClick={() => handleSort('balanceAmount')}
+                                                    >
+                                                        Balance Due {renderSortIcon('balanceAmount')}
+                                                    </th>
+                                                    <th
+                                                        className="cursor-pointer user-select-none py-2"
                                                         style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
                                                         onClick={() => handleSort('paymentStatusCode')}
                                                     >
@@ -406,9 +370,47 @@ const InvoiceList = () => {
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(item.total ?? item.grandTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <span className={`badge ${item.color || 'bg-secondary'}`}>
-                                                                    {item.paymentStatusCode || '-'}
-                                                                </span>
+                                                                {(() => {
+                                                                    const total = Number(item.total ?? item.grandTotal ?? 0);
+                                                                    const paid = Number(item.paidAmount ?? item.paid_amount ?? 0);
+                                                                    const balance = item.balanceAmount !== undefined && item.balanceAmount !== null
+                                                                        ? Number(item.balanceAmount)
+                                                                        : (item.balance_amount !== undefined && item.balance_amount !== null
+                                                                            ? Number(item.balance_amount)
+                                                                            : Math.max(0, total - paid));
+
+                                                                    return balance <= 0.001 ? (
+                                                                        <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
+                                                                            ₹0.00
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <div>
+                                                                            <span className="font-monospace fw-bold text-danger">
+                                                                                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                            </span>
+                                                                            {paid > 0 && (
+                                                                                <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
+                                                                                    Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <OverlayTrigger placement="top" overlay={<Tooltip>Click to view payment history</Tooltip>}>
+                                                                    <span
+                                                                        className={`badge ${item.color || 'bg-secondary'}`}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                        onClick={() => setHistoryModalState({
+                                                                            show: true,
+                                                                            invoiceId: item.invoiceId,
+                                                                            invoiceNo: item.invoiceNo
+                                                                        })}
+                                                                    >
+                                                                        {item.paymentStatusCode || '-'}
+                                                                    </span>
+                                                                </OverlayTrigger>
                                                             </td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
                                                         </>
@@ -434,6 +436,45 @@ const InvoiceList = () => {
                                                         <div className="flex align-items-center list-user-action">
                                                             {!isTrash ? (
                                                                 <>
+                                                                    {(() => {
+                                                                        const total = Number(item.total ?? item.grandTotal ?? 0);
+                                                                        const paid = Number(item.paidAmount ?? item.paid_amount ?? 0);
+                                                                        const balance = item.balanceAmount !== undefined && item.balanceAmount !== null
+                                                                            ? Number(item.balanceAmount)
+                                                                            : (item.balance_amount !== undefined && item.balance_amount !== null
+                                                                                ? Number(item.balance_amount)
+                                                                                : Math.max(0, total - paid));
+
+                                                                        return balance > 0.001 ? (
+                                                                            <Button
+                                                                                variant="outline-success"
+                                                                                size="sm"
+                                                                                className="me-2"
+                                                                                title="Record Payment"
+                                                                                onClick={() => setQuickPaymentInvoice({
+                                                                                    ...item,
+                                                                                    partyId: item.partyId || item.party_id,
+                                                                                    balanceAmount: balance,
+                                                                                    paidAmount: paid
+                                                                                })}
+                                                                            >
+                                                                                <FaMoneyCheckAlt />
+                                                                            </Button>
+                                                                        ) : null;
+                                                                    })()}
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="me-2"
+                                                                        title="Payment History"
+                                                                        onClick={() => setHistoryModalState({
+                                                                            show: true,
+                                                                            invoiceId: item.invoiceId,
+                                                                            invoiceNo: item.invoiceNo
+                                                                        })}
+                                                                    >
+                                                                        <FaHistory />
+                                                                    </Button>
                                                                     <Button
                                                                         variant="outline-primary"
                                                                         size="sm"
@@ -494,7 +535,7 @@ const InvoiceList = () => {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={isTrash ? 8 : 11} className="text-center py-4 text-muted">
+                                                <td colSpan={isTrash ? 8 : 12} className="text-center py-4 text-muted">
                                                     {isTrash
                                                         ? (debouncedSearch ? `No deleted invoices matching "${debouncedSearch}"` : 'Recycle Bin is empty.')
                                                         : (debouncedSearch ? `No invoices matching "${debouncedSearch}"` : 'No invoices found.')
@@ -524,6 +565,27 @@ const InvoiceList = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Quick Payment Settlement Modal */}
+            {quickPaymentInvoice && (
+                <QuickPaymentModal
+                    show={!!quickPaymentInvoice}
+                    invoice={quickPaymentInvoice}
+                    onHide={() => {
+                        setQuickPaymentInvoice(null);
+                        refetchList();
+                        refetchPagination();
+                    }}
+                />
+            )}
+
+            {/* Payment History Audit Modal */}
+            <InvoicePaymentHistoryModal
+                show={historyModalState.show}
+                invoiceId={historyModalState.invoiceId}
+                invoiceNo={historyModalState.invoiceNo}
+                onHide={() => setHistoryModalState({ show: false, invoiceId: null, invoiceNo: '' })}
+            />
         </>
     );
 };

@@ -172,6 +172,10 @@ export const useCreateInvoice = () => {
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
                 navigate(`/sales/invoice/${id}/edit`, { replace: true });
             }
+        },
+        onError: (err) => {
+            const message = err?.response?.data?.message || err?.message || "Failed to create invoice.";
+            toast.error(message);
         }
     });
 };
@@ -196,6 +200,10 @@ export const useUpdateInvoice = (id) => {
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
             }
+        },
+        onError: (err) => {
+            const message = err?.response?.data?.message || err?.message || "Failed to update invoice.";
+            toast.error(message);
         }
     });
 };
@@ -222,6 +230,7 @@ export const useDeleteInvoice = () => {
         },
         onError: (error) => {
             dispatch(clearLoading());
+            closeModal();
             const message =
                 error?.response?.data?.message ||
                 error?.message ||
@@ -250,6 +259,7 @@ export const useRestoreInvoice = () => {
         },
         onError: (error) => {
             dispatch(clearLoading());
+            closeModal();
             const message =
                 error?.response?.data?.message ||
                 error?.message ||
@@ -280,6 +290,7 @@ export const useBulkDeleteInvoices = () => {
         },
         onError: (error) => {
             dispatch(clearLoading());
+            closeModal();
             const message =
                 error?.response?.data?.message ||
                 error?.message ||

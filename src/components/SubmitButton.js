@@ -1,12 +1,12 @@
 import { Button, Spinner } from "react-bootstrap";
 
-const SubmitButton = ({ isLoading, isEditMode }) => {
+const SubmitButton = ({ isLoading, isEditMode, disabled = false }) => {
     const label = isEditMode
         ? (isLoading ? 'Updating...' : 'Update')
         : (isLoading ? 'Adding...' : 'Add');
 
     return (
-        <Button type="submit" variant="primary" disabled={isLoading}>
+        <Button type="submit" variant="primary" disabled={isLoading || disabled}>
             {isLoading && (
                 <Spinner
                     as="span"

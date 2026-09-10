@@ -607,6 +607,51 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
+                <Accordion.Item as="li" eventKey="sidebar-payments" bsPrefix={`nav-item ${active === 'payments' ? 'active' : ''} `} onClick={() => setActive('payments')}>
+                    <CustomToggle eventKey="sidebar-payments" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                        <i className="icon">
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.4" d="M19.4616 4H4.53852C3.13626 4 2 5.14585 2 6.55996V17.44C2 18.8532 3.13626 20 4.53852 20H19.4616C20.8639 20 22 18.8532 22 17.44V6.55996C22 5.14585 20.8639 4 19.4616 4Z" fill="currentColor"></path>
+                                <path d="M2 9.5H22V12.5H2V9.5Z" fill="currentColor"></path>
+                                <circle cx="6.5" cy="16" r="1.5" fill="currentColor"></circle>
+                            </svg>
+                        </i>
+                        <span className="item-name">Payments</span>
+                        <i className="right-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </i>
+                    </CustomToggle>
+                    <Accordion.Collapse eventKey="sidebar-payments">
+                        <ul className="sub-nav">
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/payments') ? 'active' : ''} nav-link`} to="/payments/receipts">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Customer Receipts</span>
+                                    <Link className="me-2" to="/payments/receipts/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                        </ul>
+                    </Accordion.Collapse>
+                </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-organization" bsPrefix={`nav-item ${active === 'organization' ? 'active' : ''} `} onClick={() => setActive('organization')}>
                     <CustomToggle eventKey="sidebar-organization" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
