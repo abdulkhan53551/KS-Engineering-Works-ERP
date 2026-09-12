@@ -1,7 +1,7 @@
 // src/lib/axios.js
 import axios from "axios";
 import { store } from "../store";
-import { loginSuccess, logout } from "../store/auth.slice";
+import { setAccessToken, logout } from "../store/auth.slice";
 import { localStorageKey } from "../utilities/constant/constants";
 
 const api = axios.create({
@@ -31,44 +31,80 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response: handle 401 and refresh
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+// Response: handle 401 and refresh with queue mutex
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const { response } = error;
+        const originalRequest = error.config;
         const { dispatch, getState } = store;
 
-        if (response?.status === 401 && !error.config._retry) {
-            error.config._retry = true; // avoid infinite loop
+        // Skip refresh attempts for auth endpoints
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/refresh-token') ||
+            originalRequest?.url?.includes('/auth/login') ||
+            originalRequest?.url?.includes('/auth/register');
+
+        if (response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        return api(originalRequest);
+                    })
+                    .catch((err) => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
 
             try {
-                // 👇 no refresh token in body, cookie gets sent automatically
+                // Refresh token cookie is sent automatically with withCredentials: true
                 const res = await axios.post(
                     `${process.env.REACT_APP_API_BASE_URL}/auth/refresh-token`,
                     {},
-                    { withCredentials: true } // VERY important
+                    { withCredentials: true }
                 );
 
-                const newAccessToken = res.data.data.accessToken;
+                const newAccessToken = res.data?.data?.accessToken;
+                if (!newAccessToken) {
+                    throw new Error('No access token received from refresh');
+                }
 
-                // Update Redux with new token
-                dispatch(
-                    loginSuccess({
-                        user: getState().authReducer.user,
-                        accessToken: newAccessToken,
-                    })
-                );
+                // Update Redux with new access token without resetting user profile
+                dispatch(setAccessToken(newAccessToken));
 
                 // Update localStorage
                 localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, newAccessToken);
 
-                // retry original request with new token
-                error.config.headers.Authorization = `Bearer ${newAccessToken}`;
-                return api.request(error.config);
+                // Flush queue with new token
+                processQueue(null, newAccessToken);
+
+                // Retry original request with new token
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                return api(originalRequest);
             } catch (refreshErr) {
+                processQueue(refreshErr, null);
                 dispatch(logout());
                 localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
                 return Promise.reject(refreshErr);
+            } finally {
+                isRefreshing = false;
             }
         }
 

@@ -1,202 +1,1220 @@
-import React from 'react'
-import {Row,Col,Image} from 'react-bootstrap'
-import {Link} from 'react-router-dom'
-import Card from '../../../components/Card'
+import React, { useState, useMemo } from 'react';
+import {
+    Row,
+    Col,
+    Card,
+    Table,
+    Button,
+    Form,
+    Badge,
+    Modal,
+    Spinner,
+    InputGroup,
+    OverlayTrigger,
+    Tooltip,
+    Alert
+} from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import {
+    FaSearch,
+    FaTimes,
+    FaTrash,
+    FaUndo,
+    FaExclamationTriangle,
+    FaKey,
+    FaUserShield,
+    FaCopy,
+    FaCheck,
+    FaUserCheck,
+    FaUserTimes,
+    FaSyncAlt,
+    FaSort,
+    FaSortAlphaUpAlt,
+    FaSortAlphaDownAlt
+} from 'react-icons/fa';
+import TrashTabFilter from '../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../components/trash/BulkActionBar';
+import PaginationBar from '../../../components/PaginationBar';
+import useListManager from '../../../hooks/useListManager';
+import useDebounce from '../../../hooks/useDebounce';
+import {
+    useUsers,
+    useUsersPagination,
+    useDeleteUser,
+    useRestoreUser,
+    useBulkDeleteUsers,
+    useBulkRestoreUsers,
+    useUpdateUserRole,
+    useToggleUserStatus,
+    useAdminGenerateResetLink,
+    useRoles
+} from '../../users/hooks/useUserApi';
+import {
+    useApproveRegistration,
+    useRejectRegistration
+} from '../../auth/hooks/api.hooks';
+import { toast } from 'react-toastify';
+import PasswordResetDeliveryModal from '../../admin/components/PasswordResetDeliveryModal';
 
-// img
-import shap1 from '../../../assets/images/shapes/01.png'
-import shap2 from '../../../assets/images/shapes/02.png'
-import shap3 from '../../../assets/images/shapes/03.png'
-import shap4 from '../../../assets/images/shapes/04.png'
-import shap5 from '../../../assets/images/shapes/05.png'
-import shap6 from '../../../assets/images/shapes/06.png'
+const UserList = () => {
+    // Current logged-in user from Redux
+    const currentUser = useSelector((state) => state.authReducer?.user);
+    const currentUserId = currentUser?.id;
 
-const userlist = [
-   {
-      img: `${shap1}`,
-      name: 'Anna Sthesia',
-      phone: '(760) 756 7568',
-      email: 'annasthesia@gmail.com',
-      country: 'USA',
-      status: 'Active',
-      company: 'Acme Corporation',
-      joindate: '2019/12/01',
-      color: 'bg-primary'
-   },
-   {
-      img: `${shap2}`,
-      name: 'Brock Lee',
-      phone: '+62 5689 458 658',
-      email: 'brocklee@gmail.com',
-      country: 'Indonesia',
-      status: 'Active',
-      company: 'Soylent Corp',
-      joindate: '2019/12/01',
-      color: 'bg-primary'
-   },
-   {
-      img: `${shap3}`,
-      name: 'Dan Druff',
-      phone: '+55 6523 456 856',
-      email: 'dandruff@gmail.com',
-      country: 'Brazil',
-      status: 'Pending',
-      company: 'Acme Corporation',
-      joindate: '2019/12/01',
-      color: 'bg-warning'
-   }, 
-   {
-      img: `${shap4}`,
-      name: 'Hans Olo',
-      phone: '+91 2586 253 125',
-      email: 'hansolo@gmail.com',
-      country: 'India',
-      status: 'Inactive',
-      company: 'Vehement Capital',
-      joindate: '2019/12/01', 
-      color: 'bg-danger'
-   },
-   {
-      img: `${shap5}`,
-      name: 'Lynn Guini',
-      phone: '+27 2563 456 589',
-      email: 'lynnguini@gmail.com',
-      country: 'Africa',
-      status: 'Active',
-      company: 'Massive Dynamic',
-      joindate: '2019/12/01',
-      color: 'bg-primary'
-   },
-   {
-      img: `${shap6}`,
-      name: 'Eric Shun',
-      phone: '+55 25685 256 589',
-      email: 'ericshun@gmail.com',
-      country: 'Brazil',
-      status: 'Pending',
-      company: 'Globex Corporation',
-      joindate: '2019/12/01',
-      color: 'bg-warning'
-   },
-   {
-      img: `${shap3}`,
-      name: 'aaronottix',
-      phone: '(760) 756 7568',
-      email: 'budwiser@ymail.com',
-      country: 'USA',
-      status: 'Hold',
-      company: 'Acme Corporation',
-      joindate: '2019/12/01',
-      color: 'bg-info'
-   },
-   {
-      img: `${shap5}`,
-      name: 'Marge Arita',
-      phone: '+27 5625 456 589',
-      email: 'margearita@gmail.com',
-      country: 'Africa',
-      status: 'Complite',
-      company: 'Vehement Capital',
-      joindate: '2019/12/01',
-      color: 'bg-success'
-   },
-   {
-      img: `${shap2}`,
-      name: 'Bill Dabear',
-      phone: '+55 2563 456 589',
-      email: 'billdabear@gmail.com',
-      country: 'Brazil',
-      status: 'Active',
-      company: 'Massive Dynamic',
-      joindate: '2019/12/01',
-      color: 'bg-primary'
-   }
-]
+    // Filters
+    const [statusFilter, setStatusFilter] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
 
-const UserList =() =>{
-  return(
-     <>
-       <div>
-         <Row>
-            <Col sm="12">
-               <Card>
-                  <Card.Header className="d-flex justify-content-between">
-                     <div className="header-title">
-                        <h4 className="card-title">User List</h4>
-                     </div>
-                  </Card.Header>
-                  <Card.Body className="px-0">
-                     <div className="table-responsive">
-                        <table id="user-list-table" className="table table-striped" role="grid" data-toggle="data-table">
-                           <thead>
-                              <tr className="ligth">
-                                 <th>Profile</th>
-                                 <th>Name</th>
-                                 <th>Contact</th>
-                                 <th>Email</th>
-                                 <th>Country</th>
-                                 <th>Status</th>
-                                 <th>Company</th>
-                                 <th>Join Date</th>
-                                 <th min-width= "100px">Action</th>
-                              </tr>
-                           </thead>
-                           <tbody>
-                           { 
-                              userlist.map((item,idx) => (
-                              <tr key={idx}>
-                                 <td className="text-center"><Image className="bg-soft-primary rounded img-fluid avatar-40 me-3" src={item.img} alt="profile"/></td>
-                                 <td>{item.name}</td>
-                                 <td>{item.phone}</td>
-                                 <td>{item.email}</td>
-                                 <td>{item.country}</td>
-                                 <td><span className={`badge ${item.color}`}>{item.status}</span></td>
-                                 <td>{item.company}</td>
-                                 <td>{item.joindate}</td>
-                                 <td>
-                                    <div className="flex align-items-center list-user-action">
-                                       <Link className="btn btn-sm btn-icon btn-success" data-toggle="tooltip" data-placement="top"  title="Add" data-original-title="Add" to="#">
-                                          <span className="btn-inner">
-                                             <svg width="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" >
-                                                <path fillRule="evenodd" clipRule="evenodd" d="M9.87651 15.2063C6.03251 15.2063 2.74951 15.7873 2.74951 18.1153C2.74951 20.4433 6.01251 21.0453 9.87651 21.0453C13.7215 21.0453 17.0035 20.4633 17.0035 18.1363C17.0035 15.8093 13.7415 15.2063 9.87651 15.2063Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path fillRule="evenodd" clipRule="evenodd" d="M9.8766 11.886C12.3996 11.886 14.4446 9.841 14.4446 7.318C14.4446 4.795 12.3996 2.75 9.8766 2.75C7.3546 2.75 5.3096 4.795 5.3096 7.318C5.3006 9.832 7.3306 11.877 9.8456 11.886H9.8766Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path d="M19.2036 8.66919V12.6792" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path d="M21.2497 10.6741H17.1597" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                             </svg>                                        
-                                          </span>
-                                       </Link>{' '}
-                                       <Link className="btn btn-sm btn-icon btn-warning" data-toggle="tooltip" data-placement="top" title="Edit" data-original-title="Edit" to="#">
-                                          <span className="btn-inner">
-                                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M11.4925 2.78906H7.75349C4.67849 2.78906 2.75049 4.96606 2.75049 8.04806V16.3621C2.75049 19.4441 4.66949 21.6211 7.75349 21.6211H16.5775C19.6625 21.6211 21.5815 19.4441 21.5815 16.3621V12.3341" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path fillRule="evenodd" clipRule="evenodd" d="M8.82812 10.921L16.3011 3.44799C17.2321 2.51799 18.7411 2.51799 19.6721 3.44799L20.8891 4.66499C21.8201 5.59599 21.8201 7.10599 20.8891 8.03599L13.3801 15.545C12.9731 15.952 12.4211 16.181 11.8451 16.181H8.09912L8.19312 12.401C8.20712 11.845 8.43412 11.315 8.82812 10.921Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path d="M15.1655 4.60254L19.7315 9.16854" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                             </svg>
-                                          </span>
-                                       </Link>{' '}
-                                       <Link className="btn btn-sm btn-icon btn-danger" data-toggle="tooltip" data-placement="top" title="Delete" data-original-title="Delete" to="#">
-                                          <span className="btn-inner">
-                                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor">
-                                                <path d="M19.3248 9.46826C19.3248 9.46826 18.7818 16.2033 18.4668 19.0403C18.3168 20.3953 17.4798 21.1893 16.1088 21.2143C13.4998 21.2613 10.8878 21.2643 8.27979 21.2093C6.96079 21.1823 6.13779 20.3783 5.99079 19.0473C5.67379 16.1853 5.13379 9.46826 5.13379 9.46826" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path d="M20.708 6.23975H3.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                                <path d="M17.4406 6.23973C16.6556 6.23973 15.9796 5.68473 15.8256 4.91573L15.5826 3.69973C15.4326 3.13873 14.9246 2.75073 14.3456 2.75073H10.1126C9.53358 2.75073 9.02558 3.13873 8.87558 3.69973L8.63258 4.91573C8.47858 5.68473 7.80258 6.23973 7.01758 6.23973" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                             </svg>
-                                          </span>
-                                       </Link>{' '}
+    // Search input with debounce
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 400);
+
+    // Query params for fetching
+    const [tabIsTrash, setTabIsTrash] = useState(false);
+    const [pageState, setPageState] = useState(1);
+    const [pageSizeState, setPageSizeState] = useState(10);
+    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const renderSortIcon = (key) => {
+        if (sortConfig.key === key) {
+            return sortConfig.direction === 'asc' ? (
+                <FaSortAlphaUpAlt className="text-primary ms-1" size={11} />
+            ) : (
+                <FaSortAlphaDownAlt className="text-primary ms-1" size={11} />
+            );
+        }
+        return <FaSort className="text-muted ms-1 opacity-25" size={11} />;
+    };
+
+    const queryParams = useMemo(() => ({
+        page: pageState,
+        pageSize: pageSizeState,
+        search: debouncedSearch,
+        status: tabIsTrash ? '' : statusFilter,
+        roleId: roleFilter ? Number(roleFilter) : null,
+        trash: tabIsTrash,
+        sortBy: sortConfig.key,
+        sortOrder: sortConfig.direction
+    }), [pageState, pageSizeState, debouncedSearch, statusFilter, roleFilter, tabIsTrash, sortConfig]);
+
+    // TanStack Queries
+    const {
+        data: users = [],
+        isLoading: loadingUsers,
+        refetch: refetchUsers
+    } = useUsers(queryParams);
+
+    // Client-side sorting for instant reordering
+    const sortedUsers = useMemo(() => {
+        if (!sortConfig.key) return users;
+        return [...users].sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            if (sortConfig.key === 'role') {
+                aVal = a.role?.name || a.role_name || '';
+                bVal = b.role?.name || b.role_name || '';
+            } else if (sortConfig.key === 'userName') {
+                aVal = `${a.firstName || ''} ${a.lastName || ''} ${a.userName || ''}`.trim().toLowerCase();
+                bVal = `${b.firstName || ''} ${b.lastName || ''} ${b.userName || ''}`.trim().toLowerCase();
+            } else if (sortConfig.key === 'email') {
+                aVal = (a.email || '').toLowerCase();
+                bVal = (b.email || '').toLowerCase();
+            } else if (sortConfig.key === 'createdAt' || sortConfig.key === 'deletedAt') {
+                aVal = new Date(aVal || 0).getTime();
+                bVal = new Date(bVal || 0).getTime();
+            }
+
+            if (aVal == null) aVal = '';
+            if (bVal == null) bVal = '';
+
+            if (typeof aVal === 'string') {
+                return sortConfig.direction === 'asc'
+                    ? aVal.localeCompare(bVal)
+                    : bVal.localeCompare(aVal);
+            }
+            return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+        });
+    }, [users, sortConfig]);
+
+    const {
+        data: pagination = {},
+        isLoading: loadingPagination,
+        refetch: refetchPagination
+    } = useUsersPagination(queryParams);
+
+    const { data: roles = [] } = useRoles();
+
+    // List manager for row selection
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useListManager({
+        items: sortedUsers,
+        idKey: 'id'
+    });
+
+    // Mutations
+    const { mutate: deleteUserMutate, isPending: isDeletingUser } = useDeleteUser();
+    const { mutate: restoreUserMutate, isPending: isRestoringUser } = useRestoreUser();
+    const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteUsers();
+    const { mutate: bulkRestoreMutate, isPending: isBulkRestoring } = useBulkRestoreUsers();
+    const { mutate: updateRoleMutate, isPending: isUpdatingRole } = useUpdateUserRole();
+    const { mutate: toggleStatusMutate, isPending: isTogglingStatus } = useToggleUserStatus();
+    const { mutate: generateResetMutate, isPending: isGeneratingReset } = useAdminGenerateResetLink();
+    const { mutate: approveUser, isPending: isApprovingUser } = useApproveRegistration();
+    const { mutate: rejectUser, isPending: isRejectingUser } = useRejectRegistration();
+
+    // Modals
+    const [roleModal, setRoleModal] = useState({ show: false, user: null, roleId: '' });
+    const [approveModal, setApproveModal] = useState({ show: false, user: null, roleId: '' });
+    const [resetLinkModal, setResetLinkModal] = useState({
+        show: false,
+        user: null,
+        resetData: null
+    });
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        variant: 'danger',
+        confirmText: 'Confirm',
+        onConfirm: null
+    });
+
+    // Handlers
+    const handleTabChange = (trashState) => {
+        setTabIsTrash(trashState);
+        setPageState(1);
+        handleDeselectAll();
+    };
+
+    const handlePageChange = (newPage) => {
+        setPageState(newPage);
+        handleDeselectAll();
+    };
+
+    const handlePageSizeChange = (newSize) => {
+        setPageSizeState(Number(newSize));
+        setPageState(1);
+        handleDeselectAll();
+    };
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        setPageState(1);
+        handleDeselectAll();
+    };
+
+    const clearSearch = () => {
+        setSearchTerm('');
+        setPageState(1);
+        handleDeselectAll();
+    };
+
+    const handleRefresh = () => {
+        refetchUsers();
+        refetchPagination();
+        toast.info('User directory refreshed');
+    };
+
+    // Role assignment
+    const handleOpenRoleModal = (user) => {
+        setRoleModal({
+            show: true,
+            user,
+            roleId: String(user.roleId || '')
+        });
+    };
+
+    const handleConfirmRoleChange = () => {
+        if (!roleModal.user || !roleModal.roleId) return;
+        updateRoleMutate(
+            { id: roleModal.user.id, roleId: Number(roleModal.roleId) },
+            {
+                onSuccess: () => {
+                    setRoleModal({ show: false, user: null, roleId: '' });
+                }
+            }
+        );
+    };
+
+    // Approval & Re-Approval
+    const handleOpenApproveModal = (user) => {
+        const defaultRole = roles.find(r => r.id === user.roleId) || roles.find(r => r.slug === 'employee') || roles[0];
+        setApproveModal({
+            show: true,
+            user,
+            roleId: defaultRole ? String(defaultRole.id) : ''
+        });
+    };
+
+    const handleConfirmApproveUser = () => {
+        if (!approveModal.user || !approveModal.roleId) return;
+        approveUser(
+            { id: approveModal.user.id, roleId: Number(approveModal.roleId) },
+            {
+                onSuccess: () => {
+                    setApproveModal({ show: false, user: null, roleId: '' });
+                    refetchUsers();
+                    refetchPagination();
+                }
+            }
+        );
+    };
+
+    const handleRejectUser = (user) => {
+        setConfirmModal({
+            show: true,
+            title: 'Reject / Revoke User Access',
+            message: `Are you sure you want to reject/revoke access for ${getFullName(user)} (@${user.userName})? The account will be deactivated and unable to sign in.`,
+            variant: 'danger',
+            confirmText: 'Reject Account',
+            onConfirm: () => {
+                rejectUser(user.id, {
+                    onSuccess: () => {
+                        setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                        refetchUsers();
+                        refetchPagination();
+                    }
+                });
+            }
+        });
+    };
+
+    // Active Toggle
+    const handleToggleStatus = (user) => {
+        const nextStatus = !user.isActive;
+        if (!nextStatus) {
+            setConfirmModal({
+                show: true,
+                title: 'Deactivate User Account',
+                message: `Deactivating ${getFullName(user)} (@${user.userName}) will immediately revoke active sessions and prevent login until reactivated. Proceed?`,
+                variant: 'warning',
+                confirmText: 'Deactivate Account',
+                onConfirm: () => {
+                    toggleStatusMutate({ id: user.id, isActive: false });
+                    setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                }
+            });
+        } else {
+            toggleStatusMutate({ id: user.id, isActive: true });
+        }
+    };
+
+    // Password Reset
+    const handleGenerateReset = (user) => {
+        generateResetMutate(user.id, {
+            onSuccess: (res) => {
+                setResetLinkModal({
+                    show: true,
+                    user: res?.data?.user || user,
+                    resetData: res?.data
+                });
+            }
+        });
+    };
+
+    // Delete / Trash
+    const handleSingleDelete = (user) => {
+        setConfirmModal({
+            show: true,
+            title: 'Move User to Recycle Bin',
+            message: `Are you sure you want to move ${getFullName(user)} (@${user.userName}) to the Recycle Bin? The user will be deactivated and unable to log in.`,
+            variant: 'warning',
+            confirmText: 'Move to Trash',
+            onConfirm: () => {
+                deleteUserMutate(
+                    { id: user.id, permanent: false },
+                    {
+                        onSuccess: () => {
+                            setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                            handleDeselectAll();
+                        }
+                    }
+                );
+            }
+        });
+    };
+
+    const handleRestore = (user) => {
+        restoreUserMutate(user.id, {
+            onSuccess: () => {
+                handleDeselectAll();
+            }
+        });
+    };
+
+    const handlePermanentDelete = (user) => {
+        setConfirmModal({
+            show: true,
+            title: 'Permanently Purge User',
+            message: `CRITICAL: You are about to permanently delete ${getFullName(user)} (@${user.userName}). This user record and credentials will be permanently erased from the database. This action CANNOT be undone.`,
+            variant: 'danger',
+            confirmText: 'Delete Permanently',
+            onConfirm: () => {
+                deleteUserMutate(
+                    { id: user.id, permanent: true },
+                    {
+                        onSuccess: () => {
+                            setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                            handleDeselectAll();
+                        }
+                    }
+                );
+            }
+        });
+    };
+
+    // Bulk actions
+    const handleBulkDelete = () => {
+        setConfirmModal({
+            show: true,
+            title: 'Move Selected to Recycle Bin',
+            message: `Are you sure you want to move ${selectedCount} selected user(s) to the Recycle Bin? Any Super Admin account in the selection will be protected.`,
+            variant: 'warning',
+            confirmText: 'Move to Trash',
+            onConfirm: () => {
+                bulkDeleteMutate(
+                    { ids: selectedIds, permanent: false },
+                    {
+                        onSuccess: () => {
+                            setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                            handleDeselectAll();
+                        }
+                    }
+                );
+            }
+        });
+    };
+
+    const handleBulkRestore = () => {
+        bulkRestoreMutate(
+            { ids: selectedIds },
+            {
+                onSuccess: () => {
+                    handleDeselectAll();
+                }
+            }
+        );
+    };
+
+    const handleBulkPermanentDelete = () => {
+        setConfirmModal({
+            show: true,
+            title: 'Permanently Delete Selected Users',
+            message: `DANGER: You are about to permanently purge ${selectedCount} selected user(s). All credentials and records will be deleted forever. Proceed?`,
+            variant: 'danger',
+            confirmText: 'Purge Selected',
+            onConfirm: () => {
+                bulkDeleteMutate(
+                    { ids: selectedIds, permanent: true },
+                    {
+                        onSuccess: () => {
+                            setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null });
+                            handleDeselectAll();
+                        }
+                    }
+                );
+            }
+        });
+    };
+
+    // Formatters & UI helpers
+    const getFullName = (u) => {
+        const full = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim();
+        return full || u?.userName || u?.email || 'User';
+    };
+
+    const getInitial = (u) => {
+        const initial = u?.firstName?.[0] || u?.userName?.[0] || 'U';
+        return initial.toUpperCase();
+    };
+
+    const getRoleBadge = (slug, name) => {
+        switch (slug) {
+            case 'super-admin':
+                return <Badge bg="danger" className="px-2 py-1">{name || 'Super Admin'}</Badge>;
+            case 'admin':
+                return <Badge bg="primary" className="px-2 py-1">{name || 'Admin'}</Badge>;
+            case 'manager':
+                return <Badge bg="info" className="text-dark px-2 py-1">{name || 'Manager'}</Badge>;
+            default:
+                return <Badge bg="secondary" className="px-2 py-1">{name || 'Employee'}</Badge>;
+        }
+    };
+
+    const getApprovalBadge = (status) => {
+        switch (status) {
+            case 'APPROVED':
+                return <Badge bg="soft-success" className="text-success border border-success-subtle px-2 py-1">Approved</Badge>;
+            case 'PENDING':
+                return <Badge bg="soft-warning" className="text-warning border border-warning-subtle px-2 py-1">Pending</Badge>;
+            case 'REJECTED':
+                return <Badge bg="soft-danger" className="text-danger border border-danger-subtle px-2 py-1">Rejected</Badge>;
+            default:
+                return <Badge bg="light" className="text-muted border px-2 py-1">{status || 'Unknown'}</Badge>;
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const totalRecords = Number(pagination?.total) || users.length || 0;
+    const totalPages = Number(pagination?.totalPages) || (totalRecords && pageSizeState ? Math.ceil(totalRecords / pageSizeState) : 1) || 1;
+    const activeCount = pagination?.activeCount !== undefined ? Number(pagination.activeCount) : (tabIsTrash ? 0 : users.length);
+    const trashCount = pagination?.trashCount !== undefined ? Number(pagination.trashCount) : (tabIsTrash ? users.length : 0);
+
+    return (
+        <div className="container-fluid py-4">
+            {/* Page Header (with crisp white background) */}
+            <div className="bg-white p-3 p-md-4 rounded shadow-sm mb-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 className="mb-1 text-dark font-weight-bold d-flex align-items-center gap-2">
+                        <FaUserShield className="text-primary" size={22} />
+                        User Directory & Management
+                    </h4>
+                    <p className="text-muted mb-0 small">
+                        Administer user accounts, assign authorization roles, manage passwords, and oversee the recycle bin.
+                    </p>
+                </div>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <Link
+                        to="/dashboard/admin/approvals"
+                        className="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 shadow-none fw-semibold"
+                    >
+                        <FaUserCheck size={13} />
+                        <span>Pending Approvals</span>
+                    </Link>
+                    <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={handleRefresh}
+                        className="d-flex align-items-center gap-1 shadow-none"
+                    >
+                        <FaSyncAlt size={12} className={loadingUsers ? 'fa-spin' : ''} />
+                        <span>Refresh</span>
+                    </Button>
+                </div>
+            </div>
+
+            {/* Filter & Tabs Bar */}
+            <Card className="mb-3 border-0 shadow-sm">
+                <Card.Body className="p-3">
+                    <Row className="g-3 align-items-center">
+                        {/* Tab Filter: Active vs Recycle Bin */}
+                        <Col xs={12} lg={4} className="d-flex align-items-center">
+                            <TrashTabFilter
+                                isTrash={tabIsTrash}
+                                onTabChange={handleTabChange}
+                                activeCount={activeCount}
+                                trashCount={trashCount}
+                                activeLabel="Active Users"
+                                trashLabel="Recycle Bin"
+                            />
+                        </Col>
+
+                        {/* Search & Select Filters */}
+                        <Col xs={12} lg={8}>
+                            <div className="d-flex align-items-center gap-2 flex-wrap justify-content-lg-end">
+                                {/* Search Input with Debounce */}
+                                <div style={{ minWidth: '220px', flex: '1 1 200px' }}>
+                                    <InputGroup size="sm">
+                                        <InputGroup.Text className="bg-white border-end-0">
+                                            <FaSearch className="text-muted" size={12} />
+                                        </InputGroup.Text>
+                                        <Form.Control
+                                            placeholder="Search by name, @username, email..."
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            className="border-start-0 ps-0"
+                                        />
+                                        {searchTerm && (
+                                            <Button
+                                                variant="outline-secondary"
+                                                className="border-start-0 border"
+                                                onClick={clearSearch}
+                                            >
+                                                <FaTimes size={10} />
+                                            </Button>
+                                        )}
+                                    </InputGroup>
+                                </div>
+
+                                {/* Status Filter (Only in Active tab) */}
+                                {!tabIsTrash && (
+                                    <Form.Select
+                                        size="sm"
+                                        value={statusFilter}
+                                        onChange={(e) => {
+                                            setStatusFilter(e.target.value);
+                                            setPageState(1);
+                                        }}
+                                        style={{ width: 'auto', minWidth: '140px' }}
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="APPROVED">Approved (Active)</option>
+                                        <option value="PENDING">Pending Approval</option>
+                                        <option value="REJECTED">Rejected</option>
+                                        <option value="INACTIVE">Deactivated</option>
+                                    </Form.Select>
+                                )}
+
+                                {/* Role Filter */}
+                                <Form.Select
+                                    size="sm"
+                                    value={roleFilter}
+                                    onChange={(e) => {
+                                        setRoleFilter(e.target.value);
+                                        setPageState(1);
+                                    }}
+                                    style={{ width: 'auto', minWidth: '140px' }}
+                                >
+                                    <option value="">All Roles</option>
+                                    {roles.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.name}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </div>
+                        </Col>
+                    </Row>
+
+                    {/* Bulk Action Bar */}
+                    <BulkActionBar
+                        selectedCount={selectedCount}
+                        isTrash={tabIsTrash}
+                        onBulkDelete={handleBulkDelete}
+                        onBulkRestore={handleBulkRestore}
+                        onBulkPermanentDelete={handleBulkPermanentDelete}
+                        onClearSelection={handleDeselectAll}
+                        isLoading={isBulkDeleting || isBulkRestoring}
+                    />
+                </Card.Body>
+            </Card>
+
+            {/* Main Table Card */}
+            <Card className="border-0 shadow-sm">
+                <Card.Body className="p-0 position-relative">
+                    <div
+                        className="no-scrollbar"
+                        style={{
+                            overflowX: 'auto',
+                            overflowY: 'visible',
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none',
+                            WebkitOverflowScrolling: 'touch'
+                        }}
+                    >
+                        <Table hover className="table-sortable align-middle mb-0 w-100" style={{ minWidth: '1050px', tableLayout: 'auto' }}>
+                            {/* Table Header with pristine white background */}
+                            <thead
+                                className="bg-white text-secondary border-bottom"
+                                style={{
+                                    backgroundColor: '#ffffff',
+                                    fontSize: '0.82rem'
+                                }}
+                            >
+                                <tr>
+                                    <th style={{ width: '40px' }} className="text-center px-2 bg-white">
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={isAllSelected}
+                                            ref={(el) => el && (el.indeterminate = isIndeterminate)}
+                                            onChange={handleSelectAll}
+                                            disabled={loadingUsers || sortedUsers.length === 0}
+                                        />
+                                    </th>
+                                    <th style={{ width: '55px', cursor: 'pointer' }} className="text-center px-2 bg-white user-select-none" onClick={() => handleSort('id')}>
+                                        #ID {renderSortIcon('id')}
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('userName')}>
+                                        User {renderSortIcon('userName')}
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('email')}>
+                                        Email {renderSortIcon('email')}
+                                    </th>
+                                    <th style={{ width: '115px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('role')}>
+                                        Role {renderSortIcon('role')}
+                                    </th>
+                                    <th style={{ width: '105px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('approvalStatus')}>
+                                        Approval {renderSortIcon('approvalStatus')}
+                                    </th>
+                                    {!tabIsTrash ? (
+                                        <th style={{ width: '90px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('isActive')}>
+                                            Active {renderSortIcon('isActive')}
+                                        </th>
+                                    ) : (
+                                        <th style={{ width: '140px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('deletedAt')}>
+                                            Deleted Detail {renderSortIcon('deletedAt')}
+                                        </th>
+                                    )}
+                                    <th style={{ width: '95px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('createdAt')}>
+                                        Joined {renderSortIcon('createdAt')}
+                                    </th>
+                                    <th className="text-end px-3 bg-white" style={{ width: '160px' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody style={{ fontSize: '0.88rem' }}>
+                                {loadingUsers ? (
+                                    <tr>
+                                        <td colSpan="9" className="text-center py-5">
+                                            <Spinner animation="border" variant="primary" size="sm" className="me-2" />
+                                            <span className="text-muted">Loading users directory...</span>
+                                        </td>
+                                    </tr>
+                                ) : sortedUsers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="9" className="text-center py-5">
+                                            <div className="text-muted">
+                                                <FaUserTimes size={36} className="text-secondary opacity-50 mb-2" />
+                                                <p className="mb-0 fw-medium">
+                                                    {tabIsTrash
+                                                        ? 'Recycle Bin is empty. No deleted users found.'
+                                                        : 'No users found matching the selected filters.'}
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    sortedUsers.map((u) => {
+                                        const isSelf = u.id === currentUserId;
+                                        const isChecked = selectedIds.includes(u.id);
+
+                                        return (
+                                            <tr key={u.id} className={isChecked ? 'table-active' : ''}>
+                                                {/* Select Checkbox */}
+                                                <td className="text-center px-2" style={{ width: '40px' }}>
+                                                    <Form.Check
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={() => handleSelectRow(u.id)}
+                                                        disabled={isSelf && !tabIsTrash}
+                                                    />
+                                                </td>
+
+                                                {/* User ID */}
+                                                <td className="text-center px-2 text-muted fw-semibold" style={{ width: '55px', fontSize: '0.82rem' }}>
+                                                    #{u.id}
+                                                </td>
+
+                                                {/* User Info */}
+                                                <td>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div
+                                                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
+                                                            style={{
+                                                                width: '36px',
+                                                                height: '36px',
+                                                                backgroundColor: isSelf ? '#0d6efd' : '#6c757d',
+                                                                fontSize: '0.85rem'
+                                                            }}
+                                                        >
+                                                            {getInitial(u)}
+                                                        </div>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <span className="fw-semibold text-dark text-truncate d-inline-block" style={{ maxWidth: '170px' }} title={getFullName(u)}>
+                                                                    {getFullName(u)}
+                                                                </span>
+                                                                {isSelf && (
+                                                                    <Badge bg="primary" className="ms-1 flex-shrink-0" style={{ fontSize: '0.65rem' }}>
+                                                                        You
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-muted text-truncate" style={{ fontSize: '0.75rem', maxWidth: '170px' }}>
+                                                                @{u.userName || '-'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* Email */}
+                                                <td>
+                                                    <span className="text-dark text-break" style={{ fontSize: '0.85rem' }}>{u.email}</span>
+                                                </td>
+
+                                                {/* Role */}
+                                                <td>
+                                                    {getRoleBadge(u.roleSlug, u.roleName)}
+                                                </td>
+
+                                                {/* Approval Status */}
+                                                <td>
+                                                    {getApprovalBadge(u.approvalStatus)}
+                                                </td>
+
+                                                {/* Active Switch (Active Tab) or Deleted Detail (Trash Tab) */}
+                                                {!tabIsTrash ? (
+                                                    <td>
+                                                        <OverlayTrigger
+                                                            placement="top"
+                                                            overlay={
+                                                                <Tooltip>
+                                                                    {isSelf
+                                                                        ? 'You cannot deactivate your own account'
+                                                                        : u.isActive
+                                                                        ? 'Click to deactivate account'
+                                                                        : 'Click to activate account'}
+                                                                </Tooltip>
+                                                            }
+                                                        >
+                                                            <div className="d-inline-block">
+                                                                <Form.Check
+                                                                    type="switch"
+                                                                    id={`user-status-${u.id}`}
+                                                                    checked={Boolean(u.isActive)}
+                                                                    onChange={() => handleToggleStatus(u)}
+                                                                    disabled={isSelf || isTogglingStatus}
+                                                                    label={
+                                                                        <span
+                                                                            style={{ fontSize: '0.78rem' }}
+                                                                            className={u.isActive ? 'text-success fw-medium' : 'text-muted'}
+                                                                        >
+                                                                            {u.isActive ? 'Active' : 'Inactive'}
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </OverlayTrigger>
+                                                    </td>
+                                                ) : (
+                                                    <td>
+                                                        <div className="text-danger fw-medium" style={{ fontSize: '0.78rem' }}>
+                                                            Deleted {formatDateTime(u.deletedAt)}
+                                                        </div>
+                                                        {u.deletedByName && (
+                                                            <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                                                by {u.deletedByName}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                )}
+
+                                                {/* Joined Date */}
+                                                <td>
+                                                    <span className="text-muted text-nowrap" style={{ fontSize: '0.82rem' }}>
+                                                        {formatDate(u.createdAt)}
+                                                    </span>
+                                                </td>
+
+                                                {/* Actions Column (Guaranteed Single-Line flex-nowrap) */}
+                                                <td className="text-end px-3" style={{ width: '160px', whiteSpace: 'nowrap' }}>
+                                                    {!tabIsTrash ? (
+                                                        <div className="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap" style={{ whiteSpace: 'nowrap' }}>
+                                                            {/* Re-Approve button if REJECTED */}
+                                                            {u.approvalStatus === 'REJECTED' && (
+                                                                <OverlayTrigger
+                                                                    placement="top"
+                                                                    overlay={<Tooltip>Re-Approve User Account & Assign Role</Tooltip>}
+                                                                >
+                                                                    <span>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                            className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                            onClick={() => handleOpenApproveModal(u)}
+                                                                            disabled={isApprovingUser}
+                                                                        >
+                                                                            <FaUserCheck size={13} />
+                                                                        </Button>
+                                                                    </span>
+                                                                </OverlayTrigger>
+                                                            )}
+
+                                                            {/* Approve button if PENDING */}
+                                                            {u.approvalStatus === 'PENDING' && (
+                                                                <OverlayTrigger
+                                                                    placement="top"
+                                                                    overlay={<Tooltip>Approve Registration & Assign Role</Tooltip>}
+                                                                >
+                                                                    <span>
+                                                                        <Button
+                                                                            variant="success"
+                                                                            size="sm"
+                                                                            style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                            className="d-inline-flex align-items-center justify-content-center shadow-none text-white"
+                                                                            onClick={() => handleOpenApproveModal(u)}
+                                                                            disabled={isApprovingUser}
+                                                                        >
+                                                                            <FaUserCheck size={13} />
+                                                                        </Button>
+                                                                    </span>
+                                                                </OverlayTrigger>
+                                                            )}
+
+                                                            {/* Revoke/Reject button if APPROVED */}
+                                                            {u.approvalStatus === 'APPROVED' && !isSelf && (
+                                                                <OverlayTrigger
+                                                                    placement="top"
+                                                                    overlay={<Tooltip>Reject / Revoke Account Access</Tooltip>}
+                                                                >
+                                                                    <span>
+                                                                        <Button
+                                                                            variant="outline-warning"
+                                                                            size="sm"
+                                                                            style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                            className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                            onClick={() => handleRejectUser(u)}
+                                                                            disabled={isRejectingUser}
+                                                                        >
+                                                                            <FaUserTimes size={13} />
+                                                                        </Button>
+                                                                    </span>
+                                                                </OverlayTrigger>
+                                                            )}
+
+                                                            {/* Change Role */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {isSelf ? 'Cannot change own role' : 'Change User Role'}
+                                                                    </Tooltip>
+                                                                }
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-primary"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handleOpenRoleModal(u)}
+                                                                        disabled={isSelf}
+                                                                    >
+                                                                        <FaUserShield size={13} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+
+                                                            {/* Generate Password Reset Link */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Generate Password Reset Link</Tooltip>}
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-info"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handleGenerateReset(u)}
+                                                                        disabled={isGeneratingReset}
+                                                                    >
+                                                                        <FaKey size={13} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+
+                                                            {/* Move to Trash */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {isSelf ? 'Cannot trash own account' : 'Move to Recycle Bin'}
+                                                                    </Tooltip>
+                                                                }
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-danger"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handleSingleDelete(u)}
+                                                                        disabled={isSelf || isDeletingUser}
+                                                                    >
+                                                                        <FaTrash size={12} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap" style={{ whiteSpace: 'nowrap' }}>
+                                                            {/* Restore */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Restore to Active Directory</Tooltip>}
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-success"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handleRestore(u)}
+                                                                        disabled={isRestoringUser}
+                                                                    >
+                                                                        <FaUndo size={12} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+
+                                                            {/* Delete Permanently */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Permanently Purge Record</Tooltip>}
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-danger"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handlePermanentDelete(u)}
+                                                                        disabled={isDeletingUser}
+                                                                    >
+                                                                        <FaExclamationTriangle size={12} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+
+                    {/* Table Footer with PaginationBar and Page Size Selector */}
+                    {(totalRecords > 0 || users.length > 0) && (
+                        <div className="d-flex align-items-center justify-content-between p-3 border-top flex-wrap gap-2 bg-white">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="text-muted" style={{ fontSize: '0.84rem' }}>
+                                    Showing {pagination.pageStart || (totalRecords > 0 ? (pageState - 1) * pageSizeState + 1 : 0)} - {pagination.pageEnd || Math.min(pageState * pageSizeState, totalRecords)} of {totalRecords} users
+                                </span>
+                                <Form.Select
+                                    size="sm"
+                                    value={pageSizeState}
+                                    onChange={(e) => handlePageSizeChange(e.target.value)}
+                                    style={{ width: 'auto', fontSize: '0.82rem' }}
+                                >
+                                    <option value={10}>10 / page</option>
+                                    <option value={25}>25 / page</option>
+                                    <option value={50}>50 / page</option>
+                                    <option value={100}>100 / page</option>
+                                </Form.Select>
+                            </div>
+
+                            <PaginationBar
+                                page={pageState}
+                                pageSize={pageSizeState}
+                                total={totalRecords}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
+                        </div>
+                    )}
+                </Card.Body>
+            </Card>
+
+            {/* Modal: Change User Role */}
+            <Modal
+                show={roleModal.show}
+                onHide={() => setRoleModal({ show: false, user: null, roleId: '' })}
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title className="h6 d-flex align-items-center gap-2">
+                        <FaUserShield className="text-primary" />
+                        Change User Role
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {roleModal.user && (
+                        <div>
+                            <p className="text-muted mb-3" style={{ fontSize: '0.88rem' }}>
+                                Select a new authorization role for{' '}
+                                <strong>{getFullName(roleModal.user)}</strong> (<code>@{roleModal.user.userName}</code>).
+                            </p>
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-semibold" style={{ fontSize: '0.84rem' }}>
+                                    Role Assignment
+                                </Form.Label>
+                                <Form.Select
+                                    value={roleModal.roleId}
+                                    onChange={(e) =>
+                                        setRoleModal((prev) => ({ ...prev, roleId: e.target.value }))
+                                    }
+                                >
+                                    {roles.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.name} {r.slug === 'super-admin' ? '(Super Admin)' : ''}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setRoleModal({ show: false, user: null, roleId: '' })}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleConfirmRoleChange}
+                        disabled={isUpdatingRole}
+                    >
+                        {isUpdatingRole ? <Spinner animation="border" size="sm" /> : 'Save Changes'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal: Approve / Re-Approve User */}
+            <Modal
+                show={approveModal.show}
+                onHide={() => setApproveModal({ show: false, user: null, roleId: '' })}
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title className="h6 d-flex align-items-center gap-2">
+                        <FaUserCheck className="text-success" />
+                        {approveModal.user?.approvalStatus === 'REJECTED'
+                            ? 'Re-Approve User Registration'
+                            : 'Approve User Registration'}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {approveModal.user && (
+                        <div>
+                            <Alert variant={approveModal.user.approvalStatus === 'REJECTED' ? 'warning' : 'info'} className="py-2 mb-3 small">
+                                <strong>User:</strong> {getFullName(approveModal.user)} ({approveModal.user.email})
+                                {approveModal.user.approvalStatus === 'REJECTED' && (
+                                    <div className="mt-1 font-weight-bold">
+                                        Re-approving will activate this account and grant system access.
                                     </div>
-                                 </td>
-                              </tr>))}
-                           </tbody>
-                        </table>
-                     </div>
-                  </Card.Body>
-               </Card>
-            </Col>
-         </Row>
-      </div>
-     </>
-  )
+                                )}
+                            </Alert>
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-semibold" style={{ fontSize: '0.84rem' }}>
+                                    Assign Authorization Role <span className="text-danger">*</span>
+                                </Form.Label>
+                                <Form.Select
+                                    value={approveModal.roleId}
+                                    onChange={(e) =>
+                                        setApproveModal((prev) => ({ ...prev, roleId: e.target.value }))
+                                    }
+                                >
+                                    <option value="">-- Select a Role --</option>
+                                    {roles.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.name} {r.slug === 'super-admin' ? '(Super Admin)' : ''}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setApproveModal({ show: false, user: null, roleId: '' })}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="success"
+                        size="sm"
+                        onClick={handleConfirmApproveUser}
+                        disabled={isApprovingUser || !approveModal.roleId}
+                    >
+                        {isApprovingUser ? <Spinner animation="border" size="sm" /> : 'Confirm & Activate'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
-}
+            {/* Modal: Generated Password Reset Link & Multi-Channel Delivery */}
+            <PasswordResetDeliveryModal
+                show={resetLinkModal.show}
+                onHide={() => setResetLinkModal({ show: false, user: null, resetData: null })}
+                user={resetLinkModal.user}
+                resetData={resetLinkModal.resetData}
+                title="User Password Reset"
+            />
+
+            {/* Modal: Generic Confirmation (Trash, Permanent Purge, Deactivate) */}
+            <Modal
+                show={confirmModal.show}
+                onHide={() => setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null })}
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title className="h6 d-flex align-items-center gap-2">
+                        <FaExclamationTriangle className={`text-${confirmModal.variant}`} />
+                        {confirmModal.title}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>
+                        {confirmModal.message}
+                    </p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                            setConfirmModal({ show: false, title: '', message: '', variant: 'danger', onConfirm: null })
+                        }
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant={confirmModal.variant}
+                        size="sm"
+                        onClick={confirmModal.onConfirm}
+                    >
+                        {confirmModal.confirmText}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </div>
+    );
+};
 
 export default UserList;
