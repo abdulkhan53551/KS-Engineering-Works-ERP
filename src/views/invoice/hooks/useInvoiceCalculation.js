@@ -4,7 +4,15 @@ import useGst from "../../../hooks/useGst";
 import { resolveSupplierGstCode, resolveRecipientGstCode, determineIsInterState } from "../../../utilities/gstStateHelper";
 
 const useInvoiceCalculation = (props) => {
-    const { control, setValue, getValues, companyStateId = 27, statesList = [] } = props;
+    const {
+        control,
+        setValue,
+        getValues,
+        companyStateId = 12,
+        companyGstin,
+        supplierGstCode: explicitSupplierGstCode,
+        statesList = []
+    } = props;
     const lastEditedFieldRef = useRef(null);
 
     // Watch fields
@@ -38,15 +46,22 @@ const useInvoiceCalculation = (props) => {
     // --------------------------------------------------
     // Determine Inter-State (IGST) vs Intra-State (CGST+SGST)
     // --------------------------------------------------
-    const isInterState = useMemo(() => {
-        const supplierGstCode = resolveSupplierGstCode(companyStateId, statesList);
-        const recipientGstCode = resolveRecipientGstCode(
-            { hasGst, gstNumber, shippingStateId, billingStateId },
+    const { supplierGstCode, recipientGstCode, isInterState } = useMemo(() => {
+        const supCode = resolveSupplierGstCode(
+            explicitSupplierGstCode || companyGstin || companyStateId,
+            statesList
+        );
+        const recCode = resolveRecipientGstCode(
+            { hasGst, gstNumber, billingStateId, shippingStateId },
             statesList
         );
 
-        return determineIsInterState(supplierGstCode, recipientGstCode);
-    }, [shippingStateId, billingStateId, companyStateId, gstNumber, hasGst, statesList]);
+        return {
+            supplierGstCode: supCode,
+            recipientGstCode: recCode,
+            isInterState: determineIsInterState(supCode, recCode)
+        };
+    }, [shippingStateId, billingStateId, companyStateId, companyGstin, explicitSupplierGstCode, gstNumber, hasGst, statesList]);
 
     // --------------------------------------------------
     // 1) DISTRIBUTE DISCOUNT TO ITEMS & CALCULATE TAXES
@@ -168,7 +183,15 @@ const useInvoiceCalculation = (props) => {
     }, [itemsWithDiscount, roundOffManual, userRoundOff, otherCharges, isInterState]);
 
     useEffect(() => {
-        if (!invoiceSummary.total && invoiceSummary.total !== 0) return;
+        if (!invoiceSummary || invoiceSummary.total === undefined) return;
+
+        const totalSub = Number(invoiceSummary.subTotal || 0);
+        const otherCh = Number(otherCharges || 0);
+
+        // Do not stomp over form fields on initial empty render when items are not populated
+        if (totalSub === 0 && otherCh === 0 && (!items || items.length <= 1) && !roundOffManual) {
+            return;
+        }
 
         // update items with new calculation
         invoiceSummary.items?.forEach((item, index) => {
@@ -217,17 +240,19 @@ const useInvoiceCalculation = (props) => {
             updateIfChanged("sgst", Number(invoiceSummary.sgst || 0).toFixed(2));
             updateIfChanged("igst", Number(invoiceSummary.igst || 0).toFixed(2));
 
-            if (!roundOffManual) {
+            if (!roundOffManual && totalSub > 0) {
                 updateIfChanged("roundOff", Number(invoiceSummary.roundOff || 0).toFixed(2));
             }
 
             updateIfChanged("total", Number(invoiceSummary.total || 0).toFixed(2));
         }
-    }, [invoiceSummary, getValues, setValue, roundOffManual]);
+    }, [invoiceSummary, getValues, setValue, roundOffManual, items, otherCharges]);
 
     return {
         lastEditedFieldRef,
         isInterState,
+        placeOfSupplyCode: recipientGstCode,
+        supplierGstCode,
         invoiceSummary
     };
 };

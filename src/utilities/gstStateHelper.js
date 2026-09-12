@@ -141,7 +141,7 @@ export const GST_STATE_DATA = {
     },
     "31": {
         name: "Lakshadweep",
-        aliases: ["lakshadweep", "lakshadeep", "ld"]
+        aliases: ["lakshadweep", "lakshdweep", "lakshadeep", "lakshadweep islands", "ld"]
     },
     "32": {
         name: "Kerala",
@@ -153,7 +153,7 @@ export const GST_STATE_DATA = {
     },
     "34": {
         name: "Puducherry",
-        aliases: ["puducherry", "pondicherry", "py"]
+        aliases: ["puducherry", "pondicherry", "pondichery", "pondy", "py"]
     },
     "35": {
         name: "Andaman and Nicobar Islands",
@@ -308,29 +308,65 @@ export const getGstCodeByDbState = (stateIdOrObj, statesList = []) => {
 
 /**
  * Derives the Supplier Firm's 2-digit GST State Code
- * @param {number|string|Object} companyStateId - Firm's state ID or firm state object (default: Maharashtra 27)
+ * @param {number|string|Object} companyStateIdOrObj - Firm GSTIN, 2-digit GST code, DB state ID, or firm object (default: Maharashtra 27)
  * @param {Array} statesList - Master states list from API
  * @returns {string} - 2-digit GST code (e.g., "27")
  */
-export const resolveSupplierGstCode = (companyStateId, statesList = []) => {
-    const code = getGstCodeByDbState(companyStateId, statesList);
-    return code || "27"; // Default firm is Maharashtra (27)
+export const resolveSupplierGstCode = (companyStateIdOrObj, statesList = []) => {
+    // 1. If an object is passed (e.g. firm object or invoice master with firm_gstin)
+    if (typeof companyStateIdOrObj === 'object' && companyStateIdOrObj !== null) {
+        const gstin = companyStateIdOrObj.gstin || companyStateIdOrObj.firm_gstin || companyStateIdOrObj.firmGstin;
+        if (gstin && String(gstin).trim().length >= 2) {
+            const prefix = String(gstin).trim().substring(0, 2).toUpperCase();
+            if (GST_STATE_DATA[prefix]) return prefix;
+        }
+        if (companyStateIdOrObj.stateId) {
+            return resolveSupplierGstCode(companyStateIdOrObj.stateId, statesList);
+        }
+    }
+
+    // 2. If a string is passed
+    if (typeof companyStateIdOrObj === 'string') {
+        const str = companyStateIdOrObj.trim().toUpperCase();
+        // 15-character GSTIN
+        if (str.length >= 15 && GST_STATE_DATA[str.substring(0, 2)]) {
+            return str.substring(0, 2);
+        }
+        // Explicit 2-digit GST Code string (e.g. "27", "24")
+        if (str.length === 2 && GST_STATE_DATA[str]) {
+            return str;
+        }
+    }
+
+    // 3. If a DB State ID is passed, resolve via database statesList
+    // (Excluding 27, which in legacy usage represented Maharashtra's GST code rather than Pondicherry's DB ID)
+    if (companyStateIdOrObj && companyStateIdOrObj !== 27) {
+        const code = getGstCodeByDbState(companyStateIdOrObj, statesList);
+        if (code) return code;
+    }
+
+    // Default supplier firm is Maharashtra (GST code "27")
+    return "27";
 };
 
 /**
  * Derives the Recipient / Place of Supply 2-digit GST State Code
- * @param {Object} params - { hasGst, gstNumber, shippingStateId, billingStateId }
+ * Strictly adheres to Chapter V of the IGST Act, 2017:
+ * - Sec 10(1)(b) & Sec 12(2)(a): In Bill-To / Ship-To transactions and registered B2B supplies,
+ *   the Place of Supply (POS) is legally deemed to be the Buyer's principal place of business (Bill-To State / GSTIN).
+ * - Sec 10(1)(a): Direct supplies terminate at the buyer's destination.
+ * 
+ * Hierarchy:
+ * 1. Registered Buyer GSTIN: The 2-digit state code prefix of the Bill-To GSTIN (Sec 12(2)(a) & Sec 10(1)(b)).
+ * 2. Billing Address State ID: Buyer's registered/principal place of business (Sec 10(1)(b)).
+ * 3. Shipping Address State ID: Destination fallback if billing state is unspecified.
+ *
+ * @param {Object} params - { hasGst, gstNumber, billingStateId, shippingStateId }
  * @param {Array} statesList - Master states list from API
  * @returns {string|null} - 2-digit GST code of Place of Supply
  */
-export const resolveRecipientGstCode = ({ hasGst, gstNumber, shippingStateId, billingStateId }, statesList = []) => {
-    // 1. If explicit shipping destination state is given, goods destination takes priority for Place of Supply
-    if (shippingStateId) {
-        const shippingGstCode = getGstCodeByDbState(shippingStateId, statesList);
-        if (shippingGstCode) return shippingGstCode;
-    }
-
-    // 2. If GST is enabled and valid 2-digit GSTIN prefix is present, registered buyer GSTIN governs
+export const resolveRecipientGstCode = ({ hasGst, gstNumber, billingStateId, shippingStateId }, statesList = []) => {
+    // 1. If GST is enabled and valid 2-digit GSTIN prefix is present, registered buyer GSTIN strictly defines POS
     if (hasGst && gstNumber && String(gstNumber).trim().length >= 2) {
         const gstPrefix = String(gstNumber).trim().substring(0, 2).toUpperCase();
         if (GST_STATE_DATA[gstPrefix]) {
@@ -338,10 +374,16 @@ export const resolveRecipientGstCode = ({ hasGst, gstNumber, shippingStateId, bi
         }
     }
 
-    // 3. Fallback to Billing State ID
+    // 2. Billing State ID: In "Bill-To / Ship-To" (Sec 10(1)(b)), POS is deemed to be the Buyer's principal place of business (Bill-To State)
     if (billingStateId) {
         const billingGstCode = getGstCodeByDbState(billingStateId, statesList);
         if (billingGstCode) return billingGstCode;
+    }
+
+    // 3. Fallback to Shipping State ID if billing state is not provided
+    if (shippingStateId) {
+        const shippingGstCode = getGstCodeByDbState(shippingStateId, statesList);
+        if (shippingGstCode) return shippingGstCode;
     }
 
     return null;

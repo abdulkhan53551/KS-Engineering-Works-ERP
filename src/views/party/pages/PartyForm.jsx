@@ -10,7 +10,7 @@ import {
     useUpdateParty
 } from '../hooks/usePartyApi';
 import PartyRoleSelector from '../components/PartyRoleSelector';
-import PartyAddressSection from '../components/sections/PartyAddressSection';
+import PartyBranchSection from '../components/sections/PartyBranchSection';
 import PartyContactSection from '../components/sections/PartyContactSection';
 import PartyBankAccountSection from '../components/sections/PartyBankAccountSection';
 import PartyDocumentSection from '../components/sections/PartyDocumentSection';
@@ -38,7 +38,7 @@ const PartyForm = ({ mode = 'create' }) => {
     const partyId = isEditMode ? Number(routePartyId) : null;
 
     // Sub-section active tab state
-    const [activeTab, setActiveTab] = useState('addresses');
+    const [activeTab, setActiveTab] = useState('branches');
 
     // Party Roles state
     const [selectedRoleIds, setSelectedRoleIds] = useState([]);
@@ -245,6 +245,8 @@ const PartyForm = ({ mode = 'create' }) => {
                                         <LogoUploadDropZone
                                             value={watchLogoUrl}
                                             publicId={watchLogoPublicId}
+                                            folder="parties/logos"
+                                            tags="ks-erp,party,logo"
                                             onChange={({ logoUrl, logoPublicId }) => {
                                                 setValue('logoUrl', logoUrl, { shouldValidate: true });
                                                 setValue('logoPublicId', logoPublicId, { shouldValidate: true });
@@ -736,9 +738,9 @@ const PartyForm = ({ mode = 'create' }) => {
                         <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
                             <Nav variant="pills" className="mb-3.5 gap-2 border-bottom pb-2.5 flex-wrap">
                                 <Nav.Item>
-                                    <Nav.Link eventKey="addresses" className="d-flex align-items-center gap-2 px-3 py-1.5" style={{ fontSize: '0.82rem', fontWeight: 500 }}>
-                                        <FaMapMarkerAlt size={12} />
-                                        <span>Party Addresses</span>
+                                    <Nav.Link eventKey="branches" className="d-flex align-items-center gap-2 px-3 py-1.5" style={{ fontSize: '0.82rem', fontWeight: 500 }}>
+                                        <FaBuilding size={12} />
+                                        <span>Party Branches / Locations</span>
                                     </Nav.Link>
                                 </Nav.Item>
                                 <Nav.Item>
@@ -762,8 +764,8 @@ const PartyForm = ({ mode = 'create' }) => {
                             </Nav>
 
                             <Tab.Content className="pt-2">
-                                <Tab.Pane eventKey="addresses">
-                                    <PartyAddressSection partyId={partyId} />
+                                <Tab.Pane eventKey="branches">
+                                    <PartyBranchSection partyId={partyId} />
                                 </Tab.Pane>
                                 <Tab.Pane eventKey="contacts">
                                     <PartyContactSection partyId={partyId} />

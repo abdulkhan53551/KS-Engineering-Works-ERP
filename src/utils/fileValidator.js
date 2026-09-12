@@ -3,11 +3,11 @@
  * Validates File Size, Allowed MIME types, Extensions, and Magic Bytes
  */
 
-// Max Size Limits (in Bytes) - 5 MB standard for all documents, logos & images
+// Max Size Limits (in Bytes)
 export const FILE_LIMITS = {
     LOGO: 5 * 1024 * 1024,      // 5 MB
-    IMAGE: 5 * 1024 * 1024,     // 5 MB
-    DOCUMENT: 5 * 1024 * 1024   // 5 MB (Firm, PO, Challan, E-Way Bill, KYC)
+    IMAGE: 2 * 1024 * 1024,     // 2 MB
+    DOCUMENT: 5 * 1024 * 1024   // 5 MB
 };
 
 // Allowed Extensions by Category (Standard clean PDF and Image formats)
