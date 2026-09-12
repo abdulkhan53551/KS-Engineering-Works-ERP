@@ -65,9 +65,11 @@ import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 import PartyList from '../views/party/pages/PartyList';
 import PartyForm from '../views/party/pages/PartyForm';
-import AddressTypeList from '../views/masters/address-types/pages/AddressTypeList';
 import ContactRoleList from '../views/masters/contact-roles/pages/ContactRoleList';
 import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
+import ProductList from '../views/products/pages/ProductList';
+import ProductForm from '../views/products/pages/ProductForm';
+import ProductView from '../views/products/pages/ProductView';
 
 
 export const DefaultRouter = [
@@ -98,7 +100,10 @@ export const DefaultRouter = [
                     { path: 'organization/party-roles', element: <PartyRoleList /> },
 
                     /* Masters */
-                    { path: 'masters/address-types', element: <AddressTypeList /> },
+                    { path: 'masters/products', element: <ProductList /> },
+                    { path: 'masters/products/create', element: <ProductForm mode="create" /> },
+                    { path: 'masters/products/:id/edit', element: <ProductForm mode="edit" /> },
+                    { path: 'masters/products/:id', element: <ProductView /> },
                     { path: 'masters/contact-roles', element: <ContactRoleList /> },
 
                     /* Sales */
@@ -106,6 +111,7 @@ export const DefaultRouter = [
                     { path: 'sales/invoice', element: <InvoiceList /> },
                     { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
                     { path: 'sales/invoice/:id/edit', element: <InvoiceForm mode="edit" /> },
+                    { path: 'sales/invoice/:id/duplicate', element: <InvoiceForm mode="duplicate" /> },
 
                     // Challan Routes
                     { path: 'sales/challans', element: <InvoiceChallanList /> },

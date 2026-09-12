@@ -15,6 +15,10 @@
         padding-bottom: $form-floating-input-padding-b;
       }
     }
+    > .form-select {
+      padding-top: $form-floating-input-padding-b;
+      padding-bottom: $form-floating-input-padding-b;
+    }
     > .form-control:focus,
     > .form-control:not(:placeholder-shown),
     > .form-select {
@@ -27,10 +31,31 @@
 }
 
 .custom-form-floating-sm{
+  > .form-control {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    &:focus,
+    &:not(:placeholder-shown) {
+      padding-top: 0.35rem;
+      padding-bottom: 0.35rem;
+    }
+  }
+  > .form-select {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
   @include floating-input-varient($custom-floating-input-sm, $custom-floating-input-active-sm, $custom-floating-input-padding-y-sm, $custom-floating-input-padding-x-sm, $custom-floating-input-height-sm);
 }
 
 .custom-form-floating-lg{
+  > .form-control {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+  > .form-select {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
   @include floating-input-varient($custom-floating-input-lg, $custom-floating-input-active-lg, $custom-floating-input-padding-y-lg, $custom-floating-input-padding-x-lg, $custom-floating-input-height-lg);
 }
 

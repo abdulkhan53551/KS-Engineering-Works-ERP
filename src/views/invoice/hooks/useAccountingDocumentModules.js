@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
+import { useWatch } from "react-hook-form";
 import { useUnmappedEwayBillByInvoiceId, useUnmappedInvoiceChallanByInvoiceId, useUnmappedPurchaseOrderByInvoiceId } from "./useApi";
 import { useDeleteInvoiceChallan } from "../../invoice-challan/hooks/useApi";
 import { useDeletePurchaseOrder } from "../../purchase-order/hooks/useApi";
@@ -16,7 +17,7 @@ const moduleToFlagKey = {
     ewayBill: 'hasEwayBill',
 };
 
-export default function useAccountingDocumentModules({ invoiceId, setValue }) {
+export default function useAccountingDocumentModules({ invoiceId, setValue, control }) {
     const [moduleData, setModuleData] = useState({
         challan: [],
         purchaseOrder: [],
@@ -26,6 +27,36 @@ export default function useAccountingDocumentModules({ invoiceId, setValue }) {
     const [isLoading, setIsLoading] = useState(false);
     const [activeModule, setActiveModule] = useState(null);
     const selectedDocument = useRef({});
+
+    // Watch linked document IDs if control is provided
+    const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
+    const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
+    const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
+
+    const activeSelectedIds = useMemo(() => {
+        switch (activeModule) {
+            case 'challan': return currentChallanIds;
+            case 'purchaseOrder': return currentPoIds;
+            case 'ewayBill': return currentEwayBillIds;
+            default: return [];
+        }
+    }, [activeModule, currentChallanIds, currentPoIds, currentEwayBillIds]);
+
+    const handleRemoveLinkedDoc = (key, idToRemove) => {
+        if (key === 'challan') {
+            const updated = currentChallanIds.filter(id => id !== idToRemove);
+            setValue('challanIds', updated, { shouldValidate: true, shouldDirty: true });
+            if (updated.length === 0) setValue('hasChallan', false, { shouldValidate: true });
+        } else if (key === 'purchaseOrder') {
+            const updated = currentPoIds.filter(id => id !== idToRemove);
+            setValue('poIds', updated, { shouldValidate: true, shouldDirty: true });
+            if (updated.length === 0) setValue('hasPo', false, { shouldValidate: true });
+        } else if (key === 'ewayBill') {
+            const updated = currentEwayBillIds.filter(id => id !== idToRemove);
+            setValue('ewayBillIds', updated, { shouldValidate: true, shouldDirty: true });
+            if (updated.length === 0) setValue('hasEwayBill', false, { shouldValidate: true });
+        }
+    };
 
     const fetchChallanQuery = useUnmappedInvoiceChallanByInvoiceId(invoiceId);
     const fetchPOQuery = useUnmappedPurchaseOrderByInvoiceId(invoiceId);
@@ -144,6 +175,11 @@ export default function useAccountingDocumentModules({ invoiceId, setValue }) {
         closeModule,
         updateModuleData,
         submitModule,
-        getDocumentLabel
+        getDocumentLabel,
+        activeSelectedIds,
+        handleRemoveLinkedDoc,
+        currentChallanIds,
+        currentPoIds,
+        currentEwayBillIds
     };
 }
