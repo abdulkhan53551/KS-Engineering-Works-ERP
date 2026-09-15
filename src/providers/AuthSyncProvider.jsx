@@ -1,11 +1,6 @@
-// In your App.jsx or index.js (where Redux Provider is wrapped)
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-// import { setAuthState } from "./store    /auth.slice";
-import { loginSuccess, logout } from "../store/auth.slice";
-import { router } from "..";
-import { asyncHandler } from "../utilities/asyncHandler";
-import { requestMethod } from "../utilities/api/constants";
+import { loginSuccess, logout, setInitialized } from "../store/auth.slice";
 import api from "../lib/axios";
 import { localStorageKey } from "../utilities/constant/constants";
 
@@ -13,60 +8,63 @@ export const AuthSyncProvider = ({ children }) => {
     const dispatch = useDispatch();
 
     useEffect(() => {
+        let isMounted = true;
+
+        const hydrateSession = async () => {
+            const storedToken = localStorage.getItem(localStorageKey.ACCESS_TOKEN_KEY);
+
+            try {
+                // Fetch current user from /auth/me
+                // If token expired, axios interceptor will silently refresh using HTTP-only cookie
+                const config = storedToken ? { headers: { Authorization: `Bearer ${storedToken}` } } : undefined;
+                const res = await api.get("/auth/me", config);
+                const user = res.data?.data?.user;
+
+                if (isMounted && user) {
+                    const activeToken = localStorage.getItem(localStorageKey.ACCESS_TOKEN_KEY) || storedToken;
+                    dispatch(loginSuccess({ user, accessToken: activeToken }));
+                } else if (isMounted) {
+                    dispatch(setInitialized());
+                }
+            } catch (error) {
+                if (isMounted) {
+                    dispatch(logout());
+                    localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
+                    dispatch(setInitialized());
+                }
+            }
+        };
+
+        hydrateSession();
+
         const handleStorageChange = async (event) => {
             if (event.key === localStorageKey.ACCESS_TOKEN_KEY) {
-                // Verify token
-                const accessToken = event.newValue ? event.newValue : null;
-                const isTokenVerify = await verifyAccessToken(accessToken);
+                const newAccessToken = event.newValue;
 
-                try {
-                    if (isTokenVerify) {
-                        const newAuth = {
-                            user: {
-                                role: 'admin'
-                            },
-                            accessToken: accessToken
+                if (newAccessToken) {
+                    try {
+                        const res = await api.get("/auth/me", {
+                            headers: { Authorization: `Bearer ${newAccessToken}` }
+                        });
+                        const user = res.data?.data?.user;
+                        if (user) {
+                            dispatch(loginSuccess({ user, accessToken: newAccessToken }));
                         }
-
-                        dispatch(loginSuccess(newAuth));
-                        router.navigate("/dashboard", { replace: true });
-                    } else {
+                    } catch (err) {
                         dispatch(logout());
-                        localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
                     }
-                } catch (error) {
-                    console.log("Error parsing authState from localStorage:", error);
+                } else {
+                    dispatch(logout());
                 }
             }
         };
 
         window.addEventListener("storage", handleStorageChange);
-        return () => window.removeEventListener("storage", handleStorageChange);
+        return () => {
+            isMounted = false;
+            window.removeEventListener("storage", handleStorageChange);
+        };
     }, [dispatch]);
 
-    // Verify Access Token with backend
-    const verifyAccessToken = asyncHandler(async (token) => {
-        try {
-            if (token) {
-                // validate with backend
-                const res = await api.request({
-                    url: '/auth/verify-access-token',
-                    method: requestMethod.POST,
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                if (res.data.success) {
-                    return res.data.success || false;
-                }
-            }
-
-            return false;
-        } catch (error) {
-            return false;
-        }
-    })
-
-    return (
-        <>{children}</>
-    );
-}
+    return <>{children}</>;
+};

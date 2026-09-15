@@ -35,6 +35,12 @@ const Header = memo((props) => {
     const navbarHide = useSelector(SettingSelector.navbar_show); // array
     const headerNavbar = useSelector(SettingSelector.header_navbar)
     const { mutate: logoutApi, isLoading } = useLogout();
+    const currentUser = useSelector((state) => state.authReducer?.user);
+
+    const displayName = currentUser?.firstName
+        ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim()
+        : (currentUser?.userName || 'User');
+    const displayRole = currentUser?.roleName || currentUser?.role || 'Administrator';
 
     useEffect(() => {
         // navbarstylemode
@@ -266,8 +272,8 @@ const Header = memo((props) => {
                                     <img src={avatars6} alt="User-Profile" className="theme-color-yellow-img img-fluid avatar avatar-50 avatar-rounded" />
                                     <img src={avatars4} alt="User-Profile" className="theme-color-pink-img img-fluid avatar avatar-50 avatar-rounded" />
                                     <div className="caption ms-3 d-none d-md-block ">
-                                        <h6 className="mb-0 caption-title">Austin Robertson</h6>
-                                        <p className="mb-0 caption-sub-title">Marketing Administrator</p>
+                                        <h6 className="mb-0 caption-title">{displayName}</h6>
+                                        <p className="mb-0 caption-sub-title text-capitalize">{displayRole}</p>
                                     </div>
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu className="dropdown-menu-end" aria-labelledby="navbarDropdown">

@@ -1,6 +1,7 @@
 import React, { useState, useContext, memo, Fragment } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Accordion, useAccordionButton, AccordionContext, Button } from 'react-bootstrap'
+import { useSelector } from 'react-redux'
 import { FaPen } from 'react-icons/fa';
 import { CgAddR } from "react-icons/cg";
 import { MdAddBox } from "react-icons/md";
@@ -27,6 +28,8 @@ const VerticalNav = memo((props) => {
     const [active, setActive] = useState('')
     //location
     let location = useLocation();
+    const user = useSelector((state) => state.authReducer?.user);
+    const isSuperAdmin = user?.role?.toLowerCase() === 'super-admin';
     return (
         <Fragment>
             <Accordion as="ul" className="navbar-nav iq-main-menu">
@@ -467,6 +470,18 @@ const VerticalNav = memo((props) => {
                         <span className="item-name">Admin</span>
                     </Link>
                 </li>
+                {isSuperAdmin && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/admin/approvals' ? 'active' : ''} nav-link`} to="/admin/approvals">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                                </svg>
+                            </i>
+                            <span className="item-name">Approvals</span>
+                        </Link>
+                    </li>
+                )}
                 <Accordion.Item as="li" eventKey="sidebar-sales" bsPrefix={`nav-item ${active === 'sales' ? 'active' : ''} `} onClick={() => setActive('sales')}>
                     <CustomToggle eventKey="sidebar-sales" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
