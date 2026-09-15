@@ -28,6 +28,7 @@ import {
     useRestoreInvoice
 } from '../hooks/useApi';
 import useInvoiceSort from '../hooks/useInvoiceSort';
+import useInvoiceFinancials from '../hooks/useInvoiceFinancials';
 import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
@@ -56,6 +57,9 @@ const InvoiceList = () => {
     // Payment Modals State
     const [quickPaymentInvoice, setQuickPaymentInvoice] = useState(null);
     const [historyModalState, setHistoryModalState] = useState({ show: false, invoiceId: null, invoiceNo: '' });
+
+    // Financial calculations hook
+    const { getFinancials } = useInvoiceFinancials();
 
     // Data fetching state
     const [tempItems, setTempItems] = useState([]);
@@ -118,9 +122,10 @@ const InvoiceList = () => {
         sortedList
     } = useInvoiceSort({ items: invoice });
 
+    // Sync items with ListManager for select all (matches standard pattern across modules)
     useEffect(() => {
-        setTempItems(sortedList);
-    }, [sortedList]);
+        setTempItems(invoice);
+    }, [invoice]);
 
     const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -352,7 +357,9 @@ const InvoiceList = () => {
                                     </thead>
                                     <tbody style={{ fontSize: '0.86rem' }}>
                                         {sortedList.length > 0 ? (
-                                            sortedList.map((item, idx) => (
+                                            sortedList.map((item, idx) => {
+                                                const { total, paid, balance, isFullyPaid, hasBalance } = getFinancials(item);
+                                                return (
                                                 <tr key={item.invoiceId || idx} className={selectedIds.includes(item.invoiceId) ? 'table-active' : ''}>
                                                     <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
                                                         <FormCheck
@@ -368,49 +375,38 @@ const InvoiceList = () => {
                                                     {!isTrash && (
                                                         <>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(item.total ?? item.grandTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                            <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                {(() => {
-                                                                    const total = Number(item.total ?? item.grandTotal ?? 0);
-                                                                    const paid = Number(item.paidAmount ?? item.paid_amount ?? 0);
-                                                                    const balance = item.balanceAmount !== undefined && item.balanceAmount !== null
-                                                                        ? Number(item.balanceAmount)
-                                                                        : (item.balance_amount !== undefined && item.balance_amount !== null
-                                                                            ? Number(item.balance_amount)
-                                                                            : Math.max(0, total - paid));
-
-                                                                    return balance <= 0.001 ? (
-                                                                        <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
-                                                                            ₹0.00
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <div>
-                                                                            <span className="font-monospace fw-bold text-danger">
-                                                                                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                {isFullyPaid ? (
+                                                                    <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
+                                                                        ₹0.00
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <div>
+                                                                        <span className="font-monospace fw-bold text-danger">
+                                                                            ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                        </span>
+                                                                        {paid > 0 && (
+                                                                            <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
+                                                                                Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                                             </span>
-                                                                            {paid > 0 && (
-                                                                                <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
-                                                                                    Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })()}
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <OverlayTrigger placement="top" overlay={<Tooltip>Click to view payment history</Tooltip>}>
-                                                                    <span
-                                                                        className={`badge ${item.color || 'bg-secondary'}`}
-                                                                        style={{ cursor: 'pointer' }}
-                                                                        onClick={() => setHistoryModalState({
-                                                                            show: true,
-                                                                            invoiceId: item.invoiceId,
-                                                                            invoiceNo: item.invoiceNo
-                                                                        })}
-                                                                    >
-                                                                        {item.paymentStatusCode || '-'}
-                                                                    </span>
-                                                                </OverlayTrigger>
+                                                                <span
+                                                                    className={`badge ${item.color || 'bg-secondary'}`}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                    title="Click to view payment history"
+                                                                    onClick={() => setHistoryModalState({
+                                                                        show: true,
+                                                                        invoiceId: item.invoiceId,
+                                                                        invoiceNo: item.invoiceNo
+                                                                    })}
+                                                                >
+                                                                    {item.paymentStatusCode || '-'}
+                                                                </span>
                                                             </td>
                                                             <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
                                                         </>
@@ -436,32 +432,22 @@ const InvoiceList = () => {
                                                         <div className="flex align-items-center list-user-action">
                                                             {!isTrash ? (
                                                                 <>
-                                                                    {(() => {
-                                                                        const total = Number(item.total ?? item.grandTotal ?? 0);
-                                                                        const paid = Number(item.paidAmount ?? item.paid_amount ?? 0);
-                                                                        const balance = item.balanceAmount !== undefined && item.balanceAmount !== null
-                                                                            ? Number(item.balanceAmount)
-                                                                            : (item.balance_amount !== undefined && item.balance_amount !== null
-                                                                                ? Number(item.balance_amount)
-                                                                                : Math.max(0, total - paid));
-
-                                                                        return balance > 0.001 ? (
-                                                                            <Button
-                                                                                variant="outline-success"
-                                                                                size="sm"
-                                                                                className="me-2"
-                                                                                title="Record Payment"
-                                                                                onClick={() => setQuickPaymentInvoice({
-                                                                                    ...item,
-                                                                                    partyId: item.partyId || item.party_id,
-                                                                                    balanceAmount: balance,
-                                                                                    paidAmount: paid
-                                                                                })}
-                                                                            >
-                                                                                <FaMoneyCheckAlt />
-                                                                            </Button>
-                                                                        ) : null;
-                                                                    })()}
+                                                                    {hasBalance ? (
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="me-2"
+                                                                            title="Record Payment"
+                                                                            onClick={() => setQuickPaymentInvoice({
+                                                                                ...item,
+                                                                                partyId: item.partyId || item.party_id,
+                                                                                balanceAmount: balance,
+                                                                                paidAmount: paid
+                                                                            })}
+                                                                        >
+                                                                            <FaMoneyCheckAlt />
+                                                                        </Button>
+                                                                    ) : null}
                                                                     <Button
                                                                         variant="outline-secondary"
                                                                         size="sm"
@@ -532,7 +518,8 @@ const InvoiceList = () => {
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            ))
+                                                );
+                                            })
                                         ) : (
                                             <tr>
                                                 <td colSpan={isTrash ? 8 : 12} className="text-center py-4 text-muted">

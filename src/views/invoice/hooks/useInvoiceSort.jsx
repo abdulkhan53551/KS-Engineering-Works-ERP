@@ -27,6 +27,8 @@ const DATE_KEYS = new Set([
     'createdAt'
 ]);
 
+const DEFAULT_COMPARATORS = Object.freeze({});
+
 /**
  * Custom Hook: useInvoiceSort
  * Manages column sorting state, sorting logic with numeric/date/string comparisons,
@@ -52,7 +54,7 @@ export const useInvoiceSort = ({
     items = [],
     initialKey = '',
     initialDirection = 'asc',
-    customComparators = {}
+    customComparators = DEFAULT_COMPARATORS
 } = {}) => {
     // 1. Sort state
     const [sortConfig, setSortConfig] = useState({
@@ -116,11 +118,12 @@ export const useInvoiceSort = ({
 
     // 6. Memoized sorted list
     const sortedList = useMemo(() => {
-        const list = Array.isArray(items) ? [...items] : [];
+        if (!Array.isArray(items) || items.length === 0) return [];
         const { key, direction } = sortConfig;
 
-        if (!key) return list;
+        if (!key) return items;
 
+        const list = [...items];
         return list.sort((a, b) => {
             // Check for custom comparator override
             if (typeof customComparators[key] === 'function') {
@@ -152,7 +155,7 @@ export const useInvoiceSort = ({
             if (strA > strB) return direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [items, sortConfig, customComparators, extractValue]);
+    }, [items, sortConfig.key, sortConfig.direction, customComparators, extractValue]);
 
     return {
         sortConfig,

@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import { FaPen } from 'react-icons/fa';
 import { CgAddR } from "react-icons/cg";
 import { MdAddBox } from "react-icons/md";
+import { usePermission } from '../../../../hooks/usePermission';
 
 function CustomToggle({ children, eventKey, onClick }) {
 
@@ -28,8 +29,8 @@ const VerticalNav = memo((props) => {
     const [active, setActive] = useState('')
     //location
     let location = useLocation();
-    const user = useSelector((state) => state.authReducer?.user);
-    const isSuperAdmin = user?.role?.toLowerCase() === 'super-admin';
+    const { user, isSuperAdmin, role, can } = usePermission();
+    const isAdmin = isSuperAdmin || role === 'administrator' || role === 'admin';
     return (
         <Fragment>
             <Accordion as="ul" className="navbar-nav iq-main-menu">
@@ -459,17 +460,19 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
-                <li className="nav-item">
-                    <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
-                        <i className="icon">
-                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
-                                <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
-                            </svg>
-                        </i>
-                        <span className="item-name">Admin</span>
-                    </Link>
-                </li>
+                {isAdmin && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
+                                    <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
+                                </svg>
+                            </i>
+                            <span className="item-name">Admin</span>
+                        </Link>
+                    </li>
+                )}
                 {isSuperAdmin && (
                     <li className="nav-item">
                         <Link className={`${location.pathname === '/admin/approvals' ? 'active' : ''} nav-link`} to="/admin/approvals">
@@ -479,6 +482,19 @@ const VerticalNav = memo((props) => {
                                 </svg>
                             </i>
                             <span className="item-name">Approvals</span>
+                        </Link>
+                    </li>
+                )}
+                {isAdmin && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/admin/roles-permissions' || location.pathname === '/dashboard/admin/roles-permissions' ? 'active' : ''} nav-link`} to="/dashboard/admin/roles-permissions">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path opacity="0.4" d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor"/>
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 7C9.79 7 8 8.79 8 11C8 13.21 9.79 15 12 15C14.21 15 16 13.21 16 11C16 8.79 14.21 7 12 7ZM10 11C10 9.9 10.9 9 12 9C13.1 9 14 9.9 14 11C14 12.1 13.1 13 12 13C10.9 13 10 12.1 10 11ZM12 17C9.33 17 4 18.34 4 21V22H20V21C20 18.34 14.67 17 12 17Z" fill="currentColor"/>
+                                </svg>
+                            </i>
+                            <span className="item-name">Roles & Permissions</span>
                         </Link>
                     </li>
                 )}
