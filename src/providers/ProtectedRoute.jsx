@@ -1,10 +1,12 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import usePermission from "../hooks/usePermission";
 
-export default function ProtectedRoute({ allowedRoles }) {
+export default function ProtectedRoute({ allowedRoles, module: moduleName, action = "read", children }) {
     const location = useLocation();
     const { isAuthenticated, user, isInitializing } = useSelector((state) => state.authReducer);
+    const { can, isSuperAdmin } = usePermission();
 
     // While session is hydrating or user profile is being fetched, show loading spinner
     if (isInitializing || (isAuthenticated && !user)) {
@@ -21,22 +23,31 @@ export default function ProtectedRoute({ allowedRoles }) {
         return <Navigate to="/sign-in" state={{ from: location }} replace />;
     }
 
-    // Role check: super-admin has universal access, normalize administrator <=> admin
-    if (allowedRoles && user) {
-        const userRole = user.role?.toLowerCase();
-        const isSuperAdmin = userRole === "super-admin";
-        const hasAllowedRole = allowedRoles.some((role) => {
-            const normalizedRole = role.toLowerCase();
-            if (normalizedRole === "admin" && (userRole === "admin" || userRole === "administrator")) {
-                return true;
-            }
-            return normalizedRole === userRole;
-        });
+    // Universal bypass for Super Admin
+    if (!isSuperAdmin) {
+        // 1. Role-based check if specified
+        if (allowedRoles && user) {
+            const userRole = user.role?.toLowerCase();
+            const hasAllowedRole = allowedRoles.some((role) => {
+                const normalizedRole = role.toLowerCase();
+                if (normalizedRole === "admin" && (userRole === "admin" || userRole === "administrator")) {
+                    return true;
+                }
+                return normalizedRole === userRole;
+            });
 
-        if (!isSuperAdmin && !hasAllowedRole) {
-            return <Navigate to="/unauthorized" replace />;
+            if (!hasAllowedRole) {
+                return <Navigate to="/unauthorized" replace />;
+            }
+        }
+
+        // 2. Granular Module + Action permission check if specified
+        if (moduleName) {
+            if (!can(moduleName, action)) {
+                return <Navigate to="/unauthorized" replace />;
+            }
         }
     }
 
-    return <Outlet />;
+    return children ? children : <Outlet />;
 }

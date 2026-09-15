@@ -80,6 +80,7 @@ import VendorBillDetail from '../views/vendor-bills/pages/VendorBillDetail';
 import VendorPaymentList from '../views/payments/pages/VendorPaymentList';
 import VendorPaymentForm from '../views/payments/pages/VendorPaymentForm';
 import VendorPaymentDetail from '../views/payments/pages/VendorPaymentDetail';
+import RolesPermissionStudio from '../views/admin/roles-permissions/RolesPermissionStudio';
 
 
 export const DefaultRouter = [
@@ -92,7 +93,7 @@ export const DefaultRouter = [
             //     element: <Index />
             // },
             {
-                element: <ProtectedRoute allowedRoles={["user", "admin"]} />,
+                element: <ProtectedRoute />,
                 children: [
                     { path: 'dashboard', element: <Index /> },
 
@@ -184,15 +185,23 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/app/user-profile',
-                element: <UserProfile />
+                element: <ProtectedRoute><UserProfile /></ProtectedRoute>
             },
             {
                 path: 'dashboard/app/user-add',
-                element: <UserAdd />
+                element: <ProtectedRoute module="users" action="create"><UserAdd /></ProtectedRoute>
             },
             {
                 path: 'dashboard/app/user-list',
-                element: <UserList />
+                element: <ProtectedRoute module="users" action="read"><UserList /></ProtectedRoute>
+            },
+            {
+                path: 'dashboard/admin/roles-permissions',
+                element: <ProtectedRoute allowedRoles={["super-admin", "administrator"]}><RolesPermissionStudio /></ProtectedRoute>
+            },
+            {
+                path: 'admin/roles-permissions',
+                element: <ProtectedRoute allowedRoles={["super-admin", "administrator"]}><RolesPermissionStudio /></ProtectedRoute>
             },
             {
                 path: 'dashboard/customer-add',
