@@ -378,7 +378,16 @@ const EwayBillList = () => {
                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.ewayBillDate ? moment(item.ewayBillDate).format('DD/MM/YYYY') : '-'}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.ewaybillValidUpto ? moment(item.ewaybillValidUpto).format('DD/MM/YYYY') : '-'}</td>
-                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.ewayBillNo}</span></td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>
+                                          <div className="d-flex align-items-center gap-1">
+                                             <span className="text-primary font-monospace fw-bold">{item.ewayBillNo}</span>
+                                             {(item.firm_code || item.firm_name) && (
+                                                <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firm_name || item.firm_code}`}>
+                                                   {item.firm_code || item.firm_name}
+                                                </Badge>
+                                             )}
+                                          </div>
+                                       </td>
                                        {!isTrash && (
                                           <td style={{ padding: '0.45rem 0.5rem' }}><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
                                        )}

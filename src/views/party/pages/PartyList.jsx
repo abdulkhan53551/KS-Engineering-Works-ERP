@@ -659,13 +659,20 @@ const PartyList = () => {
 
                                                         {/* 3. Party Code */}
                                                         <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <Badge
-                                                                bg="soft-primary"
-                                                                className="text-primary font-monospace fw-semibold px-2 py-1"
-                                                                style={{ fontSize: '0.78rem' }}
-                                                            >
-                                                                {party.partyCode || '—'}
-                                                            </Badge>
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <Badge
+                                                                    bg="soft-primary"
+                                                                    className="text-primary font-monospace fw-semibold px-2 py-1"
+                                                                    style={{ fontSize: '0.78rem' }}
+                                                                >
+                                                                    {party.partyCode || '—'}
+                                                                </Badge>
+                                                                {(party.firmCode || party.firmName) && (
+                                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${party.firmName || party.firmCode}`}>
+                                                                        {party.firmCode || party.firmName}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
                                                         </td>
 
                                                         {/* 4. Party Name (Display & Legal) */}

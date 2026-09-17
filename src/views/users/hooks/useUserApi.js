@@ -11,7 +11,9 @@ import {
   toggleUserStatus,
   adminGenerateResetLink,
   adminDirectResetPassword,
-  fetchRoles
+  fetchRoles,
+  fetchUserAssignments,
+  updateUserAssignments
 } from "../api";
 
 // 1. Fetch Users List
@@ -214,6 +216,35 @@ export const useAdminDirectResetPassword = () => {
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update password directly");
+    }
+  });
+};
+
+const EMPTY_ASSIGNMENTS = Object.freeze([]);
+
+// 12. User Scoped Assignments Query & Mutation
+export const useUserAssignments = (userId, options = {}) => {
+  return useQuery({
+    queryKey: ["userAssignments", userId],
+    queryFn: () => fetchUserAssignments(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 30, // 30 seconds
+    select: (result) => Array.isArray(result?.data) ? result.data : EMPTY_ASSIGNMENTS,
+    ...options
+  });
+};
+
+export const useUpdateUserAssignments = (userId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ assignments }) => updateUserAssignments({ userId, assignments }),
+    onSuccess: (res) => {
+      toast.success(res?.message || "User firm and branch assignments updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["userAssignments", userId] });
+      queryClient.invalidateQueries({ queryKey: ["usersList"] });
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update user assignments");
     }
   });
 };

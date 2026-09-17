@@ -35,6 +35,7 @@ import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
 import useListManager from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+import useBranchAction from '../../../hooks/useBranchAction';
 
 const InvoiceList = () => {
     // Trash Action Helpers
@@ -46,6 +47,9 @@ const InvoiceList = () => {
         confirmBulkRestore,
         confirmBulkPermanentDelete
     } = useTrashActions({ entityName: 'Invoice' });
+
+    // Branch check for multi-branch awareness
+    const { navigateWithBranch, BranchModal } = useBranchAction();
 
     // API Mutations
     const { mutate: deleteInvoice } = useDeleteInvoice();
@@ -147,11 +151,13 @@ const InvoiceList = () => {
                             <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
                             <div>
                                 {!isTrash && (
-                                    <Link to="/sales/invoice/create">
-                                        <Button type="button" variant="primary">
-                                            Add Invoice
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        type="button"
+                                        variant="primary"
+                                        onClick={() => navigateWithBranch('/sales/invoice/create', 'Select Branch for New Invoice')}
+                                    >
+                                        + Add Invoice
+                                    </Button>
                                 )}
                             </div>
                         </Card.Header>
@@ -369,7 +375,21 @@ const InvoiceList = () => {
                                                         />
                                                     </td>
                                                     <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.invoiceId}</td>
-                                                    <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span></td>
+                                                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                        <div className="d-flex align-items-center gap-1">
+                                                            <span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span>
+                                                            {(item.firmCode || item.firmName) && (
+                                                                <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firmName || item.firmCode}`}>
+                                                                    {item.firmCode || item.firmName}
+                                                                </Badge>
+                                                            )}
+                                                            {item.firmBranchCode && (
+                                                                <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                                    {item.firmBranchCode}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </td>
                                                     <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
                                                     <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
                                                     {!isTrash && (
@@ -573,6 +593,9 @@ const InvoiceList = () => {
                 invoiceNo={historyModalState.invoiceNo}
                 onHide={() => setHistoryModalState({ show: false, invoiceId: null, invoiceNo: '' })}
             />
+
+            {/* Branch Selection Modal for Consolidated Mode */}
+            <BranchModal />
         </>
     );
 };

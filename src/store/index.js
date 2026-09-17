@@ -13,6 +13,7 @@ import customerReducer from './customer.slice';
 import authReducer from './auth.slice';
 import userReducer from './user.slice';
 import uiModalReducer from './uiModal.slice';
+import firmReducer from './firm.slice';
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     authReducer: authReducer,
     userReducer: userReducer,
     uiModalReducer: uiModalReducer,
+    firmReducer: firmReducer,
   },
   devTools: process.env.NODE_ENV !== "production", // enable only in dev
 });

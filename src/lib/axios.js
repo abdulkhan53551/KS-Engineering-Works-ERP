@@ -22,10 +22,38 @@ api.interceptors.request.use(
             config.headers["Content-Type"] = "application/json";
         }
 
-        const { accessToken } = store.getState().authReducer;
+        const state = store.getState();
+        const { accessToken } = state.authReducer;
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
+
+        // Attach tenant headers (x-firm-id and x-branch-id)
+        const firmState = state.firmReducer;
+        let activeFirmId = firmState?.activeFirm?.id;
+        let activeBranchId = firmState?.activeBranch?.id;
+
+        // Fallback to localStorage if store rehydrating
+        if (!activeFirmId && typeof window !== "undefined") {
+            try {
+                const savedFirm = JSON.parse(localStorage.getItem(localStorageKey.ACTIVE_FIRM_KEY) || 'null');
+                activeFirmId = savedFirm?.id;
+            } catch {}
+        }
+        if (!activeBranchId && typeof window !== "undefined") {
+            try {
+                const savedBranch = JSON.parse(localStorage.getItem(localStorageKey.ACTIVE_BRANCH_KEY) || 'null');
+                activeBranchId = savedBranch?.id;
+            } catch {}
+        }
+
+        config.headers['x-firm-id'] = activeFirmId || 'all';
+        if (activeBranchId) {
+            config.headers['x-branch-id'] = activeBranchId;
+        } else {
+            config.headers['x-branch-id'] = 'all';
+        }
+
         return config;
     },
     (error) => Promise.reject(error)

@@ -29,8 +29,12 @@ import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
 import useListManager from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+import useBranchAction from '../../../hooks/useBranchAction';
 
 const PurchaseOrderList = () => {
+   // Branch check for multi-branch awareness
+   const { navigateWithBranch, BranchModal } = useBranchAction();
+
    // Trash Action Helpers
    const {
       confirmSoftDelete,
@@ -179,11 +183,13 @@ const PurchaseOrderList = () => {
                      <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
                      <div>
                         {!isTrash && (
-                           <Link to="/purchase/purchase-order/create">
-                              <Button type="button" variant="primary">
-                                 Add Purchase Order
-                              </Button>
-                           </Link>
+                           <Button
+                              type="button"
+                              variant="primary"
+                              onClick={() => navigateWithBranch('/purchase/purchase-order/create', 'Select Branch for Purchase Order')}
+                           >
+                              + Add Purchase Order
+                           </Button>
                         )}
                      </div>
                   </Card.Header>
@@ -371,7 +377,21 @@ const PurchaseOrderList = () => {
                                        <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.poId}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.poDate ? moment(item.poDate).format('DD/MM/YYYY') : '-'}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
-                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.poNo}</span></td>
+                                        <td style={{ padding: '0.45rem 0.5rem' }}>
+                                            <div className="d-flex align-items-center gap-1">
+                                               <span className="text-primary font-monospace fw-bold">{item.poNo}</span>
+                                               {(item.firmCode || item.firmName) && (
+                                                  <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firmName || item.firmCode}`}>
+                                                     {item.firmCode || item.firmName}
+                                                  </Badge>
+                                               )}
+                                               {item.firmBranchCode && (
+                                                  <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                     {item.firmBranchCode}
+                                                  </Badge>
+                                               )}
+                                            </div>
+                                        </td>
                                        {!isTrash && (
                                           <td style={{ padding: '0.45rem 0.5rem' }}><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
                                        )}
@@ -467,6 +487,9 @@ const PurchaseOrderList = () => {
                </Card>
             </Col>
          </Row>
+
+         {/* Branch Selection Modal for Consolidated Mode */}
+         <BranchModal />
       </>
    );
 };

@@ -642,14 +642,19 @@ const ProductList = () => {
 
                                                 {/* 4. Product / Part Name Column */}
                                                 <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                    <div className="fw-semibold text-dark">
+                                                    <div className="d-flex align-items-center gap-1.5">
                                                         <span
-                                                            className="cursor-pointer text-primary hover-underline"
+                                                            className="cursor-pointer text-primary hover-underline fw-semibold"
                                                             onClick={() => handleQuickView(p)}
                                                             title="Click to view details"
                                                         >
                                                             {p.name}
                                                         </span>
+                                                        {(p.firmCode || p.firmName) && (
+                                                            <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${p.firmName || p.firmCode}`}>
+                                                                {p.firmCode || p.firmName}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     {p.hsnSacCode && (
                                                         <div className="text-muted small" style={{ fontSize: '0.74rem' }}>

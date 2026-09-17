@@ -1,0 +1,262 @@
+/**
+ * UserAssignmentsModal.css
+ * Enterprise-grade styles for Entity & Role Assignments Modal
+ */
+
+.user-assignments-modal .modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+/* User Identity Header */
+.user-assignments-header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.5rem;
+}
+
+.user-avatar-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3a57e8 0%, #4f46e5 100%);
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(58, 87, 232, 0.25);
+    flex-shrink: 0;
+}
+
+.user-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.15rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+/* Summary Metrics Bar */
+.assignments-summary-bar {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.summary-metric-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.summary-metric-value {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Table Container & Sticky Header */
+.assignments-table-container {
+    max-height: 52vh;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.assignments-table-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.assignments-table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.assignments-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.assignments-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.765rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.assignments-table tbody tr {
+    transition: all 0.15s ease-in-out;
+}
+
+.assignments-table tbody td {
+    padding: 0.65rem 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Row states */
+.assignments-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.assignments-table tbody tr.row-default {
+    background-color: rgba(58, 87, 232, 0.04);
+}
+
+.assignments-table tbody tr.row-inactive {
+    opacity: 0.65;
+    background-color: #fbfbfc;
+}
+
+.assignments-table tbody tr.row-inactive:hover {
+    opacity: 0.9;
+}
+
+.assignments-table tbody tr.row-duplicate {
+    background-color: #fef2f2 !important;
+}
+
+/* Form inputs styling */
+.assignment-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.835rem;
+    padding: 0.4rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.assignment-select:focus {
+    border-color: #3a57e8;
+    box-shadow: 0 0 0 3px rgba(58, 87, 232, 0.15);
+}
+
+/* Default Star Button */
+.btn-star-default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0.3rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-star-default:hover {
+    border-color: #fbbf24;
+    color: #d97706;
+    background: #fffbeb;
+}
+
+.btn-star-default.is-default {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #b45309;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Status switch pill */
+.status-pill-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.status-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.status-badge.active {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.status-badge.inactive {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+/* Empty State Card */
+.empty-assignments-card {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.empty-assignments-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #4338ca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 1.75rem;
+}
+
+/* Footer & Actions */
+.user-assignments-footer {
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+}
+
+.btn-action-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.btn-action-icon:hover {
+    transform: translateY(-1px);
+}

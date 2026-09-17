@@ -24,6 +24,7 @@ import {
     FaExclamationTriangle,
     FaKey,
     FaUserShield,
+    FaBuilding,
     FaCopy,
     FaCheck,
     FaUserCheck,
@@ -56,6 +57,7 @@ import {
 } from '../../auth/hooks/api.hooks';
 import { toast } from 'react-toastify';
 import PasswordResetDeliveryModal from '../../admin/components/PasswordResetDeliveryModal';
+import UserAssignmentsModal from '../../users/components/UserAssignmentsModal';
 
 const UserList = () => {
     // Current logged-in user from Redux
@@ -252,6 +254,11 @@ const UserList = () => {
             }
         );
     };
+
+    // Scoped Entity & Branch Assignments Modal
+    const [assignmentsModal, setAssignmentsModal] = useState({ show: false, user: null });
+    const handleOpenAssignmentsModal = (user) => setAssignmentsModal({ show: true, user });
+    const handleCloseAssignmentsModal = () => setAssignmentsModal({ show: false, user: null });
 
     // Approval & Re-Approval
     const handleOpenApproveModal = (user) => {
@@ -921,6 +928,25 @@ const UserList = () => {
                                                                 </span>
                                                             </OverlayTrigger>
 
+                                                            {/* Manage Firm & Branch Assignments */}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Manage Firm & Branch Roles</Tooltip>}
+                                                            >
+                                                                <span>
+                                                                    <Button
+                                                                        variant="outline-success"
+                                                                        size="sm"
+                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
+                                                                        onClick={() => handleOpenAssignmentsModal(u)}
+                                                                        title="Firm & Branch Assignments"
+                                                                    >
+                                                                        <FaBuilding size={13} />
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+
                                                             {/* Generate Password Reset Link */}
                                                             <OverlayTrigger
                                                                 placement="top"
@@ -1213,6 +1239,15 @@ const UserList = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Modal: Multi-Firm and Branch Role Assignments */}
+            {assignmentsModal.show && (
+                <UserAssignmentsModal
+                    show={assignmentsModal.show}
+                    user={assignmentsModal.user}
+                    onClose={handleCloseAssignmentsModal}
+                />
+            )}
         </div>
     );
 };

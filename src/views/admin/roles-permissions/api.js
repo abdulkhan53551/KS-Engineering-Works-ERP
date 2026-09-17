@@ -12,20 +12,21 @@ export const fetchRolesList = asyncHandler(async () => {
 });
 
 // Fetch full permission matrix (modules, permissions, role mapping)
-export const fetchPermissionMatrix = asyncHandler(async () => {
+export const fetchPermissionMatrix = asyncHandler(async (firmId) => {
     const res = await api.request({
         url: '/admin/permissions/matrix',
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        params: firmId ? { firmId } : {}
     });
     return res.data;
 });
 
-// Update permissions for a specific role
-export const saveRolePermissions = asyncHandler(async (roleId, permissionIds) => {
+// Update permissions for a specific role (supports single firmId or firmIds array for multi-firm broadcast)
+export const saveRolePermissions = asyncHandler(async (roleId, permissionIds, firmId, firmIds = null) => {
     const res = await api.request({
         url: `/admin/roles/${roleId}/permissions`,
         method: requestMethod.PUT,
-        data: { permissionIds }
+        data: { permissionIds, firmId, firmIds }
     });
     return res.data;
 });
@@ -45,6 +46,16 @@ export const deleteRoleApi = asyncHandler(async (roleId) => {
     const res = await api.request({
         url: `/admin/roles/${roleId}`,
         method: requestMethod.DELETE
+    });
+    return res.data;
+});
+
+// Update role details (hierarchy parent, data scope, independence, name, description)
+export const updateRoleDetailsApi = asyncHandler(async (roleId, roleData) => {
+    const res = await api.request({
+        url: `/admin/roles/${roleId}`,
+        method: requestMethod.PATCH,
+        data: roleData
     });
     return res.data;
 });

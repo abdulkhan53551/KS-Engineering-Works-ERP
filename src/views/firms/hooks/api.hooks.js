@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFirm, deleteFirm, deleteFirmLogo, getFirmById, getFirms, getFirmsPagination, getFirmType, updateFirm, uploadFirmLogo } from "../api";
+import { createFirm, deleteFirm, restoreFirm, deleteFirmLogo, getFirmById, getFirms, getFirmsPagination, getFirmType, updateFirm, uploadFirmLogo, getFirmBranches, createFirmBranch, updateFirmBranch, deleteFirmBranch } from "../api";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -15,10 +15,10 @@ export const useFirmType = () => {
 }
 
 // Get firms pagination
-export const useGetFirmsPagination = ({ page, pageSize, search }) => {
+export const useGetFirmsPagination = ({ page, pageSize, search, isTrash = false }) => {
     return useQuery({
-        queryKey: ["firm-pagination", page, pageSize, search],
-        queryFn: () => getFirmsPagination({ page, pageSize, search }),
+        queryKey: ["firm-pagination", page, pageSize, search, isTrash],
+        queryFn: () => getFirmsPagination({ page, pageSize, search, isTrash }),
         // staleTime: 0,
         keepPreviousData: true,
         select: (result) => {
@@ -37,14 +37,16 @@ export const useGetFirmsPagination = ({ page, pageSize, search }) => {
     });
 }
 // Get firms
-export const useGetFirms = ({ page, pageSize, search }) => {
+const EMPTY_FIRMS_ARRAY = Object.freeze([]);
+
+export const useGetFirms = ({ page, pageSize, search, isTrash = false }) => {
     return useQuery({
-        queryKey: ["getFirms", page, pageSize, search],
-        queryFn: () => getFirms({ page, pageSize, search }),
+        queryKey: ["getFirms", page, pageSize, search, isTrash],
+        queryFn: () => getFirms({ page, pageSize, search, isTrash }),
         // staleTime: 0,
         keepPreviousData: true,
         select: (result) => {
-            return result?.data ?? [];
+            return Array.isArray(result?.data) ? result.data : EMPTY_FIRMS_ARRAY;
         }
     });
 }
@@ -107,12 +109,28 @@ export const useDeleteFirm = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationKey: ["deketeFirm"],
+        mutationKey: ["deleteFirm"],
         mutationFn: deleteFirm,
         onSuccess: (res) => {
             if (res.success) {
                 toast.success(res.message || "Firm deleted successfully.");
                 // Refresh the list
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+                queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
+            }
+        }
+    });
+};
+
+export const useRestoreFirm = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["restoreFirm"],
+        mutationFn: restoreFirm,
+        onSuccess: (res) => {
+            if (res.success) {
+                toast.success(res.message || "Firm restored successfully.");
                 queryClient.invalidateQueries({ queryKey: ["getFirms"] });
                 queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
             }
@@ -152,5 +170,76 @@ export const useDeleteFirmLogo = (id) => {
                 queryClient.invalidateQueries({ queryKey: ["firm-pagination"] });
             }
         },
+    });
+};
+
+// ================= Firm Branches Hooks =================
+
+export const useGetFirmBranches = (firmId) => {
+    return useQuery({
+        queryKey: ["firm-branches", firmId],
+        queryFn: () => getFirmBranches(firmId),
+        enabled: !!firmId,
+        select: (result) => result?.data ?? []
+    });
+};
+
+export const useCreateFirmBranch = (firmId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["createFirmBranch", firmId],
+        mutationFn: (data) => createFirmBranch({ firmId, data }),
+        onSuccess: (res) => {
+            if (res.success) {
+                toast.success(res.message || "Branch created successfully.");
+                queryClient.invalidateQueries({ queryKey: ["firm-branches", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirmById", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+            }
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || "Failed to create branch.");
+        }
+    });
+};
+
+export const useUpdateFirmBranch = (firmId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["updateFirmBranch", firmId],
+        mutationFn: ({ branchId, data }) => updateFirmBranch({ firmId, branchId, data }),
+        onSuccess: (res) => {
+            if (res.success) {
+                toast.success(res.message || "Branch updated successfully.");
+                queryClient.invalidateQueries({ queryKey: ["firm-branches", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirmById", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+            }
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || "Failed to update branch.");
+        }
+    });
+};
+
+export const useDeleteFirmBranch = (firmId) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["deleteFirmBranch", firmId],
+        mutationFn: (branchId) => deleteFirmBranch({ firmId, branchId }),
+        onSuccess: (res) => {
+            if (res.success) {
+                toast.success(res.message || "Branch deleted successfully.");
+                queryClient.invalidateQueries({ queryKey: ["firm-branches", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirmById", firmId] });
+                queryClient.invalidateQueries({ queryKey: ["getFirms"] });
+            }
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || "Failed to delete branch.");
+        }
     });
 };

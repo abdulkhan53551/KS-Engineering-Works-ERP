@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import { 
     fetchRolesList, 
     fetchPermissionMatrix, 
     saveRolePermissions, 
     createRoleApi, 
-    deleteRoleApi 
+    deleteRoleApi,
+    updateRoleDetailsApi 
 } from "./api";
 import { toast } from "react-toastify";
 
@@ -17,20 +19,22 @@ export const useRolesQuery = () => {
     });
 };
 
-export const usePermissionMatrixQuery = () => {
+export const usePermissionMatrixQuery = (firmId) => {
     return useQuery({
-        queryKey: ["admin", "permissions", "matrix"],
-        queryFn: fetchPermissionMatrix,
-        staleTime: 1000 * 60 * 5
+        queryKey: ["admin", "permissions", "matrix", firmId],
+        queryFn: () => fetchPermissionMatrix(firmId),
+        staleTime: 1000 * 60 * 5,
+        enabled: Boolean(firmId)
     });
 };
 
 export const useSaveRolePermissionsMutation = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ roleId, permissionIds }) => saveRolePermissions(roleId, permissionIds),
+        mutationFn: ({ roleId, permissionIds, firmId, firmIds }) => saveRolePermissions(roleId, permissionIds, firmId, firmIds),
         onSuccess: (data, variables) => {
-            toast.success("Role permissions updated successfully");
+            const count = variables.firmIds ? variables.firmIds.length : 1;
+            toast.success(`Role permissions updated successfully across ${count} firm(s)`);
             queryClient.invalidateQueries({ queryKey: ["admin", "permissions", "matrix"] });
         },
         onError: (err) => {
@@ -51,6 +55,22 @@ export const useCreateRoleMutation = () => {
         },
         onError: (err) => {
             const msg = err.response?.data?.message || err.message || "Failed to create role";
+            toast.error(msg);
+        }
+    });
+};
+
+export const useUpdateRoleDetailsMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ roleId, roleData }) => updateRoleDetailsApi(roleId, roleData),
+        onSuccess: () => {
+            toast.success("Role hierarchy and scope updated successfully");
+            queryClient.invalidateQueries({ queryKey: ["admin", "roles"] });
+            queryClient.invalidateQueries({ queryKey: ["admin", "permissions", "matrix"] });
+        },
+        onError: (err) => {
+            const msg = err.response?.data?.message || err.message || "Failed to update role details";
             toast.error(msg);
         }
     });
@@ -77,9 +97,28 @@ export const useDeleteRoleMutation = () => {
  * dependencies for RolesPermissionStudio.
  */
 export const useRolesPermissionStudio = () => {
-    const { data: matrixData, isLoading, isError } = usePermissionMatrixQuery();
+    const activeFirm = useSelector((state) => state.firmReducer?.activeFirm);
+    const userFirms = useSelector((state) => state.firmReducer?.userFirms || []);
+
+    // Derive selected firm ID synchronously from header activeFirm scope (0 lag, 0 extra render pass)
+    const selectedFirmId = useMemo(() => {
+        if (activeFirm?.id && activeFirm.id !== 'all') {
+            const num = Number(activeFirm.id);
+            if (!isNaN(num) && num > 0) return num;
+        }
+        if (userFirms && userFirms.length > 0) {
+            const firstValid = userFirms.find(f => f.id !== 'all');
+            if (firstValid) return Number(firstValid.id);
+        }
+        return 1;
+    }, [activeFirm?.id, userFirms]);
+
+    const setSelectedFirmId = () => {}; // Backward compatibility for any consumers
+
+    const { data: matrixData, isLoading, isError } = usePermissionMatrixQuery(selectedFirmId);
     const saveMutation = useSaveRolePermissionsMutation();
     const createRoleMutation = useCreateRoleMutation();
+    const updateRoleDetailsMutation = useUpdateRoleDetailsMutation();
     const deleteRoleMutation = useDeleteRoleMutation();
 
     const roles = matrixData?.data?.roles || [];
@@ -87,15 +126,57 @@ export const useRolesPermissionStudio = () => {
     const allPermissions = matrixData?.data?.allPermissions || [];
     const rolePermissionsMap = matrixData?.data?.rolePermissionsMap || {};
 
+    const isAllFirmsMode = activeFirm?.id === 'all';
+    const availableFirms = useMemo(() => {
+        return (userFirms || []).filter(f => f.id !== 'all');
+    }, [userFirms]);
+
+    // Target firms selected for multi-firm broadcast in "All Firms" mode
+    const [selectedTargetFirmIds, setSelectedTargetFirmIds] = useState(new Set());
+
+    // When availableFirms loads, default to all available firms checked
+    useEffect(() => {
+        if (availableFirms.length > 0) {
+            setSelectedTargetFirmIds(new Set(availableFirms.map(f => f.id)));
+        }
+    }, [availableFirms]);
+
+    const toggleTargetFirmId = (firmId) => {
+        setSelectedTargetFirmIds(prev => {
+            const next = new Set(prev);
+            if (next.has(firmId)) next.delete(firmId);
+            else next.add(firmId);
+            return next;
+        });
+    };
+
+    const selectAllTargetFirms = () => {
+        setSelectedTargetFirmIds(new Set(availableFirms.map(f => f.id)));
+    };
+
+    const deselectAllTargetFirms = () => {
+        setSelectedTargetFirmIds(new Set());
+    };
+
     const [selectedRoleId, setSelectedRoleId] = useState(null);
     const [selectedPermIds, setSelectedPermIds] = useState(new Set());
     const [savedPermIds, setSavedPermIds] = useState(new Set());
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Modals
+    // Modals & Forms
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleDesc, setNewRoleDesc] = useState('');
+    const [newRoleParentId, setNewRoleParentId] = useState('');
+    const [newRoleScope, setNewRoleScope] = useState('OWN');
+    const [newRoleIsIndependent, setNewRoleIsIndependent] = useState(false);
+
+    // Edit Role Hierarchy & Scope Modal
+    const [showRoleSettingsModal, setShowRoleSettingsModal] = useState(false);
+    const [editRoleParentId, setEditRoleParentId] = useState('');
+    const [editRoleScope, setEditRoleScope] = useState('OWN');
+    const [editRoleIsIndependent, setEditRoleIsIndependent] = useState(false);
+
     const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState(null);
 
@@ -345,8 +426,23 @@ export const useRolesPermissionStudio = () => {
     // Save permissions
     const handleConfirmSave = () => {
         if (!selectedRoleId || isSuperAdmin) return;
+
+        const targetIds = isAllFirmsMode 
+            ? Array.from(selectedTargetFirmIds) 
+            : [selectedFirmId];
+
+        if (targetIds.length === 0) {
+            toast.error("Please select at least one firm to apply permissions to");
+            return;
+        }
+
         saveMutation.mutate(
-            { roleId: selectedRoleId, permissionIds: Array.from(selectedPermIds) },
+            { 
+                roleId: selectedRoleId, 
+                permissionIds: Array.from(selectedPermIds), 
+                firmId: targetIds[0],
+                firmIds: targetIds 
+            },
             {
                 onSuccess: () => {
                     setSavedPermIds(new Set(selectedPermIds));
@@ -355,6 +451,15 @@ export const useRolesPermissionStudio = () => {
             }
         );
     };
+
+    // Sync edit hierarchy state when selected role changes
+    useEffect(() => {
+        if (selectedRole) {
+            setEditRoleParentId(selectedRole.parentRoleId || '');
+            setEditRoleScope(selectedRole.dataScope || 'OWN');
+            setEditRoleIsIndependent(Boolean(selectedRole.isIndependent));
+        }
+    }, [selectedRole?.id, selectedRole?.parentRoleId, selectedRole?.dataScope, selectedRole?.isIndependent]);
 
     // Create role handler
     const handleCreateRole = (e) => {
@@ -365,17 +470,45 @@ export const useRolesPermissionStudio = () => {
         }
 
         createRoleMutation.mutate(
-            { name: newRoleName.trim(), description: newRoleDesc.trim() },
+            { 
+                name: newRoleName.trim(), 
+                description: newRoleDesc.trim(),
+                parentRoleId: newRoleParentId ? parseInt(newRoleParentId, 10) : null,
+                dataScope: newRoleScope,
+                isIndependent: newRoleIsIndependent
+            },
             {
                 onSuccess: (res) => {
                     setShowCreateModal(false);
                     setNewRoleName('');
                     setNewRoleDesc('');
+                    setNewRoleParentId('');
+                    setNewRoleScope('OWN');
+                    setNewRoleIsIndependent(false);
                     const createdId = res?.data?.id || res?.id;
                     if (createdId) setSelectedRoleId(createdId);
                 }
             }
         );
+    };
+
+    // Update role hierarchy & scope handler
+    const handleUpdateRoleHierarchy = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (!selectedRoleId || isSuperAdmin) return;
+
+        updateRoleDetailsMutation.mutate({
+            roleId: selectedRoleId,
+            roleData: {
+                parentRoleId: editRoleParentId ? parseInt(editRoleParentId, 10) : null,
+                dataScope: editRoleScope,
+                isIndependent: editRoleIsIndependent
+            }
+        }, {
+            onSuccess: () => {
+                setShowRoleSettingsModal(false);
+            }
+        });
     };
 
     // Delete role handler
@@ -415,6 +548,25 @@ export const useRolesPermissionStudio = () => {
         setSearchTerm,
         isDirty,
 
+        // Hierarchy & Scope Form State
+        newRoleParentId,
+        setNewRoleParentId,
+        newRoleScope,
+        setNewRoleScope,
+        newRoleIsIndependent,
+        setNewRoleIsIndependent,
+
+        showRoleSettingsModal,
+        setShowRoleSettingsModal,
+        editRoleParentId,
+        setEditRoleParentId,
+        editRoleScope,
+        setEditRoleScope,
+        editRoleIsIndependent,
+        setEditRoleIsIndependent,
+        handleUpdateRoleHierarchy,
+        isUpdatingRoleDetails: updateRoleDetailsMutation.isPending,
+
         // Modals
         showCreateModal,
         setShowCreateModal,
@@ -426,6 +578,18 @@ export const useRolesPermissionStudio = () => {
         setShowConfirmSaveModal,
         roleToDelete,
         setRoleToDelete,
+
+        // Scoped Firm state
+        selectedFirmId,
+        setSelectedFirmId,
+        userFirms,
+        activeFirm,
+        isAllFirmsMode,
+        availableFirms,
+        selectedTargetFirmIds,
+        toggleTargetFirmId,
+        selectAllTargetFirms,
+        deselectAllTargetFirms,
         // Matrix filtering, category batching & accordion
         moduleSearchTerm,
         setModuleSearchTerm,

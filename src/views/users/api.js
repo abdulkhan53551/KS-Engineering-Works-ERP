@@ -137,3 +137,21 @@ export const adminDirectResetPassword = asyncHandler(async ({ id, newPassword })
   return res.data;
 });
 
+// User Firm & Branch Assignments
+export const fetchUserAssignments = asyncHandler(async (userId) => {
+  const res = await api.request({
+    url: `/users/${userId}/assignments`,
+    method: requestMethod.GET
+  });
+  return res.data;
+});
+
+export const updateUserAssignments = asyncHandler(async ({ userId, assignments }) => {
+  const res = await api.request({
+    url: `/users/${userId}/assignments`,
+    method: requestMethod.PUT,
+    data: { assignments }
+  });
+  return res.data;
+});
+

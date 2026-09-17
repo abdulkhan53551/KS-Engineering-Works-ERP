@@ -29,8 +29,12 @@ import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
 import useListManager from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+import useBranchAction from '../../../hooks/useBranchAction';
 
 const InvoiceChallan = () => {
+   // Branch check for multi-branch awareness
+   const { navigateWithBranch, BranchModal } = useBranchAction();
+
    // Trash Action Helpers
    const {
       confirmSoftDelete,
@@ -178,11 +182,13 @@ const InvoiceChallan = () => {
                      <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
                      <div>
                         {!isTrash && (
-                           <Link to="/sales/challans/create">
-                              <Button type="button" variant="primary">
-                                 Add Challan
-                              </Button>
-                           </Link>
+                           <Button
+                              type="button"
+                              variant="primary"
+                              onClick={() => navigateWithBranch('/sales/challans/create', 'Select Branch for Delivery Challan')}
+                           >
+                              + Add Challan
+                           </Button>
                         )}
                      </div>
                   </Card.Header>
@@ -369,7 +375,21 @@ const InvoiceChallan = () => {
                                        </td>
                                        <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.challanId}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
-                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.challanNo}</span></td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>
+                                          <div className="d-flex align-items-center gap-1">
+                                             <span className="text-primary font-monospace fw-bold">{item.challanNo}</span>
+                                             {(item.firmCode || item.firmName) && (
+                                                <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firmName || item.firmCode}`}>
+                                                   {item.firmCode || item.firmName}
+                                                </Badge>
+                                             )}
+                                             {item.firmBranchCode && (
+                                                <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                   {item.firmBranchCode}
+                                                </Badge>
+                                             )}
+                                          </div>
+                                       </td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.challanDate ? moment(item.challanDate).format('DD/MM/YYYY') : '-'}</td>
                                        {!isTrash && (
                                           <td style={{ padding: '0.45rem 0.5rem' }}><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
@@ -466,6 +486,9 @@ const InvoiceChallan = () => {
                </Card>
             </Col>
          </Row>
+
+         {/* Branch Selection Modal for Consolidated Mode */}
+         <BranchModal />
       </>
    );
 };

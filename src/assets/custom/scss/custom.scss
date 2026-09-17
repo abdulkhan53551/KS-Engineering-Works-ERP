@@ -168,6 +168,7 @@ input.no-spinners,
         height: 42px !important;
         min-height: 42px !important;
         font-size: 0.84rem !important;
+        font-weight: 400 !important;
         padding-top: 0.35rem !important;
         padding-bottom: 0.35rem !important;
         padding-left: 0.75rem !important;
@@ -191,6 +192,7 @@ input.no-spinners,
     > textarea.form-control {
         min-height: 80px !important;
         font-size: 0.84rem !important;
+        font-weight: 400 !important;
         padding-top: 0.65rem !important;
         padding-bottom: 0.5rem !important;
         padding-left: 0.75rem !important;
@@ -215,7 +217,9 @@ input.no-spinners,
 
     > label {
         font-size: 0.78rem !important;
-        color: #64748b !important;
+        color: #475569 !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
     }
 
     > textarea.form-control:not(:placeholder-shown) ~ label {
