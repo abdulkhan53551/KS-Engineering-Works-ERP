@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { Card, Table, Button, Badge, Modal, Form, Spinner, Row, Col, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaPlus, FaPen, FaTrash, FaBuilding, FaMapMarkerAlt, FaPhone, FaEnvelope, FaStar, FaFileInvoice, FaTimes } from 'react-icons/fa';
+import React, { useState, useCallback } from 'react';
+import { Card, Table, Button, Badge, Modal, Form, Spinner, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaPlus, FaPen, FaTrash, FaBuilding, FaStar } from 'react-icons/fa';
+import { useForm } from 'react-hook-form';
+import { joiResolver } from '@hookform/resolvers/joi';
+import { firmBranchValidationSchema } from '../../../validation/firmBranch.validation';
 import {
     useGetFirmBranches,
     useCreateFirmBranch,
@@ -9,7 +12,7 @@ import {
 } from '../hooks/api.hooks';
 import '../FirmModule.css';
 
-const initialBranchState = {
+const defaultBranchValues = {
     branchName: '',
     branchCode: '',
     isHeadOffice: false,
@@ -28,26 +31,36 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editingBranch, setEditingBranch] = useState(null);
-    const [formData, setFormData] = useState(initialBranchState);
-    const [formError, setFormError] = useState('');
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [branchToDelete, setBranchToDelete] = useState(null);
 
-    const handleOpenCreate = () => {
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        formState: { errors }
+    } = useForm({
+        resolver: joiResolver(firmBranchValidationSchema),
+        mode: "onBlur",
+        reValidateMode: "onChange",
+        defaultValues: defaultBranchValues
+    });
+
+    const handleOpenCreate = useCallback(() => {
         setEditingBranch(null);
-        setFormData({
-            ...initialBranchState,
+        reset({
+            ...defaultBranchValues,
             // If this is the first branch, auto-designate as head office
             isHeadOffice: branches.length === 0
         });
-        setFormError('');
         setModalOpen(true);
-    };
+    }, [branches.length, reset]);
 
-    const handleOpenEdit = (branch) => {
+    const handleOpenEdit = useCallback((branch) => {
         setEditingBranch(branch);
-        setFormData({
+        reset({
             branchName: branch.branchName || '',
             branchCode: branch.branchCode || '',
             isHeadOffice: Boolean(branch.isHeadOffice),
@@ -57,45 +70,32 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
             addressLine1: branch.addressLine1 || '',
             pincode: branch.pincode || ''
         });
-        setFormError('');
         setModalOpen(true);
-    };
+    }, [reset]);
 
-    const handleSave = (e) => {
-        e.preventDefault();
-        if (!formData.branchName.trim()) {
-            setFormError('Branch Name is required.');
-            return;
-        }
-        if (!formData.branchCode.trim()) {
-            setFormError('Branch Code is required.');
-            return;
-        }
-
+    const onFormSubmit = useCallback((data) => {
         const payload = {
-            branchName: formData.branchName.trim(),
-            branchCode: formData.branchCode.trim().toUpperCase(),
-            isHeadOffice: Boolean(formData.isHeadOffice),
-            gstin: formData.gstin ? formData.gstin.trim().toUpperCase() : null,
-            phoneNumber: formData.phoneNumber ? formData.phoneNumber.trim() : null,
-            email: formData.email ? formData.email.trim() : null,
-            addressLine1: formData.addressLine1 ? formData.addressLine1.trim() : null,
-            pincode: formData.pincode ? formData.pincode.trim() : null
+            branchName: data.branchName.trim(),
+            branchCode: data.branchCode.trim().toUpperCase(),
+            isHeadOffice: Boolean(data.isHeadOffice),
+            gstin: data.gstin ? data.gstin.trim().toUpperCase() : null,
+            phoneNumber: data.phoneNumber ? data.phoneNumber.trim() : null,
+            email: data.email ? data.email.trim() : null,
+            addressLine1: data.addressLine1 ? data.addressLine1.trim() : null,
+            pincode: data.pincode ? data.pincode.trim() : null
         };
 
         if (editingBranch) {
             updateBranch(
                 { branchId: editingBranch.id, data: payload },
-                {
-                    onSuccess: () => setModalOpen(false)
-                }
+                { onSuccess: () => setModalOpen(false) }
             );
         } else {
             createBranch(payload, {
                 onSuccess: () => setModalOpen(false)
             });
         }
-    };
+    }, [editingBranch, createBranch, updateBranch]);
 
     const handleOpenDelete = (branch) => {
         setBranchToDelete(branch);
@@ -354,7 +354,7 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                 </Card>
             )}
 
-            {/* Create / Edit Branch Modal with Project's Existing Floating Inputs */}
+            {/* Create / Edit Branch Modal with react-hook-form */}
             <Modal
                 show={modalOpen}
                 onHide={() => setModalOpen(false)}
@@ -362,7 +362,7 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                 centered
                 backdrop="static"
             >
-                <Form onSubmit={handleSave}>
+                <Form noValidate onSubmit={handleSubmit(onFormSubmit)}>
                     <Modal.Header closeButton>
                         <Modal.Title className="h5 fw-bold d-flex align-items-center gap-2">
                             <FaBuilding className="text-primary" size={18} />
@@ -371,27 +371,20 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                     </Modal.Header>
 
                     <Modal.Body className="p-4">
-                        {formError && (
-                            <Alert variant="danger" className="py-2 px-3 small mb-4">
-                                {formError}
-                            </Alert>
-                        )}
-
                         <Row>
                             <Col md={6}>
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="text"
-                                        name="branchName"
                                         id="branchName"
                                         placeholder="Branch Name"
-                                        value={formData.branchName}
-                                        onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
-                                        required
+                                        isInvalid={!!errors.branchName}
+                                        {...register("branchName")}
                                     />
                                     <Form.Label htmlFor="branchName">
                                         Branch Name <span className="text-danger label-required">*</span>
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.branchName?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -399,16 +392,19 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="text"
-                                        name="branchCode"
                                         id="branchCode"
                                         placeholder="Branch Code"
-                                        value={formData.branchCode}
-                                        onChange={(e) => setFormData({ ...formData, branchCode: e.target.value.toUpperCase() })}
-                                        required
+                                        isInvalid={!!errors.branchCode}
+                                        {...register("branchCode", {
+                                            onChange: (e) => {
+                                                setValue("branchCode", e.target.value.toUpperCase(), { shouldValidate: true });
+                                            }
+                                        })}
                                     />
                                     <Form.Label htmlFor="branchCode">
                                         Branch Code <span className="text-danger label-required">*</span>
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.branchCode?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -416,17 +412,21 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="text"
-                                        name="gstin"
                                         id="branchGstin"
                                         placeholder="GSTIN"
                                         maxLength={15}
-                                        value={formData.gstin}
-                                        onChange={(e) => setFormData({ ...formData, gstin: e.target.value.toUpperCase() })}
+                                        isInvalid={!!errors.gstin}
                                         className="text-uppercase font-monospace"
+                                        {...register("gstin", {
+                                            onChange: (e) => {
+                                                setValue("gstin", e.target.value.toUpperCase(), { shouldValidate: true });
+                                            }
+                                        })}
                                     />
                                     <Form.Label htmlFor="branchGstin">
                                         GSTIN
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.gstin?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -434,15 +434,15 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="text"
-                                        name="phoneNumber"
                                         id="branchPhone"
                                         placeholder="Phone Number"
-                                        value={formData.phoneNumber}
-                                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                        isInvalid={!!errors.phoneNumber}
+                                        {...register("phoneNumber")}
                                     />
                                     <Form.Label htmlFor="branchPhone">
                                         Phone Number
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.phoneNumber?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -450,15 +450,15 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="email"
-                                        name="email"
                                         id="branchEmail"
                                         placeholder="Email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        isInvalid={!!errors.email}
+                                        {...register("email")}
                                     />
                                     <Form.Label htmlFor="branchEmail">
                                         Email
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -466,16 +466,16 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         type="text"
-                                        name="pincode"
                                         id="branchPincode"
                                         placeholder="Pincode"
                                         maxLength={10}
-                                        value={formData.pincode}
-                                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                                        isInvalid={!!errors.pincode}
+                                        {...register("pincode")}
                                     />
                                     <Form.Label htmlFor="branchPincode">
                                         Pincode
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.pincode?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -483,16 +483,16 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
                                     <Form.Control
                                         as="textarea"
-                                        name="addressLine1"
                                         id="branchAddress"
                                         placeholder="Address"
                                         style={{ height: '80px' }}
-                                        value={formData.addressLine1}
-                                        onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                                        isInvalid={!!errors.addressLine1}
+                                        {...register("addressLine1")}
                                     />
                                     <Form.Label htmlFor="branchAddress">
                                         Address
                                     </Form.Label>
+                                    <Form.Control.Feedback type="invalid">{errors.addressLine1?.message}</Form.Control.Feedback>
                                 </Form.Floating>
                             </Col>
 
@@ -510,8 +510,7 @@ const FirmBranchManager = ({ firmId, firm = null, noCard = false, readOnly = fal
                                     <Form.Check
                                         type="switch"
                                         id="isHeadOfficeSwitch"
-                                        checked={formData.isHeadOffice}
-                                        onChange={(e) => setFormData({ ...formData, isHeadOffice: e.target.checked })}
+                                        {...register("isHeadOffice")}
                                     />
                                 </div>
                             </Col>

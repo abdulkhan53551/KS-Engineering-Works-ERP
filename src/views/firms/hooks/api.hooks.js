@@ -10,6 +10,7 @@ const selectFirmType = (result) => result?.data ?? EMPTY_ARRAY;
 const selectFirmsPagination = (result) => result?.data?.pagination ?? EMPTY_OBJECT;
 const selectFirmsList = (result) => Array.isArray(result?.data) ? result.data : EMPTY_ARRAY;
 const selectFirmById = (result) => result?.data ?? EMPTY_OBJECT;
+const selectFirmBranches = (result) => result?.data ?? EMPTY_ARRAY;
 
 // Get firm type
 export const useFirmType = () => {
@@ -51,7 +52,7 @@ export const useGetFirmById = (id = 0) => {
 };
 
 // Create firm
-export const useCreatFirm = () => {
+export const useCreateFirm = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -167,7 +168,7 @@ export const useGetFirmBranches = (firmId) => {
         queryKey: ["firm-branches", firmId],
         queryFn: () => getFirmBranches(firmId),
         enabled: !!firmId,
-        select: (result) => result?.data ?? []
+        select: selectFirmBranches
     });
 };
 

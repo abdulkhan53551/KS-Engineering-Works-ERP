@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Form, Button, Spinner, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Form, Button, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     FaArrowLeft,
@@ -9,24 +9,21 @@ import {
     FaUniversity,
     FaCheck,
     FaSave,
-    FaShieldAlt,
-    FaInfoCircle,
     FaFolderOpen
 } from 'react-icons/fa';
-import BootstrapSwitchButton from 'bootstrap-switch-button-react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { createFirmValidationSchema } from '../../validation/firm.validation';
 import { joiResolver } from '@hookform/resolvers/joi';
 import { useCountryState, useStateCity } from '../dashboard/hooks/api.hooks';
 import { useGetFirmById } from './hooks/api.hooks';
 import useHandleSubmit from './hooks/useHandleSubmit';
-import LogoUploadDropZone from '../../components/upload/LogoUploadDropZone';
-import AttachmentManager from '../../components/attachments/AttachmentManager';
+import EnterpriseIdentitySection from './sections/EnterpriseIdentitySection';
+import StatutoryTaxSection from './sections/StatutoryTaxSection';
+import AddressContactSection from './sections/AddressContactSection';
+import BankingSection from './sections/BankingSection';
 import FirmBranchManager from './components/FirmBranchManager';
+import AttachmentManager from '../../components/attachments/AttachmentManager';
 import './FirmModule.css';
-
-const bankAccountType = ['Savings', 'Current'];
-const firmType = ['Proprietorship', 'Partnership', 'LLP', 'Pvt Ltd', 'Public Ltd', 'Other'];
 
 const FIRM_DOC_TYPES = [
     { value: 'FIRM_LOGO', label: 'Firm Logo' },
@@ -58,12 +55,9 @@ const FirmForm = ({ mode }) => {
     });
 
     const watchFirmName = useWatch({ control, name: "firmName" });
-    const watchTradeName = useWatch({ control, name: "tradeName" });
     const watchFirmType = useWatch({ control, name: "firmType" });
     const watchIsGstRegistered = useWatch({ control, name: "isGstRegistered" });
     const selectedState = useWatch({ control, name: "stateId" });
-    const logoUrl = useWatch({ control, name: "logoUrl" });
-    const logoPublicId = useWatch({ control, name: "logoPublicId" });
 
     const { data: countryStates = [] } = useCountryState();
     const { data: cities = [], isFetching: isFetchingCities } = useStateCity(selectedState);
@@ -116,6 +110,9 @@ const FirmForm = ({ mode }) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleSubmit, onSubmit, onError]);
+
+    // Shared props for section components
+    const sectionProps = { register, errors, control, setValue };
 
     return (
         <div className="firm-module-root firm-form-container">
@@ -220,119 +217,7 @@ const FirmForm = ({ mode }) => {
                         </div>
                         <span className="firm-section-badge">Part 1 • Identity</span>
                     </div>
-
-                    <div className="p-4">
-                        <Row>
-                            {/* Left: Dedicated Brand Logo Upload Tile */}
-                            <Col lg={4} className="mb-4 mb-lg-0 border-end-lg pe-lg-4">
-                                <div className="p-3 bg-light rounded-3 border text-center h-100 d-flex flex-column justify-content-between">
-                                    <div>
-                                        <div className="text-dark fw-bold mb-1 small text-uppercase letter-spacing-1">
-                                            Corporate Logo & Brand Mark
-                                        </div>
-                                        <p className="text-muted small mb-3" style={{ fontSize: '0.73rem' }}>
-                                            Used on Tax Invoices, Delivery Challans, Quotations, and Header Switcher.
-                                        </p>
-                                        <div className="d-flex justify-content-center my-2">
-                                            <LogoUploadDropZone
-                                                value={logoUrl}
-                                                publicId={logoPublicId}
-                                                folder="firms/logos"
-                                                tags="ks-erp,firm,logo"
-                                                onChange={({ logoUrl: newUrl, logoPublicId: newPid }) => {
-                                                    setValue('logoUrl', newUrl, { shouldValidate: true });
-                                                    setValue('logoPublicId', newPid, { shouldValidate: true });
-                                                }}
-                                                disabled={isSubmitting}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 pt-2 border-top text-muted small" style={{ fontSize: '0.7rem' }}>
-                                        <FaInfoCircle size={10} className="me-1 text-primary" />
-                                        Recommended: Transparent PNG or SVG (max 5MB).
-                                    </div>
-                                </div>
-                            </Col>
-
-                            {/* Right: Legal & Trade Names, Structure, Business Scope */}
-                            <Col lg={8} className="ps-lg-4">
-                                <Row>
-                                    {/* Legal Firm Name */}
-                                    <Col md={6}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                            <Form.Control
-                                                type="text"
-                                                id="firmName"
-                                                placeholder="Firm Legal Name"
-                                                isInvalid={!!errors.firmName}
-                                                {...register("firmName")}
-                                            />
-                                            <Form.Label htmlFor="firmName">
-                                                Legal Entity Name <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.firmName?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-
-                                    {/* Trade Name */}
-                                    <Col md={6}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                            <Form.Control
-                                                type="text"
-                                                id="tradeName"
-                                                placeholder="Trade Name (DBA)"
-                                                isInvalid={!!errors.tradeName}
-                                                {...register("tradeName")}
-                                            />
-                                            <Form.Label htmlFor="tradeName">
-                                                Trade Name (DBA)
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.tradeName?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-
-                                    {/* Firm Legal Structure / Type */}
-                                    <Col md={12}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                            <Form.Select
-                                                id="firmType"
-                                                isInvalid={!!errors.firmType}
-                                                {...register("firmType")}
-                                            >
-                                                <option value="">-- Select Legal Structure --</option>
-                                                {firmType.map((item) => (
-                                                    <option key={item} value={item}>{item}</option>
-                                                ))}
-                                            </Form.Select>
-                                            <Form.Label htmlFor="firmType">
-                                                Entity Type / Legal Structure <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.firmType?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-
-                                    {/* Core Business Activity Scope */}
-                                    <Col md={12}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                            <Form.Control
-                                                as="textarea"
-                                                id="businessActivity"
-                                                placeholder="Core Business Scope / Activities"
-                                                style={{ height: '88px' }}
-                                                maxLength={1000}
-                                                isInvalid={!!errors.businessActivity}
-                                                {...register("businessActivity")}
-                                            />
-                                            <Form.Label htmlFor="businessActivity">
-                                                Primary Business Scope / Activity <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.businessActivity?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-                                </Row>
-                            </Col>
-                        </Row>
-                    </div>
+                    <EnterpriseIdentitySection {...sectionProps} isSubmitting={isSubmitting} />
                 </div>
 
                 {/* 3. Section 2: Statutory Tax Registrations & Invoicing Setup */}
@@ -351,217 +236,7 @@ const FirmForm = ({ mode }) => {
                         </div>
                         <span className="firm-section-badge">Part 2 • Compliance</span>
                     </div>
-
-                    <div className="p-4">
-                        {/* GST Registration Interactive Banner */}
-                        <div className="firm-highlight-box mb-4">
-                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                <div>
-                                    <div className="fw-bold text-dark d-flex align-items-center gap-2">
-                                        <FaShieldAlt className="text-success" size={15} />
-                                        <span>Registered under GST (Goods and Services Tax)</span>
-                                    </div>
-                                    <div className="text-muted small" style={{ fontSize: '0.735rem' }}>
-                                        Toggle on if this firm is registered under the Regular or Composition Scheme with a valid 15-digit GSTIN.
-                                    </div>
-                                </div>
-                                <div>
-                                    <Controller
-                                        name="isGstRegistered"
-                                        control={control}
-                                        defaultValue={false}
-                                        render={({ field: { value, onChange } }) => (
-                                            <BootstrapSwitchButton
-                                                checked={Boolean(value)}
-                                                onChange={onChange}
-                                                width={90}
-                                                height={36}
-                                                onlabel="Active"
-                                                offlabel="No"
-                                                onstyle="success"
-                                                offstyle="secondary"
-                                                size="sm"
-                                            />
-                                        )}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Conditional GSTIN Field */}
-                            {watchIsGstRegistered && (
-                                <div className="mt-3 pt-3 border-top">
-                                    <Row>
-                                        <Col lg={6}>
-                                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                                <Form.Control
-                                                    type="text"
-                                                    id="gstin"
-                                                    placeholder="15-digit GSTIN"
-                                                    maxLength={15}
-                                                    isInvalid={!!errors.gstin}
-                                                    {...register("gstin", {
-                                                        onChange: (e) => {
-                                                            setValue("gstin", e.target.value.toUpperCase(), { shouldValidate: true });
-                                                        }
-                                                    })}
-                                                />
-                                                <Form.Label htmlFor="gstin">
-                                                    GSTIN (GST Identification Number) <span className="text-danger label-required">*</span>
-                                                </Form.Label>
-                                                <Form.Control.Feedback type="invalid">{errors.gstin?.message}</Form.Control.Feedback>
-                                            </Form.Floating>
-                                        </Col>
-                                        <Col lg={6} className="d-flex align-items-center">
-                                            <div className="text-muted small">
-                                                <span className="fw-semibold text-dark">Format: </span>
-                                                <code className="px-1 bg-white border rounded">27AAAAA0000A1Z5</code>
-                                                <div className="mt-0.5" style={{ fontSize: '0.71rem' }}>
-                                                    State code + 10-digit PAN + Entity code + Check digit.
-                                                </div>
-                                            </div>
-                                        </Col>
-                                    </Row>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Corporate Identifiers Grid */}
-                        <Row>
-                            {/* PAN Number */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="panNumber"
-                                        placeholder="PAN No."
-                                        maxLength={10}
-                                        isInvalid={!!errors.panNumber}
-                                        {...register("panNumber", {
-                                            onChange: (e) => {
-                                                setValue("panNumber", e.target.value.toUpperCase(), { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="panNumber">
-                                        PAN No. (Permanent Account Number) <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.panNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* CIN Number */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="cinNumber"
-                                        placeholder="CIN No."
-                                        maxLength={21}
-                                        isInvalid={!!errors.cinNumber}
-                                        {...register("cinNumber", {
-                                            onChange: (e) => {
-                                                setValue("cinNumber", e.target.value.toUpperCase(), { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="cinNumber">
-                                        CIN No. (Corporate Identification Number)
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.cinNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* TAN Number */}
-                            <Col lg={4} md={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="tanNumber"
-                                        placeholder="TAN No."
-                                        maxLength={10}
-                                        isInvalid={!!errors.tanNumber}
-                                        {...register("tanNumber", {
-                                            onChange: (e) => {
-                                                setValue("tanNumber", e.target.value.toUpperCase(), { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="tanNumber">
-                                        TAN No. (Tax Deduction Account Number)
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.tanNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-                        </Row>
-
-                        {/* Subsection: Sequential Invoicing Setup */}
-                        <div className="firm-subsection-divider">
-                            <span>Sequential Invoice Setup & Billing Terms</span>
-                            <hr />
-                        </div>
-
-                        <Row>
-                            {/* Invoice Prefix */}
-                            <Col md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="invoicePrefix"
-                                        placeholder="Invoice Prefix"
-                                        maxLength={10}
-                                        isInvalid={!!errors.invoicePrefix}
-                                        {...register("invoicePrefix")}
-                                    />
-                                    <Form.Label htmlFor="invoicePrefix">
-                                        Invoice Prefix <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.invoicePrefix?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Invoice Starting Number */}
-                            <Col md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
-                                        id="invoiceStartNumber"
-                                        placeholder="Invoice Starting Number"
-                                        maxLength={6}
-                                        isInvalid={!!errors.invoiceStartNumber}
-                                        {...register("invoiceStartNumber", {
-                                            onChange: (e) => {
-                                                e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="invoiceStartNumber">
-                                        Invoice Starting Sequence Number <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.invoiceStartNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Notes Footer / Invoice Terms */}
-                            <Col md={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                    <Form.Control
-                                        as="textarea"
-                                        id="notesFooter"
-                                        placeholder="Default Invoice & Challan Footer Terms"
-                                        style={{ height: '95px' }}
-                                        isInvalid={!!errors.notesFooter}
-                                        {...register("notesFooter")}
-                                    />
-                                    <Form.Label htmlFor="notesFooter">
-                                        Default Invoicing Footer Note / Legal Declarations
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.notesFooter?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-                        </Row>
-                    </div>
+                    <StatutoryTaxSection {...sectionProps} />
                 </div>
 
                 {/* 4. Section 3: Registered Corporate Office & Communications */}
@@ -580,148 +255,12 @@ const FirmForm = ({ mode }) => {
                         </div>
                         <span className="firm-section-badge">Part 3 • Location</span>
                     </div>
-
-                    <div className="p-4">
-                        {/* Digital Channels (Email, Phone, Website) */}
-                        <Row>
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="email"
-                                        id="email"
-                                        placeholder="Official Email Address"
-                                        isInvalid={!!errors.email}
-                                        {...register("email")}
-                                    />
-                                    <Form.Label htmlFor="email">Official Email Address</Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.email?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="phoneNumber"
-                                        placeholder="Primary Phone Number"
-                                        maxLength={10}
-                                        isInvalid={!!errors.phoneNumber}
-                                        {...register("phoneNumber", {
-                                            onChange: (e) => {
-                                                const numericOnly = e.target.value.replace(/\D/g, "");
-                                                setValue("phoneNumber", numericOnly, { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="phoneNumber">
-                                        Primary Phone Number (10 digits) <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.phoneNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            <Col lg={4} md={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="website"
-                                        placeholder="Corporate Website (e.g. https://company.com)"
-                                        isInvalid={!!errors.website}
-                                        {...register("website")}
-                                    />
-                                    <Form.Label htmlFor="website">Corporate Website</Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.website?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-                        </Row>
-
-                        {/* Physical Address Grid */}
-                        <Row>
-                            <Col lg={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        as="textarea"
-                                        id="addressLine1"
-                                        placeholder="Registered Street Address"
-                                        style={{ height: '118px' }}
-                                        isInvalid={!!errors.addressLine1}
-                                        {...register("addressLine1")}
-                                    />
-                                    <Form.Label htmlFor="addressLine1">
-                                        Registered Street Address <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.addressLine1?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            <Col lg={6}>
-                                <Row>
-                                    {/* State Dropdown */}
-                                    <Col sm={6}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                            <Form.Select
-                                                id="stateId"
-                                                isInvalid={!!errors.stateId}
-                                                {...register("stateId", { required: "Please select a state" })}
-                                            >
-                                                <option value="">-- Select State --</option>
-                                                {countryStates.map((st) => (
-                                                    <option key={st.id} value={st.id}>{st.name}</option>
-                                                ))}
-                                            </Form.Select>
-                                            <Form.Label htmlFor="stateId">
-                                                State <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.stateId?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-
-                                    {/* City Dropdown */}
-                                    <Col sm={6}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                            <Form.Select
-                                                id="cityId"
-                                                disabled={!selectedState || isFetchingCities}
-                                                isInvalid={!!errors.cityId}
-                                                {...register("cityId")}
-                                            >
-                                                <option value="">{isFetchingCities ? "Loading..." : "-- Select City --"}</option>
-                                                {cities.map((ct) => (
-                                                    <option key={ct.id} value={ct.id}>{ct.name}</option>
-                                                ))}
-                                            </Form.Select>
-                                            <Form.Label htmlFor="cityId">
-                                                City <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.cityId?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-
-                                    {/* Pincode */}
-                                    <Col sm={12}>
-                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                            <Form.Control
-                                                type="text"
-                                                id="pincode"
-                                                placeholder="6-digit Pincode"
-                                                maxLength={6}
-                                                isInvalid={!!errors.pincode}
-                                                {...register("pincode", {
-                                                    onChange: (e) => {
-                                                        e.target.value = e.target.value.replace(/\D/g, "");
-                                                    }
-                                                })}
-                                            />
-                                            <Form.Label htmlFor="pincode">
-                                                Postal Pincode <span className="text-danger label-required">*</span>
-                                            </Form.Label>
-                                            <Form.Control.Feedback type="invalid">{errors.pincode?.message}</Form.Control.Feedback>
-                                        </Form.Floating>
-                                    </Col>
-                                </Row>
-                            </Col>
-                        </Row>
-                    </div>
+                    <AddressContactSection
+                        {...sectionProps}
+                        countryStates={countryStates}
+                        cities={cities}
+                        isFetchingCities={isFetchingCities}
+                    />
                 </div>
 
                 {/* 5. Section 4: Primary Banking & Settlement */}
@@ -740,143 +279,7 @@ const FirmForm = ({ mode }) => {
                         </div>
                         <span className="firm-section-badge">Part 4 • Banking</span>
                     </div>
-
-                    <div className="p-4">
-                        <Row>
-                            {/* Bank Name */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="bankName"
-                                        placeholder="Bank Name"
-                                        isInvalid={!!errors.bankName}
-                                        {...register("bankName")}
-                                    />
-                                    <Form.Label htmlFor="bankName">
-                                        Bank Name <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.bankName?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Account Holder Name */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="accountHolderName"
-                                        placeholder="Account Holder Name"
-                                        isInvalid={!!errors.accountHolderName}
-                                        {...register("accountHolderName")}
-                                    />
-                                    <Form.Label htmlFor="accountHolderName">
-                                        Account Holder Name <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.accountHolderName?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Account Number */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="accountNumber"
-                                        inputMode="numeric"
-                                        placeholder="Account Number"
-                                        isInvalid={!!errors.accountNumber}
-                                        {...register("accountNumber", {
-                                            onChange: (e) => {
-                                                const numericOnly = e.target.value.replace(/\D/g, "");
-                                                setValue("accountNumber", numericOnly, { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="accountNumber">
-                                        Account Number <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.accountNumber?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* IFSC Code */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="ifscCode"
-                                        placeholder="IFSC Code"
-                                        maxLength={11}
-                                        isInvalid={!!errors.ifscCode}
-                                        {...register("ifscCode", {
-                                            onChange: (e) => {
-                                                setValue("ifscCode", e.target.value.toUpperCase(), { shouldValidate: true });
-                                            }
-                                        })}
-                                    />
-                                    <Form.Label htmlFor="ifscCode">
-                                        IFSC Code <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.ifscCode?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Branch Name */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Control
-                                        type="text"
-                                        id="branchName"
-                                        placeholder="Branch Name"
-                                        isInvalid={!!errors.branchName}
-                                        {...register("branchName")}
-                                    />
-                                    <Form.Label htmlFor="branchName">
-                                        Branch Name <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.branchName?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* Account Type */}
-                            <Col lg={4} md={6}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
-                                    <Form.Select
-                                        id="accountType"
-                                        isInvalid={!!errors.accountType}
-                                        {...register("accountType")}
-                                    >
-                                        <option value="">-- Select Account Type --</option>
-                                        {bankAccountType.map((item) => (
-                                            <option key={item} value={item.toLowerCase()}>{item}</option>
-                                        ))}
-                                    </Form.Select>
-                                    <Form.Label htmlFor="accountType">
-                                        Account Type <span className="text-danger label-required">*</span>
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.accountType?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-
-                            {/* UPI ID */}
-                            <Col lg={12} md={12}>
-                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                    <Form.Control
-                                        type="text"
-                                        id="upiId"
-                                        placeholder="UPI ID (e.g. company@icici)"
-                                        isInvalid={!!errors.upiId}
-                                        {...register("upiId")}
-                                    />
-                                    <Form.Label htmlFor="upiId">
-                                        Virtual Payment Address (UPI ID)
-                                    </Form.Label>
-                                    <Form.Control.Feedback type="invalid">{errors.upiId?.message}</Form.Control.Feedback>
-                                </Form.Floating>
-                            </Col>
-                        </Row>
-                    </div>
+                    <BankingSection {...sectionProps} />
                 </div>
 
                 {/* Sticky Action Footer */}
