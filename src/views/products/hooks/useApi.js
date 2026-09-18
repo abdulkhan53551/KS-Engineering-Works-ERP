@@ -21,6 +21,18 @@ import { useNavigate } from "react-router-dom";
    1. PRODUCT QUERIES
    ========================================================================= */
 
+const EMPTY_PRODUCTS_ARRAY = [];
+const EMPTY_PRODUCTS_OBJECT = {};
+
+const selectProductList = (result) => {
+    const list = result?.data ?? result ?? EMPTY_PRODUCTS_ARRAY;
+    return Array.isArray(list) ? list : EMPTY_PRODUCTS_ARRAY;
+};
+
+const selectProductPagination = (result) => {
+    return result?.pagination?.pagination ?? result?.data?.pagination?.pagination ?? result?.pagination ?? result?.data?.pagination ?? result ?? EMPTY_PRODUCTS_OBJECT;
+};
+
 /**
  * Hook to fetch products list
  */
@@ -29,11 +41,8 @@ export const useProducts = ({ page = 1, pageSize = 10, search = '', itemType = '
         queryKey: ["productList", page, pageSize, search, itemType, status, trash, sortBy, sortOrder],
         queryFn: () => getProducts({ page, pageSize, search, itemType, status, trash, sortBy, sortOrder }),
         staleTime: 5 * 60 * 1000,
-        keepPreviousData: true,
-        select: (result) => {
-            const list = result?.data ?? result ?? [];
-            return Array.isArray(list) ? list : [];
-        }
+        placeholderData: (prev) => prev,
+        select: selectProductList
     });
 };
 
@@ -45,10 +54,8 @@ export const useProductPagination = ({ page = 1, pageSize = 10, search = '', ite
         queryKey: ["productPagination", page, pageSize, search, itemType, status, trash],
         queryFn: () => getProductsPagination({ page, pageSize, search, itemType, status, trash }),
         staleTime: 5 * 60 * 1000,
-        keepPreviousData: true,
-        select: (result) => {
-            return result?.pagination?.pagination ?? result?.data?.pagination?.pagination ?? result?.pagination ?? result?.data?.pagination ?? result ?? {};
-        }
+        placeholderData: (prev) => prev,
+        select: selectProductPagination
     });
 };
 

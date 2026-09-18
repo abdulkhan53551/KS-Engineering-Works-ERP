@@ -11,7 +11,7 @@ import {
     Spinner,
     Pagination
 } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     FaPlus,
     FaSearch,
@@ -31,6 +31,7 @@ import VendorBillSummaryCards from '../components/VendorBillSummaryCards';
 import useVendorBillList from '../hooks/useVendorBillList';
 
 const VendorBillList = () => {
+    const navigate = useNavigate();
     const {
         page,
         setPage,
@@ -278,19 +279,12 @@ const VendorBillList = () => {
                                                 #{bill.id}
                                             </td>
                                             <td className="px-3 py-2.5">
-                                                <div className="d-flex align-items-center gap-1">
-                                                    <Link
-                                                        to={`/purchase/vendor-bills/${bill.id}`}
-                                                        className="fw-bold font-monospace text-primary text-decoration-none"
-                                                    >
-                                                        {bill.billNo || bill.bill_no}
-                                                    </Link>
-                                                    {(bill.firmCode || bill.firmName) && (
-                                                        <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${bill.firmName || bill.firmCode}`}>
-                                                            {bill.firmCode || bill.firmName}
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                                <Link
+                                                    to={`/purchase/vendor-bills/${bill.id}`}
+                                                    className="fw-bold font-monospace text-primary text-decoration-none"
+                                                >
+                                                    {bill.billNo || bill.bill_no}
+                                                </Link>
                                             </td>
                                             <td className="px-3 py-2.5 text-muted">
                                                 {bill.billDate ? moment(bill.billDate).format('DD/MM/YYYY') : '-'}

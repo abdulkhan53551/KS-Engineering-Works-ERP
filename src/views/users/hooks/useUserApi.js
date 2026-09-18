@@ -16,6 +16,40 @@ import {
   updateUserAssignments
 } from "../api";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectUsersList = (result) => {
+  const list = result?.data;
+  return Array.isArray(list) ? list : EMPTY_ARRAY;
+};
+
+const selectUsersPagination = (result) => {
+  const metaData = result?.data ?? result ?? EMPTY_OBJECT;
+  const innerPagination = metaData?.pagination ?? metaData ?? EMPTY_OBJECT;
+  const total = Number(innerPagination?.total ?? metaData?.total ?? 0);
+  const pageSizeNum = Number(innerPagination?.pageSize ?? 10);
+  const totalPages = Number(innerPagination?.totalPages ?? metaData?.totalPages ?? (total && pageSizeNum ? Math.ceil(total / pageSizeNum) : 1));
+  const activeCount = Number(metaData?.activeCount ?? 0);
+  const trashCount = Number(metaData?.trashCount ?? 0);
+
+  const pageNum = Number(innerPagination?.page ?? 1);
+  const pageStart = total === 0 ? 0 : (pageNum - 1) * pageSizeNum + 1;
+  const pageEnd = Math.min(pageNum * pageSizeNum, total);
+
+  return {
+    ...innerPagination,
+    page: pageNum,
+    pageSize: pageSizeNum,
+    total,
+    totalPages,
+    activeCount,
+    trashCount,
+    pageStart,
+    pageEnd
+  };
+};
+
 // 1. Fetch Users List
 export const useUsers = ({
   page = 1,
@@ -30,11 +64,8 @@ export const useUsers = ({
   return useQuery({
     queryKey: ["usersList", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
     queryFn: () => fetchUsers({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
-    keepPreviousData: true,
-    select: (result) => {
-      const list = result?.data ?? [];
-      return Array.isArray(list) ? list : [];
-    }
+    placeholderData: (prev) => prev,
+    select: selectUsersList
   });
 };
 
@@ -52,32 +83,8 @@ export const useUsersPagination = ({
   return useQuery({
     queryKey: ["usersPagination", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
     queryFn: () => fetchUsersPagination({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
-    keepPreviousData: true,
-    select: (result) => {
-      const metaData = result?.data ?? result ?? {};
-      const innerPagination = metaData?.pagination ?? metaData ?? {};
-      const total = Number(innerPagination?.total ?? metaData?.total ?? 0);
-      const totalPages = Number(innerPagination?.totalPages ?? metaData?.totalPages ?? (total && pageSize ? Math.ceil(total / pageSize) : 1));
-      const activeCount = Number(metaData?.activeCount ?? 0);
-      const trashCount = Number(metaData?.trashCount ?? 0);
-
-      const pageNum = Number(innerPagination?.page ?? page ?? 1);
-      const pageSizeNum = Number(innerPagination?.pageSize ?? pageSize ?? 10);
-      const pageStart = total === 0 ? 0 : (pageNum - 1) * pageSizeNum + 1;
-      const pageEnd = Math.min(pageNum * pageSizeNum, total);
-
-      return {
-        ...innerPagination,
-        page: pageNum,
-        pageSize: pageSizeNum,
-        total,
-        totalPages,
-        activeCount,
-        trashCount,
-        pageStart,
-        pageEnd
-      };
-    }
+    placeholderData: (prev) => prev,
+    select: selectUsersPagination
   });
 };
 
@@ -125,7 +132,7 @@ export const useBulkDeleteUsers = () => {
       queryClient.invalidateQueries(["usersPagination"]);
       toast.success(
         res?.message ||
-          (variables.permanent ? "Selected users permanently deleted" : "Selected users moved to recycle bin")
+        (variables.permanent ? "Selected users permanently deleted" : "Selected users moved to recycle bin")
       );
     },
     onError: (err) => {
@@ -220,7 +227,9 @@ export const useAdminDirectResetPassword = () => {
   });
 };
 
-const EMPTY_ASSIGNMENTS = Object.freeze([]);
+const EMPTY_ASSIGNMENTS = [];
+
+const selectUserAssignments = (result) => Array.isArray(result?.data) ? result.data : EMPTY_ASSIGNMENTS;
 
 // 12. User Scoped Assignments Query & Mutation
 export const useUserAssignments = (userId, options = {}) => {
@@ -229,7 +238,7 @@ export const useUserAssignments = (userId, options = {}) => {
     queryFn: () => fetchUserAssignments(userId),
     enabled: !!userId,
     staleTime: 1000 * 30, // 30 seconds
-    select: (result) => Array.isArray(result?.data) ? result.data : EMPTY_ASSIGNMENTS,
+    select: selectUserAssignments,
     ...options
   });
 };

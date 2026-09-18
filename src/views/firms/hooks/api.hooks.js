@@ -3,53 +3,42 @@ import { createFirm, deleteFirm, restoreFirm, deleteFirmLogo, getFirmById, getFi
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectFirmType = (result) => result?.data ?? EMPTY_ARRAY;
+const selectFirmsPagination = (result) => result?.data?.pagination ?? EMPTY_OBJECT;
+const selectFirmsList = (result) => Array.isArray(result?.data) ? result.data : EMPTY_ARRAY;
+const selectFirmById = (result) => result?.data ?? EMPTY_OBJECT;
+
 // Get firm type
 export const useFirmType = () => {
     return useQuery({
         queryKey: ["firmType"],
         queryFn: getFirmType,
-        select: (result) => {
-            return result?.data ?? [];
-        }
+        select: selectFirmType
     });
-}
+};
 
 // Get firms pagination
 export const useGetFirmsPagination = ({ page, pageSize, search, isTrash = false }) => {
     return useQuery({
         queryKey: ["firm-pagination", page, pageSize, search, isTrash],
         queryFn: () => getFirmsPagination({ page, pageSize, search, isTrash }),
-        // staleTime: 0,
-        keepPreviousData: true,
-        select: (result) => {
-            const pagination = result?.data?.pagination ?? {};
-            const total = pagination.total ?? 0;
-
-            const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-            const pageEnd = Math.min(page * pageSize, total);
-
-            return {
-                ...pagination,
-                pageStart,
-                pageEnd
-            };
-        }
+        placeholderData: (prev) => prev,
+        select: selectFirmsPagination
     });
-}
-// Get firms
-const EMPTY_FIRMS_ARRAY = Object.freeze([]);
+};
 
+// Get firms
 export const useGetFirms = ({ page, pageSize, search, isTrash = false }) => {
     return useQuery({
         queryKey: ["getFirms", page, pageSize, search, isTrash],
         queryFn: () => getFirms({ page, pageSize, search, isTrash }),
-        // staleTime: 0,
-        keepPreviousData: true,
-        select: (result) => {
-            return Array.isArray(result?.data) ? result.data : EMPTY_FIRMS_ARRAY;
-        }
+        placeholderData: (prev) => prev,
+        select: selectFirmsList
     });
-}
+};
 
 // Get firm by id
 export const useGetFirmById = (id = 0) => {
@@ -57,11 +46,9 @@ export const useGetFirmById = (id = 0) => {
         queryKey: ["getFirmById", id],
         queryFn: () => getFirmById(id),
         enabled: !!id,
-        select: (result) => {
-            return result?.data ?? {};
-        }
+        select: selectFirmById
     });
-}
+};
 
 // Create firm
 export const useCreatFirm = () => {

@@ -16,27 +16,31 @@ import { clearLoading } from "../../../store/uiModal.slice";
 import { useDispatch } from "react-redux";
 import { useUIManager } from "../../../contexts/UIManagerContext";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectEwayBillPagination = (result) => {
+    return result?.data?.pagination ?? EMPTY_OBJECT;
+};
+
+const selectEwayBillList = (result) => {
+    const list = result?.data;
+    if (!Array.isArray(list) || list.length === 0) return EMPTY_ARRAY;
+    return list.map(item => ({
+        ...item,
+        ewaybillValidUpto: item.validUpto,
+        color: item.isInvoiced ? 'bg-success' : 'bg-danger',
+        invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
+    }));
+};
+
 // Get eway bill pagination
 export const useEwayBillPagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
         queryKey: ["ewayBillPagination", page, pageSize, search, trash],
         queryFn: () => getEwayBillPagination({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const pagination = result?.data?.pagination ?? {};
-            const total = pagination.total ?? 0;
-            const totalPages = pagination.totalPages ?? (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1);
-
-            const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-            const pageEnd = Math.min(page * pageSize, total);
-
-            return {
-                ...pagination,
-                totalPages,
-                pageStart,
-                pageEnd
-            };
-        }
+        placeholderData: (prev) => prev,
+        select: selectEwayBillPagination
     });
 };
 
@@ -45,17 +49,8 @@ export const useEwayBill = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
         queryKey: ["ewayBillList", page, pageSize, search, trash],
         queryFn: () => getEwayBill({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const data = result?.data?.map(item => ({
-                ...item,
-                ewaybillValidUpto: item.validUpto,
-                color: item.isInvoiced ? 'bg-success' : 'bg-danger',
-                invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
-            })) ?? [];
-
-            return data;
-        }
+        placeholderData: (prev) => prev,
+        select: selectEwayBillList
     });
 };
 

@@ -51,6 +51,45 @@ export const useUnpaidInvoices = (partyId) => {
     });
 };
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectPaymentsList = (res) => {
+    const list = res?.data ?? res?.receipts ?? res ?? EMPTY_ARRAY;
+    return Array.isArray(list) ? list : EMPTY_ARRAY;
+};
+
+const selectPaymentsMeta = (res) => {
+    const meta = res?.data?.pagination ?? res?.data ?? res?.pagination ?? res ?? EMPTY_OBJECT;
+    const total = Number(meta.total || 0);
+    const pageSize = Number(meta.pageSize || 10);
+    const totalPages = Number(meta.totalPages || (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1));
+    return {
+        ...meta,
+        total,
+        page: Number(meta.page || 1),
+        pageSize,
+        totalPages,
+        totalReceived: Number(meta.totalReceived ?? res?.data?.totalReceived ?? 0),
+        totalAdvance: Number(meta.totalAdvance ?? res?.data?.totalAdvance ?? 0),
+        completedCount: Number(meta.completedCount ?? res?.data?.completedCount ?? 0),
+        cancelledCount: Number(meta.cancelledCount ?? res?.data?.cancelledCount ?? 0)
+    };
+};
+
+const selectPaymentsSummary = (res) => {
+    const data = res?.data ?? res ?? EMPTY_OBJECT;
+    return {
+        totalCollections: Number(data.totalCollections ?? data.total_collections ?? 0),
+        totalAllocated: Number(data.totalAllocated ?? data.total_allocated ?? 0),
+        totalUnallocated: Number(data.totalUnallocated ?? data.total_unallocated ?? 0),
+        completedCount: Number(data.completedCount ?? data.completed_count ?? 0),
+        cancelledAmount: Number(data.cancelledAmount ?? data.cancelled_amount ?? 0),
+        cancelledCount: Number(data.cancelledCount ?? data.cancelled_count ?? 0),
+        totalCount: Number(data.totalCount ?? data.total_count ?? 0)
+    };
+};
+
 /**
  * Hook to list payment receipts with pagination and filters
  */
@@ -59,10 +98,7 @@ export const usePayments = (filters = {}) => {
         queryKey: ["payments", filters],
         queryFn: () => getPayments(filters),
         placeholderData: (prev) => prev,
-        select: (res) => {
-            const list = res?.data ?? res?.receipts ?? res ?? [];
-            return Array.isArray(list) ? list : [];
-        }
+        select: selectPaymentsList
     });
 };
 
@@ -74,23 +110,7 @@ export const usePaymentsMeta = (filters = {}) => {
         queryKey: ["paymentsMeta", filters],
         queryFn: () => getPaymentsMeta(filters),
         placeholderData: (prev) => prev,
-        select: (res) => {
-            const meta = res?.data?.pagination ?? res?.data ?? res?.pagination ?? res ?? {};
-            const total = Number(meta.total || 0);
-            const pageSize = Number(meta.pageSize || 10);
-            const totalPages = Number(meta.totalPages || (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1));
-            return {
-                ...meta,
-                total,
-                page: Number(meta.page || 1),
-                pageSize,
-                totalPages,
-                totalReceived: Number(meta.totalReceived ?? res?.data?.totalReceived ?? 0),
-                totalAdvance: Number(meta.totalAdvance ?? res?.data?.totalAdvance ?? 0),
-                completedCount: Number(meta.completedCount ?? res?.data?.completedCount ?? 0),
-                cancelledCount: Number(meta.cancelledCount ?? res?.data?.cancelledCount ?? 0)
-            };
-        }
+        select: selectPaymentsMeta
     });
 };
 
@@ -105,18 +125,7 @@ export const usePaymentsSummary = (filters = {}) => {
         queryFn: () => getPaymentsSummary({ startDate, endDate, partyId, paymentModeId, status, search }),
         placeholderData: (prev) => prev,
         staleTime: 60 * 1000,
-        select: (res) => {
-            const data = res?.data ?? res ?? {};
-            return {
-                totalCollections: Number(data.totalCollections ?? data.total_collections ?? 0),
-                totalAllocated: Number(data.totalAllocated ?? data.total_allocated ?? 0),
-                totalUnallocated: Number(data.totalUnallocated ?? data.total_unallocated ?? 0),
-                completedCount: Number(data.completedCount ?? data.completed_count ?? 0),
-                cancelledAmount: Number(data.cancelledAmount ?? data.cancelled_amount ?? 0),
-                cancelledCount: Number(data.cancelledCount ?? data.cancelled_count ?? 0),
-                totalCount: Number(data.totalCount ?? data.total_count ?? 0)
-            };
-        }
+        select: selectPaymentsSummary
     });
 };
 

@@ -18,7 +18,7 @@ import { useGetFirms } from '../../firms/hooks/api.hooks';
 import { getFirmBranches } from '../../firms/api';
 import './UserAssignmentsModal.css';
 
-const FIRMS_QUERY_PARAMS = Object.freeze({ page: 1, pageSize: 100 });
+const FIRMS_QUERY_PARAMS = { page: 1, pageSize: 100 };
 
 const UserAssignmentsModal = ({ show, onClose, user }) => {
     const userId = user?.id;
@@ -609,7 +609,7 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                                                                 type="switch"
                                                                 id={`status-switch-${row.id}`}
                                                                 checked={Boolean(row.isActive)}
-                                                                onChange={() => {}} // Controlled via container click
+                                                                onChange={() => { }} // Controlled via container click
                                                                 className="d-inline-block m-0"
                                                             />
                                                             <span className={`status-badge ${row.isActive ? 'active' : 'inactive'}`}>

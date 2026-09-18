@@ -27,6 +27,8 @@ const InvoicePaymentHistoryModal = ({ show, onHide, invoiceId, invoiceNo = '' })
         }
     };
 
+    if (!show) return null;
+
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton className="border-bottom py-3">

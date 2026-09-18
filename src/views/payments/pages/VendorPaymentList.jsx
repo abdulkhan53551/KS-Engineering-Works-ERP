@@ -351,19 +351,12 @@ const VendorPaymentList = () => {
                                             </td>
 
                                             <td className="px-3 py-2.5">
-                                                <div className="d-flex align-items-center gap-1">
-                                                    <Link
-                                                        to={`/payments/vendor-payments/${item.id}`}
-                                                        className="fw-bold font-monospace text-primary text-decoration-none"
-                                                    >
-                                                        {paymentNo}
-                                                    </Link>
-                                                    {(item.firmCode || item.firmName) && (
-                                                        <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firmName || item.firmCode}`}>
-                                                            {item.firmCode || item.firmName}
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                                <Link
+                                                    to={`/payments/vendor-payments/${item.id}`}
+                                                    className="fw-bold font-monospace text-primary text-decoration-none"
+                                                >
+                                                    {paymentNo}
+                                                </Link>
                                             </td>
 
                                             <td className="px-3 py-2.5 text-muted">

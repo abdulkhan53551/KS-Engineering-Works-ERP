@@ -63,6 +63,8 @@ const BranchSelectModal = ({
         onClose();
     };
 
+    if (!show) return null;
+
     return (
         <Modal show={show} onHide={onClose} centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="border-0 pb-0">
@@ -118,11 +120,10 @@ const BranchSelectModal = ({
                                 <div
                                     key={b.id}
                                     onClick={() => setSelectedBranchId(b.id)}
-                                    className={`p-3 rounded-3 border transition-all cursor-pointer d-flex align-items-center justify-content-between ${
-                                        isSelected
+                                    className={`p-3 rounded-3 border transition-all cursor-pointer d-flex align-items-center justify-content-between ${isSelected
                                             ? 'border-primary bg-soft-primary shadow-sm'
                                             : 'border-light bg-light hover-bg-gray'
-                                    }`}
+                                        }`}
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.15s ease-in-out',

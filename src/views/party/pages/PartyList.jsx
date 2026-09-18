@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -21,7 +21,7 @@ import BulkActionBar from '../../../components/trash/BulkActionBar';
 import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
 import moment from 'moment';
-import useListManager from '../../../hooks/useListManager';
+import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 
 /**
@@ -61,10 +61,7 @@ const PartyList = () => {
     // Copy indicator state for table row cells
     const [copiedKey, setCopiedKey] = useState(null);
 
-    // Temp state to sync data with useListManager
-    const [tempItems, setTempItems] = useState([]);
-
-    // 3. List Manager Hook
+    // 3. Pagination & Search Hook
     const {
         page,
         setPage,
@@ -75,17 +72,10 @@ const PartyList = () => {
         handleSearch,
         clearSearch: handleClearSearch,
         isTrash,
-        handleTabChange,
-        selectedIds,
-        handleSelectAll,
-        handleSelectRow,
-        handleDeselectAll,
-        isAllSelected,
-        isIndeterminate,
-        selectedCount
-    } = useListManager({
-        items: tempItems,
-        idKey: 'id',
+        handlePageChange,
+        handlePageSizeChange,
+        handleTabChange: handlePaginationTabChange
+    } = useListPagination({
         initialPageSize: 10
     });
 
@@ -126,11 +116,6 @@ const PartyList = () => {
     const { mutate: restoreParty } = useRestoreParty();
     const { mutate: bulkDeleteParties } = useBulkDeleteParties();
     const { mutate: bulkRestoreParties } = useBulkRestoreParties();
-
-    // Sync fetched parties to list manager
-    useEffect(() => {
-        setTempItems(parties);
-    }, [parties]);
 
     const { total = 0, totalPages = 1, pageStart = 0, pageEnd = 0 } = pagination;
 
@@ -225,6 +210,25 @@ const PartyList = () => {
 
         return items;
     }, [parties, searchTerm, statusFilter, gstFilter, sortConfig]);
+
+    // Row Selection Hook directly operates on displayData
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useRowSelection({
+        items: displayData,
+        idKey: 'id'
+    });
+
+    const handleTabChange = useCallback((trashState) => {
+        handlePaginationTabChange(trashState);
+        handleDeselectAll();
+    }, [handlePaginationTabChange, handleDeselectAll]);
 
     // Handle Quick View Drawer
     const handleQuickView = (party) => {
@@ -659,20 +663,13 @@ const PartyList = () => {
 
                                                         {/* 3. Party Code */}
                                                         <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <div className="d-flex align-items-center gap-1">
-                                                                <Badge
-                                                                    bg="soft-primary"
-                                                                    className="text-primary font-monospace fw-semibold px-2 py-1"
-                                                                    style={{ fontSize: '0.78rem' }}
-                                                                >
-                                                                    {party.partyCode || '—'}
-                                                                </Badge>
-                                                                {(party.firmCode || party.firmName) && (
-                                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${party.firmName || party.firmCode}`}>
-                                                                        {party.firmCode || party.firmName}
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
+                                                            <Badge
+                                                                bg="soft-primary"
+                                                                className="text-primary font-monospace fw-semibold px-2 py-1"
+                                                                style={{ fontSize: '0.78rem' }}
+                                                            >
+                                                                {party.partyCode || '—'}
+                                                            </Badge>
                                                         </td>
 
                                                         {/* 4. Party Name (Display & Legal) */}

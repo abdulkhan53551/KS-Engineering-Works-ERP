@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Badge, Spinner } from 'react-bootstrap';
-import { FaTrash, FaUndo, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTrash, FaUndo, FaExclamationTriangle } from 'react-icons/fa';
 
 /**
  * BulkActionBar Component
@@ -72,18 +72,6 @@ const BulkActionBar = ({
                         </Button>
                     </>
                 )}
-
-                <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    className="d-flex align-items-center gap-1 px-2.5 py-1 shadow-none"
-                    onClick={onClearSelection}
-                    disabled={isLoading}
-                    style={{ fontSize: '0.78rem' }}
-                >
-                    <FaTimes size={10} />
-                    <span>Deselect</span>
-                </Button>
             </div>
         </div>
     );

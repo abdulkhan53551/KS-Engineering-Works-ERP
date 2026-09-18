@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -33,7 +33,7 @@ import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import useListManager from '../../../hooks/useListManager';
+import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 import useBranchAction from '../../../hooks/useBranchAction';
 
@@ -65,10 +65,7 @@ const InvoiceList = () => {
     // Financial calculations hook
     const { getFinancials } = useInvoiceFinancials();
 
-    // Data fetching state
-    const [tempItems, setTempItems] = useState([]);
-
-    // List Manager Hook
+    // Pagination & Search Manager Hook
     const {
         page,
         setPage,
@@ -77,20 +74,12 @@ const InvoiceList = () => {
         search,
         debouncedSearch,
         isTrash,
-        selectedIds,
         handleSearch,
         clearSearch,
         handlePageChange,
-        handleTabChange,
-        handleSelectAll,
-        handleSelectRow,
-        handleDeselectAll,
-        isAllSelected,
-        isIndeterminate,
-        selectedCount
-    } = useListManager({
-        items: tempItems,
-        idKey: 'invoiceId',
+        handlePageSizeChange,
+        handleTabChange: handlePaginationTabChange
+    } = useListPagination({
         initialPageSize: 10
     });
 
@@ -126,10 +115,24 @@ const InvoiceList = () => {
         sortedList
     } = useInvoiceSort({ items: invoice });
 
-    // Sync items with ListManager for select all (matches standard pattern across modules)
-    useEffect(() => {
-        setTempItems(invoice);
-    }, [invoice]);
+    // Row Selection Hook directly operates on sortedList
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useRowSelection({
+        items: sortedList,
+        idKey: 'invoiceId'
+    });
+
+    const handleTabChange = useCallback((trashState) => {
+        handlePaginationTabChange(trashState);
+        handleDeselectAll();
+    }, [handlePaginationTabChange, handleDeselectAll]);
 
     const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -366,178 +369,173 @@ const InvoiceList = () => {
                                             sortedList.map((item, idx) => {
                                                 const { total, paid, balance, isFullyPaid, hasBalance } = getFinancials(item);
                                                 return (
-                                                <tr key={item.invoiceId || idx} className={selectedIds.includes(item.invoiceId) ? 'table-active' : ''}>
-                                                    <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
-                                                        <FormCheck
-                                                            type="checkbox"
-                                                            checked={selectedIds.includes(item.invoiceId)}
-                                                            onChange={() => handleSelectRow(item.invoiceId)}
-                                                        />
-                                                    </td>
-                                                    <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.invoiceId}</td>
-                                                    <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                        <div className="d-flex align-items-center gap-1">
-                                                            <span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span>
-                                                            {(item.firmCode || item.firmName) && (
-                                                                <Badge bg="soft-primary" className="text-primary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Firm: ${item.firmName || item.firmCode}`}>
-                                                                    {item.firmCode || item.firmName}
-                                                                </Badge>
-                                                            )}
-                                                            {item.firmBranchCode && (
-                                                                <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
-                                                                    {item.firmBranchCode}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
-                                                    <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
-                                                    {!isTrash && (
-                                                        <>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                {isFullyPaid ? (
-                                                                    <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
-                                                                        ₹0.00
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <div>
-                                                                        <span className="font-monospace fw-bold text-danger">
-                                                                            ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                                        </span>
-                                                                        {paid > 0 && (
-                                                                            <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
-                                                                                Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <span
-                                                                    className={`badge ${item.color || 'bg-secondary'}`}
-                                                                    style={{ cursor: 'pointer' }}
-                                                                    title="Click to view payment history"
-                                                                    onClick={() => setHistoryModalState({
-                                                                        show: true,
-                                                                        invoiceId: item.invoiceId,
-                                                                        invoiceNo: item.invoiceNo
-                                                                    })}
-                                                                >
-                                                                    {item.paymentStatusCode || '-'}
-                                                                </span>
-                                                            </td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
-                                                        </>
-                                                    )}
-                                                    <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
-                                                    {isTrash ? (
-                                                        <>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
-                                                                    {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY, hh:mm A') : '—'}
-                                                                </span>
-                                                            </td>
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '—'}</td>
-                                                        </>
-                                                    ) : (
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
-                                                                {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
-                                                            </span>
+                                                    <tr key={item.invoiceId || idx} className={selectedIds.includes(item.invoiceId) ? 'table-active' : ''}>
+                                                        <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
+                                                            <FormCheck
+                                                                type="checkbox"
+                                                                checked={selectedIds.includes(item.invoiceId)}
+                                                                onChange={() => handleSelectRow(item.invoiceId)}
+                                                            />
                                                         </td>
-                                                    )}
-                                                    <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                                        <div className="flex align-items-center list-user-action">
-                                                            {!isTrash ? (
-                                                                <>
-                                                                    {hasBalance ? (
-                                                                        <Button
-                                                                            variant="outline-success"
-                                                                            size="sm"
-                                                                            className="me-2"
-                                                                            title="Record Payment"
-                                                                            onClick={() => setQuickPaymentInvoice({
-                                                                                ...item,
-                                                                                partyId: item.partyId || item.party_id,
-                                                                                balanceAmount: balance,
-                                                                                paidAmount: paid
-                                                                            })}
-                                                                        >
-                                                                            <FaMoneyCheckAlt />
-                                                                        </Button>
-                                                                    ) : null}
-                                                                    <Button
-                                                                        variant="outline-secondary"
-                                                                        size="sm"
-                                                                        className="me-2"
-                                                                        title="Payment History"
+                                                        <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.invoiceId}</td>
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span>
+                                                                {item.firmBranchCode && (
+                                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                                        {item.firmBranchCode}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
+                                                        {!isTrash && (
+                                                            <>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                    {isFullyPaid ? (
+                                                                        <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
+                                                                            ₹0.00
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <div>
+                                                                            <span className="font-monospace fw-bold text-danger">
+                                                                                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                            </span>
+                                                                            {paid > 0 && (
+                                                                                <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
+                                                                                    Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                    <span
+                                                                        className={`badge ${item.color || 'bg-secondary'}`}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                        title="Click to view payment history"
                                                                         onClick={() => setHistoryModalState({
                                                                             show: true,
                                                                             invoiceId: item.invoiceId,
                                                                             invoiceNo: item.invoiceNo
                                                                         })}
                                                                     >
-                                                                        <FaHistory />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline-primary"
-                                                                        size="sm"
-                                                                        className="me-2"
-                                                                        title="Download PDF"
-                                                                        disabled={downloadingInvoiceId === item.invoiceId}
-                                                                        onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
-                                                                    >
-                                                                        {downloadingInvoiceId === item.invoiceId ? (
-                                                                            <Spinner animation="border" size="sm" />
-                                                                        ) : (
-                                                                            <FaDownload />
-                                                                        )}
-                                                                    </Button>
-                                                                    <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
-                                                                        <Button variant="outline-success" size='sm' title="Edit">
-                                                                            <FaPen />
+                                                                        {item.paymentStatusCode || '-'}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
+                                                            </>
+                                                        )}
+                                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
+                                                        {isTrash ? (
+                                                            <>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                    <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                                        {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY, hh:mm A') : '—'}
+                                                                    </span>
+                                                                </td>
+                                                                <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '—'}</td>
+                                                            </>
+                                                        ) : (
+                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
+                                                                    {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                                                </span>
+                                                            </td>
+                                                        )}
+                                                        <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
+                                                            <div className="flex align-items-center list-user-action">
+                                                                {!isTrash ? (
+                                                                    <>
+                                                                        {hasBalance ? (
+                                                                            <Button
+                                                                                variant="outline-success"
+                                                                                size="sm"
+                                                                                className="me-2"
+                                                                                title="Record Payment"
+                                                                                onClick={() => setQuickPaymentInvoice({
+                                                                                    ...item,
+                                                                                    partyId: item.partyId || item.party_id,
+                                                                                    balanceAmount: balance,
+                                                                                    paidAmount: paid
+                                                                                })}
+                                                                            >
+                                                                                <FaMoneyCheckAlt />
+                                                                            </Button>
+                                                                        ) : null}
+                                                                        <Button
+                                                                            variant="outline-secondary"
+                                                                            size="sm"
+                                                                            className="me-2"
+                                                                            title="Payment History"
+                                                                            onClick={() => setHistoryModalState({
+                                                                                show: true,
+                                                                                invoiceId: item.invoiceId,
+                                                                                invoiceNo: item.invoiceNo
+                                                                            })}
+                                                                        >
+                                                                            <FaHistory />
                                                                         </Button>
-                                                                    </Link>
-                                                                    <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/duplicate`}>
-                                                                        <Button variant="outline-info" size='sm' title="Duplicate / Clone Invoice">
-                                                                            <FaCopy />
+                                                                        <Button
+                                                                            variant="outline-primary"
+                                                                            size="sm"
+                                                                            className="me-2"
+                                                                            title="Download PDF"
+                                                                            disabled={downloadingInvoiceId === item.invoiceId}
+                                                                            onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
+                                                                        >
+                                                                            {downloadingInvoiceId === item.invoiceId ? (
+                                                                                <Spinner animation="border" size="sm" />
+                                                                            ) : (
+                                                                                <FaDownload />
+                                                                            )}
                                                                         </Button>
-                                                                    </Link>
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size='sm'
-                                                                        title="Move to Bin"
-                                                                        onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
-                                                                    >
-                                                                        <FaTrash />
-                                                                    </Button>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Button
-                                                                        variant="outline-success"
-                                                                        size='sm'
-                                                                        className="me-2"
-                                                                        title="Restore"
-                                                                        onClick={() => confirmRestore(`Invoice "${item.invoiceNo}"`, () => restoreInvoice(item.invoiceId))}
-                                                                    >
-                                                                        <FaUndo />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size='sm'
-                                                                        title="Delete Permanently"
-                                                                        onClick={() => confirmPermanentDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: true }))}
-                                                                    >
-                                                                        <FaExclamationTriangle />
-                                                                    </Button>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                                                        <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
+                                                                            <Button variant="outline-success" size='sm' title="Edit">
+                                                                                <FaPen />
+                                                                            </Button>
+                                                                        </Link>
+                                                                        <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/duplicate`}>
+                                                                            <Button variant="outline-info" size='sm' title="Duplicate / Clone Invoice">
+                                                                                <FaCopy />
+                                                                            </Button>
+                                                                        </Link>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size='sm'
+                                                                            title="Move to Bin"
+                                                                            onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
+                                                                        >
+                                                                            <FaTrash />
+                                                                        </Button>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size='sm'
+                                                                            className="me-2"
+                                                                            title="Restore"
+                                                                            onClick={() => confirmRestore(`Invoice "${item.invoiceNo}"`, () => restoreInvoice(item.invoiceId))}
+                                                                        >
+                                                                            <FaUndo />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size='sm'
+                                                                            title="Delete Permanently"
+                                                                            onClick={() => confirmPermanentDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: true }))}
+                                                                        >
+                                                                            <FaExclamationTriangle />
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
                                                 );
                                             })
                                         ) : (

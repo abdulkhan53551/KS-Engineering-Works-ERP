@@ -27,7 +27,7 @@ const DATE_KEYS = new Set([
     'createdAt'
 ]);
 
-const DEFAULT_COMPARATORS = Object.freeze({});
+const DEFAULT_COMPARATORS = {};
 
 /**
  * Custom Hook: useInvoiceSort
