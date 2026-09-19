@@ -5,8 +5,8 @@ import { useSelector } from 'react-redux';
  */
 export const usePermission = () => {
     const user = useSelector((state) => state.authReducer?.user);
-    const role = user?.role?.toLowerCase();
-    const isSuperAdmin = role === 'super-admin';
+    const role = (user?.role || user?.roleSlug || user?.role_slug || '').toLowerCase();
+    const isSuperAdmin = role === 'super-admin' || Boolean(user?.isSuperAdmin) || user?.dataScope === 'GLOBAL';
     const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
 
     /**

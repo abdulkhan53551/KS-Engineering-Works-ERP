@@ -10,6 +10,7 @@ export const fetchUsers = asyncHandler(async (params = {}) => {
   if (params.search) query.append("search", params.search);
   if (params.status) query.append("status", params.status);
   if (params.roleId) query.append("roleId", params.roleId);
+  if (params.firmId) query.append("firmId", params.firmId);
   if (params.trash !== undefined) query.append("trash", params.trash);
   if (params.sortBy) query.append("sortBy", params.sortBy);
   if (params.sortOrder) query.append("sortOrder", params.sortOrder);
@@ -30,6 +31,7 @@ export const fetchUsersPagination = asyncHandler(async (params = {}) => {
   if (params.search) query.append("search", params.search);
   if (params.status) query.append("status", params.status);
   if (params.roleId) query.append("roleId", params.roleId);
+  if (params.firmId) query.append("firmId", params.firmId);
   if (params.trash !== undefined) query.append("trash", params.trash);
   if (params.sortBy) query.append("sortBy", params.sortBy);
   if (params.sortOrder) query.append("sortOrder", params.sortOrder);
@@ -146,11 +148,20 @@ export const fetchUserAssignments = asyncHandler(async (userId) => {
   return res.data;
 });
 
-export const updateUserAssignments = asyncHandler(async ({ userId, assignments }) => {
+export const updateUserAssignments = asyncHandler(async ({ userId, isSuperAdmin = false, assignments = [] }) => {
   const res = await api.request({
     url: `/users/${userId}/assignments`,
     method: requestMethod.PUT,
-    data: { assignments }
+    data: { isSuperAdmin, assignments }
+  });
+  return res.data;
+});
+
+// Fetch user counts by firm
+export const fetchUserCountsByFirm = asyncHandler(async () => {
+  const res = await api.request({
+    url: `/users/firm-counts`,
+    method: requestMethod.GET
   });
   return res.data;
 });

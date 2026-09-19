@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FaBuilding, FaMapMarkerAlt, FaSearch, FaCheck, FaTimes, FaCog } from 'react-icons/fa';
 import { setActiveFirm, setActiveBranch } from '../../../../store/firm.slice';
+import { updateActiveRole } from '../../../../store/auth.slice';
+import api from '../../../../lib/axios';
 import './EntitySwitcher.css';
 
 const EntitySwitcher = () => {
@@ -13,7 +15,7 @@ const EntitySwitcher = () => {
 
     const { activeFirm, activeBranch, userFirms = [] } = useSelector((state) => state.firmReducer || {});
     const currentUser = useSelector((state) => state.authReducer?.user);
-    const isSuperAdmin = currentUser?.role === 'super-admin' || currentUser?.roleId === 1;
+    const isSuperAdmin = (currentUser?.role || currentUser?.roleSlug || '').toLowerCase() === 'super-admin' || Boolean(currentUser?.isSuperAdmin) || currentUser?.dataScope === 'GLOBAL';
 
     const [firmSearch, setFirmSearch] = useState('');
     const [branchSearch, setBranchSearch] = useState('');
@@ -25,17 +27,40 @@ const EntitySwitcher = () => {
         queryClient.cancelQueries();
         queryClient.clear();
 
+        const defaultBranch = firm.id === 'all'
+            ? null
+            : (firm.branches?.find(b => b.isHeadOffice) || firm.branches?.[0] || null);
+
         batch(() => {
             dispatch(setActiveFirm(firm));
+            dispatch(setActiveBranch(defaultBranch));
 
-            if (firm.id === 'all') {
-                dispatch(setActiveBranch(null));
-            } else {
-                // Auto-select head office or first branch of the new firm
-                const defaultBranch = firm.branches?.find(b => b.isHeadOffice) || firm.branches?.[0] || null;
-                dispatch(setActiveBranch(defaultBranch));
+            if (!isSuperAdmin) {
+                const targetRole = defaultBranch?.role || firm.role;
+                const targetRoleId = defaultBranch?.roleId || firm.roleId;
+                const targetRoleName = defaultBranch?.roleName || firm.roleName;
+                const targetDataScope = defaultBranch?.dataScope || firm.dataScope;
+
+                dispatch(updateActiveRole({
+                    role: targetRole,
+                    roleSlug: targetRole,
+                    roleId: targetRoleId,
+                    roleName: targetRoleName,
+                    dataScope: targetDataScope,
+                    firmId: firm.id === 'all' ? null : firm.id,
+                    branchId: defaultBranch?.id || null
+                }));
             }
         });
+
+        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
+        api.get('/auth/me').then((res) => {
+            const updatedUser = res.data?.data?.user;
+            if (updatedUser) {
+                dispatch(updateActiveRole(updatedUser));
+            }
+        }).catch(() => {});
+
         setFirmSearch('');
     };
 
@@ -47,7 +72,35 @@ const EntitySwitcher = () => {
         queryClient.cancelQueries();
         queryClient.clear();
 
-        dispatch(setActiveBranch(branch));
+        batch(() => {
+            dispatch(setActiveBranch(branch));
+
+            if (!isSuperAdmin) {
+                const targetRole = branch?.role || activeFirm?.role;
+                const targetRoleId = branch?.roleId || activeFirm?.roleId;
+                const targetRoleName = branch?.roleName || activeFirm?.roleName;
+                const targetDataScope = branch?.dataScope || activeFirm?.dataScope;
+
+                dispatch(updateActiveRole({
+                    role: targetRole,
+                    roleSlug: targetRole,
+                    roleId: targetRoleId,
+                    roleName: targetRoleName,
+                    dataScope: targetDataScope,
+                    firmId: activeFirm?.id,
+                    branchId: newBranchId
+                }));
+            }
+        });
+
+        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
+        api.get('/auth/me').then((res) => {
+            const updatedUser = res.data?.data?.user;
+            if (updatedUser) {
+                dispatch(updateActiveRole(updatedUser));
+            }
+        }).catch(() => {});
+
         setBranchSearch('');
     };
 

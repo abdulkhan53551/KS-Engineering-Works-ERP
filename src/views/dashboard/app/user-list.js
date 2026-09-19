@@ -12,7 +12,8 @@ import {
     InputGroup,
     OverlayTrigger,
     Tooltip,
-    Alert
+    Alert,
+    Popover
 } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -46,7 +47,6 @@ import {
     useRestoreUser,
     useBulkDeleteUsers,
     useBulkRestoreUsers,
-    useUpdateUserRole,
     useToggleUserStatus,
     useAdminGenerateResetLink,
     useRoles
@@ -55,9 +55,12 @@ import {
     useApproveRegistration,
     useRejectRegistration
 } from '../../auth/hooks/api.hooks';
+import { useGetFirms } from '../../firms/hooks/api.hooks';
 import { toast } from 'react-toastify';
 import PasswordResetDeliveryModal from '../../admin/components/PasswordResetDeliveryModal';
 import UserAssignmentsModal from '../../users/components/UserAssignmentsModal';
+
+const FIRMS_DROPDOWN_PARAMS = { page: 1, pageSize: 100 };
 
 const UserList = () => {
     // Current logged-in user from Redux
@@ -67,6 +70,7 @@ const UserList = () => {
     // Filters
     const [statusFilter, setStatusFilter] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
+    const [firmFilter, setFirmFilter] = useState('');
 
     // Search input with debounce
     const [searchTerm, setSearchTerm] = useState('');
@@ -103,10 +107,11 @@ const UserList = () => {
         search: debouncedSearch,
         status: tabIsTrash ? '' : statusFilter,
         roleId: roleFilter ? Number(roleFilter) : null,
+        firmId: firmFilter ? Number(firmFilter) : null,
         trash: tabIsTrash,
         sortBy: sortConfig.key,
         sortOrder: sortConfig.direction
-    }), [pageState, pageSizeState, debouncedSearch, statusFilter, roleFilter, tabIsTrash, sortConfig]);
+    }), [pageState, pageSizeState, debouncedSearch, statusFilter, roleFilter, firmFilter, tabIsTrash, sortConfig]);
 
     // TanStack Queries
     const {
@@ -155,6 +160,7 @@ const UserList = () => {
     } = useUsersPagination(queryParams);
 
     const { data: roles = [] } = useRoles();
+    const { data: firmsList = [] } = useGetFirms(FIRMS_DROPDOWN_PARAMS);
 
     // List manager for row selection
     const {
@@ -175,14 +181,12 @@ const UserList = () => {
     const { mutate: restoreUserMutate, isPending: isRestoringUser } = useRestoreUser();
     const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteUsers();
     const { mutate: bulkRestoreMutate, isPending: isBulkRestoring } = useBulkRestoreUsers();
-    const { mutate: updateRoleMutate, isPending: isUpdatingRole } = useUpdateUserRole();
     const { mutate: toggleStatusMutate, isPending: isTogglingStatus } = useToggleUserStatus();
     const { mutate: generateResetMutate, isPending: isGeneratingReset } = useAdminGenerateResetLink();
     const { mutate: approveUser, isPending: isApprovingUser } = useApproveRegistration();
     const { mutate: rejectUser, isPending: isRejectingUser } = useRejectRegistration();
 
     // Modals
-    const [roleModal, setRoleModal] = useState({ show: false, user: null, roleId: '' });
     const [approveModal, setApproveModal] = useState({ show: false, user: null, roleId: '' });
     const [resetLinkModal, setResetLinkModal] = useState({
         show: false,
@@ -234,26 +238,7 @@ const UserList = () => {
         toast.info('User directory refreshed');
     };
 
-    // Role assignment
-    const handleOpenRoleModal = (user) => {
-        setRoleModal({
-            show: true,
-            user,
-            roleId: String(user.roleId || '')
-        });
-    };
 
-    const handleConfirmRoleChange = () => {
-        if (!roleModal.user || !roleModal.roleId) return;
-        updateRoleMutate(
-            { id: roleModal.user.id, roleId: Number(roleModal.roleId) },
-            {
-                onSuccess: () => {
-                    setRoleModal({ show: false, user: null, roleId: '' });
-                }
-            }
-        );
-    };
 
     // Scoped Entity & Branch Assignments Modal
     const [assignmentsModal, setAssignmentsModal] = useState({ show: false, user: null });
@@ -452,18 +437,6 @@ const UserList = () => {
         return initial.toUpperCase();
     };
 
-    const getRoleBadge = (slug, name) => {
-        switch (slug) {
-            case 'super-admin':
-                return <Badge bg="danger" className="px-2 py-1">{name || 'Super Admin'}</Badge>;
-            case 'admin':
-                return <Badge bg="primary" className="px-2 py-1">{name || 'Admin'}</Badge>;
-            case 'manager':
-                return <Badge bg="info" className="text-dark px-2 py-1">{name || 'Manager'}</Badge>;
-            default:
-                return <Badge bg="secondary" className="px-2 py-1">{name || 'Employee'}</Badge>;
-        }
-    };
 
     const getApprovalBadge = (status) => {
         switch (status) {
@@ -598,6 +571,28 @@ const UserList = () => {
                                     </Form.Select>
                                 )}
 
+                                {/* Firm Filter */}
+                                <Form.Select
+                                    size="sm"
+                                    value={firmFilter}
+                                    onChange={(e) => {
+                                        setFirmFilter(e.target.value);
+                                        setPageState(1);
+                                    }}
+                                    style={{ width: 'auto', minWidth: '160px' }}
+                                >
+                                    <option value="">All Firms</option>
+                                    {firmsList.map((f) => {
+                                        const fId = f.firmId || f.id;
+                                        const fName = f.firmName || f.name;
+                                        return (
+                                            <option key={fId} value={fId}>
+                                                🏢 {fName}
+                                            </option>
+                                        );
+                                    })}
+                                </Form.Select>
+
                                 {/* Role Filter */}
                                 <Form.Select
                                     size="sm"
@@ -673,8 +668,9 @@ const UserList = () => {
                                     <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('email')}>
                                         Email {renderSortIcon('email')}
                                     </th>
-                                    <th style={{ width: '115px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('role')}>
-                                        Role {renderSortIcon('role')}
+                                    <th style={{ minWidth: '180px' }} className="bg-white user-select-none">
+                                        <FaBuilding className="me-1 text-primary" size={11} />
+                                        Access & Roles
                                     </th>
                                     <th style={{ width: '105px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('approvalStatus')}>
                                         Approval {renderSortIcon('approvalStatus')}
@@ -774,9 +770,106 @@ const UserList = () => {
                                                     <span className="text-dark text-break" style={{ fontSize: '0.85rem' }}>{u.email}</span>
                                                 </td>
 
-                                                {/* Role */}
+                                                {/* Access & Roles */}
                                                 <td>
-                                                    {getRoleBadge(u.roleSlug, u.roleName)}
+                                                    {u.isSuperAdmin || (u.roleSlug || '').toLowerCase() === 'super-admin' ? (
+                                                        <Badge bg="danger" className="d-inline-flex align-items-center gap-1 px-2 py-1">
+                                                            <span>🌐</span> Super Admin (All Firms)
+                                                        </Badge>
+                                                    ) : !u.assignments || u.assignments.length === 0 ? (
+                                                        <Badge bg="warning" text="dark" className="d-inline-flex align-items-center gap-1 px-2 py-1">
+                                                            <span>⚠️</span> No Firm / Role Assigned
+                                                        </Badge>
+                                                    ) : u.assignments.length === 1 ? (
+                                                        <div className="d-flex flex-column">
+                                                            <Badge bg="primary" className="text-truncate px-2 py-1 text-start" style={{ maxWidth: '200px' }} title={u.assignments[0].firmName}>
+                                                                🏢 {u.assignments[0].firmName}
+                                                            </Badge>
+                                                            <span className="text-muted mt-0.5 d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.74rem' }}>
+                                                                <span>📍 {u.assignments[0].branchName || 'All Branches'}</span>
+                                                                <span>•</span>
+                                                                <span className="text-primary fw-semibold">{u.assignments[0].roleName}</span>
+                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
+                                                                    <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
+                                                                        {(u.assignments[0].dataScope || u.assignments[0].data_scope) === 'FIRM' ? 'Firm-Wide' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'BRANCH' ? 'Branch' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
+                                                                    </Badge>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="d-flex flex-column">
+                                                            <div className="d-flex align-items-center gap-1 flex-wrap">
+                                                                <Badge bg="primary" className="text-truncate px-2 py-1" style={{ maxWidth: '140px' }} title={u.assignments[0].firmName}>
+                                                                    🏢 {u.assignments[0].firmName}
+                                                                </Badge>
+                                                                <OverlayTrigger
+                                                                    trigger="click"
+                                                                    rootClose
+                                                                    placement="bottom"
+                                                                    overlay={
+                                                                        <Popover id={`firm-popover-${u.id}`} style={{ maxWidth: '340px' }} className="shadow-lg border-0">
+                                                                            <Popover.Header as="h6" className="py-2 px-3 bg-light fw-bold text-dark d-flex align-items-center justify-content-between">
+                                                                                <span>Entity & Role Scopes ({u.assignments.length})</span>
+                                                                            </Popover.Header>
+                                                                            <Popover.Body className="p-2" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                                                                                <div className="d-flex flex-column gap-2">
+                                                                                    {u.assignments.map((a, idx) => (
+                                                                                        <div
+                                                                                            key={a.id || idx}
+                                                                                            className={`p-2 rounded border small ${a.isDefault ? 'border-warning bg-warning bg-opacity-10' : 'bg-light'}`}
+                                                                                        >
+                                                                                            <div className="d-flex align-items-center justify-content-between">
+                                                                                                <span className="fw-bold text-dark text-truncate" style={{ maxWidth: '200px' }}>
+                                                                                                    🏢 {a.firmName}
+                                                                                                </span>
+                                                                                                {a.isDefault && (
+                                                                                                    <Badge bg="warning" text="dark" style={{ fontSize: '0.65rem' }}>
+                                                                                                        Default
+                                                                                                    </Badge>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <div className="text-muted d-flex align-items-center gap-1 mt-1 flex-wrap" style={{ fontSize: '0.72rem' }}>
+                                                                                                <span>📍 {a.branchName || 'All Branches'}</span>
+                                                                                                <span>•</span>
+                                                                                                <span className="text-primary fw-semibold">{a.roleName}</span>
+                                                                                                {(a.dataScope || a.data_scope) && (
+                                                                                                    <>
+                                                                                                        <span>•</span>
+                                                                                                        <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
+                                                                                                            {(a.dataScope || a.data_scope) === 'FIRM' ? 'Firm-Wide' : (a.dataScope || a.data_scope) === 'BRANCH' ? 'Branch' : (a.dataScope || a.data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
+                                                                                                        </Badge>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <Button
+                                                                        variant="outline-primary"
+                                                                        size="sm"
+                                                                        className="py-0 px-1.5 fw-semibold"
+                                                                        style={{ fontSize: '0.72rem', height: '22px' }}
+                                                                    >
+                                                                        +{u.assignments.length - 1} more
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                            </div>
+                                                            <span className="text-muted mt-0.5 d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.74rem' }}>
+                                                                <span>📍 {u.assignments[0].branchName || 'All Branches'}</span>
+                                                                <span>•</span>
+                                                                <span className="text-primary fw-semibold">{u.assignments[0].roleName}</span>
+                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
+                                                                    <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
+                                                                        {(u.assignments[0].dataScope || u.assignments[0].data_scope) === 'FIRM' ? 'Firm-Wide' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'BRANCH' ? 'Branch' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
+                                                                    </Badge>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 {/* Approval Status */}
@@ -794,8 +887,8 @@ const UserList = () => {
                                                                     {isSelf
                                                                         ? 'You cannot deactivate your own account'
                                                                         : u.isActive
-                                                                        ? 'Click to deactivate account'
-                                                                        : 'Click to activate account'}
+                                                                            ? 'Click to deactivate account'
+                                                                            : 'Click to activate account'}
                                                                 </Tooltip>
                                                             }
                                                         >
@@ -905,14 +998,10 @@ const UserList = () => {
                                                                 </OverlayTrigger>
                                                             )}
 
-                                                            {/* Change Role */}
+                                                            {/* Manage User Access & Roles */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={
-                                                                    <Tooltip>
-                                                                        {isSelf ? 'Cannot change own role' : 'Change User Role'}
-                                                                    </Tooltip>
-                                                                }
+                                                                overlay={<Tooltip>Manage User Access & Roles</Tooltip>}
                                                             >
                                                                 <span>
                                                                     <Button
@@ -920,29 +1009,10 @@ const UserList = () => {
                                                                         size="sm"
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
-                                                                        onClick={() => handleOpenRoleModal(u)}
-                                                                        disabled={isSelf}
+                                                                        onClick={() => handleOpenAssignmentsModal(u)}
+                                                                        title="Manage User Access & Roles"
                                                                     >
                                                                         <FaUserShield size={13} />
-                                                                    </Button>
-                                                                </span>
-                                                            </OverlayTrigger>
-
-                                                            {/* Manage Firm & Branch Assignments */}
-                                                            <OverlayTrigger
-                                                                placement="top"
-                                                                overlay={<Tooltip>Manage Firm & Branch Roles</Tooltip>}
-                                                            >
-                                                                <span>
-                                                                    <Button
-                                                                        variant="outline-success"
-                                                                        size="sm"
-                                                                        style={{ width: '32px', height: '32px', padding: 0 }}
-                                                                        className="d-inline-flex align-items-center justify-content-center shadow-none"
-                                                                        onClick={() => handleOpenAssignmentsModal(u)}
-                                                                        title="Firm & Branch Assignments"
-                                                                    >
-                                                                        <FaBuilding size={13} />
                                                                     </Button>
                                                                 </span>
                                                             </OverlayTrigger>
@@ -1071,63 +1141,7 @@ const UserList = () => {
                 </Card.Body>
             </Card>
 
-            {/* Modal: Change User Role */}
-            <Modal
-                show={roleModal.show}
-                onHide={() => setRoleModal({ show: false, user: null, roleId: '' })}
-                centered
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title className="h6 d-flex align-items-center gap-2">
-                        <FaUserShield className="text-primary" />
-                        Change User Role
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {roleModal.user && (
-                        <div>
-                            <p className="text-muted mb-3" style={{ fontSize: '0.88rem' }}>
-                                Select a new authorization role for{' '}
-                                <strong>{getFullName(roleModal.user)}</strong> (<code>@{roleModal.user.userName}</code>).
-                            </p>
-                            <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold" style={{ fontSize: '0.84rem' }}>
-                                    Role Assignment
-                                </Form.Label>
-                                <Form.Select
-                                    value={roleModal.roleId}
-                                    onChange={(e) =>
-                                        setRoleModal((prev) => ({ ...prev, roleId: e.target.value }))
-                                    }
-                                >
-                                    {roles.map((r) => (
-                                        <option key={r.id} value={r.id}>
-                                            {r.name} {r.slug === 'super-admin' ? '(Super Admin)' : ''}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setRoleModal({ show: false, user: null, roleId: '' })}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleConfirmRoleChange}
-                        disabled={isUpdatingRole}
-                    >
-                        {isUpdatingRole ? <Spinner animation="border" size="sm" /> : 'Save Changes'}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+
 
             {/* Modal: Approve / Re-Approve User */}
             <Modal

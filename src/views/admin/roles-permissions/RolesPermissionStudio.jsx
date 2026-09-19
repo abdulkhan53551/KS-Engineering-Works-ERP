@@ -66,8 +66,6 @@ const RolesPermissionStudio = () => {
         setNewRoleDesc,
         newRoleParentId,
         setNewRoleParentId,
-        newRoleScope,
-        setNewRoleScope,
         newRoleIsIndependent,
         setNewRoleIsIndependent,
 
@@ -75,8 +73,6 @@ const RolesPermissionStudio = () => {
         setShowRoleSettingsModal,
         editRoleParentId,
         setEditRoleParentId,
-        editRoleScope,
-        setEditRoleScope,
         editRoleIsIndependent,
         setEditRoleIsIndependent,
         handleUpdateRoleHierarchy,
@@ -298,7 +294,7 @@ const RolesPermissionStudio = () => {
                                             )}
                                         </div>
 
-                                        {/* Dynamic Hierarchy & Scope Badges */}
+                                        {/* Dynamic Hierarchy Badges */}
                                         <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
                                             {selectedRole.parentRoleName ? (
                                                 <Badge bg="soft-info" className="text-info border py-1 px-2" style={{ fontSize: '0.72rem' }} title="Reports to this superior in the hierarchy tree">
@@ -309,9 +305,6 @@ const RolesPermissionStudio = () => {
                                                     Root Level Hierarchy
                                                 </Badge>
                                             )}
-                                            <Badge bg="soft-primary" className="text-primary border py-1 px-2" style={{ fontSize: '0.72rem' }} title="Operational Data Scope Boundary">
-                                                🌐 Scope: <strong>{selectedRole.dataScope || 'OWN'}</strong>
-                                            </Badge>
                                             {selectedRole.isIndependent && (
                                                 <Badge bg="soft-warning" className="text-dark border py-1 px-2" style={{ fontSize: '0.72rem' }} title="Independent Compliance Role">
                                                     🔒 Independent Compliance
@@ -323,9 +316,9 @@ const RolesPermissionStudio = () => {
                                                     className="btn btn-xs btn-outline-secondary py-0.5 px-2 border d-inline-flex align-items-center gap-1"
                                                     style={{ fontSize: '0.72rem', height: '22px' }}
                                                     onClick={() => setShowRoleSettingsModal(true)}
-                                                    title="Configure Hierarchy & Scope"
+                                                    title="Configure Hierarchy"
                                                 >
-                                                    ⚙️ Edit Hierarchy & Scope
+                                                    ⚙️ Edit Hierarchy
                                                 </button>
                                             )}
                                         </div>
@@ -852,19 +845,6 @@ const RolesPermissionStudio = () => {
                                 Superiors can oversee, modify, and approve records created by this subordinate role.
                             </Form.Text>
                         </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ fontSize: '0.8rem' }}>Operational Data Scope</Form.Label>
-                            <Form.Select
-                                value={newRoleScope}
-                                onChange={(e) => setNewRoleScope(e.target.value)}
-                                style={{ fontSize: '0.82rem' }}
-                            >
-                                <option value="OWN">Own Only (Can only access own records)</option>
-                                <option value="DESCENDANTS">Subordinates (Can access records of lower hierarchy roles)</option>
-                                <option value="BRANCH">Branch Level (Can access all records in assigned branch)</option>
-                                <option value="FIRM">Firm Level (Can access records across all branches in firm)</option>
-                            </Form.Select>
-                        </Form.Group>
                         <Form.Group className="mb-1">
                             <Form.Check
                                 type="checkbox"
@@ -887,11 +867,11 @@ const RolesPermissionStudio = () => {
                 </Form>
             </Modal>
 
-            {/* Edit Role Hierarchy & Scope Modal */}
+            {/* Edit Role Hierarchy Modal */}
             <Modal show={showRoleSettingsModal} onHide={() => setShowRoleSettingsModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold" style={{ fontSize: '1rem' }}>
-                        Configure Hierarchy & Scope: {selectedRole?.name}
+                        Configure Hierarchy: {selectedRole?.name}
                     </Modal.Title>
                 </Modal.Header>
                 <Form onSubmit={handleUpdateRoleHierarchy}>
@@ -915,23 +895,6 @@ const RolesPermissionStudio = () => {
                                 Defines who oversees and approves this role's actions in the company ladder.
                             </Form.Text>
                         </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-semibold" style={{ fontSize: '0.8rem' }}>Operational Data Scope Boundary</Form.Label>
-                            <Form.Select
-                                value={editRoleScope}
-                                onChange={(e) => setEditRoleScope(e.target.value)}
-                                style={{ fontSize: '0.82rem' }}
-                                disabled={selectedRole?.slug === 'super-admin'}
-                            >
-                                <option value="OWN">Own Only (Restricted to own records)</option>
-                                <option value="DESCENDANTS">Subordinates (Can access records of lower hierarchy roles)</option>
-                                <option value="BRANCH">Branch Level (Access all records in assigned branch)</option>
-                                <option value="FIRM">Firm Level (Full access across all branches in firm)</option>
-                                {selectedRole?.slug === 'super-admin' && (
-                                    <option value="GLOBAL">Global (Consolidated all firms)</option>
-                                )}
-                            </Form.Select>
-                        </Form.Group>
                         <Form.Group className="mb-1">
                             <Form.Check
                                 type="checkbox"
@@ -949,7 +912,7 @@ const RolesPermissionStudio = () => {
                             Cancel
                         </Button>
                         <Button variant="primary" size="sm" type="submit" disabled={isUpdatingRoleDetails}>
-                            {isUpdatingRoleDetails ? 'Saving...' : 'Update Hierarchy & Scope'}
+                            {isUpdatingRoleDetails ? 'Saving...' : 'Update Hierarchy'}
                         </Button>
                     </Modal.Footer>
                 </Form>

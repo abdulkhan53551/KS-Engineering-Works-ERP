@@ -13,7 +13,8 @@ import {
   adminDirectResetPassword,
   fetchRoles,
   fetchUserAssignments,
-  updateUserAssignments
+  updateUserAssignments,
+  fetchUserCountsByFirm
 } from "../api";
 
 const EMPTY_ARRAY = [];
@@ -57,13 +58,14 @@ export const useUsers = ({
   search = "",
   status = "",
   roleId = null,
+  firmId = null,
   trash = false,
   sortBy = "id",
   sortOrder = "desc"
 } = {}) => {
   return useQuery({
-    queryKey: ["usersList", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
-    queryFn: () => fetchUsers({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
+    queryKey: ["usersList", page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder],
+    queryFn: () => fetchUsers({ page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder }),
     placeholderData: (prev) => prev,
     select: selectUsersList
   });
@@ -76,13 +78,14 @@ export const useUsersPagination = ({
   search = "",
   status = "",
   roleId = null,
+  firmId = null,
   trash = false,
   sortBy = "id",
   sortOrder = "desc"
 } = {}) => {
   return useQuery({
-    queryKey: ["usersPagination", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
-    queryFn: () => fetchUsersPagination({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
+    queryKey: ["usersPagination", page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder],
+    queryFn: () => fetchUsersPagination({ page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder }),
     placeholderData: (prev) => prev,
     select: selectUsersPagination
   });
@@ -246,15 +249,26 @@ export const useUserAssignments = (userId, options = {}) => {
 export const useUpdateUserAssignments = (userId) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ assignments }) => updateUserAssignments({ userId, assignments }),
+    mutationFn: ({ isSuperAdmin = false, assignments = [] }) => updateUserAssignments({ userId, isSuperAdmin, assignments }),
     onSuccess: (res) => {
       toast.success(res?.message || "User firm and branch assignments updated successfully");
       queryClient.invalidateQueries({ queryKey: ["userAssignments", userId] });
       queryClient.invalidateQueries({ queryKey: ["usersList"] });
+      queryClient.invalidateQueries({ queryKey: ["usersPagination"] });
+      queryClient.invalidateQueries({ queryKey: ["userCountsByFirm"] });
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update user assignments");
     }
+  });
+};
+
+// 13. User Counts by Firm
+export const useUserCountsByFirm = () => {
+  return useQuery({
+    queryKey: ["userCountsByFirm"],
+    queryFn: fetchUserCountsByFirm,
+    select: (res) => res?.data || []
   });
 };
 

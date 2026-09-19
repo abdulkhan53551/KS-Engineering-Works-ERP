@@ -168,13 +168,11 @@ export const useRolesPermissionStudio = () => {
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleDesc, setNewRoleDesc] = useState('');
     const [newRoleParentId, setNewRoleParentId] = useState('');
-    const [newRoleScope, setNewRoleScope] = useState('OWN');
     const [newRoleIsIndependent, setNewRoleIsIndependent] = useState(false);
 
-    // Edit Role Hierarchy & Scope Modal
+    // Edit Role Hierarchy Modal
     const [showRoleSettingsModal, setShowRoleSettingsModal] = useState(false);
     const [editRoleParentId, setEditRoleParentId] = useState('');
-    const [editRoleScope, setEditRoleScope] = useState('OWN');
     const [editRoleIsIndependent, setEditRoleIsIndependent] = useState(false);
 
     const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
@@ -456,10 +454,9 @@ export const useRolesPermissionStudio = () => {
     useEffect(() => {
         if (selectedRole) {
             setEditRoleParentId(selectedRole.parentRoleId || '');
-            setEditRoleScope(selectedRole.dataScope || 'OWN');
             setEditRoleIsIndependent(Boolean(selectedRole.isIndependent));
         }
-    }, [selectedRole?.id, selectedRole?.parentRoleId, selectedRole?.dataScope, selectedRole?.isIndependent]);
+    }, [selectedRole?.id, selectedRole?.parentRoleId, selectedRole?.isIndependent]);
 
     // Create role handler
     const handleCreateRole = (e) => {
@@ -474,7 +471,6 @@ export const useRolesPermissionStudio = () => {
                 name: newRoleName.trim(), 
                 description: newRoleDesc.trim(),
                 parentRoleId: newRoleParentId ? parseInt(newRoleParentId, 10) : null,
-                dataScope: newRoleScope,
                 isIndependent: newRoleIsIndependent
             },
             {
@@ -483,7 +479,6 @@ export const useRolesPermissionStudio = () => {
                     setNewRoleName('');
                     setNewRoleDesc('');
                     setNewRoleParentId('');
-                    setNewRoleScope('OWN');
                     setNewRoleIsIndependent(false);
                     const createdId = res?.data?.id || res?.id;
                     if (createdId) setSelectedRoleId(createdId);
@@ -501,7 +496,6 @@ export const useRolesPermissionStudio = () => {
             roleId: selectedRoleId,
             roleData: {
                 parentRoleId: editRoleParentId ? parseInt(editRoleParentId, 10) : null,
-                dataScope: editRoleScope,
                 isIndependent: editRoleIsIndependent
             }
         }, {
@@ -548,11 +542,9 @@ export const useRolesPermissionStudio = () => {
         setSearchTerm,
         isDirty,
 
-        // Hierarchy & Scope Form State
+        // Hierarchy Form State
         newRoleParentId,
         setNewRoleParentId,
-        newRoleScope,
-        setNewRoleScope,
         newRoleIsIndependent,
         setNewRoleIsIndependent,
 
@@ -560,8 +552,6 @@ export const useRolesPermissionStudio = () => {
         setShowRoleSettingsModal,
         editRoleParentId,
         setEditRoleParentId,
-        editRoleScope,
-        setEditRoleScope,
         editRoleIsIndependent,
         setEditRoleIsIndependent,
         handleUpdateRoleHierarchy,
