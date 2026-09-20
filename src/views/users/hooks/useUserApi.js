@@ -104,7 +104,7 @@ export const useDeleteUser = () => {
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to delete user");
+      toast.error(err.message || err.response?.data?.message || "Failed to delete user");
     }
   });
 };
@@ -120,7 +120,7 @@ export const useRestoreUser = () => {
       toast.success(res?.message || "User restored successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to restore user");
+      toast.error(err.message || err.response?.data?.message || "Failed to restore user");
     }
   });
 };
@@ -139,7 +139,7 @@ export const useBulkDeleteUsers = () => {
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to perform bulk delete");
+      toast.error(err.message || err.response?.data?.message || "Failed to perform bulk delete");
     }
   });
 };
@@ -155,7 +155,7 @@ export const useBulkRestoreUsers = () => {
       toast.success(res?.message || "Selected users restored successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to restore selected users");
+      toast.error(err.message || err.response?.data?.message || "Failed to restore selected users");
     }
   });
 };
@@ -170,7 +170,7 @@ export const useUpdateUserRole = () => {
       toast.success(res?.message || "User role updated successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update user role");
+      toast.error(err.message || err.response?.data?.message || "Failed to update user role");
     }
   });
 };
@@ -187,7 +187,7 @@ export const useToggleUserStatus = () => {
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update user status");
+      toast.error(err.message || err.response?.data?.message || "Failed to update user status");
     }
   });
 };
@@ -200,7 +200,7 @@ export const useAdminGenerateResetLink = () => {
       toast.success(res?.message || "Password reset link generated");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to generate reset link");
+      toast.error(err.message || err.response?.data?.message || "Failed to generate reset link");
     }
   });
 };
@@ -225,7 +225,7 @@ export const useAdminDirectResetPassword = () => {
       toast.success(res?.message || "Password updated successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update password directly");
+      toast.error(err.message || err.response?.data?.message || "Failed to update password directly");
     }
   });
 };
@@ -258,7 +258,7 @@ export const useUpdateUserAssignments = (userId) => {
       queryClient.invalidateQueries({ queryKey: ["userCountsByFirm"] });
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update user assignments");
+      toast.error(err.message || err.response?.data?.message || "Failed to update user assignments");
     }
   });
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Modal, Button, Table, Form, Spinner, Alert, Badge, Tooltip, OverlayTrigger } from 'react-bootstrap';
+import { useSelector } from 'react-redux';
 import {
     FaPlus,
     FaTrash,
@@ -22,6 +23,14 @@ const FIRMS_QUERY_PARAMS = { page: 1, pageSize: 100 };
 
 const UserAssignmentsModal = ({ show, onClose, user }) => {
     const userId = user?.id;
+    const currentUser = useSelector((state) => state.authReducer?.user);
+    const { activeFirm, userFirms = [] } = useSelector((state) => state.firmReducer || {});
+
+    const isCallerSuperAdmin = Boolean(
+        currentUser?.isSuperAdmin ||
+        (currentUser?.role || currentUser?.roleSlug || '').toLowerCase() === 'super-admin'
+    );
+
     const {
         data: existingAssignments = [],
         isLoading: isLoadingAssignments,
@@ -31,6 +40,18 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
     const { data: firmsList = [] } = useGetFirms(FIRMS_QUERY_PARAMS);
     const { data: rolesList = [] } = useRoles();
     const { mutate: updateAssignments, isPending: isSaving } = useUpdateUserAssignments(userId);
+
+    // Filter available firms based on caller persona
+    const availableFirms = useMemo(() => {
+        if (isCallerSuperAdmin) return firmsList;
+        return (userFirms || []).filter(f => f.id !== 'all');
+    }, [isCallerSuperAdmin, firmsList, userFirms]);
+
+    // Filter available roles based on caller persona
+    const availableRoles = useMemo(() => {
+        if (isCallerSuperAdmin) return rolesList;
+        return (rolesList || []).filter(r => (r.slug || '').toLowerCase() !== 'super-admin');
+    }, [isCallerSuperAdmin, rolesList]);
 
     const [rows, setRows] = useState([]);
     const [firmBranchesMap, setFirmBranchesMap] = useState({});
@@ -240,9 +261,12 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
 
     // Add new assignment
     const handleAddRow = useCallback(() => {
-        const firstFirm = firmsList[0];
-        const defaultFirmId = firstFirm ? String(firstFirm.firmId || firstFirm.id || '') : '';
-        const defaultRoleId = rolesList[0]?.id ? String(rolesList[0].id) : '';
+        const defaultFirm = isCallerSuperAdmin
+            ? (firmsList[0] || null)
+            : (activeFirm && activeFirm.id !== 'all' ? activeFirm : (availableFirms[0] || null));
+
+        const defaultFirmId = defaultFirm ? String(defaultFirm.firmId || defaultFirm.id || '') : '';
+        const defaultRoleId = availableRoles[0]?.id ? String(availableRoles[0].id) : '';
         const newId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`;
 
         setRows(prevRows => [
@@ -266,7 +290,7 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                 }
             }).catch(() => fetchedFirmIdsRef.current.delete(defaultFirmId));
         }
-    }, [firmsList, rolesList]);
+    }, [isCallerSuperAdmin, activeFirm, availableFirms, availableRoles, firmsList]);
 
     // Remove row
     const handleRemoveRowById = useCallback((id) => {
@@ -398,33 +422,35 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                     </div>
                 ) : (
                     <>
-                        {/* Global Super Admin Toggle Card */}
-                        <div className={`p-3 mb-3 rounded-3 border transition-all ${isSuperAdmin ? 'bg-danger-subtle border-danger' : 'bg-white border-light-subtle'}`}>
-                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div className="d-flex align-items-center gap-3">
-                                    <div className={`rounded-circle p-2 d-flex align-items-center justify-content-center ${isSuperAdmin ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-secondary'}`}>
-                                        <FaUserShield size={20} />
-                                    </div>
-                                    <div>
-                                        <div className="fw-bold text-dark d-flex align-items-center gap-2">
-                                            <span>Global Super Administrator</span>
-                                            {isSuperAdmin && <Badge bg="danger">Full System Access</Badge>}
+                        {/* Global Super Admin Toggle Card: Only visible to platform Super Administrators */}
+                        {isCallerSuperAdmin && (
+                            <div className={`p-3 mb-3 rounded-3 border transition-all ${isSuperAdmin ? 'bg-danger-subtle border-danger' : 'bg-white border-light-subtle'}`}>
+                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className={`rounded-circle p-2 d-flex align-items-center justify-content-center ${isSuperAdmin ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-secondary'}`}>
+                                            <FaUserShield size={20} />
                                         </div>
-                                        <div className="text-muted small">
-                                            Super Administrators bypass tenant and firm boundaries with unrestricted access across all firms and branches.
+                                        <div>
+                                            <div className="fw-bold text-dark d-flex align-items-center gap-2">
+                                                <span>Global Super Administrator</span>
+                                                {isSuperAdmin && <Badge bg="danger">Full System Access</Badge>}
+                                            </div>
+                                            <div className="text-muted small">
+                                                Super Administrators bypass tenant and firm boundaries with unrestricted access across all firms and branches.
+                                            </div>
                                         </div>
                                     </div>
+                                    <Form.Check
+                                        type="switch"
+                                        id="super-admin-toggle"
+                                        label={<span className="fw-semibold small">{isSuperAdmin ? 'Enabled' : 'Disabled'}</span>}
+                                        checked={isSuperAdmin}
+                                        onChange={(e) => setIsSuperAdmin(e.target.checked)}
+                                        className="fs-5 m-0"
+                                    />
                                 </div>
-                                <Form.Check
-                                    type="switch"
-                                    id="super-admin-toggle"
-                                    label={<span className="fw-semibold small">{isSuperAdmin ? 'Enabled' : 'Disabled'}</span>}
-                                    checked={isSuperAdmin}
-                                    onChange={(e) => setIsSuperAdmin(e.target.checked)}
-                                    className="fs-5 m-0"
-                                />
                             </div>
-                        </div>
+                        )}
 
                         {/* If Super Admin, show universal privileges banner; otherwise show entity assignments */}
                         {isSuperAdmin ? (
@@ -433,7 +459,9 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                                 <div>
                                     <h6 className="fw-bold text-danger mb-1">Global Super Administrator Privileges Active</h6>
                                     <p className="mb-0 small text-danger-emphasis">
-                                        This user has unrestricted administrative access to all firms, branches, and system settings. Individual firm assignments are not required and are bypassed.
+                                        {isCallerSuperAdmin
+                                            ? "This user has unrestricted administrative access to all firms, branches, and system settings. Individual firm assignments are not required and are bypassed."
+                                            : "This user holds Global Super Administrator privileges. Super Administrator accounts can only be managed by another Super Administrator."}
                                     </p>
                                 </div>
                             </Alert>
@@ -619,23 +647,32 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                                                         <tr key={row.id} className={rowClasses}>
                                                             {/* Column 1: Firm Entity */}
                                                             <td className="ps-3">
-                                                                <Form.Select
-                                                                    size="sm"
-                                                                    value={row.firmId}
-                                                                    onChange={(e) => handleFirmChangeById(row.id, e.target.value)}
-                                                                    className={`assignment-select fw-semibold ${isDuplicate ? 'border-danger text-danger' : 'text-dark'}`}
-                                                                >
-                                                                    <option value="" disabled>-- Select Firm Entity --</option>
-                                                                    {firmsList.map((f) => {
-                                                                        const fId = f.firmId || f.id;
-                                                                        const fName = f.firmName || f.name;
-                                                                        return (
-                                                                            <option key={fId} value={fId}>
-                                                                                🏢 {fName}
-                                                                            </option>
-                                                                        );
-                                                                    })}
-                                                                </Form.Select>
+                                                                {!isCallerSuperAdmin && availableFirms.length <= 1 ? (
+                                                                    <div className="d-flex align-items-center gap-1.5 px-2.5 py-1.5 bg-light rounded border text-dark fw-semibold" style={{ fontSize: '0.84rem' }}>
+                                                                        <FaBuilding className="text-primary flex-shrink-0" size={13} />
+                                                                        <span className="text-truncate">
+                                                                            {availableFirms[0]?.firmName || activeFirm?.firmName || 'Active Firm'}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <Form.Select
+                                                                        size="sm"
+                                                                        value={row.firmId}
+                                                                        onChange={(e) => handleFirmChangeById(row.id, e.target.value)}
+                                                                        className={`assignment-select fw-semibold ${isDuplicate ? 'border-danger text-danger' : 'text-dark'}`}
+                                                                    >
+                                                                        <option value="" disabled>-- Select Firm Entity --</option>
+                                                                        {availableFirms.map((f) => {
+                                                                            const fId = f.firmId || f.id;
+                                                                            const fName = f.firmName || f.name;
+                                                                            return (
+                                                                                <option key={fId} value={fId}>
+                                                                                    🏢 {fName}
+                                                                                </option>
+                                                                            );
+                                                                        })}
+                                                                    </Form.Select>
+                                                                )}
                                                             </td>
 
                                                             {/* Column 2: Branch Scope */}
@@ -670,7 +707,7 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                                                                     className="assignment-select fw-semibold text-primary"
                                                                 >
                                                                     <option value="" disabled>-- Select Assigned Role --</option>
-                                                                    {rolesList.map((r) => (
+                                                                    {availableRoles.map((r) => (
                                                                         <option key={r.id} value={r.id}>
                                                                             🛡️ {r.name}
                                                                         </option>
@@ -795,9 +832,9 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                     <Button
                         variant="primary"
                         onClick={handleSave}
-                        disabled={isSaving || isLoadingAssignments || (!isSuperAdmin && hasDuplicates)}
+                        disabled={isSaving || isLoadingAssignments || (!isSuperAdmin && hasDuplicates) || (!isCallerSuperAdmin && initialIsSuperAdmin)}
                         className="px-4 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm"
-                        title={(!isSuperAdmin && hasDuplicates) ? "Please resolve duplicate assignments before saving" : ""}
+                        title={(!isSuperAdmin && hasDuplicates) ? "Please resolve duplicate assignments before saving" : (!isCallerSuperAdmin && initialIsSuperAdmin) ? "Super Administrator accounts cannot be modified by firm administrators" : ""}
                     >
                         {isSaving ? (
                             <>

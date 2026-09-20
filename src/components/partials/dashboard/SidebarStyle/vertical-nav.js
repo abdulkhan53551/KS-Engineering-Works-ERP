@@ -460,7 +460,7 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
-                {isAdmin && (
+                {(isSuperAdmin || can('users', 'read')) && (
                     <li className="nav-item">
                         <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
                             <i className="icon">
@@ -485,7 +485,7 @@ const VerticalNav = memo((props) => {
                         </Link>
                     </li>
                 )}
-                {isAdmin && (
+                {(isSuperAdmin || can('users', 'read')) && (
                     <li className="nav-item">
                         <Link className={`${location.pathname === '/admin/roles-permissions' || location.pathname === '/dashboard/admin/roles-permissions' ? 'active' : ''} nav-link`} to="/dashboard/admin/roles-permissions">
                             <i className="icon">

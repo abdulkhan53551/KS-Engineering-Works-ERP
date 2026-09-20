@@ -118,10 +118,10 @@ export const adminGenerateResetLink = asyncHandler(async (id) => {
   return res.data;
 });
 
-// Fetch Roles (reuse /auth/admin/roles)
+// Fetch Roles
 export const fetchRoles = asyncHandler(async () => {
   const res = await api.request({
-    url: `/auth/admin/roles`,
+    url: `/admin/roles`,
     method: requestMethod.GET
   });
 

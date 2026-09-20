@@ -99,6 +99,11 @@ export const useDeleteRoleMutation = () => {
 export const useRolesPermissionStudio = () => {
     const activeFirm = useSelector((state) => state.firmReducer?.activeFirm);
     const userFirms = useSelector((state) => state.firmReducer?.userFirms || []);
+    const currentUser = useSelector((state) => state.authReducer?.user);
+    const isCallerSuperAdmin = Boolean(
+        currentUser?.isSuperAdmin ||
+        (currentUser?.role || currentUser?.roleSlug || '').toLowerCase() === 'super-admin'
+    );
 
     // Derive selected firm ID synchronously from header activeFirm scope (0 lag, 0 extra render pass)
     const selectedFirmId = useMemo(() => {
@@ -121,12 +126,17 @@ export const useRolesPermissionStudio = () => {
     const updateRoleDetailsMutation = useUpdateRoleDetailsMutation();
     const deleteRoleMutation = useDeleteRoleMutation();
 
-    const roles = matrixData?.data?.roles || [];
+    const rawRoles = matrixData?.data?.roles || [];
+    const roles = useMemo(() => {
+        if (isCallerSuperAdmin) return rawRoles;
+        return rawRoles.filter(r => (r.slug || '').toLowerCase() !== 'super-admin');
+    }, [rawRoles, isCallerSuperAdmin]);
+
     const modules = matrixData?.data?.modules || [];
     const allPermissions = matrixData?.data?.allPermissions || [];
     const rolePermissionsMap = matrixData?.data?.rolePermissionsMap || {};
 
-    const isAllFirmsMode = activeFirm?.id === 'all';
+    const isAllFirmsMode = isCallerSuperAdmin && activeFirm?.id === 'all';
     const availableFirms = useMemo(() => {
         return (userFirms || []).filter(f => f.id !== 'all');
     }, [userFirms]);
@@ -604,7 +614,8 @@ export const useRolesPermissionStudio = () => {
         // Pending states
         isSaving: saveMutation.isPending,
         isCreatingRole: createRoleMutation.isPending,
-        isDeletingRole: deleteRoleMutation.isPending
+        isDeletingRole: deleteRoleMutation.isPending,
+        isCallerSuperAdmin
     };
 };
 

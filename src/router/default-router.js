@@ -197,11 +197,11 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/admin/roles-permissions',
-                element: <ProtectedRoute allowedRoles={["super-admin", "administrator"]}><RolesPermissionStudio /></ProtectedRoute>
+                element: <ProtectedRoute module="users" action="read"><RolesPermissionStudio /></ProtectedRoute>
             },
             {
                 path: 'admin/roles-permissions',
-                element: <ProtectedRoute allowedRoles={["super-admin", "administrator"]}><RolesPermissionStudio /></ProtectedRoute>
+                element: <ProtectedRoute module="users" action="read"><RolesPermissionStudio /></ProtectedRoute>
             },
             {
                 path: 'dashboard/customer-add',
@@ -217,7 +217,7 @@ export const DefaultRouter = [
             },
             {
                 path: 'dashboard/admin/admin',
-                element: <Admin />
+                element: <ProtectedRoute module="users" action="read"><Admin /></ProtectedRoute>
             },
             // Widget
             {

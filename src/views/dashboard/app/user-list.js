@@ -35,6 +35,14 @@ import {
     FaSortAlphaUpAlt,
     FaSortAlphaDownAlt
 } from 'react-icons/fa';
+import {
+    Building2,
+    MapPin,
+    Globe,
+    AlertTriangle,
+    Layers,
+    ShieldCheck
+} from 'lucide-react';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import PaginationBar from '../../../components/PaginationBar';
@@ -451,6 +459,80 @@ const UserList = () => {
         }
     };
 
+    const renderDataScopeBadge = (rawScope) => {
+        if (!rawScope) return null;
+        const scope = String(rawScope).toUpperCase();
+
+        let label = scope;
+        let style = {
+            backgroundColor: '#f1f5f9',
+            color: '#475569',
+            border: '1px solid #e2e8f0'
+        };
+
+        switch (scope) {
+            case 'GLOBAL':
+            case 'ALL':
+                label = 'Global';
+                style = {
+                    backgroundColor: '#fef2f2',
+                    color: '#b91c1c',
+                    border: '1px solid #fecaca'
+                };
+                break;
+            case 'FIRM':
+                label = 'Firm-Wide';
+                style = {
+                    backgroundColor: '#f5f3ff',
+                    color: '#6d28d9',
+                    border: '1px solid #ddd6fe'
+                };
+                break;
+            case 'BRANCH':
+                label = 'Branch';
+                style = {
+                    backgroundColor: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '1px solid #bae6fd'
+                };
+                break;
+            case 'DESCENDANTS':
+                label = 'Team';
+                style = {
+                    backgroundColor: '#ecfdf5',
+                    color: '#047857',
+                    border: '1px solid #a7f3d0'
+                };
+                break;
+            case 'OWN':
+            case 'SELF':
+                label = 'Own';
+                style = {
+                    backgroundColor: '#f8fafc',
+                    color: '#475569',
+                    border: '1px solid #e2e8f0'
+                };
+                break;
+            default:
+                label = scope;
+                break;
+        }
+
+        return (
+            <span
+                className="badge rounded-pill px-1.5 py-0.5 fw-semibold"
+                style={{
+                    ...style,
+                    fontSize: '0.66rem',
+                    letterSpacing: '0.01em',
+                    lineHeight: 1.2
+                }}
+            >
+                {label}
+            </span>
+        );
+    };
+
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -668,8 +750,8 @@ const UserList = () => {
                                     <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('email')}>
                                         Email {renderSortIcon('email')}
                                     </th>
-                                    <th style={{ minWidth: '180px' }} className="bg-white user-select-none">
-                                        <FaBuilding className="me-1 text-primary" size={11} />
+                                    <th style={{ minWidth: '220px' }} className="bg-white user-select-none">
+                                        <Building2 size={13} className="me-1.5 text-primary align-text-bottom" />
                                         Access & Roles
                                     </th>
                                     <th style={{ width: '105px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('approvalStatus')}>
@@ -773,101 +855,170 @@ const UserList = () => {
                                                 {/* Access & Roles */}
                                                 <td>
                                                     {u.isSuperAdmin || (u.roleSlug || '').toLowerCase() === 'super-admin' ? (
-                                                        <Badge bg="danger" className="d-inline-flex align-items-center gap-1 px-2 py-1">
-                                                            <span>🌐</span> Super Admin (All Firms)
-                                                        </Badge>
+                                                        <div
+                                                            className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill"
+                                                            style={{
+                                                                backgroundColor: '#fdf2f8',
+                                                                color: '#9d174d',
+                                                                border: '1px solid #fbcfe8',
+                                                                fontSize: '0.76rem',
+                                                                fontWeight: 600
+                                                            }}
+                                                        >
+                                                            <ShieldCheck size={13} className="flex-shrink-0" style={{ color: '#db2777' }} />
+                                                            <span>Super Admin <span className="opacity-75 fw-normal" style={{ fontSize: '0.70rem' }}>(All Firms)</span></span>
+                                                        </div>
                                                     ) : !u.assignments || u.assignments.length === 0 ? (
-                                                        <Badge bg="warning" text="dark" className="d-inline-flex align-items-center gap-1 px-2 py-1">
-                                                            <span>⚠️</span> No Firm / Role Assigned
-                                                        </Badge>
-                                                    ) : u.assignments.length === 1 ? (
-                                                        <div className="d-flex flex-column">
-                                                            <Badge bg="primary" className="text-truncate px-2 py-1 text-start" style={{ maxWidth: '200px' }} title={u.assignments[0].firmName}>
-                                                                🏢 {u.assignments[0].firmName}
-                                                            </Badge>
-                                                            <span className="text-muted mt-0.5 d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.74rem' }}>
-                                                                <span>📍 {u.assignments[0].branchName || 'All Branches'}</span>
-                                                                <span>•</span>
-                                                                <span className="text-primary fw-semibold">{u.assignments[0].roleName}</span>
-                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
-                                                                    <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
-                                                                        {(u.assignments[0].dataScope || u.assignments[0].data_scope) === 'FIRM' ? 'Firm-Wide' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'BRANCH' ? 'Branch' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
-                                                                    </Badge>
-                                                                )}
-                                                            </span>
+                                                        <div
+                                                            className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill"
+                                                            style={{
+                                                                backgroundColor: '#fffbeb',
+                                                                color: '#b45309',
+                                                                border: '1px solid #fde68a',
+                                                                fontSize: '0.74rem',
+                                                                fontWeight: 500
+                                                            }}
+                                                        >
+                                                            <AlertTriangle size={12} className="flex-shrink-0" />
+                                                            <span>No Firm / Role Assigned</span>
                                                         </div>
                                                     ) : (
-                                                        <div className="d-flex flex-column">
-                                                            <div className="d-flex align-items-center gap-1 flex-wrap">
-                                                                <Badge bg="primary" className="text-truncate px-2 py-1" style={{ maxWidth: '140px' }} title={u.assignments[0].firmName}>
-                                                                    🏢 {u.assignments[0].firmName}
-                                                                </Badge>
-                                                                <OverlayTrigger
-                                                                    trigger="click"
-                                                                    rootClose
-                                                                    placement="bottom"
-                                                                    overlay={
-                                                                        <Popover id={`firm-popover-${u.id}`} style={{ maxWidth: '340px' }} className="shadow-lg border-0">
-                                                                            <Popover.Header as="h6" className="py-2 px-3 bg-light fw-bold text-dark d-flex align-items-center justify-content-between">
-                                                                                <span>Entity & Role Scopes ({u.assignments.length})</span>
-                                                                            </Popover.Header>
-                                                                            <Popover.Body className="p-2" style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                                                                                <div className="d-flex flex-column gap-2">
-                                                                                    {u.assignments.map((a, idx) => (
-                                                                                        <div
-                                                                                            key={a.id || idx}
-                                                                                            className={`p-2 rounded border small ${a.isDefault ? 'border-warning bg-warning bg-opacity-10' : 'bg-light'}`}
-                                                                                        >
-                                                                                            <div className="d-flex align-items-center justify-content-between">
-                                                                                                <span className="fw-bold text-dark text-truncate" style={{ maxWidth: '200px' }}>
-                                                                                                    🏢 {a.firmName}
-                                                                                                </span>
-                                                                                                {a.isDefault && (
-                                                                                                    <Badge bg="warning" text="dark" style={{ fontSize: '0.65rem' }}>
-                                                                                                        Default
-                                                                                                    </Badge>
-                                                                                                )}
+                                                        <div className="d-flex flex-column" style={{ maxWidth: '240px' }}>
+                                                            {/* Row 1: Firm Chip + Multi-assignment Trigger */}
+                                                            <div className="d-flex align-items-center gap-1.5 mb-1 flex-nowrap">
+                                                                <div
+                                                                    className="d-inline-flex align-items-center gap-1 px-2 py-0.5 rounded text-truncate flex-shrink-1"
+                                                                    style={{
+                                                                        backgroundColor: '#eef2ff',
+                                                                        color: '#3730a3',
+                                                                        border: '1px solid #e0e7ff',
+                                                                        fontSize: '0.76rem',
+                                                                        fontWeight: 600,
+                                                                        maxWidth: u.assignments.length > 1 ? '150px' : '230px'
+                                                                    }}
+                                                                    title={u.assignments[0].firmName}
+                                                                >
+                                                                    <Building2 size={12} className="text-primary flex-shrink-0" />
+                                                                    <span className="text-truncate">{u.assignments[0].firmName}</span>
+                                                                </div>
+
+                                                                {u.assignments.length > 1 && (
+                                                                    <OverlayTrigger
+                                                                        trigger="click"
+                                                                        rootClose
+                                                                        placement="bottom"
+                                                                        overlay={
+                                                                            <Popover id={`firm-popover-${u.id}`} style={{ maxWidth: '360px', width: '340px' }} className="shadow-lg border-0 rounded-3 overflow-hidden">
+                                                                                <Popover.Header as="div" className="py-2.5 px-3 bg-white border-bottom d-flex align-items-center justify-content-between">
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <div className="p-1 rounded bg-soft-primary text-primary d-flex align-items-center justify-content-center">
+                                                                                            <Layers size={14} />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div className="fw-bold text-dark" style={{ fontSize: '0.82rem', lineHeight: 1.2 }}>
+                                                                                                Entity & Role Scopes
                                                                                             </div>
-                                                                                            <div className="text-muted d-flex align-items-center gap-1 mt-1 flex-wrap" style={{ fontSize: '0.72rem' }}>
-                                                                                                <span>📍 {a.branchName || 'All Branches'}</span>
-                                                                                                <span>•</span>
-                                                                                                <span className="text-primary fw-semibold">{a.roleName}</span>
-                                                                                                {(a.dataScope || a.data_scope) && (
-                                                                                                    <>
-                                                                                                        <span>•</span>
-                                                                                                        <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
-                                                                                                            {(a.dataScope || a.data_scope) === 'FIRM' ? 'Firm-Wide' : (a.dataScope || a.data_scope) === 'BRANCH' ? 'Branch' : (a.dataScope || a.data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
-                                                                                                        </Badge>
-                                                                                                    </>
-                                                                                                )}
+                                                                                            <div className="text-muted" style={{ fontSize: '0.69rem' }}>
+                                                                                                {u.assignments.length} assigned firms for {getFullName(u)}
                                                                                             </div>
                                                                                         </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </Popover.Body>
-                                                                        </Popover>
-                                                                    }
-                                                                >
-                                                                    <Button
-                                                                        variant="outline-primary"
-                                                                        size="sm"
-                                                                        className="py-0 px-1.5 fw-semibold"
-                                                                        style={{ fontSize: '0.72rem', height: '22px' }}
+                                                                                    </div>
+                                                                                </Popover.Header>
+                                                                                <Popover.Body className="p-2.5 bg-light bg-opacity-50" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                                                                                    <div className="d-flex flex-column gap-2">
+                                                                                        {u.assignments.map((a, idx) => {
+                                                                                            const scope = a.dataScope || a.data_scope;
+                                                                                            return (
+                                                                                                <div
+                                                                                                    key={a.id || idx}
+                                                                                                    className="p-2.5 rounded-3 bg-white shadow-sm transition-all"
+                                                                                                    style={{
+                                                                                                        border: a.isDefault ? '1.5px solid #6366f1' : '1px solid #e2e8f0'
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <div className="d-flex align-items-center justify-content-between mb-1">
+                                                                                                        <div className="d-flex align-items-center gap-1.5 text-truncate me-2">
+                                                                                                            <Building2 size={13} className={a.isDefault ? 'text-primary' : 'text-secondary'} />
+                                                                                                            <span className="fw-semibold text-dark text-truncate" style={{ fontSize: '0.80rem' }} title={a.firmName}>
+                                                                                                                {a.firmName}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        {a.isDefault && (
+                                                                                                            <span
+                                                                                                                className="badge rounded-pill px-2 py-0.5 flex-shrink-0"
+                                                                                                                style={{
+                                                                                                                    backgroundColor: '#eef2ff',
+                                                                                                                    color: '#4f46e5',
+                                                                                                                    fontSize: '0.64rem',
+                                                                                                                    fontWeight: 600,
+                                                                                                                    border: '1px solid #c7d2fe'
+                                                                                                                }}
+                                                                                                            >
+                                                                                                                Default ★
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </div>
+
+                                                                                                    <div className="d-flex align-items-center flex-wrap gap-1 text-muted" style={{ fontSize: '0.72rem' }}>
+                                                                                                        <span className="d-inline-flex align-items-center gap-1">
+                                                                                                            <MapPin size={11} className="text-muted opacity-75 flex-shrink-0" />
+                                                                                                            <span>{a.branchName || 'All Branches'}</span>
+                                                                                                        </span>
+                                                                                                        <span className="text-muted opacity-40">•</span>
+                                                                                                        <span className="fw-semibold text-dark">{a.roleName}</span>
+                                                                                                        {scope && (
+                                                                                                            <>
+                                                                                                                <span className="text-muted opacity-40">•</span>
+                                                                                                                {renderDataScopeBadge(scope)}
+                                                                                                            </>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </Popover.Body>
+                                                                            </Popover>
+                                                                        }
                                                                     >
-                                                                        +{u.assignments.length - 1} more
-                                                                    </Button>
-                                                                </OverlayTrigger>
-                                                            </div>
-                                                            <span className="text-muted mt-0.5 d-flex align-items-center flex-wrap gap-1" style={{ fontSize: '0.74rem' }}>
-                                                                <span>📍 {u.assignments[0].branchName || 'All Branches'}</span>
-                                                                <span>•</span>
-                                                                <span className="text-primary fw-semibold">{u.assignments[0].roleName}</span>
-                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
-                                                                    <Badge bg="light" text="secondary" className="border px-1.5 py-0.5" style={{ fontSize: '0.65rem' }}>
-                                                                        {(u.assignments[0].dataScope || u.assignments[0].data_scope) === 'FIRM' ? 'Firm-Wide' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'BRANCH' ? 'Branch' : (u.assignments[0].dataScope || u.assignments[0].data_scope) === 'DESCENDANTS' ? 'Team' : 'Own'}
-                                                                    </Badge>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-xs d-inline-flex align-items-center gap-1 px-1.5 py-0.5 rounded-pill border-0 shadow-none flex-shrink-0"
+                                                                            style={{
+                                                                                backgroundColor: '#e0e7ff',
+                                                                                color: '#4338ca',
+                                                                                fontSize: '0.68rem',
+                                                                                fontWeight: 600,
+                                                                                lineHeight: 1.3,
+                                                                                cursor: 'pointer',
+                                                                                transition: 'all 0.15s ease-in-out'
+                                                                            }}
+                                                                            title={`View all ${u.assignments.length} assignments`}
+                                                                        >
+                                                                            <Layers size={10} />
+                                                                            <span>+{u.assignments.length - 1} more</span>
+                                                                        </button>
+                                                                    </OverlayTrigger>
                                                                 )}
-                                                            </span>
+                                                            </div>
+
+                                                            {/* Row 2: Branch • Role • Scope */}
+                                                            <div className="d-flex align-items-center flex-wrap gap-1 text-muted" style={{ fontSize: '0.72rem', lineHeight: 1.3 }}>
+                                                                <span className="d-inline-flex align-items-center gap-1 text-secondary">
+                                                                    <MapPin size={10} className="text-muted opacity-75 flex-shrink-0" />
+                                                                    <span>{u.assignments[0].branchName || 'All Branches'}</span>
+                                                                </span>
+                                                                <span className="text-muted opacity-40">•</span>
+                                                                <span className="fw-semibold text-dark" style={{ color: '#1e293b' }}>
+                                                                    {u.assignments[0].roleName}
+                                                                </span>
+                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
+                                                                    <>
+                                                                        <span className="text-muted opacity-40">•</span>
+                                                                        {renderDataScopeBadge(u.assignments[0].dataScope || u.assignments[0].data_scope)}
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </td>
