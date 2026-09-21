@@ -16,27 +16,34 @@ import { clearLoading } from "../../../store/uiModal.slice";
 import { useDispatch } from "react-redux";
 import { useUIManager } from "../../../contexts/UIManagerContext";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+export const selectPurchaseOrderPagination = (result) => {
+    return result?.data?.pagination ?? EMPTY_OBJECT;
+};
+
+export const selectPurchaseOrderList = (result) => {
+    const list = result?.data;
+    if (!Array.isArray(list) || list.length === 0) return EMPTY_ARRAY;
+    return list.map(item => ({
+        ...item,
+        color: item.isInvoiced ? 'bg-success' : 'bg-danger',
+        invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
+    }));
+};
+
+export const selectPurchaseOrderById = (result) => {
+    return result?.data ?? EMPTY_OBJECT;
+};
+
 // Get purchase order pagination
 export const usePurchaseOrderPagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
         queryKey: ["purchaseOrderPagination", page, pageSize, search, trash],
         queryFn: () => getPurchaseOrderPagination({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const pagination = result?.data?.pagination ?? {};
-            const total = pagination.total ?? 0;
-            const totalPages = pagination.totalPages ?? (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1);
-
-            const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-            const pageEnd = Math.min(page * pageSize, total);
-
-            return {
-                ...pagination,
-                totalPages,
-                pageStart,
-                pageEnd
-            };
-        }
+        placeholderData: (prev) => prev,
+        select: selectPurchaseOrderPagination
     });
 };
 
@@ -45,16 +52,8 @@ export const usePurchaseOrder = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
         queryKey: ["purchaseOrderList", page, pageSize, search, trash],
         queryFn: () => getPurchaseOrder({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const data = result?.data?.map(item => ({
-                ...item,
-                color: item.isInvoiced ? 'bg-success' : 'bg-danger',
-                invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
-            })) ?? [];
-
-            return data;
-        }
+        placeholderData: (prev) => prev,
+        select: selectPurchaseOrderList
     });
 };
 
@@ -64,9 +63,7 @@ export const usePurchaseOrderById = (id = 0) => {
         queryKey: ["purchaseOrderById", id],
         queryFn: () => getPurchaseOrderById(id),
         enabled: !!id,
-        select: (result) => {
-            return result?.data ?? {};
-        }
+        select: selectPurchaseOrderById
     });
 };
 

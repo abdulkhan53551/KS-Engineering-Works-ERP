@@ -65,27 +65,24 @@ export const useMasterPartyRoles = () => {
    2. MAIN PARTY HOOKS
    ========================================================================= */
 
+const EMPTY_PARTY_ARRAY = [];
+const EMPTY_PARTY_OBJECT = {};
+
+const selectPartyPagination = (result) => {
+    return result?.data?.pagination ?? result?.pagination ?? EMPTY_PARTY_OBJECT;
+};
+
+const selectPartyList = (result) => {
+    const list = result?.data ?? result ?? EMPTY_PARTY_ARRAY;
+    return Array.isArray(list) ? list : EMPTY_PARTY_ARRAY;
+};
+
 export const usePartyPagination = ({ page = 1, pageSize = 10, search = '', status = '', gstRegistered = '', trash = false }) => {
     return useQuery({
         queryKey: ["partyPagination", page, pageSize, search, status, gstRegistered, trash],
         queryFn: () => getPartiesPagination({ page, pageSize, search, status, gstRegistered, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const pagination = result?.data?.pagination ?? result?.pagination ?? {};
-            const total = pagination.total ?? 0;
-            const totalPages = pagination.totalPages ?? (Math.ceil(total / pageSize) || 1);
-
-            const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-            const pageEnd = Math.min(page * pageSize, total);
-
-            return {
-                ...pagination,
-                total,
-                totalPages,
-                pageStart,
-                pageEnd
-            };
-        }
+        placeholderData: (prev) => prev,
+        select: selectPartyPagination
     });
 };
 
@@ -93,11 +90,8 @@ export const useParties = ({ page = 1, pageSize = 10, search = '', status = '', 
     return useQuery({
         queryKey: ["partyList", page, pageSize, search, status, gstRegistered, trash],
         queryFn: () => getParties({ page, pageSize, search, status, gstRegistered, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const list = result?.data ?? [];
-            return Array.isArray(list) ? list : [];
-        }
+        placeholderData: (prev) => prev,
+        select: selectPartyList
     });
 };
 

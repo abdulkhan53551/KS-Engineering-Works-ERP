@@ -1,0 +1,297 @@
+/**
+ * FirmModule.css
+ * Sharp, crisp typography and modern aesthetics for Firm Forms,
+ * Firm Branch Manager, and Modals.
+ */
+
+/* 1. Global Crisp Typography for Firm Module */
+.firm-module-root,
+.firm-branch-modal,
+.firm-branch-manager-container,
+.firm-form-container {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color: #1e293b;
+    font-size: 0.835rem;
+}
+
+/* 1b. Distinct Bold Field Labels vs Input Values */
+.firm-module-root .custom-form-floating > label,
+.firm-branch-modal .custom-form-floating > label,
+.firm-branch-manager-container .custom-form-floating > label,
+.firm-form-container .custom-form-floating > label,
+.firm-form-container .form-label,
+.firm-branch-modal .form-label {
+    font-weight: 600 !important;
+    color: #475569 !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 0.01em !important;
+}
+
+.firm-module-root .custom-form-floating > .form-control:focus ~ label,
+.firm-module-root .custom-form-floating > .form-select:focus ~ label,
+.firm-form-container .custom-form-floating > .form-control:focus ~ label,
+.firm-form-container .custom-form-floating > .form-select:focus ~ label,
+.firm-branch-modal .custom-form-floating > .form-control:focus ~ label {
+    color: #2563eb !important;
+    font-weight: 700 !important;
+}
+
+.firm-module-root .custom-form-floating > .form-control,
+.firm-module-root .custom-form-floating > .form-select,
+.firm-form-container .custom-form-floating > .form-control,
+.firm-form-container .custom-form-floating > .form-select,
+.firm-module-root .form-control,
+.firm-module-root .form-select,
+.firm-form-container .form-control,
+.firm-form-container .form-select {
+    color: #1e293b !important;
+    font-weight: 400 !important;
+}
+
+/* Card Headers & Section Titles */
+.firm-section-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.firm-section-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.firm-section-header {
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1rem 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.firm-section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.firm-section-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.firm-section-icon.icon-blue {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+}
+
+.firm-section-icon.icon-emerald {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #d1fae5;
+}
+
+.firm-section-icon.icon-amber {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fef3c7;
+}
+
+.firm-section-icon.icon-violet {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ede9fe;
+}
+
+.firm-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.15rem;
+}
+
+.firm-section-subtitle {
+    font-size: 0.74rem;
+    color: #64748b;
+    margin-bottom: 0;
+}
+
+.firm-card-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.35rem;
+}
+
+.firm-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.firm-section-badge {
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+/* Highlight Box / Banner for GST Switch */
+.firm-highlight-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1.15rem;
+}
+
+/* Subsection Divider */
+.firm-subsection-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0 1rem;
+}
+
+.firm-subsection-divider span {
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.firm-subsection-divider hr {
+    flex: 1;
+    margin: 0;
+    border-color: #e2e8f0;
+    opacity: 0.8;
+}
+
+/* Sticky Action Footer */
+.firm-sticky-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #e2e8f0;
+    padding: 0.85rem 1.5rem;
+    margin: 1.5rem -1rem -1rem -1rem;
+    z-index: 99;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 2. Branch Manager Table & Elements */
+.branch-table thead th {
+    background: #f8fafc !important;
+    color: #475569;
+    font-size: 0.735rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.branch-table tbody td {
+    padding: 0.65rem 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.8125rem !important;
+}
+
+.branch-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.branch-table tbody tr.row-ho {
+    background-color: rgba(58, 87, 232, 0.03);
+    border-left: 3px solid #3a57e8;
+}
+
+/* Branch Code Pill */
+.branch-code-pill {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 5px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* Head Office Star Badge */
+.badge-ho {
+    font-size: 0.7rem !important;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 20px;
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* 3. Action buttons in branch table */
+.branch-action-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.branch-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Empty Branch Card */
+.empty-branch-card {
+    text-align: center;
+    padding: 2.75rem 1.5rem;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    margin: 1rem;
+}
+
+.empty-branch-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #3a57e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.85rem;
+    font-size: 1.35rem;
+}

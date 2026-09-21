@@ -27,4 +27,4 @@ const PaginationBar = ({ page, pageSize, total, totalPages, onPageChange }) => {
     );
 };
 
-export default PaginationBar;
+export default React.memo(PaginationBar);

@@ -21,6 +21,7 @@ import {
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { loginSuccess, logout as logoutRedux } from "../../../store/auth.slice";
+import { setUserFirms, setActiveFirm, setActiveBranch, clearFirmState } from "../../../store/firm.slice";
 import { localStorageKey } from "../../../utilities/constant/constants";
 import { useNavigate } from "react-router-dom";
 
@@ -41,6 +42,20 @@ export const useLogin = () => {
 
                 dispatch(loginSuccess(authData));
                 localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, res.data.accessToken);
+
+                // Populate available firms & active context
+                if (res.data.firms && res.data.firms.length > 0) {
+                    dispatch(setUserFirms(res.data.firms));
+
+                    const defaultFirm = res.data.firms.find(f => f.id === res.data.defaultContext?.firmId) || res.data.firms[0];
+                    if (defaultFirm) {
+                        dispatch(setActiveFirm(defaultFirm));
+                        const defaultBranch = defaultFirm.branches?.find(b => b.id === res.data.defaultContext?.branchId) ||
+                            defaultFirm.branches?.find(b => b.isHeadOffice) ||
+                            defaultFirm.branches?.[0] || null;
+                        dispatch(setActiveBranch(defaultBranch));
+                    }
+                }
 
                 // Redirect to dashboard
                 navigate("/dashboard", { replace: true });
@@ -66,6 +81,7 @@ export const useLogout = () => {
                 queryClient.clear();         // optional, clears mutations too
 
                 dispatch(logoutRedux());
+                dispatch(clearFirmState());
                 localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
 
                 // Redirect to dashboard

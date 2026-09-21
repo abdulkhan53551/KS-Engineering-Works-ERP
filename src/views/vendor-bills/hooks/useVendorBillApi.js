@@ -12,6 +12,41 @@ import {
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectVendorBillsList = (res) => {
+    const list = res?.data ?? res?.bills ?? res ?? EMPTY_ARRAY;
+    return Array.isArray(list) ? list : EMPTY_ARRAY;
+};
+
+const selectVendorBillsSummary = (res) => {
+    const data = res?.data ?? res ?? EMPTY_OBJECT;
+    return {
+        totalBillsAmount: Number(data.totalBillsAmount ?? data.total_bills_amount ?? 0),
+        totalPaidAmount: Number(data.totalPaidAmount ?? data.total_paid_amount ?? 0),
+        totalBalanceDue: Number(data.totalBalanceDue ?? data.total_balance_due ?? 0),
+        totalCount: Number(data.totalCount ?? data.total_count ?? 0),
+        unpaidCount: Number(data.unpaidCount ?? data.unpaid_count ?? 0),
+        partialCount: Number(data.partialCount ?? data.partial_count ?? 0),
+        paidCount: Number(data.paidCount ?? data.paid_count ?? 0)
+    };
+};
+
+const selectVendorBillsMeta = (res) => {
+    const meta = res?.data?.pagination ?? res?.data ?? res?.pagination ?? res ?? EMPTY_OBJECT;
+    const total = Number(meta.totalRecords || meta.total || 0);
+    const pageSize = Number(meta.pageSize || 10);
+    const totalPages = Number(meta.totalPages || (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1));
+    return {
+        ...meta,
+        total,
+        page: Number(meta.currentPage || meta.page || 1),
+        pageSize,
+        totalPages
+    };
+};
+
 /**
  * Hook to fetch paginated list of vendor bills
  */
@@ -20,10 +55,7 @@ export const useVendorBills = (filters = {}) => {
         queryKey: ["vendorBills", filters],
         queryFn: () => getVendorBills(filters),
         placeholderData: (prev) => prev,
-        select: (res) => {
-            const list = res?.data ?? res?.bills ?? res ?? [];
-            return Array.isArray(list) ? list : [];
-        }
+        select: selectVendorBillsList
     });
 };
 
@@ -37,18 +69,7 @@ export const useVendorBillsSummary = (filters = {}) => {
         queryFn: () => getVendorBillsSummary({ startDate, endDate, partyId, paymentStatusId, search }),
         placeholderData: (prev) => prev,
         staleTime: 60 * 1000,
-        select: (res) => {
-            const data = res?.data ?? res ?? {};
-            return {
-                totalBillsAmount: Number(data.totalBillsAmount ?? data.total_bills_amount ?? 0),
-                totalPaidAmount: Number(data.totalPaidAmount ?? data.total_paid_amount ?? 0),
-                totalBalanceDue: Number(data.totalBalanceDue ?? data.total_balance_due ?? 0),
-                totalCount: Number(data.totalCount ?? data.total_count ?? 0),
-                unpaidCount: Number(data.unpaidCount ?? data.unpaid_count ?? 0),
-                partialCount: Number(data.partialCount ?? data.partial_count ?? 0),
-                paidCount: Number(data.paidCount ?? data.paid_count ?? 0)
-            };
-        }
+        select: selectVendorBillsSummary
     });
 };
 
@@ -60,19 +81,7 @@ export const useVendorBillsMeta = (filters = {}) => {
         queryKey: ["vendorBillsMeta", filters],
         queryFn: () => getVendorBillsPagination(filters),
         placeholderData: (prev) => prev,
-        select: (res) => {
-            const meta = res?.data?.pagination ?? res?.data ?? res?.pagination ?? res ?? {};
-            const total = Number(meta.totalRecords || meta.total || 0);
-            const pageSize = Number(meta.pageSize || 10);
-            const totalPages = Number(meta.totalPages || (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1));
-            return {
-                ...meta,
-                total,
-                page: Number(meta.currentPage || meta.page || 1),
-                pageSize,
-                totalPages
-            };
-        }
+        select: selectVendorBillsMeta
     });
 };
 

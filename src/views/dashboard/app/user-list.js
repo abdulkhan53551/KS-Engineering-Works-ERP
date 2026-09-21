@@ -12,7 +12,8 @@ import {
     InputGroup,
     OverlayTrigger,
     Tooltip,
-    Alert
+    Alert,
+    Popover
 } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -24,6 +25,7 @@ import {
     FaExclamationTriangle,
     FaKey,
     FaUserShield,
+    FaBuilding,
     FaCopy,
     FaCheck,
     FaUserCheck,
@@ -33,6 +35,23 @@ import {
     FaSortAlphaUpAlt,
     FaSortAlphaDownAlt
 } from 'react-icons/fa';
+import {
+    Building2,
+    MapPin,
+    Globe,
+    AlertTriangle,
+    Layers,
+    ShieldCheck,
+    Users,
+    UserCheck2,
+    Clock,
+    Filter,
+    X,
+    Trash2,
+    RefreshCw,
+    UserX,
+    Inbox
+} from 'lucide-react';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import PaginationBar from '../../../components/PaginationBar';
@@ -45,7 +64,6 @@ import {
     useRestoreUser,
     useBulkDeleteUsers,
     useBulkRestoreUsers,
-    useUpdateUserRole,
     useToggleUserStatus,
     useAdminGenerateResetLink,
     useRoles
@@ -54,8 +72,13 @@ import {
     useApproveRegistration,
     useRejectRegistration
 } from '../../auth/hooks/api.hooks';
+import { useGetFirms } from '../../firms/hooks/api.hooks';
 import { toast } from 'react-toastify';
 import PasswordResetDeliveryModal from '../../admin/components/PasswordResetDeliveryModal';
+import UserAssignmentsModal from '../../users/components/UserAssignmentsModal';
+import './user-list.css';
+
+const FIRMS_DROPDOWN_PARAMS = { page: 1, pageSize: 100 };
 
 const UserList = () => {
     // Current logged-in user from Redux
@@ -65,6 +88,7 @@ const UserList = () => {
     // Filters
     const [statusFilter, setStatusFilter] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
+    const [firmFilter, setFirmFilter] = useState('');
 
     // Search input with debounce
     const [searchTerm, setSearchTerm] = useState('');
@@ -101,10 +125,11 @@ const UserList = () => {
         search: debouncedSearch,
         status: tabIsTrash ? '' : statusFilter,
         roleId: roleFilter ? Number(roleFilter) : null,
+        firmId: firmFilter ? Number(firmFilter) : null,
         trash: tabIsTrash,
         sortBy: sortConfig.key,
         sortOrder: sortConfig.direction
-    }), [pageState, pageSizeState, debouncedSearch, statusFilter, roleFilter, tabIsTrash, sortConfig]);
+    }), [pageState, pageSizeState, debouncedSearch, statusFilter, roleFilter, firmFilter, tabIsTrash, sortConfig]);
 
     // TanStack Queries
     const {
@@ -153,6 +178,7 @@ const UserList = () => {
     } = useUsersPagination(queryParams);
 
     const { data: roles = [] } = useRoles();
+    const { data: firmsList = [] } = useGetFirms(FIRMS_DROPDOWN_PARAMS);
 
     // List manager for row selection
     const {
@@ -173,14 +199,12 @@ const UserList = () => {
     const { mutate: restoreUserMutate, isPending: isRestoringUser } = useRestoreUser();
     const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteUsers();
     const { mutate: bulkRestoreMutate, isPending: isBulkRestoring } = useBulkRestoreUsers();
-    const { mutate: updateRoleMutate, isPending: isUpdatingRole } = useUpdateUserRole();
     const { mutate: toggleStatusMutate, isPending: isTogglingStatus } = useToggleUserStatus();
     const { mutate: generateResetMutate, isPending: isGeneratingReset } = useAdminGenerateResetLink();
     const { mutate: approveUser, isPending: isApprovingUser } = useApproveRegistration();
     const { mutate: rejectUser, isPending: isRejectingUser } = useRejectRegistration();
 
     // Modals
-    const [roleModal, setRoleModal] = useState({ show: false, user: null, roleId: '' });
     const [approveModal, setApproveModal] = useState({ show: false, user: null, roleId: '' });
     const [resetLinkModal, setResetLinkModal] = useState({
         show: false,
@@ -232,26 +256,12 @@ const UserList = () => {
         toast.info('User directory refreshed');
     };
 
-    // Role assignment
-    const handleOpenRoleModal = (user) => {
-        setRoleModal({
-            show: true,
-            user,
-            roleId: String(user.roleId || '')
-        });
-    };
 
-    const handleConfirmRoleChange = () => {
-        if (!roleModal.user || !roleModal.roleId) return;
-        updateRoleMutate(
-            { id: roleModal.user.id, roleId: Number(roleModal.roleId) },
-            {
-                onSuccess: () => {
-                    setRoleModal({ show: false, user: null, roleId: '' });
-                }
-            }
-        );
-    };
+
+    // Scoped Entity & Branch Assignments Modal
+    const [assignmentsModal, setAssignmentsModal] = useState({ show: false, user: null });
+    const handleOpenAssignmentsModal = (user) => setAssignmentsModal({ show: true, user });
+    const handleCloseAssignmentsModal = () => setAssignmentsModal({ show: false, user: null });
 
     // Approval & Re-Approval
     const handleOpenApproveModal = (user) => {
@@ -445,18 +455,6 @@ const UserList = () => {
         return initial.toUpperCase();
     };
 
-    const getRoleBadge = (slug, name) => {
-        switch (slug) {
-            case 'super-admin':
-                return <Badge bg="danger" className="px-2 py-1">{name || 'Super Admin'}</Badge>;
-            case 'admin':
-                return <Badge bg="primary" className="px-2 py-1">{name || 'Admin'}</Badge>;
-            case 'manager':
-                return <Badge bg="info" className="text-dark px-2 py-1">{name || 'Manager'}</Badge>;
-            default:
-                return <Badge bg="secondary" className="px-2 py-1">{name || 'Employee'}</Badge>;
-        }
-    };
 
     const getApprovalBadge = (status) => {
         switch (status) {
@@ -469,6 +467,80 @@ const UserList = () => {
             default:
                 return <Badge bg="light" className="text-muted border px-2 py-1">{status || 'Unknown'}</Badge>;
         }
+    };
+
+    const renderDataScopeBadge = (rawScope) => {
+        if (!rawScope) return null;
+        const scope = String(rawScope).toUpperCase();
+
+        let label = scope;
+        let style = {
+            backgroundColor: '#f1f5f9',
+            color: '#475569',
+            border: '1px solid #e2e8f0'
+        };
+
+        switch (scope) {
+            case 'GLOBAL':
+            case 'ALL':
+                label = 'Global';
+                style = {
+                    backgroundColor: '#fef2f2',
+                    color: '#b91c1c',
+                    border: '1px solid #fecaca'
+                };
+                break;
+            case 'FIRM':
+                label = 'Firm-Wide';
+                style = {
+                    backgroundColor: '#f5f3ff',
+                    color: '#6d28d9',
+                    border: '1px solid #ddd6fe'
+                };
+                break;
+            case 'BRANCH':
+                label = 'Branch';
+                style = {
+                    backgroundColor: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '1px solid #bae6fd'
+                };
+                break;
+            case 'DESCENDANTS':
+                label = 'Team';
+                style = {
+                    backgroundColor: '#ecfdf5',
+                    color: '#047857',
+                    border: '1px solid #a7f3d0'
+                };
+                break;
+            case 'OWN':
+            case 'SELF':
+                label = 'Own';
+                style = {
+                    backgroundColor: '#f8fafc',
+                    color: '#475569',
+                    border: '1px solid #e2e8f0'
+                };
+                break;
+            default:
+                label = scope;
+                break;
+        }
+
+        return (
+            <span
+                className="badge rounded-pill px-1.5 py-0.5 fw-semibold"
+                style={{
+                    ...style,
+                    fontSize: '0.66rem',
+                    letterSpacing: '0.01em',
+                    lineHeight: 1.2
+                }}
+            >
+                {label}
+            </span>
+        );
     };
 
     const formatDate = (dateStr) => {
@@ -491,48 +563,137 @@ const UserList = () => {
         });
     };
 
+    const timeAgo = (dateStr) => {
+        if (!dateStr) return '';
+        const now = new Date();
+        const d = new Date(dateStr);
+        const diffMs = now - d;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays < 1) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
+    };
+
     const totalRecords = Number(pagination?.total) || users.length || 0;
     const totalPages = Number(pagination?.totalPages) || (totalRecords && pageSizeState ? Math.ceil(totalRecords / pageSizeState) : 1) || 1;
     const activeCount = pagination?.activeCount !== undefined ? Number(pagination.activeCount) : (tabIsTrash ? 0 : users.length);
     const trashCount = pagination?.trashCount !== undefined ? Number(pagination.trashCount) : (tabIsTrash ? users.length : 0);
+    const pendingCount = pagination?.pendingCount !== undefined ? Number(pagination.pendingCount) : 0;
+
+    // Active filter tracking
+    const activeFiltersList = useMemo(() => {
+        const filters = [];
+        if (debouncedSearch) filters.push({ key: 'search', label: `Search: "${debouncedSearch}"`, onClear: clearSearch });
+        if (statusFilter) {
+            const statusLabels = { APPROVED: 'Approved', PENDING: 'Pending', REJECTED: 'Rejected', INACTIVE: 'Deactivated' };
+            filters.push({ key: 'status', label: `Status: ${statusLabels[statusFilter] || statusFilter}`, onClear: () => { setStatusFilter(''); setPageState(1); } });
+        }
+        if (firmFilter) {
+            const firm = firmsList.find(f => String(f.firmId || f.id) === String(firmFilter));
+            filters.push({ key: 'firm', label: `Firm: ${firm?.firmName || firm?.name || firmFilter}`, onClear: () => { setFirmFilter(''); setPageState(1); } });
+        }
+        if (roleFilter) {
+            const role = roles.find(r => String(r.id) === String(roleFilter));
+            filters.push({ key: 'role', label: `Role: ${role?.name || roleFilter}`, onClear: () => { setRoleFilter(''); setPageState(1); } });
+        }
+        return filters;
+    }, [debouncedSearch, statusFilter, firmFilter, roleFilter, firmsList, roles]);
+
+    const hasActiveFilters = activeFiltersList.length > 0;
+
+    const clearAllFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('');
+        setFirmFilter('');
+        setRoleFilter('');
+        setPageState(1);
+        handleDeselectAll();
+    };
 
     return (
         <div className="container-fluid py-4">
-            {/* Page Header (with crisp white background) */}
-            <div className="bg-white p-3 p-md-4 rounded shadow-sm mb-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+            {/* Page Header */}
+            <div className="ul-page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h4 className="mb-1 text-dark font-weight-bold d-flex align-items-center gap-2">
-                        <FaUserShield className="text-primary" size={22} />
-                        User Directory & Management
-                    </h4>
-                    <p className="text-muted mb-0 small">
-                        Administer user accounts, assign authorization roles, manage passwords, and oversee the recycle bin.
+                    <h5 className="ul-page-title d-flex align-items-center gap-2">
+                        <Users size={20} className="text-primary" />
+                        User Directory
+                    </h5>
+                    <p className="ul-page-subtitle">
+                        Manage accounts, roles, permissions, and access across your organization.
                     </p>
                 </div>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
+                <div className="ul-header-actions">
                     <Link
                         to="/dashboard/admin/approvals"
-                        className="btn btn-outline-warning btn-sm d-flex align-items-center gap-1 shadow-none fw-semibold"
+                        className="btn btn-sm ul-header-btn"
+                        style={{ borderColor: '#f59e0b', color: '#b45309', background: '#fffbeb' }}
                     >
-                        <FaUserCheck size={13} />
-                        <span>Pending Approvals</span>
+                        <UserCheck2 size={14} />
+                        <span>Approvals</span>
+                        {pendingCount > 0 && (
+                            <Badge bg="warning" text="dark" pill style={{ fontSize: '0.65rem' }}>{pendingCount}</Badge>
+                        )}
                     </Link>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
+                    <button
+                        type="button"
                         onClick={handleRefresh}
-                        className="d-flex align-items-center gap-1 shadow-none"
+                        className="btn btn-sm ul-header-btn"
+                        style={{ borderColor: '#e2e8f0', color: '#475569', background: '#ffffff' }}
                     >
-                        <FaSyncAlt size={12} className={loadingUsers ? 'fa-spin' : ''} />
+                        <RefreshCw size={13} className={loadingUsers ? 'fa-spin' : ''} />
                         <span>Refresh</span>
-                    </Button>
+                    </button>
+                </div>
+            </div>
+
+            {/* KPI Stat Cards */}
+            <div className="ul-kpi-row">
+                <div className="ul-kpi-chip">
+                    <div className="ul-kpi-icon ul-kpi-icon--total">
+                        <Users size={17} />
+                    </div>
+                    <div>
+                        <div className="ul-kpi-value">{totalRecords || 0}</div>
+                        <div className="ul-kpi-label">Total Users</div>
+                    </div>
+                </div>
+                <div className="ul-kpi-chip">
+                    <div className="ul-kpi-icon ul-kpi-icon--active">
+                        <UserCheck2 size={17} />
+                    </div>
+                    <div>
+                        <div className="ul-kpi-value">{activeCount}</div>
+                        <div className="ul-kpi-label">Active</div>
+                    </div>
+                </div>
+                <div className="ul-kpi-chip">
+                    <div className="ul-kpi-icon ul-kpi-icon--pending">
+                        <Clock size={17} />
+                    </div>
+                    <div>
+                        <div className="ul-kpi-value">{pendingCount}</div>
+                        <div className="ul-kpi-label">Pending</div>
+                    </div>
+                </div>
+                <div className="ul-kpi-chip">
+                    <div className="ul-kpi-icon ul-kpi-icon--trash">
+                        <Trash2 size={17} />
+                    </div>
+                    <div>
+                        <div className="ul-kpi-value">{trashCount}</div>
+                        <div className="ul-kpi-label">Trashed</div>
+                    </div>
                 </div>
             </div>
 
             {/* Filter & Tabs Bar */}
-            <Card className="mb-3 border-0 shadow-sm">
-                <Card.Body className="p-3">
-                    <Row className="g-3 align-items-center">
+            <Card className="ul-filter-card shadow-sm">
+                <Card.Body>
+                    <Row className="g-2 align-items-center">
                         {/* Tab Filter: Active vs Recycle Bin */}
                         <Col xs={12} lg={4} className="d-flex align-items-center">
                             <TrashTabFilter
@@ -548,14 +709,14 @@ const UserList = () => {
                         {/* Search & Select Filters */}
                         <Col xs={12} lg={8}>
                             <div className="d-flex align-items-center gap-2 flex-wrap justify-content-lg-end">
-                                {/* Search Input with Debounce */}
+                                {/* Search Input */}
                                 <div style={{ minWidth: '220px', flex: '1 1 200px' }}>
-                                    <InputGroup size="sm">
+                                    <InputGroup size="sm" className="ul-search-input">
                                         <InputGroup.Text className="bg-white border-end-0">
                                             <FaSearch className="text-muted" size={12} />
                                         </InputGroup.Text>
                                         <Form.Control
-                                            placeholder="Search by name, @username, email..."
+                                            placeholder="Search name, username, email..."
                                             value={searchTerm}
                                             onChange={handleSearchChange}
                                             className="border-start-0 ps-0"
@@ -566,7 +727,7 @@ const UserList = () => {
                                                 className="border-start-0 border"
                                                 onClick={clearSearch}
                                             >
-                                                <FaTimes size={10} />
+                                                <X size={12} />
                                             </Button>
                                         )}
                                     </InputGroup>
@@ -581,15 +742,39 @@ const UserList = () => {
                                             setStatusFilter(e.target.value);
                                             setPageState(1);
                                         }}
+                                        className="ul-filter-select"
                                         style={{ width: 'auto', minWidth: '140px' }}
                                     >
                                         <option value="">All Statuses</option>
-                                        <option value="APPROVED">Approved (Active)</option>
-                                        <option value="PENDING">Pending Approval</option>
+                                        <option value="APPROVED">Approved</option>
+                                        <option value="PENDING">Pending</option>
                                         <option value="REJECTED">Rejected</option>
                                         <option value="INACTIVE">Deactivated</option>
                                     </Form.Select>
                                 )}
+
+                                {/* Firm Filter */}
+                                <Form.Select
+                                    size="sm"
+                                    value={firmFilter}
+                                    onChange={(e) => {
+                                        setFirmFilter(e.target.value);
+                                        setPageState(1);
+                                    }}
+                                    className="ul-filter-select"
+                                    style={{ width: 'auto', minWidth: '150px' }}
+                                >
+                                    <option value="">All Firms</option>
+                                    {firmsList.map((f) => {
+                                        const fId = f.firmId || f.id;
+                                        const fName = f.firmName || f.name;
+                                        return (
+                                            <option key={fId} value={fId}>
+                                                {fName}
+                                            </option>
+                                        );
+                                    })}
+                                </Form.Select>
 
                                 {/* Role Filter */}
                                 <Form.Select
@@ -599,7 +784,8 @@ const UserList = () => {
                                         setRoleFilter(e.target.value);
                                         setPageState(1);
                                     }}
-                                    style={{ width: 'auto', minWidth: '140px' }}
+                                    className="ul-filter-select"
+                                    style={{ width: 'auto', minWidth: '130px' }}
                                 >
                                     <option value="">All Roles</option>
                                     {roles.map((r) => (
@@ -611,6 +797,25 @@ const UserList = () => {
                             </div>
                         </Col>
                     </Row>
+
+                    {/* Active Filter Chips */}
+                    {hasActiveFilters && (
+                        <div className="ul-active-filters">
+                            <span className="ul-active-filters__label">
+                                <Filter size={10} className="me-1" />
+                                Filters:
+                            </span>
+                            {activeFiltersList.map((f) => (
+                                <span key={f.key} className="ul-filter-chip" onClick={f.onClear} title="Click to remove">
+                                    {f.label}
+                                    <span className="ul-filter-chip__close">✕</span>
+                                </span>
+                            ))}
+                            <button type="button" className="ul-clear-all-btn" onClick={clearAllFilters}>
+                                Clear All
+                            </button>
+                        </div>
+                    )}
 
                     {/* Bulk Action Bar */}
                     <BulkActionBar
@@ -626,29 +831,15 @@ const UserList = () => {
             </Card>
 
             {/* Main Table Card */}
-            <Card className="border-0 shadow-sm">
+            <Card className="ul-table-card shadow-sm">
                 <Card.Body className="p-0 position-relative">
-                    <div
-                        className="no-scrollbar"
-                        style={{
-                            overflowX: 'auto',
-                            overflowY: 'visible',
-                            scrollbarWidth: 'none',
-                            msOverflowStyle: 'none',
-                            WebkitOverflowScrolling: 'touch'
-                        }}
-                    >
-                        <Table hover className="table-sortable align-middle mb-0 w-100" style={{ minWidth: '1050px', tableLayout: 'auto' }}>
-                            {/* Table Header with pristine white background */}
-                            <thead
-                                className="bg-white text-secondary border-bottom"
-                                style={{
-                                    backgroundColor: '#ffffff',
-                                    fontSize: '0.82rem'
-                                }}
-                            >
+                    <div className="ul-table-scroll">
+
+                        <Table hover className="ul-table align-middle w-100">
+                            {/* Table Header */}
+                            <thead>
                                 <tr>
-                                    <th style={{ width: '40px' }} className="text-center px-2 bg-white">
+                                    <th style={{ width: '40px' }} className="text-center px-2">
                                         <Form.Check
                                             type="checkbox"
                                             checked={isAllSelected}
@@ -657,54 +848,68 @@ const UserList = () => {
                                             disabled={loadingUsers || sortedUsers.length === 0}
                                         />
                                     </th>
-                                    <th style={{ width: '55px', cursor: 'pointer' }} className="text-center px-2 bg-white user-select-none" onClick={() => handleSort('id')}>
-                                        #ID {renderSortIcon('id')}
+                                    <th style={{ width: '50px' }} className="ul-th-sortable text-center px-2" onClick={() => handleSort('id')}>
+                                        ID {renderSortIcon('id')}
                                     </th>
-                                    <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('userName')}>
+                                    <th className="ul-th-sortable" onClick={() => handleSort('userName')}>
                                         User {renderSortIcon('userName')}
                                     </th>
-                                    <th style={{ cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('email')}>
+                                    <th className="ul-th-sortable" onClick={() => handleSort('email')}>
                                         Email {renderSortIcon('email')}
                                     </th>
-                                    <th style={{ width: '115px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('role')}>
-                                        Role {renderSortIcon('role')}
+                                    <th style={{ minWidth: '220px' }}>
+                                        Access & Roles
                                     </th>
-                                    <th style={{ width: '105px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('approvalStatus')}>
+                                    <th style={{ width: '100px' }} className="ul-th-sortable" onClick={() => handleSort('approvalStatus')}>
                                         Approval {renderSortIcon('approvalStatus')}
                                     </th>
                                     {!tabIsTrash ? (
-                                        <th style={{ width: '90px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('isActive')}>
-                                            Active {renderSortIcon('isActive')}
+                                        <th style={{ width: '85px' }} className="ul-th-sortable" onClick={() => handleSort('isActive')}>
+                                            Status {renderSortIcon('isActive')}
                                         </th>
                                     ) : (
-                                        <th style={{ width: '140px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('deletedAt')}>
-                                            Deleted Detail {renderSortIcon('deletedAt')}
+                                        <th style={{ width: '140px' }} className="ul-th-sortable" onClick={() => handleSort('deletedAt')}>
+                                            Deleted {renderSortIcon('deletedAt')}
                                         </th>
                                     )}
-                                    <th style={{ width: '95px', cursor: 'pointer' }} className="bg-white user-select-none" onClick={() => handleSort('createdAt')}>
+                                    <th style={{ width: '95px' }} className="ul-th-sortable" onClick={() => handleSort('createdAt')}>
                                         Joined {renderSortIcon('createdAt')}
                                     </th>
-                                    <th className="text-end px-3 bg-white" style={{ width: '160px' }}>Actions</th>
+                                    <th className="text-end px-3" style={{ width: '150px' }}>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody style={{ fontSize: '0.88rem' }}>
+                            <tbody>
                                 {loadingUsers ? (
                                     <tr>
-                                        <td colSpan="9" className="text-center py-5">
-                                            <Spinner animation="border" variant="primary" size="sm" className="me-2" />
-                                            <span className="text-muted">Loading users directory...</span>
+                                        <td colSpan="9">
+                                            <div className="ul-loading-state">
+                                                <Spinner animation="border" variant="primary" size="sm" className="me-2" />
+                                                <span className="ul-loading-text">Loading user directory...</span>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : sortedUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="9" className="text-center py-5">
-                                            <div className="text-muted">
-                                                <FaUserTimes size={36} className="text-secondary opacity-50 mb-2" />
-                                                <p className="mb-0 fw-medium">
+                                        <td colSpan="9">
+                                            <div className="ul-empty-state">
+                                                <div className="ul-empty-icon">
+                                                    {tabIsTrash ? <Inbox size={26} /> : <UserX size={26} />}
+                                                </div>
+                                                <div className="ul-empty-title">
+                                                    {tabIsTrash ? 'Recycle Bin is empty' : 'No users found'}
+                                                </div>
+                                                <p className="ul-empty-text">
                                                     {tabIsTrash
-                                                        ? 'Recycle Bin is empty. No deleted users found.'
-                                                        : 'No users found matching the selected filters.'}
+                                                        ? 'No deleted users in the recycle bin. Deleted users will appear here.'
+                                                        : hasActiveFilters
+                                                            ? 'No users match the current filters. Try adjusting or clearing filters.'
+                                                            : 'No users have been added yet. Users will appear here once registered.'}
                                                 </p>
+                                                {hasActiveFilters && !tabIsTrash && (
+                                                    <button type="button" className="btn btn-sm btn-outline-primary mt-2" onClick={clearAllFilters} style={{ fontSize: '0.78rem', borderRadius: '8px' }}>
+                                                        Clear All Filters
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -714,7 +919,7 @@ const UserList = () => {
                                         const isChecked = selectedIds.includes(u.id);
 
                                         return (
-                                            <tr key={u.id} className={isChecked ? 'table-active' : ''}>
+                                            <tr key={u.id} className={isChecked ? 'ul-row-selected' : ''}>
                                                 {/* Select Checkbox */}
                                                 <td className="text-center px-2" style={{ width: '40px' }}>
                                                     <Form.Check
@@ -726,36 +931,25 @@ const UserList = () => {
                                                 </td>
 
                                                 {/* User ID */}
-                                                <td className="text-center px-2 text-muted fw-semibold" style={{ width: '55px', fontSize: '0.82rem' }}>
-                                                    #{u.id}
+                                                <td className="text-center px-2" style={{ width: '50px', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+                                                    {u.id}
                                                 </td>
 
                                                 {/* User Info */}
                                                 <td>
                                                     <div className="d-flex align-items-center gap-2">
-                                                        <div
-                                                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0"
-                                                            style={{
-                                                                width: '36px',
-                                                                height: '36px',
-                                                                backgroundColor: isSelf ? '#0d6efd' : '#6c757d',
-                                                                fontSize: '0.85rem'
-                                                            }}
-                                                        >
+                                                        <div className={`ul-avatar ${isSelf ? 'ul-avatar--self' : 'ul-avatar--other'}`}>
                                                             {getInitial(u)}
+                                                            <span className={`ul-avatar__status-dot ${u.isActive ? 'ul-avatar__status-dot--active' : 'ul-avatar__status-dot--inactive'}`} />
                                                         </div>
                                                         <div style={{ minWidth: 0 }}>
-                                                            <div className="d-flex align-items-center gap-1">
-                                                                <span className="fw-semibold text-dark text-truncate d-inline-block" style={{ maxWidth: '170px' }} title={getFullName(u)}>
-                                                                    {getFullName(u)}
-                                                                </span>
+                                                            <div className="ul-user-name text-truncate" style={{ maxWidth: '170px' }}>
+                                                                {getFullName(u)}
                                                                 {isSelf && (
-                                                                    <Badge bg="primary" className="ms-1 flex-shrink-0" style={{ fontSize: '0.65rem' }}>
-                                                                        You
-                                                                    </Badge>
+                                                                    <span className="badge rounded-pill ms-1.5" style={{ fontSize: '0.58rem', background: '#eef2ff', color: '#3a57e8', fontWeight: 600, verticalAlign: 'middle' }}>You</span>
                                                                 )}
                                                             </div>
-                                                            <div className="text-muted text-truncate" style={{ fontSize: '0.75rem', maxWidth: '170px' }}>
+                                                            <div className="ul-user-handle text-truncate" style={{ maxWidth: '170px' }}>
                                                                 @{u.userName || '-'}
                                                             </div>
                                                         </div>
@@ -764,12 +958,109 @@ const UserList = () => {
 
                                                 {/* Email */}
                                                 <td>
-                                                    <span className="text-dark text-break" style={{ fontSize: '0.85rem' }}>{u.email}</span>
+                                                    <span className="ul-email">{u.email}</span>
                                                 </td>
 
-                                                {/* Role */}
+
+                                                {/* Access & Roles */}
                                                 <td>
-                                                    {getRoleBadge(u.roleSlug, u.roleName)}
+                                                    {u.isSuperAdmin || (u.roleSlug || '').toLowerCase() === 'super-admin' ? (
+                                                        <div className="ul-access-badge ul-access-badge--super">
+                                                            <ShieldCheck size={13} className="flex-shrink-0" />
+                                                            <span>Super Admin</span>
+                                                            <span className="ul-access-badge__sub">(All Firms)</span>
+                                                        </div>
+                                                    ) : !u.assignments || u.assignments.length === 0 ? (
+                                                        <div className="ul-access-badge ul-access-badge--warn">
+                                                            <AlertTriangle size={12} className="flex-shrink-0" />
+                                                            <span>Unassigned</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="ul-access-cell">
+                                                            {/* Primary: Firm name */}
+                                                            <div className="ul-access-firm-row">
+                                                                <div className="ul-access-firm" title={u.assignments[0].firmName}>
+                                                                    <Building2 size={11} className="flex-shrink-0" />
+                                                                    <span className="text-truncate">{u.assignments[0].firmName}</span>
+                                                                </div>
+                                                                {u.assignments.length > 1 && (
+                                                                    <OverlayTrigger
+                                                                        trigger="click"
+                                                                        rootClose
+                                                                        placement="bottom"
+                                                                        overlay={
+                                                                            <Popover id={`firm-popover-${u.id}`} className="ul-access-popover shadow-lg border-0 rounded-3 overflow-hidden">
+                                                                                <Popover.Header as="div" className="ul-access-popover__header">
+                                                                                    <div className="d-flex align-items-center gap-2">
+                                                                                        <div className="ul-access-popover__icon">
+                                                                                            <Layers size={14} />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <div className="ul-access-popover__title">Role & Access Scopes</div>
+                                                                                            <div className="ul-access-popover__sub">{u.assignments.length} firms · {getFullName(u)}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </Popover.Header>
+                                                                                <Popover.Body className="ul-access-popover__body">
+                                                                                    <div className="d-flex flex-column gap-2">
+                                                                                        {u.assignments.map((a, idx) => {
+                                                                                            const scope = a.dataScope || a.data_scope;
+                                                                                            return (
+                                                                                                <div key={a.id || idx} className={`ul-access-popover__card ${a.isDefault ? 'ul-access-popover__card--default' : ''}`}>
+                                                                                                    <div className="d-flex align-items-center justify-content-between mb-1">
+                                                                                                        <div className="d-flex align-items-center gap-1.5 text-truncate me-2">
+                                                                                                            <Building2 size={12} className={a.isDefault ? 'text-primary' : 'text-secondary'} />
+                                                                                                            <span className="fw-semibold text-dark text-truncate" style={{ fontSize: '0.78rem' }} title={a.firmName}>
+                                                                                                                {a.firmName}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        {a.isDefault && (
+                                                                                                            <span className="ul-access-default-badge">Default ★</span>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                    <div className="ul-access-popover__meta">
+                                                                                                        <MapPin size={10} className="flex-shrink-0 opacity-50" />
+                                                                                                        <span>{a.branchName || 'All Branches'}</span>
+                                                                                                        <span className="ul-access-dot" />
+                                                                                                        <span className="fw-semibold text-dark">{a.roleName}</span>
+                                                                                                        {scope && (
+                                                                                                            <>
+                                                                                                                <span className="ul-access-dot" />
+                                                                                                                {renderDataScopeBadge(scope)}
+                                                                                                            </>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </Popover.Body>
+                                                                            </Popover>
+                                                                        }
+                                                                    >
+                                                                        <button type="button" className="ul-access-more-btn" title={`View all ${u.assignments.length} assignments`}>
+                                                                            +{u.assignments.length - 1}
+                                                                        </button>
+                                                                    </OverlayTrigger>
+                                                                )}
+                                                            </div>
+                                                            {/* Secondary: Role · Scope */}
+                                                            <div className="ul-access-meta">
+                                                                <span className="ul-access-role">{u.assignments[0].roleName}</span>
+                                                                {(u.assignments[0].dataScope || u.assignments[0].data_scope) && (
+                                                                    <>
+                                                                        <span className="ul-access-dot" />
+                                                                        {renderDataScopeBadge(u.assignments[0].dataScope || u.assignments[0].data_scope)}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                            {/* Tertiary: Branch (subtle) */}
+                                                            <div className="ul-access-branch">
+                                                                <MapPin size={9} className="flex-shrink-0" />
+                                                                <span>{u.assignments[0].branchName || 'All Branches'}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 {/* Approval Status */}
@@ -787,8 +1078,8 @@ const UserList = () => {
                                                                     {isSelf
                                                                         ? 'You cannot deactivate your own account'
                                                                         : u.isActive
-                                                                        ? 'Click to deactivate account'
-                                                                        : 'Click to activate account'}
+                                                                            ? 'Click to deactivate account'
+                                                                            : 'Click to activate account'}
                                                                 </Tooltip>
                                                             }
                                                         >
@@ -800,10 +1091,7 @@ const UserList = () => {
                                                                     onChange={() => handleToggleStatus(u)}
                                                                     disabled={isSelf || isTogglingStatus}
                                                                     label={
-                                                                        <span
-                                                                            style={{ fontSize: '0.78rem' }}
-                                                                            className={u.isActive ? 'text-success fw-medium' : 'text-muted'}
-                                                                        >
+                                                                        <span className={`ul-active-label ${u.isActive ? 'ul-active-label--on' : 'ul-active-label--off'}`}>
                                                                             {u.isActive ? 'Active' : 'Inactive'}
                                                                         </span>
                                                                     }
@@ -813,11 +1101,11 @@ const UserList = () => {
                                                     </td>
                                                 ) : (
                                                     <td>
-                                                        <div className="text-danger fw-medium" style={{ fontSize: '0.78rem' }}>
-                                                            Deleted {formatDateTime(u.deletedAt)}
+                                                        <div className="ul-deleted-info">
+                                                            {formatDateTime(u.deletedAt)}
                                                         </div>
                                                         {u.deletedByName && (
-                                                            <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                                            <div className="ul-deleted-by">
                                                                 by {u.deletedByName}
                                                             </div>
                                                         )}
@@ -826,15 +1114,20 @@ const UserList = () => {
 
                                                 {/* Joined Date */}
                                                 <td>
-                                                    <span className="text-muted text-nowrap" style={{ fontSize: '0.82rem' }}>
-                                                        {formatDate(u.createdAt)}
-                                                    </span>
+                                                    <OverlayTrigger
+                                                        placement="top"
+                                                        overlay={<Tooltip>{timeAgo(u.createdAt)}</Tooltip>}
+                                                    >
+                                                        <span className="ul-date">
+                                                            {formatDate(u.createdAt)}
+                                                        </span>
+                                                    </OverlayTrigger>
                                                 </td>
 
-                                                {/* Actions Column (Guaranteed Single-Line flex-nowrap) */}
-                                                <td className="text-end px-3" style={{ width: '160px', whiteSpace: 'nowrap' }}>
+                                                {/* Actions */}
+                                                <td className="text-end px-3" style={{ width: '150px' }}>
                                                     {!tabIsTrash ? (
-                                                        <div className="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap" style={{ whiteSpace: 'nowrap' }}>
+                                                        <div className="ul-actions">
                                                             {/* Re-Approve button if REJECTED */}
                                                             {u.approvalStatus === 'REJECTED' && (
                                                                 <OverlayTrigger
@@ -898,14 +1191,10 @@ const UserList = () => {
                                                                 </OverlayTrigger>
                                                             )}
 
-                                                            {/* Change Role */}
+                                                            {/* Manage User Access & Roles */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={
-                                                                    <Tooltip>
-                                                                        {isSelf ? 'Cannot change own role' : 'Change User Role'}
-                                                                    </Tooltip>
-                                                                }
+                                                                overlay={<Tooltip>Manage User Access & Roles</Tooltip>}
                                                             >
                                                                 <span>
                                                                     <Button
@@ -913,8 +1202,8 @@ const UserList = () => {
                                                                         size="sm"
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
-                                                                        onClick={() => handleOpenRoleModal(u)}
-                                                                        disabled={isSelf}
+                                                                        onClick={() => handleOpenAssignmentsModal(u)}
+                                                                        title="Manage User Access & Roles"
                                                                     >
                                                                         <FaUserShield size={13} />
                                                                     </Button>
@@ -964,7 +1253,7 @@ const UserList = () => {
                                                             </OverlayTrigger>
                                                         </div>
                                                     ) : (
-                                                        <div className="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap" style={{ whiteSpace: 'nowrap' }}>
+                                                        <div className="ul-actions">
                                                             {/* Restore */}
                                                             <OverlayTrigger
                                                                 placement="top"
@@ -1013,18 +1302,19 @@ const UserList = () => {
                         </Table>
                     </div>
 
-                    {/* Table Footer with PaginationBar and Page Size Selector */}
+                    {/* Pagination Footer */}
                     {(totalRecords > 0 || users.length > 0) && (
-                        <div className="d-flex align-items-center justify-content-between p-3 border-top flex-wrap gap-2 bg-white">
-                            <div className="d-flex align-items-center gap-2">
-                                <span className="text-muted" style={{ fontSize: '0.84rem' }}>
-                                    Showing {pagination.pageStart || (totalRecords > 0 ? (pageState - 1) * pageSizeState + 1 : 0)} - {pagination.pageEnd || Math.min(pageState * pageSizeState, totalRecords)} of {totalRecords} users
+                        <div className="ul-pagination-footer">
+                            <div className="ul-pagination-info">
+                                <span className="ul-pagination-text">
+                                    Showing <strong>{pagination.pageStart || (totalRecords > 0 ? (pageState - 1) * pageSizeState + 1 : 0)}</strong> – <strong>{pagination.pageEnd || Math.min(pageState * pageSizeState, totalRecords)}</strong> of <strong>{totalRecords}</strong> users
                                 </span>
                                 <Form.Select
                                     size="sm"
                                     value={pageSizeState}
                                     onChange={(e) => handlePageSizeChange(e.target.value)}
-                                    style={{ width: 'auto', fontSize: '0.82rem' }}
+                                    className="ul-page-size-select"
+                                    style={{ width: 'auto' }}
                                 >
                                     <option value={10}>10 / page</option>
                                     <option value={25}>25 / page</option>
@@ -1045,63 +1335,7 @@ const UserList = () => {
                 </Card.Body>
             </Card>
 
-            {/* Modal: Change User Role */}
-            <Modal
-                show={roleModal.show}
-                onHide={() => setRoleModal({ show: false, user: null, roleId: '' })}
-                centered
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title className="h6 d-flex align-items-center gap-2">
-                        <FaUserShield className="text-primary" />
-                        Change User Role
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {roleModal.user && (
-                        <div>
-                            <p className="text-muted mb-3" style={{ fontSize: '0.88rem' }}>
-                                Select a new authorization role for{' '}
-                                <strong>{getFullName(roleModal.user)}</strong> (<code>@{roleModal.user.userName}</code>).
-                            </p>
-                            <Form.Group className="mb-3">
-                                <Form.Label className="fw-semibold" style={{ fontSize: '0.84rem' }}>
-                                    Role Assignment
-                                </Form.Label>
-                                <Form.Select
-                                    value={roleModal.roleId}
-                                    onChange={(e) =>
-                                        setRoleModal((prev) => ({ ...prev, roleId: e.target.value }))
-                                    }
-                                >
-                                    {roles.map((r) => (
-                                        <option key={r.id} value={r.id}>
-                                            {r.name} {r.slug === 'super-admin' ? '(Super Admin)' : ''}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setRoleModal({ show: false, user: null, roleId: '' })}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleConfirmRoleChange}
-                        disabled={isUpdatingRole}
-                    >
-                        {isUpdatingRole ? <Spinner animation="border" size="sm" /> : 'Save Changes'}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+
 
             {/* Modal: Approve / Re-Approve User */}
             <Modal
@@ -1213,6 +1447,15 @@ const UserList = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Modal: Multi-Firm and Branch Role Assignments */}
+            {assignmentsModal.show && (
+                <UserAssignmentsModal
+                    show={assignmentsModal.show}
+                    user={assignmentsModal.user}
+                    onClose={handleCloseAssignmentsModal}
+                />
+            )}
         </div>
     );
 };

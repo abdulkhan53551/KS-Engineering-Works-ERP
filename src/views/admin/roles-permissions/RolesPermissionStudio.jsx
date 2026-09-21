@@ -64,6 +64,20 @@ const RolesPermissionStudio = () => {
         setNewRoleName,
         newRoleDesc,
         setNewRoleDesc,
+        newRoleParentId,
+        setNewRoleParentId,
+        newRoleIsIndependent,
+        setNewRoleIsIndependent,
+
+        showRoleSettingsModal,
+        setShowRoleSettingsModal,
+        editRoleParentId,
+        setEditRoleParentId,
+        editRoleIsIndependent,
+        setEditRoleIsIndependent,
+        handleUpdateRoleHierarchy,
+        isUpdatingRoleDetails,
+
         showConfirmSaveModal,
         setShowConfirmSaveModal,
         roleToDelete,
@@ -77,7 +91,19 @@ const RolesPermissionStudio = () => {
         handleDiscardChanges,
         isSaving,
         isCreatingRole,
-        isDeletingRole
+        isDeletingRole,
+
+        // Scoped firm state
+        selectedFirmId,
+        setSelectedFirmId,
+        userFirms,
+        activeFirm,
+        isAllFirmsMode,
+        availableFirms,
+        selectedTargetFirmIds,
+        toggleTargetFirmId,
+        selectAllTargetFirms,
+        deselectAllTargetFirms
     } = useRolesPermissionStudio();
 
     if (isLoading) {
@@ -113,19 +139,37 @@ const RolesPermissionStudio = () => {
                         Configure system roles, access rules, and granular module permissions in real time.
                     </p>
                 </div>
-                <Button 
-                    variant="primary"
-                    id="btn-create-custom-role"
-                    className="btn-create-role d-flex align-items-center gap-2"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowCreateModal(true);
-                    }}
-                >
-                    <span style={{ fontSize: '0.85rem' }}>➕</span>
-                    <span>Create Custom Role</span>
-                </Button>
+                <div className="d-flex align-items-center gap-3">
+                    {isAllFirmsMode ? (
+                        <div className="d-flex align-items-center gap-2 bg-primary-subtle px-3 py-1.5 rounded-pill border border-primary-subtle shadow-sm">
+                            <span style={{ fontSize: '0.85rem' }}>🌐</span>
+                            <span className="fw-semibold text-primary" style={{ fontSize: '0.82rem' }}>
+                                Group Master Mode <span className="text-muted fw-normal">(✦ All Firms Active)</span>
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="d-flex align-items-center gap-2 bg-light px-3 py-1.5 rounded-pill border shadow-sm">
+                            <span style={{ fontSize: '0.85rem' }}>🏢</span>
+                            <span className="text-muted fw-semibold" style={{ fontSize: '0.82rem' }}>
+                                Firm: <strong className="text-dark">{activeFirm?.firmName || 'Active Firm'}</strong>
+                            </span>
+                        </div>
+                    )}
+
+                    <Button 
+                        variant="primary"
+                        id="btn-create-custom-role"
+                        className="btn-create-role d-flex align-items-center gap-2"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowCreateModal(true);
+                        }}
+                    >
+                        <span style={{ fontSize: '0.85rem' }}>➕</span>
+                        <span>Create Custom Role</span>
+                    </Button>
+                </div>
             </div>
 
             {/* Main Master-Detail Layout */}
@@ -249,6 +293,36 @@ const RolesPermissionStudio = () => {
                                                 </Badge>
                                             )}
                                         </div>
+
+                                        {/* Dynamic Hierarchy Badges */}
+                                        <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                            {selectedRole.parentRoleName ? (
+                                                <Badge bg="soft-info" className="text-info border py-1 px-2" style={{ fontSize: '0.72rem' }} title="Reports to this superior in the hierarchy tree">
+                                                    ▲ Reports to: <strong>{selectedRole.parentRoleName}</strong>
+                                                </Badge>
+                                            ) : (
+                                                <Badge bg="soft-secondary" className="text-secondary border py-1 px-2" style={{ fontSize: '0.72rem' }}>
+                                                    Root Level Hierarchy
+                                                </Badge>
+                                            )}
+                                            {selectedRole.isIndependent && (
+                                                <Badge bg="soft-warning" className="text-dark border py-1 px-2" style={{ fontSize: '0.72rem' }} title="Independent Compliance Role">
+                                                    🔒 Independent Compliance
+                                                </Badge>
+                                            )}
+                                            {!isSuperAdmin && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-xs btn-outline-secondary py-0.5 px-2 border d-inline-flex align-items-center gap-1"
+                                                    style={{ fontSize: '0.72rem', height: '22px' }}
+                                                    onClick={() => setShowRoleSettingsModal(true)}
+                                                    title="Configure Hierarchy"
+                                                >
+                                                    ⚙️ Edit Hierarchy
+                                                </button>
+                                            )}
+                                        </div>
+
                                         <p className="role-hero-desc mb-2">
                                             {selectedRole.description || 'Configuring access rights and permissions for this role.'}
                                         </p>
@@ -585,18 +659,110 @@ const RolesPermissionStudio = () => {
                 </div>
             )}
 
-            {/* Blast Radius Confirmation Modal */}
+            {/* Blast Radius & Target Firms Confirmation Modal */}
             <Modal show={showConfirmSaveModal} onHide={() => setShowConfirmSaveModal(false)} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title className="fw-bold" style={{ fontSize: '1rem' }}>Confirm Permission Changes</Modal.Title>
+                    <Modal.Title className="fw-bold" style={{ fontSize: '1rem' }}>
+                        {isAllFirmsMode ? '🌐 Group Broadcast: Save Role Permissions' : 'Confirm Permission Changes'}
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body style={{ fontSize: '0.85rem' }}>
                     <p className="mb-2">
                         Are you sure you want to update permissions for <strong>{selectedRole?.name}</strong>?
                     </p>
-                    <div className="p-2 mb-3 bg-light rounded border small">
-                        <strong>Change Summary:</strong> +{permissionDiff.added} granted, -{permissionDiff.removed} revoked
+                    <div className="p-2 mb-3 bg-light rounded border small d-flex align-items-center justify-content-between">
+                        <span><strong>Change Summary:</strong> +{permissionDiff.added} granted, -{permissionDiff.removed} revoked</span>
+                        <Badge bg={permissionDiff.totalChanges > 0 ? 'primary' : 'secondary'}>
+                            {permissionDiff.totalChanges} modifications
+                        </Badge>
                     </div>
+
+                    {isAllFirmsMode ? (
+                        <div className="mb-3">
+                            <div className="p-2.5 mb-2 rounded border" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                    <span style={{ fontSize: '0.9rem' }}>🌐</span>
+                                    <strong className="text-success" style={{ fontSize: '0.82rem' }}>
+                                        Group Master Mode (✦ All Firms)
+                                    </strong>
+                                </div>
+                                <p className="text-muted mb-0" style={{ fontSize: '0.78rem' }}>
+                                    Select which firm(s) should receive this permission profile:
+                                </p>
+                            </div>
+
+                            <div className="border rounded p-2 bg-white">
+                                <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                                    <span className="fw-semibold text-dark" style={{ fontSize: '0.8rem' }}>
+                                        Target Firms ({selectedTargetFirmIds.size} of {availableFirms.length} selected)
+                                    </span>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 text-decoration-none"
+                                            style={{ fontSize: '0.75rem' }}
+                                            onClick={selectAllTargetFirms}
+                                        >
+                                            Select All
+                                        </button>
+                                        <span className="text-muted small">|</span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 text-decoration-none text-muted"
+                                            style={{ fontSize: '0.75rem' }}
+                                            onClick={deselectAllTargetFirms}
+                                        >
+                                            Deselect All
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="d-flex flex-column gap-1.5" style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                                    {availableFirms.map((f) => {
+                                        const isChecked = selectedTargetFirmIds.has(f.id);
+                                        return (
+                                            <div 
+                                                key={f.id} 
+                                                className={`d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded border transition-all ${isChecked ? 'border-primary bg-primary-subtle' : 'border-light bg-light'}`}
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => toggleTargetFirmId(f.id)}
+                                            >
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <Form.Check 
+                                                        type="checkbox"
+                                                        id={`target-firm-${f.id}`}
+                                                        checked={isChecked}
+                                                        onChange={() => {}} // Click handled by wrapper div
+                                                        style={{ cursor: 'pointer' }}
+                                                    />
+                                                    <span className="fw-medium text-dark" style={{ fontSize: '0.8rem' }}>
+                                                        {f.firmName || f.name}
+                                                    </span>
+                                                </div>
+                                                <Badge bg="secondary" style={{ fontSize: '0.68rem' }}>
+                                                    Firm #{f.id}
+                                                </Badge>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {selectedTargetFirmIds.size === 0 && (
+                                    <Alert variant="warning" className="mt-2 mb-0 py-1 px-2" style={{ fontSize: '0.78rem' }}>
+                                        ⚠️ Please select at least one firm to apply permissions.
+                                    </Alert>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-2 mb-3 bg-light rounded border small d-flex align-items-center justify-content-between">
+                            <span>
+                                <strong>Target Firm:</strong> {activeFirm?.firmName || 'Selected Firm'}
+                            </span>
+                            <Badge bg="secondary">Firm #{selectedFirmId}</Badge>
+                        </div>
+                    )}
+
                     {selectedRole?.userCount > 0 ? (
                         <Alert variant="info" className="mb-0 py-2" style={{ fontSize: '0.8rem' }}>
                             <strong>⚠️ Blast Radius Notice:</strong> This change will immediately affect <strong>{selectedRole.userCount} active employee(s)</strong> currently assigned to this role.
@@ -611,8 +777,22 @@ const RolesPermissionStudio = () => {
                     <Button variant="secondary" size="sm" onClick={() => setShowConfirmSaveModal(false)}>
                         Cancel
                     </Button>
-                    <Button variant="primary" size="sm" onClick={handleConfirmSave} disabled={isSaving}>
-                        Confirm & Save
+                    <Button 
+                        variant="primary" 
+                        size="sm" 
+                        onClick={handleConfirmSave} 
+                        disabled={isSaving || (isAllFirmsMode && selectedTargetFirmIds.size === 0)}
+                    >
+                        {isSaving ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-1" />
+                                <span>Saving...</span>
+                            </>
+                        ) : isAllFirmsMode ? (
+                            `Apply to ${selectedTargetFirmIds.size} Firm(s)`
+                        ) : (
+                            'Confirm & Save'
+                        )}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -640,11 +820,39 @@ const RolesPermissionStudio = () => {
                             <Form.Label className="fw-semibold" style={{ fontSize: '0.8rem' }}>Description</Form.Label>
                             <Form.Control
                                 as="textarea"
-                                rows={3}
-                                placeholder="Describe the responsibilities and scope of this role..."
+                                rows={2}
+                                placeholder="Describe the responsibilities of this role..."
                                 value={newRoleDesc}
                                 onChange={(e) => setNewRoleDesc(e.target.value)}
                                 style={{ fontSize: '0.82rem' }}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold" style={{ fontSize: '0.8rem' }}>Superior / Parent Role</Form.Label>
+                            <Form.Select
+                                value={newRoleParentId}
+                                onChange={(e) => setNewRoleParentId(e.target.value)}
+                                style={{ fontSize: '0.82rem' }}
+                            >
+                                <option value="">-- No Direct Parent (Root Level) --</option>
+                                {roles.map(r => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.name} ({r.slug})
+                                    </option>
+                                ))}
+                            </Form.Select>
+                            <Form.Text className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                Superiors can oversee, modify, and approve records created by this subordinate role.
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group className="mb-1">
+                            <Form.Check
+                                type="checkbox"
+                                id="create-role-independent"
+                                label="Independent Compliance / Audit Role (Records are tamper-proof)"
+                                checked={newRoleIsIndependent}
+                                onChange={(e) => setNewRoleIsIndependent(e.target.checked)}
+                                style={{ fontSize: '0.8rem' }}
                             />
                         </Form.Group>
                     </Modal.Body>
@@ -654,6 +862,57 @@ const RolesPermissionStudio = () => {
                         </Button>
                         <Button variant="primary" size="sm" type="submit" disabled={isCreatingRole}>
                             {isCreatingRole ? 'Creating...' : 'Create Role'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
+            {/* Edit Role Hierarchy Modal */}
+            <Modal show={showRoleSettingsModal} onHide={() => setShowRoleSettingsModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="fw-bold" style={{ fontSize: '1rem' }}>
+                        Configure Hierarchy: {selectedRole?.name}
+                    </Modal.Title>
+                </Modal.Header>
+                <Form onSubmit={handleUpdateRoleHierarchy}>
+                    <Modal.Body style={{ fontSize: '0.85rem' }}>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-semibold" style={{ fontSize: '0.8rem' }}>Superior / Parent Role in Ladder</Form.Label>
+                            <Form.Select
+                                value={editRoleParentId}
+                                onChange={(e) => setEditRoleParentId(e.target.value)}
+                                style={{ fontSize: '0.82rem' }}
+                                disabled={selectedRole?.slug === 'super-admin'}
+                            >
+                                <option value="">-- No Direct Parent (Root Level) --</option>
+                                {roles.filter(r => r.id !== selectedRole?.id).map(r => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.name} ({r.slug})
+                                    </option>
+                                ))}
+                            </Form.Select>
+                            <Form.Text className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                Defines who oversees and approves this role's actions in the company ladder.
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group className="mb-1">
+                            <Form.Check
+                                type="checkbox"
+                                id="edit-role-independent"
+                                label="Independent Compliance / Audit Role (Findings cannot be modified by superiors)"
+                                checked={editRoleIsIndependent}
+                                onChange={(e) => setEditRoleIsIndependent(e.target.checked)}
+                                style={{ fontSize: '0.8rem' }}
+                                disabled={selectedRole?.slug === 'super-admin'}
+                            />
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" size="sm" onClick={() => setShowRoleSettingsModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" size="sm" type="submit" disabled={isUpdatingRoleDetails}>
+                            {isUpdatingRoleDetails ? 'Saving...' : 'Update Hierarchy'}
                         </Button>
                     </Modal.Footer>
                 </Form>

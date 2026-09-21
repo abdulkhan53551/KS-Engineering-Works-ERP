@@ -11,8 +11,45 @@ import {
   toggleUserStatus,
   adminGenerateResetLink,
   adminDirectResetPassword,
-  fetchRoles
+  fetchRoles,
+  fetchUserAssignments,
+  updateUserAssignments,
+  fetchUserCountsByFirm
 } from "../api";
+
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const selectUsersList = (result) => {
+  const list = result?.data;
+  return Array.isArray(list) ? list : EMPTY_ARRAY;
+};
+
+const selectUsersPagination = (result) => {
+  const metaData = result?.data ?? result ?? EMPTY_OBJECT;
+  const innerPagination = metaData?.pagination ?? metaData ?? EMPTY_OBJECT;
+  const total = Number(innerPagination?.total ?? metaData?.total ?? 0);
+  const pageSizeNum = Number(innerPagination?.pageSize ?? 10);
+  const totalPages = Number(innerPagination?.totalPages ?? metaData?.totalPages ?? (total && pageSizeNum ? Math.ceil(total / pageSizeNum) : 1));
+  const activeCount = Number(metaData?.activeCount ?? 0);
+  const trashCount = Number(metaData?.trashCount ?? 0);
+
+  const pageNum = Number(innerPagination?.page ?? 1);
+  const pageStart = total === 0 ? 0 : (pageNum - 1) * pageSizeNum + 1;
+  const pageEnd = Math.min(pageNum * pageSizeNum, total);
+
+  return {
+    ...innerPagination,
+    page: pageNum,
+    pageSize: pageSizeNum,
+    total,
+    totalPages,
+    activeCount,
+    trashCount,
+    pageStart,
+    pageEnd
+  };
+};
 
 // 1. Fetch Users List
 export const useUsers = ({
@@ -21,18 +58,16 @@ export const useUsers = ({
   search = "",
   status = "",
   roleId = null,
+  firmId = null,
   trash = false,
   sortBy = "id",
   sortOrder = "desc"
 } = {}) => {
   return useQuery({
-    queryKey: ["usersList", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
-    queryFn: () => fetchUsers({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
-    keepPreviousData: true,
-    select: (result) => {
-      const list = result?.data ?? [];
-      return Array.isArray(list) ? list : [];
-    }
+    queryKey: ["usersList", page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder],
+    queryFn: () => fetchUsers({ page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder }),
+    placeholderData: (prev) => prev,
+    select: selectUsersList
   });
 };
 
@@ -43,39 +78,16 @@ export const useUsersPagination = ({
   search = "",
   status = "",
   roleId = null,
+  firmId = null,
   trash = false,
   sortBy = "id",
   sortOrder = "desc"
 } = {}) => {
   return useQuery({
-    queryKey: ["usersPagination", page, pageSize, search, status, roleId, trash, sortBy, sortOrder],
-    queryFn: () => fetchUsersPagination({ page, pageSize, search, status, roleId, trash, sortBy, sortOrder }),
-    keepPreviousData: true,
-    select: (result) => {
-      const metaData = result?.data ?? result ?? {};
-      const innerPagination = metaData?.pagination ?? metaData ?? {};
-      const total = Number(innerPagination?.total ?? metaData?.total ?? 0);
-      const totalPages = Number(innerPagination?.totalPages ?? metaData?.totalPages ?? (total && pageSize ? Math.ceil(total / pageSize) : 1));
-      const activeCount = Number(metaData?.activeCount ?? 0);
-      const trashCount = Number(metaData?.trashCount ?? 0);
-
-      const pageNum = Number(innerPagination?.page ?? page ?? 1);
-      const pageSizeNum = Number(innerPagination?.pageSize ?? pageSize ?? 10);
-      const pageStart = total === 0 ? 0 : (pageNum - 1) * pageSizeNum + 1;
-      const pageEnd = Math.min(pageNum * pageSizeNum, total);
-
-      return {
-        ...innerPagination,
-        page: pageNum,
-        pageSize: pageSizeNum,
-        total,
-        totalPages,
-        activeCount,
-        trashCount,
-        pageStart,
-        pageEnd
-      };
-    }
+    queryKey: ["usersPagination", page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder],
+    queryFn: () => fetchUsersPagination({ page, pageSize, search, status, roleId, firmId, trash, sortBy, sortOrder }),
+    placeholderData: (prev) => prev,
+    select: selectUsersPagination
   });
 };
 
@@ -92,7 +104,7 @@ export const useDeleteUser = () => {
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to delete user");
+      toast.error(err.message || err.response?.data?.message || "Failed to delete user");
     }
   });
 };
@@ -108,7 +120,7 @@ export const useRestoreUser = () => {
       toast.success(res?.message || "User restored successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to restore user");
+      toast.error(err.message || err.response?.data?.message || "Failed to restore user");
     }
   });
 };
@@ -123,11 +135,11 @@ export const useBulkDeleteUsers = () => {
       queryClient.invalidateQueries(["usersPagination"]);
       toast.success(
         res?.message ||
-          (variables.permanent ? "Selected users permanently deleted" : "Selected users moved to recycle bin")
+        (variables.permanent ? "Selected users permanently deleted" : "Selected users moved to recycle bin")
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to perform bulk delete");
+      toast.error(err.message || err.response?.data?.message || "Failed to perform bulk delete");
     }
   });
 };
@@ -143,7 +155,7 @@ export const useBulkRestoreUsers = () => {
       toast.success(res?.message || "Selected users restored successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to restore selected users");
+      toast.error(err.message || err.response?.data?.message || "Failed to restore selected users");
     }
   });
 };
@@ -158,7 +170,7 @@ export const useUpdateUserRole = () => {
       toast.success(res?.message || "User role updated successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update user role");
+      toast.error(err.message || err.response?.data?.message || "Failed to update user role");
     }
   });
 };
@@ -175,7 +187,7 @@ export const useToggleUserStatus = () => {
       );
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update user status");
+      toast.error(err.message || err.response?.data?.message || "Failed to update user status");
     }
   });
 };
@@ -188,7 +200,7 @@ export const useAdminGenerateResetLink = () => {
       toast.success(res?.message || "Password reset link generated");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to generate reset link");
+      toast.error(err.message || err.response?.data?.message || "Failed to generate reset link");
     }
   });
 };
@@ -213,8 +225,50 @@ export const useAdminDirectResetPassword = () => {
       toast.success(res?.message || "Password updated successfully");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to update password directly");
+      toast.error(err.message || err.response?.data?.message || "Failed to update password directly");
     }
+  });
+};
+
+const EMPTY_ASSIGNMENTS = [];
+
+const selectUserAssignments = (result) => Array.isArray(result?.data) ? result.data : EMPTY_ASSIGNMENTS;
+
+// 12. User Scoped Assignments Query & Mutation
+export const useUserAssignments = (userId, options = {}) => {
+  return useQuery({
+    queryKey: ["userAssignments", userId],
+    queryFn: () => fetchUserAssignments(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 30, // 30 seconds
+    select: selectUserAssignments,
+    ...options
+  });
+};
+
+export const useUpdateUserAssignments = (userId) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ isSuperAdmin = false, assignments = [] }) => updateUserAssignments({ userId, isSuperAdmin, assignments }),
+    onSuccess: (res) => {
+      toast.success(res?.message || "User firm and branch assignments updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["userAssignments", userId] });
+      queryClient.invalidateQueries({ queryKey: ["usersList"] });
+      queryClient.invalidateQueries({ queryKey: ["usersPagination"] });
+      queryClient.invalidateQueries({ queryKey: ["userCountsByFirm"] });
+    },
+    onError: (err) => {
+      toast.error(err.message || err.response?.data?.message || "Failed to update user assignments");
+    }
+  });
+};
+
+// 13. User Counts by Firm
+export const useUserCountsByFirm = () => {
+  return useQuery({
+    queryKey: ["userCountsByFirm"],
+    queryFn: fetchUserCountsByFirm,
+    select: (res) => res?.data || []
   });
 };
 

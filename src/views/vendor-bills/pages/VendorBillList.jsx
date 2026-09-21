@@ -11,7 +11,7 @@ import {
     Spinner,
     Pagination
 } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     FaPlus,
     FaSearch,
@@ -31,6 +31,7 @@ import VendorBillSummaryCards from '../components/VendorBillSummaryCards';
 import useVendorBillList from '../hooks/useVendorBillList';
 
 const VendorBillList = () => {
+    const navigate = useNavigate();
     const {
         page,
         setPage,

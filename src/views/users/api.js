@@ -10,6 +10,7 @@ export const fetchUsers = asyncHandler(async (params = {}) => {
   if (params.search) query.append("search", params.search);
   if (params.status) query.append("status", params.status);
   if (params.roleId) query.append("roleId", params.roleId);
+  if (params.firmId) query.append("firmId", params.firmId);
   if (params.trash !== undefined) query.append("trash", params.trash);
   if (params.sortBy) query.append("sortBy", params.sortBy);
   if (params.sortOrder) query.append("sortOrder", params.sortOrder);
@@ -30,6 +31,7 @@ export const fetchUsersPagination = asyncHandler(async (params = {}) => {
   if (params.search) query.append("search", params.search);
   if (params.status) query.append("status", params.status);
   if (params.roleId) query.append("roleId", params.roleId);
+  if (params.firmId) query.append("firmId", params.firmId);
   if (params.trash !== undefined) query.append("trash", params.trash);
   if (params.sortBy) query.append("sortBy", params.sortBy);
   if (params.sortOrder) query.append("sortOrder", params.sortOrder);
@@ -116,10 +118,10 @@ export const adminGenerateResetLink = asyncHandler(async (id) => {
   return res.data;
 });
 
-// Fetch Roles (reuse /auth/admin/roles)
+// Fetch Roles
 export const fetchRoles = asyncHandler(async () => {
   const res = await api.request({
-    url: `/auth/admin/roles`,
+    url: `/admin/roles`,
     method: requestMethod.GET
   });
 
@@ -134,6 +136,33 @@ export const adminDirectResetPassword = asyncHandler(async ({ id, newPassword })
     data: { newPassword }
   });
 
+  return res.data;
+});
+
+// User Firm & Branch Assignments
+export const fetchUserAssignments = asyncHandler(async (userId) => {
+  const res = await api.request({
+    url: `/users/${userId}/assignments`,
+    method: requestMethod.GET
+  });
+  return res.data;
+});
+
+export const updateUserAssignments = asyncHandler(async ({ userId, isSuperAdmin = false, assignments = [] }) => {
+  const res = await api.request({
+    url: `/users/${userId}/assignments`,
+    method: requestMethod.PUT,
+    data: { isSuperAdmin, assignments }
+  });
+  return res.data;
+});
+
+// Fetch user counts by firm
+export const fetchUserCountsByFirm = asyncHandler(async () => {
+  const res = await api.request({
+    url: `/users/firm-counts`,
+    method: requestMethod.GET
+  });
   return res.data;
 });
 

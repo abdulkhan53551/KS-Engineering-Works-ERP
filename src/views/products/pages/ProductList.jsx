@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, FormCheck, Image } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -37,7 +37,7 @@ import {
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import ProductDetailsDrawer from '../components/ProductDetailsDrawer';
-import useListManager from '../../../hooks/useListManager';
+import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 import defaultProductImage from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
@@ -125,10 +125,7 @@ const ProductList = () => {
     // Copy indicator state
     const [copiedKey, setCopiedKey] = useState(null);
 
-    // Temp items state to sync data with useListManager
-    const [tempItems, setTempItems] = useState([]);
-
-    // 3. List Manager Hook
+    // 3. Pagination & Search Hook
     const {
         page,
         setPage,
@@ -139,17 +136,10 @@ const ProductList = () => {
         handleSearch,
         clearSearch: handleClearSearch,
         isTrash,
-        handleTabChange,
-        selectedIds,
-        handleSelectAll,
-        handleSelectRow,
-        handleDeselectAll,
-        isAllSelected,
-        isIndeterminate,
-        selectedCount
-    } = useListManager({
-        items: tempItems,
-        idKey: 'id',
+        handlePageChange,
+        handlePageSizeChange,
+        handleTabChange: handlePaginationTabChange
+    } = useListPagination({
         initialPageSize: 10
     });
 
@@ -202,11 +192,6 @@ const ProductList = () => {
     const pageStart = total === 0 ? 0 : offset + 1;
     const pageEnd = Math.min(offset + pageSize, total);
 
-    // Sync items with ListManager for select all
-    useEffect(() => {
-        setTempItems(products);
-    }, [products]);
-
     // 5. Sorting
     const handleSort = (key) => {
         let direction = 'asc';
@@ -240,6 +225,25 @@ const ProductList = () => {
             return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
         });
     }, [products, sortConfig]);
+
+    // Row Selection Hook directly operates on sortedProducts
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useRowSelection({
+        items: sortedProducts,
+        idKey: 'id'
+    });
+
+    const handleTabChange = useCallback((trashState) => {
+        handlePaginationTabChange(trashState);
+        handleDeselectAll();
+    }, [handlePaginationTabChange, handleDeselectAll]);
 
     // Copy to clipboard helper
     const handleCopy = (text, keyName, label) => {
@@ -642,15 +646,13 @@ const ProductList = () => {
 
                                                 {/* 4. Product / Part Name Column */}
                                                 <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                    <div className="fw-semibold text-dark">
-                                                        <span
-                                                            className="cursor-pointer text-primary hover-underline"
-                                                            onClick={() => handleQuickView(p)}
-                                                            title="Click to view details"
-                                                        >
-                                                            {p.name}
-                                                        </span>
-                                                    </div>
+                                                    <span
+                                                        className="cursor-pointer text-primary hover-underline fw-semibold"
+                                                        onClick={() => handleQuickView(p)}
+                                                        title="Click to view details"
+                                                    >
+                                                        {p.name}
+                                                    </span>
                                                     {p.hsnSacCode && (
                                                         <div className="text-muted small" style={{ fontSize: '0.74rem' }}>
                                                             HSN: {p.hsnSacCode}
