@@ -731,6 +731,116 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
+                <Accordion.Item as="li" eventKey="sidebar-employees" bsPrefix={`nav-item ${active === 'employee' || location.pathname.includes('/employee') ? 'active' : ''} `} onClick={() => setActive('employee')}>
+                    <CustomToggle eventKey="sidebar-employees" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                        <i className="icon">
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 14.54C8.55 14.54 5.64 15.1 5.64 17.28C5.64 19.46 8.57 20 12 20C15.45 20 18.36 19.44 18.36 17.26C18.36 15.08 15.43 14.54 12 14.54Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M12 12.47C14.34 12.47 16.21 10.59 16.21 8.24C16.21 5.89 14.34 4.01 12 4.01C9.66 4.01 7.79 5.89 7.79 8.24C7.79 10.59 9.66 12.47 12 12.47Z" fill="currentColor"></path>
+                                <path opacity="0.4" d="M21.0881 9.21923C21.6925 6.84176 19.9205 4.70654 17.664 4.70654C17.4187 4.70654 17.1841 4.73356 16.9549 4.77949C16.8904 4.802 16.8725 4.82902 16.8519 4.86324C16.8671 4.90917 16.8895 4.93889C17.5673 5.89528 17.9568 7.0597 17.9568 8.30967C17.9568 9.50741 17.5996 10.6241 16.9728 11.5508C17.2369 11.8227 17.3981 11.8371 17.5629 11.8416C19.2059 11.8849 20.6807 10.8213 21.0881 9.21923Z" fill="currentColor"></path>
+                                <path d="M22.8094 14.817C22.5086 14.1722 21.7824 13.73 20.6783 13.513C20.1572 13.3851 18.747 13.205 17.4352 13.2293C18.0378 13.6039 20.3811 14.916 20.0865 17.6834C20.8655 17.8059 22.3492 17.4853 22.8094 16.4866C23.0637 15.9589 23.0637 15.3456 22.8094 14.817Z" fill="currentColor"></path>
+                            </svg>
+                        </i>
+                        <span className="item-name">Employees & HR</span>
+                        <i className="right-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </i>
+                    </CustomToggle>
+                    <Accordion.Collapse eventKey="sidebar-employees">
+                        <ul className="sub-nav">
+                            <li className="nav-item">
+                                <Link className={`${location.pathname === '/dashboard/employee' || location.pathname === '/employee' ? 'active' : ''} nav-link`} to="/dashboard/employee">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Employee Directory</span>
+                                    <Link className="me-2" to="/dashboard/employee/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox size={20} color="white" className="transition-colors" />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/attendance') && !location.pathname.includes('/attendance-summary') ? 'active' : ''} nav-link`} to="/dashboard/employee/attendance">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Attendance Sheet</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/attendance-summary') ? 'active' : ''} nav-link`} to="/dashboard/employee/attendance-summary">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Attendance Summary</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/shifts') ? 'active' : ''} nav-link`} to="/dashboard/employee/shifts">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Shifts & Rosters</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/leaves') ? 'active' : ''} nav-link`} to="/dashboard/employee/leaves">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Leave Requests</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname === '/dashboard/employee/payroll' || location.pathname === '/employee/payroll' ? 'active' : ''} nav-link`} to="/dashboard/employee/payroll">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Payroll & Slips</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/salary-templates') ? 'active' : ''} nav-link`} to="/dashboard/employee/salary-templates">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Salary Templates</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/payroll-settings') ? 'active' : ''} nav-link`} to="/dashboard/employee/payroll-settings">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Payroll Settings</span>
+                                </Link>
+                            </li>
+                        </ul>
+                    </Accordion.Collapse>
+                </Accordion.Item>
                 <Accordion.Item as="li" eventKey="sidebar-organization" bsPrefix={`nav-item ${active === 'organization' ? 'active' : ''} `} onClick={() => setActive('organization')}>
                     <CustomToggle eventKey="sidebar-organization" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
