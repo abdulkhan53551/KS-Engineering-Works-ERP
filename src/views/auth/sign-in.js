@@ -35,7 +35,8 @@ const SignIn = () => {
    useEffect(() => {
       const wakeUpServer = async () => {
          try {
-            await fetch(process.env.REACT_APP_API_BASE_URL, {
+            const baseUrl = (process.env.REACT_APP_API_BASE_URL || "").replace(/\/$/, "");
+            await fetch(`${baseUrl}/health`, {
                method: "GET",
                cache: "no-store",
             });
