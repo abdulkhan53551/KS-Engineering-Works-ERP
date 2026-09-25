@@ -49,6 +49,17 @@ export const fetchEmployeeById = asyncHandler(async (id) => {
     return res.data;
 });
 
+export const fetchNextEmployeeCode = asyncHandler(async (firmId) => {
+    const query = new URLSearchParams();
+    if (firmId && firmId !== 'all') query.append("firmId", firmId);
+
+    const res = await api.request({
+        url: `/employees/next-code?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
 export const createEmployee = asyncHandler(async (data) => {
     const res = await api.request({
         url: `/employees`,

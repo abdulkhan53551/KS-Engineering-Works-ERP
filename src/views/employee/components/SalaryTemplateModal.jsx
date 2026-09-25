@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Table } from 'react-bootstrap';
 import { Trash2, Plus } from 'lucide-react';
 import { useCreateSalaryTemplate, useUpdateSalaryTemplate } from '../hooks/useEmployeeApi';
+import { toast } from 'react-toastify';
+import '../employee.css';
 
 const DEFAULT_COMPONENTS = [
     { componentName: 'Basic Salary', componentType: 'EARNING', calcType: 'PERCENT_OF_GROSS', value: 40, isStatutory: false, sortOrder: 1 },
@@ -19,6 +21,7 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
     const [description, setDescription] = useState('');
     const [isDefault, setIsDefault] = useState(false);
     const [components, setComponents] = useState(DEFAULT_COMPONENTS);
+    const [errors, setErrors] = useState({});
 
     const createMutation = useCreateSalaryTemplate();
     const updateMutation = useUpdateSalaryTemplate();
@@ -49,6 +52,7 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
             setIsDefault(false);
             setComponents(DEFAULT_COMPONENTS);
         }
+        setErrors({});
     }, [template, show]);
 
     const addComponent = () => {
@@ -75,8 +79,26 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
         setComponents(next);
     };
 
+    const validate = () => {
+        const errs = {};
+        if (!templateName.trim()) {
+            errs.templateName = 'Template name is required.';
+        }
+        if (components.length === 0) {
+            errs.components = 'Please add at least one salary component.';
+        }
+        setErrors(errs);
+        return errs;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const errs = validate();
+        if (Object.keys(errs).length > 0) {
+            toast.error(errs.templateName || errs.components || 'Please fix the errors in the form.');
+            return;
+        }
+
         try {
             const payload = {
                 firmId,
@@ -108,26 +130,32 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
         <Modal show={show} onHide={onHide} size="xl" centered>
             <Form onSubmit={handleSubmit}>
                 <Modal.Header closeButton>
-                    <Modal.Title>{isEditing ? 'Edit Salary Template' : 'Create Salary Template'}</Modal.Title>
+                    <Modal.Title className="fw-bold fs-5">{isEditing ? 'Edit Salary Template' : 'Create Salary Template'}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
-                    <Row className="g-3 mb-4">
+                <Modal.Body className="p-4">
+                    <Row className="g-3 mb-3">
                         <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Template Name <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="templateName"
                                     type="text"
-                                    placeholder="e.g. Workshop Staff Template, Executive Template"
+                                    placeholder="Template Name"
                                     value={templateName}
-                                    onChange={(e) => setTemplateName(e.target.value)}
+                                    onChange={(e) => {
+                                        setTemplateName(e.target.value);
+                                        if (errors.templateName) setErrors(prev => ({ ...prev, templateName: null }));
+                                    }}
+                                    isInvalid={!!errors.templateName}
                                     required
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="templateName">Template Name <span className="text-danger">*</span></Form.Label>
+                                <Form.Control.Feedback type="invalid">{errors.templateName}</Form.Control.Feedback>
+                            </Form.Floating>
                         </Col>
                         <Col md={3}>
-                            <Form.Group>
-                                <Form.Label>Salary Type <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Select
+                                    id="templateType"
                                     value={templateType}
                                     onChange={(e) => setTemplateType(e.target.value)}
                                     required
@@ -136,35 +164,41 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
                                     <option value="DAILY">Daily Wage</option>
                                     <option value="HOURLY">Hourly Rate</option>
                                 </Form.Select>
-                            </Form.Group>
+                                <Form.Label htmlFor="templateType">Salary Type <span className="text-danger">*</span></Form.Label>
+                            </Form.Floating>
                         </Col>
-                        <Col md={3} className="d-flex align-items-center mt-4">
+                        <Col md={3} className="d-flex align-items-center mb-3">
                             <Form.Check
                                 type="checkbox"
                                 id="isDefaultTemplate"
                                 label="Set as Default Template"
                                 checked={isDefault}
                                 onChange={(e) => setIsDefault(e.target.checked)}
+                                className="fw-semibold text-secondary"
                             />
                         </Col>
                         <Col md={12}>
-                            <Form.Group>
-                                <Form.Label>Description</Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                 <Form.Control
+                                    id="description"
                                     as="textarea"
-                                    rows={2}
-                                    placeholder="Template notes or guidelines..."
+                                    placeholder="Description"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
+                                    style={{ height: '70px' }}
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="description">Description / Notes</Form.Label>
+                            </Form.Floating>
                         </Col>
                     </Row>
 
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                        <h6 className="mb-0 fw-bold">Salary Components (Earnings & Deductions)</h6>
+                    <div className="d-flex justify-content-between align-items-center mb-2 mt-3">
+                        <div>
+                            <h6 className="mb-0 fw-bold">Salary Components (Earnings & Deductions)</h6>
+                            <span className="text-muted small">Configure earning lines and statutory deduction formulas</span>
+                        </div>
                         <Button variant="outline-primary" size="sm" onClick={addComponent}>
-                            <Plus size={16} className="me-1" /> Add Component
+                            <Plus size={15} className="me-1" /> Add Component
                         </Button>
                     </div>
 
@@ -176,8 +210,8 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
                                     <th style={{ width: '18%' }}>Type</th>
                                     <th style={{ width: '22%' }}>Calculation Type</th>
                                     <th style={{ width: '15%' }}>Value (% or ₹)</th>
-                                    <th style={{ width: '12%' }}>Statutory?</th>
-                                    <th style={{ width: '8%' }}>Action</th>
+                                    <th style={{ width: '12%' }} className="text-center">Statutory?</th>
+                                    <th style={{ width: '8%' }} className="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,14 +268,14 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
                                                 title="Statutory components (PF/ESI/PT) are auto-skipped for non-permanent employees"
                                             />
                                         </td>
-                                        <td>
+                                        <td className="text-center">
                                             <Button
                                                 variant="outline-danger"
                                                 size="sm"
                                                 className="p-1"
                                                 onClick={() => removeComponent(idx)}
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={15} />
                                             </Button>
                                         </td>
                                     </tr>
@@ -250,11 +284,11 @@ const SalaryTemplateModal = ({ show, onHide, template = null, firmId }) => {
                         </Table>
                     </div>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={onHide} disabled={isLoading}>
+                <Modal.Footer className="border-0 pt-0">
+                    <Button variant="secondary" size="sm" onClick={onHide} disabled={isLoading}>
                         Cancel
                     </Button>
-                    <Button variant="primary" type="submit" disabled={isLoading || !templateName.trim()}>
+                    <Button variant="primary" size="sm" type="submit" disabled={isLoading || !templateName.trim()}>
                         {isLoading ? 'Saving...' : (isEditing ? 'Update Template' : 'Create Template')}
                     </Button>
                 </Modal.Footer>

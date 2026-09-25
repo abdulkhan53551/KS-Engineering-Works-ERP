@@ -4,6 +4,7 @@ import {
     fetchEmployees,
     fetchEmployeesMeta,
     fetchEmployeeById,
+    fetchNextEmployeeCode,
     createEmployee,
     updateEmployee,
     deleteEmployee,
@@ -74,6 +75,15 @@ export const useEmployee = (id) => {
         queryFn: () => fetchEmployeeById(id),
         select: selectData,
         enabled: Boolean(id)
+    });
+};
+
+export const useNextEmployeeCode = (firmId, options = {}) => {
+    return useQuery({
+        queryKey: ["next-employee-code", firmId],
+        queryFn: () => fetchNextEmployeeCode(firmId),
+        select: selectData,
+        ...options
     });
 };
 

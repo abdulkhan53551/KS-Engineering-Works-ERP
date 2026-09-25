@@ -338,3 +338,134 @@
     font-weight: 600;
     color: #334155;
 }
+
+/* Daily Attendance Register Specific Styles */
+.daily-att-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.daily-att-table th {
+    padding: 10px 12px;
+    white-space: nowrap;
+    color: #475569;
+}
+
+.daily-att-table td {
+    padding: 8px 12px;
+    vertical-align: middle;
+}
+
+.daily-att-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.daily-att-table tbody tr.row-has-ot {
+    background-color: #fffbeb !important;
+}
+
+.daily-att-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.status-select {
+    font-size: 0.82rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.status-select-PRESENT {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.status-select-ABSENT {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.status-select-HALF_DAY {
+    background-color: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.status-select-LEAVE {
+    background-color: #eef2ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+}
+
+/* Monthly Matrix Cell with Hours / OT Indicator */
+.att-cell-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.att-cell-sub {
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 2px;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.att-cell-sub-ot {
+    background: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.att-cell-sub-hours {
+    color: #64748b;
+}
+
+.att-cell-sub-hd {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+/* Cell hover edit button */
+.att-td-cell {
+    position: relative;
+}
+
+.att-cell-container:hover .att-cell-edit-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.att-cell-edit-btn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #ffffff;
+    border: 1.5px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.att-cell-edit-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.15) !important;
+}
+

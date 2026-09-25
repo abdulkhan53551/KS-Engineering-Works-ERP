@@ -9,8 +9,9 @@ import PaginationBar from '../../../components/PaginationBar';
 import '../employee.css';
 
 const LeaveList = () => {
-    const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? undefined : activeFirm?.id;
 
     const [statusFilter, setStatusFilter] = useState('');
     const [typeFilter, setTypeFilter] = useState('');

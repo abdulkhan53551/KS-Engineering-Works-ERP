@@ -9,7 +9,9 @@ import '../employee.css';
 const PayrollSettings = () => {
     const navigate = useNavigate();
     const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm, userFirms = [] } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? (userFirms[0]?.id || currentUser?.firmId) : activeFirm?.id;
 
     const { data: settingsData, isLoading } = usePayrollSettings({ firmId });
     const updateMutation = useUpdatePayrollSettings();
@@ -130,23 +132,26 @@ const PayrollSettings = () => {
                             <Card.Body>
                                 <Row className="g-3">
                                     <Col md={6}>
-                                        <Form.Group>
-                                            <Form.Label>Working Days Per Month <span className="text-danger">*</span></Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="workingDaysPerMonth"
                                                 type="number"
                                                 min="1"
                                                 max="31"
+                                                placeholder="Working Days Per Month"
                                                 value={formData.workingDaysPerMonth}
                                                 onChange={(e) => setFormData({ ...formData, workingDaysPerMonth: e.target.value })}
                                                 required
                                             />
-                                            <Form.Text className="text-muted">Standard is 26 days.</Form.Text>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="workingDaysPerMonth">Working Days Per Month <span className="text-danger">*</span></Form.Label>
+                                        </Form.Floating>
+                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>Standard is 26 days.</div>
                                     </Col>
                                     <Col md={6}>
-                                        <Form.Group>
-                                            <Form.Label>Weekly Off Day</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Select
+                                                id="weeklyOffDay"
+                                                aria-label="Weekly Off Day"
                                                 value={formData.weeklyOffDay}
                                                 onChange={(e) => setFormData({ ...formData, weeklyOffDay: e.target.value })}
                                             >
@@ -154,7 +159,8 @@ const PayrollSettings = () => {
                                                 <option value="SATURDAY">Saturday</option>
                                                 <option value="NONE">None / Custom</option>
                                             </Form.Select>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="weeklyOffDay">Weekly Off Day</Form.Label>
+                                        </Form.Floating>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -172,75 +178,85 @@ const PayrollSettings = () => {
                             <Card.Body>
                                 <Row className="g-3">
                                     <Col md={6}>
-                                        <Form.Group>
-                                            <Form.Label>OT Calculation Method</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Select
+                                                id="otRateType"
+                                                aria-label="OT Calculation Method"
                                                 value={formData.otRateType}
                                                 onChange={(e) => setFormData({ ...formData, otRateType: e.target.value })}
                                             >
                                                 <option value="FIXED">Fixed Hourly Rate (₹ / hr)</option>
                                                 <option value="MULTIPLIER">Salary Multiplier (e.g. 1.5x)</option>
                                             </Form.Select>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="otRateType">OT Calculation Method</Form.Label>
+                                        </Form.Floating>
                                     </Col>
 
                                     {formData.otRateType === 'FIXED' ? (
                                         <Col md={6}>
-                                            <Form.Group>
-                                                <Form.Label>Fixed Hourly Rate (₹)</Form.Label>
+                                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                                 <Form.Control
+                                                    id="otHourlyRate"
                                                     type="number"
                                                     min="0"
                                                     step="any"
+                                                    placeholder="Fixed Hourly Rate (₹)"
                                                     value={formData.otHourlyRate}
                                                     onChange={(e) => setFormData({ ...formData, otHourlyRate: e.target.value })}
                                                 />
-                                                <Form.Text className="text-muted">Applied per OT hour worked.</Form.Text>
-                                            </Form.Group>
+                                                <Form.Label htmlFor="otHourlyRate">Fixed Hourly Rate (₹)</Form.Label>
+                                            </Form.Floating>
+                                            <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>Applied per OT hour worked.</div>
                                         </Col>
                                     ) : (
                                         <Col md={6}>
-                                            <Form.Group>
-                                                <Form.Label>Normal OT Multiplier</Form.Label>
+                                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                                 <Form.Control
+                                                    id="otMultiplierNormal"
                                                     type="number"
                                                     min="1"
                                                     max="5"
                                                     step="0.1"
+                                                    placeholder="Normal OT Multiplier"
                                                     value={formData.otMultiplierNormal}
                                                     onChange={(e) => setFormData({ ...formData, otMultiplierNormal: e.target.value })}
                                                 />
-                                                <Form.Text className="text-muted">e.g. 1.5 = 1.5x base hourly rate.</Form.Text>
-                                            </Form.Group>
+                                                <Form.Label htmlFor="otMultiplierNormal">Normal OT Multiplier</Form.Label>
+                                            </Form.Floating>
+                                            <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>e.g. 1.5 = 1.5x base hourly rate.</div>
                                         </Col>
                                     )}
 
                                     <Col md={6}>
-                                        <Form.Group>
-                                            <Form.Label>Holiday OT Multiplier</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="otMultiplierHoliday"
                                                 type="number"
                                                 min="1"
                                                 max="5"
                                                 step="0.1"
+                                                placeholder="Holiday OT Multiplier"
                                                 value={formData.otMultiplierHoliday}
                                                 onChange={(e) => setFormData({ ...formData, otMultiplierHoliday: e.target.value })}
                                             />
-                                        </Form.Group>
+                                            <Form.Label htmlFor="otMultiplierHoliday">Holiday OT Multiplier</Form.Label>
+                                        </Form.Floating>
                                     </Col>
 
                                     <Col md={6}>
-                                        <Form.Group>
-                                            <Form.Label>Weekend OT Multiplier</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="otMultiplierWeekend"
                                                 type="number"
                                                 min="1"
                                                 max="5"
                                                 step="0.1"
+                                                placeholder="Weekend OT Multiplier"
                                                 value={formData.otMultiplierWeekend}
                                                 onChange={(e) => setFormData({ ...formData, otMultiplierWeekend: e.target.value })}
                                             />
-                                        </Form.Group>
+                                            <Form.Label htmlFor="otMultiplierWeekend">Weekend OT Multiplier</Form.Label>
+                                        </Form.Floating>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -271,36 +287,42 @@ const PayrollSettings = () => {
                                                 onChange={(e) => setFormData({ ...formData, pfEnabled: e.target.checked })}
                                             />
                                         </div>
-                                        <Form.Group className="mb-2">
-                                            <Form.Label className="small">Employee Contribution (%)</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="pfEmployeePercent"
                                                 type="number"
                                                 step="0.1"
+                                                placeholder="Employee Contribution (%)"
                                                 disabled={!formData.pfEnabled}
                                                 value={formData.pfEmployeePercent}
                                                 onChange={(e) => setFormData({ ...formData, pfEmployeePercent: e.target.value })}
                                             />
-                                        </Form.Group>
-                                        <Form.Group className="mb-2">
-                                            <Form.Label className="small">Employer Contribution (%)</Form.Label>
+                                            <Form.Label htmlFor="pfEmployeePercent">Employee Contribution (%)</Form.Label>
+                                        </Form.Floating>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="pfEmployerPercent"
                                                 type="number"
                                                 step="0.1"
+                                                placeholder="Employer Contribution (%)"
                                                 disabled={!formData.pfEnabled}
                                                 value={formData.pfEmployerPercent}
                                                 onChange={(e) => setFormData({ ...formData, pfEmployerPercent: e.target.value })}
                                             />
-                                        </Form.Group>
-                                        <Form.Group>
-                                            <Form.Label className="small">Wage Ceiling (₹)</Form.Label>
+                                            <Form.Label htmlFor="pfEmployerPercent">Employer Contribution (%)</Form.Label>
+                                        </Form.Floating>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="pfWageCeiling"
                                                 type="number"
+                                                placeholder="Wage Ceiling (₹)"
                                                 disabled={!formData.pfEnabled}
                                                 value={formData.pfWageCeiling}
                                                 onChange={(e) => setFormData({ ...formData, pfWageCeiling: e.target.value })}
                                             />
-                                            <Form.Text className="text-muted">PF calculated up to ₹15,000.</Form.Text>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="pfWageCeiling">Wage Ceiling (₹)</Form.Label>
+                                        </Form.Floating>
+                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>PF calculated up to ₹15,000.</div>
                                     </Col>
 
                                     {/* ESI */}
@@ -314,36 +336,42 @@ const PayrollSettings = () => {
                                                 onChange={(e) => setFormData({ ...formData, esiEnabled: e.target.checked })}
                                             />
                                         </div>
-                                        <Form.Group className="mb-2">
-                                            <Form.Label className="small">Employee Contribution (%)</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="esiEmployeePercent"
                                                 type="number"
                                                 step="0.05"
+                                                placeholder="Employee Contribution (%)"
                                                 disabled={!formData.esiEnabled}
                                                 value={formData.esiEmployeePercent}
                                                 onChange={(e) => setFormData({ ...formData, esiEmployeePercent: e.target.value })}
                                             />
-                                        </Form.Group>
-                                        <Form.Group className="mb-2">
-                                            <Form.Label className="small">Employer Contribution (%)</Form.Label>
+                                            <Form.Label htmlFor="esiEmployeePercent">Employee Contribution (%)</Form.Label>
+                                        </Form.Floating>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="esiEmployerPercent"
                                                 type="number"
                                                 step="0.05"
+                                                placeholder="Employer Contribution (%)"
                                                 disabled={!formData.esiEnabled}
                                                 value={formData.esiEmployerPercent}
                                                 onChange={(e) => setFormData({ ...formData, esiEmployerPercent: e.target.value })}
                                             />
-                                        </Form.Group>
-                                        <Form.Group>
-                                            <Form.Label className="small">Gross Wage Ceiling (₹)</Form.Label>
+                                            <Form.Label htmlFor="esiEmployerPercent">Employer Contribution (%)</Form.Label>
+                                        </Form.Floating>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="esiWageCeiling"
                                                 type="number"
+                                                placeholder="Gross Wage Ceiling (₹)"
                                                 disabled={!formData.esiEnabled}
                                                 value={formData.esiWageCeiling}
                                                 onChange={(e) => setFormData({ ...formData, esiWageCeiling: e.target.value })}
                                             />
-                                            <Form.Text className="text-muted">Applicable if wage &lt;= ₹21,000.</Form.Text>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="esiWageCeiling">Gross Wage Ceiling (₹)</Form.Label>
+                                        </Form.Floating>
+                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>Applicable if wage &lt;= ₹21,000.</div>
                                     </Col>
 
                                     {/* PT */}
@@ -357,16 +385,18 @@ const PayrollSettings = () => {
                                                 onChange={(e) => setFormData({ ...formData, ptEnabled: e.target.checked })}
                                             />
                                         </div>
-                                        <Form.Group className="mb-2">
-                                            <Form.Label className="small">Monthly PT Amount (₹)</Form.Label>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                             <Form.Control
+                                                id="ptMonthlyAmount"
                                                 type="number"
+                                                placeholder="Monthly PT Amount (₹)"
                                                 disabled={!formData.ptEnabled}
                                                 value={formData.ptMonthlyAmount}
                                                 onChange={(e) => setFormData({ ...formData, ptMonthlyAmount: e.target.value })}
                                             />
-                                            <Form.Text className="text-muted">Flat monthly deduction (standard ₹200).</Form.Text>
-                                        </Form.Group>
+                                            <Form.Label htmlFor="ptMonthlyAmount">Monthly PT Amount (₹)</Form.Label>
+                                        </Form.Floating>
+                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>Flat monthly deduction (standard ₹200).</div>
                                     </Col>
                                 </Row>
                             </Card.Body>

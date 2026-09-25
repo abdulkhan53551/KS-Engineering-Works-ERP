@@ -26,14 +26,14 @@ import '../employee.css';
 const EmployeeDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
 
     const [activeTab, setActiveTab] = useState('profile');
     const [showShiftModal, setShowShiftModal] = useState(false);
 
     const { data: employeeRaw, isLoading: isFetchingEmployee } = useEmployee(id);
     const employee = employeeRaw?.id ? employeeRaw : (employeeRaw?.data || null);
+    const firmId = employee?.firm_id || (activeFirm?.id !== 'all' ? activeFirm?.id : undefined);
 
     const { data: attendanceListRaw } = useAttendance({ employeeId: id });
     const attendanceList = Array.isArray(attendanceListRaw)
@@ -101,14 +101,14 @@ const EmployeeDetail = () => {
                                     fontSize: '1.75rem'
                                 }}
                             >
-                                {employee.first_name?.charAt(0)}{employee.last_name?.charAt(0) || ''}
+                                {(employee.firstName || employee.first_name || '')?.charAt(0)}{(employee.lastName || employee.last_name || '')?.charAt(0) || ''}
                             </div>
                             <div>
                                 <h4 className="fw-bold mb-0 text-dark">
-                                    {employee.first_name} {employee.last_name || ''}
+                                    {employee.firstName || employee.first_name} {employee.lastName || employee.last_name || ''}
                                 </h4>
                                 <div className="text-muted small">
-                                    <span className="fw-semibold text-primary font-monospace">{employee.emp_code}</span>
+                                    <span className="fw-semibold text-primary font-monospace">{employee.empCode || employee.emp_code}</span>
                                     {employee.designation && ` • ${employee.designation}`}
                                     {employee.department && ` (${employee.department})`}
                                 </div>
@@ -116,7 +116,7 @@ const EmployeeDetail = () => {
                         </div>
 
                         <div className="d-flex gap-2 mt-3 mt-md-0">
-                            <span className="badge badge-permanent px-3 py-2 fs-7">{employee.employment_type}</span>
+                            <span className="badge badge-permanent px-3 py-2 fs-7">{employee.employmentType || employee.employment_type}</span>
                             <span className="badge badge-active px-3 py-2 fs-7">{employee.status}</span>
                         </div>
                     </div>
@@ -144,7 +144,7 @@ const EmployeeDetail = () => {
                             <div className="d-flex align-items-center gap-2">
                                 <DollarSign size={15} className="text-success" />
                                 <span className="fw-bold text-dark">
-                                    ₹{parseFloat(employee.base_salary || 0).toLocaleString('en-IN')} / {employee.salary_type?.toLowerCase()}
+                                    ₹{parseFloat(employee.baseSalary !== undefined ? employee.baseSalary : (employee.base_salary || 0)).toLocaleString('en-IN')} / {(employee.salaryType || employee.salary_type || '')?.toLowerCase()}
                                 </span>
                             </div>
                         </Col>
@@ -189,11 +189,11 @@ const EmployeeDetail = () => {
                                             <tbody>
                                                 <tr>
                                                     <td className="text-muted" style={{ width: '40%' }}>Date of Joining:</td>
-                                                    <td className="fw-semibold">{employee.date_of_joining ? new Date(employee.date_of_joining).toLocaleDateString() : '—'}</td>
+                                                    <td className="fw-semibold">{(employee.dateOfJoining || employee.date_of_joining) ? new Date(employee.dateOfJoining || employee.date_of_joining).toLocaleDateString() : '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">Employment Type:</td>
-                                                    <td>{employee.employment_type}</td>
+                                                    <td>{employee.employmentType || employee.employment_type}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">Department:</td>
@@ -221,31 +221,31 @@ const EmployeeDetail = () => {
                                             <tbody>
                                                 <tr>
                                                     <td className="text-muted" style={{ width: '40%' }}>Bank Name:</td>
-                                                    <td className="fw-semibold">{employee.bank_name || '—'}</td>
+                                                    <td className="fw-semibold">{employee.bankName || employee.bank_name || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">Account Number:</td>
-                                                    <td className="font-monospace">{employee.account_number || '—'}</td>
+                                                    <td className="font-monospace">{employee.accountNumber || employee.account_number || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">IFSC Code:</td>
-                                                    <td className="font-monospace">{employee.ifsc_code || '—'}</td>
+                                                    <td className="font-monospace">{employee.ifscCode || employee.ifsc_code || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">PAN Number:</td>
-                                                    <td className="font-monospace">{employee.pan_number || '—'}</td>
+                                                    <td className="font-monospace">{employee.panNumber || employee.pan_number || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">Aadhar Number:</td>
-                                                    <td className="font-monospace">{employee.aadhar_number || '—'}</td>
+                                                    <td className="font-monospace">{employee.aadharNumber || employee.aadhar_number || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">PF UAN:</td>
-                                                    <td className="font-monospace">{employee.uan_number || '—'}</td>
+                                                    <td className="font-monospace">{employee.uanNumber || employee.uan_number || '—'}</td>
                                                 </tr>
                                                 <tr>
                                                     <td className="text-muted">ESI Number:</td>
-                                                    <td className="font-monospace">{employee.esi_number || '—'}</td>
+                                                    <td className="font-monospace">{employee.esiNumber || employee.esi_number || '—'}</td>
                                                 </tr>
                                             </tbody>
                                         </Table>

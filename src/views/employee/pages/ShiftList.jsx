@@ -8,8 +8,9 @@ import ShiftAssignModal from '../components/ShiftAssignModal';
 import '../employee.css';
 
 const ShiftList = () => {
-    const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? undefined : activeFirm?.id;
 
     const [showShiftModal, setShowShiftModal] = useState(false);
     const [selectedShift, setSelectedShift] = useState(null);

@@ -26,8 +26,9 @@ import '../employee.css';
 
 const PayrollRun = () => {
     const navigate = useNavigate();
-    const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? undefined : activeFirm?.id;
 
     const today = new Date();
     const [month, setMonth] = useState(today.getMonth() + 1);

@@ -29,8 +29,9 @@ import '../employee.css';
 
 const EmployeeList = () => {
     const navigate = useNavigate();
-    const currentUser = useSelector((state) => state.authReducer?.user);
-    const firmId = currentUser?.firmId;
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? undefined : activeFirm?.id;
 
     // Filters & Search
     const [searchTerm, setSearchTerm] = useState('');

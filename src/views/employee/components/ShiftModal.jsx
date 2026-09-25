@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { useCreateShift, useUpdateShift } from '../hooks/useEmployeeApi';
+import { toast } from 'react-toastify';
+import '../employee.css';
 
 const ShiftModal = ({ show, onHide, shift = null, firmId }) => {
     const [formData, setFormData] = useState({
@@ -11,6 +13,7 @@ const ShiftModal = ({ show, onHide, shift = null, firmId }) => {
         breakMinutes: 60,
         isDefault: false
     });
+    const [errors, setErrors] = useState({});
 
     const createMutation = useCreateShift();
     const updateMutation = useUpdateShift();
@@ -36,22 +39,47 @@ const ShiftModal = ({ show, onHide, shift = null, firmId }) => {
                 isDefault: false
             });
         }
+        setErrors({});
     }, [shift, show]);
+
+    const validate = () => {
+        const errs = {};
+        if (!formData.shiftName.trim()) {
+            errs.shiftName = 'Shift name is required.';
+        }
+        if (!formData.shiftCode.trim()) {
+            errs.shiftCode = 'Shift code is required.';
+        }
+        if (!formData.startTime) {
+            errs.startTime = 'Start time is required.';
+        }
+        if (!formData.endTime) {
+            errs.endTime = 'End time is required.';
+        }
+        setErrors(errs);
+        return errs;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const errs = validate();
+        if (Object.keys(errs).length > 0) {
+            toast.error('Please fix the errors in the form.');
+            return;
+        }
+
         try {
             if (isEditing) {
                 await updateMutation.mutateAsync({
                     id: shift.id,
                     ...formData,
-                    breakMinutes: parseInt(formData.breakMinutes, 10)
+                    breakMinutes: parseInt(formData.breakMinutes, 10) || 0
                 });
             } else {
                 await createMutation.mutateAsync({
                     ...formData,
                     firmId,
-                    breakMinutes: parseInt(formData.breakMinutes, 10)
+                    breakMinutes: parseInt(formData.breakMinutes, 10) || 0
                 });
             }
             onHide();
@@ -66,83 +94,110 @@ const ShiftModal = ({ show, onHide, shift = null, firmId }) => {
         <Modal show={show} onHide={onHide} centered>
             <Form onSubmit={handleSubmit}>
                 <Modal.Header closeButton>
-                    <Modal.Title>{isEditing ? 'Edit Shift' : 'Create New Shift'}</Modal.Title>
+                    <Modal.Title className="fw-bold fs-5">{isEditing ? 'Edit Shift' : 'Create New Shift'}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="p-4">
                     <Row className="g-3">
                         <Col md={8}>
-                            <Form.Group>
-                                <Form.Label>Shift Name <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="shiftName"
                                     type="text"
-                                    placeholder="e.g. Day Shift, Night Shift"
+                                    placeholder="Shift Name"
                                     value={formData.shiftName}
-                                    onChange={(e) => setFormData({ ...formData, shiftName: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, shiftName: e.target.value });
+                                        if (errors.shiftName) setErrors(prev => ({ ...prev, shiftName: null }));
+                                    }}
+                                    isInvalid={!!errors.shiftName}
                                     required
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="shiftName">Shift Name <span className="text-danger">*</span></Form.Label>
+                                <Form.Control.Feedback type="invalid">{errors.shiftName}</Form.Control.Feedback>
+                            </Form.Floating>
                         </Col>
                         <Col md={4}>
-                            <Form.Group>
-                                <Form.Label>Shift Code <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="shiftCode"
                                     type="text"
-                                    placeholder="e.g. DS, NS"
+                                    placeholder="Shift Code"
                                     value={formData.shiftCode}
-                                    onChange={(e) => setFormData({ ...formData, shiftCode: e.target.value.toUpperCase() })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, shiftCode: e.target.value.toUpperCase() });
+                                        if (errors.shiftCode) setErrors(prev => ({ ...prev, shiftCode: null }));
+                                    }}
+                                    isInvalid={!!errors.shiftCode}
                                     required
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="shiftCode">Shift Code <span className="text-danger">*</span></Form.Label>
+                                <Form.Control.Feedback type="invalid">{errors.shiftCode}</Form.Control.Feedback>
+                            </Form.Floating>
                         </Col>
                         <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Start Time <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="startTime"
                                     type="time"
                                     value={formData.startTime}
-                                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, startTime: e.target.value });
+                                        if (errors.startTime) setErrors(prev => ({ ...prev, startTime: null }));
+                                    }}
+                                    isInvalid={!!errors.startTime}
                                     required
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="startTime">Start Time <span className="text-danger">*</span></Form.Label>
+                                <Form.Control.Feedback type="invalid">{errors.startTime}</Form.Control.Feedback>
+                            </Form.Floating>
                         </Col>
                         <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>End Time <span className="text-danger">*</span></Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="endTime"
                                     type="time"
                                     value={formData.endTime}
-                                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, endTime: e.target.value });
+                                        if (errors.endTime) setErrors(prev => ({ ...prev, endTime: null }));
+                                    }}
+                                    isInvalid={!!errors.endTime}
                                     required
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="endTime">End Time <span className="text-danger">*</span></Form.Label>
+                                <Form.Control.Feedback type="invalid">{errors.endTime}</Form.Control.Feedback>
+                            </Form.Floating>
                         </Col>
                         <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Break Duration (Minutes)</Form.Label>
+                            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                 <Form.Control
+                                    id="breakMinutes"
                                     type="number"
                                     min="0"
+                                    placeholder="Break Duration (Minutes)"
                                     value={formData.breakMinutes}
                                     onChange={(e) => setFormData({ ...formData, breakMinutes: e.target.value })}
                                 />
-                            </Form.Group>
+                                <Form.Label htmlFor="breakMinutes">Break Duration (Mins)</Form.Label>
+                            </Form.Floating>
                         </Col>
-                        <Col md={6} className="d-flex align-items-center mt-4">
+                        <Col md={6} className="d-flex align-items-center">
                             <Form.Check
                                 type="checkbox"
                                 id="isDefaultShift"
                                 label="Set as Default Shift"
                                 checked={formData.isDefault}
                                 onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                                className="fw-semibold text-secondary"
                             />
                         </Col>
                     </Row>
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={onHide} disabled={isLoading}>
+                <Modal.Footer className="border-0 pt-0">
+                    <Button variant="secondary" size="sm" onClick={onHide} disabled={isLoading}>
                         Cancel
                     </Button>
-                    <Button variant="primary" type="submit" disabled={isLoading}>
+                    <Button variant="primary" size="sm" type="submit" disabled={isLoading}>
                         {isLoading ? 'Saving...' : (isEditing ? 'Update Shift' : 'Create Shift')}
                     </Button>
                 </Modal.Footer>
