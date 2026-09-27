@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Row, Col, Card, Button, Badge, Spinner, ProgressBar } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, Spinner, ProgressBar, InputGroup, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -13,10 +13,14 @@ import {
     CheckCircle2,
     DollarSign,
     Layers,
-    Info
+    Info,
+    Search,
+    RefreshCw
 } from 'lucide-react';
 import { useSalaryTemplates, useDeleteSalaryTemplate } from '../hooks/useEmployeeApi';
 import SalaryTemplateModal from '../components/SalaryTemplateModal';
+import PaginationBar from '../../../components/PaginationBar';
+import CardSkeleton from '../components/CardSkeleton';
 import '../employee.css';
 
 const SalaryTemplates = () => {
@@ -28,13 +32,43 @@ const SalaryTemplates = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-    const { data: templatesRaw, isLoading } = useSalaryTemplates({ firmId });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('');
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(6);
+
+    const { data: templatesRaw, isLoading, refetch } = useSalaryTemplates({ firmId });
     const templates = useMemo(() => {
         if (!templatesRaw) return [];
         return Array.isArray(templatesRaw)
             ? templatesRaw
             : (Array.isArray(templatesRaw?.data) ? templatesRaw.data : []);
     }, [templatesRaw]);
+
+    const filteredTemplates = useMemo(() => {
+        return templates.filter(t => {
+            if (typeFilter && t.templateType !== typeFilter) return false;
+            if (searchTerm.trim()) {
+                const term = searchTerm.toLowerCase();
+                const name = (t.templateName || '').toLowerCase();
+                const desc = (t.description || '').toLowerCase();
+                return name.includes(term) || desc.includes(term);
+            }
+            return true;
+        });
+    }, [templates, searchTerm, typeFilter]);
+
+    const paginatedTemplates = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredTemplates.slice(start, start + pageSize);
+    }, [filteredTemplates, page, pageSize]);
+
+    const pagination = {
+        page,
+        pageSize,
+        total: filteredTemplates.length,
+        totalPages: Math.ceil(filteredTemplates.length / pageSize) || 1
+    };
 
     const deleteMutation = useDeleteSalaryTemplate();
 
@@ -146,14 +180,62 @@ const SalaryTemplates = () => {
                 </Col>
             </Row>
 
+            {/* Search, Filter & Refresh Toolbar */}
+            <Card className="border-0 shadow-sm rounded-3 mb-4 bg-white">
+                <Card.Body className="p-3">
+                    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ maxWidth: '520px' }}>
+                            <InputGroup size="sm" style={{ maxWidth: '280px' }}>
+                                <InputGroup.Text className="bg-light border-end-0">
+                                    <Search size={14} className="text-muted" />
+                                </InputGroup.Text>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Search templates..."
+                                    className="border-start-0 ps-0"
+                                    value={searchTerm}
+                                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                />
+                                {searchTerm && (
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        className="border-start-0"
+                                        onClick={() => { setSearchTerm(''); setPage(1); }}
+                                    >
+                                        ×
+                                    </Button>
+                                )}
+                            </InputGroup>
+                            <Form.Select
+                                size="sm"
+                                value={typeFilter}
+                                onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+                                style={{ width: '160px' }}
+                            >
+                                <option value="">All Types</option>
+                                <option value="MONTHLY">Monthly CTC</option>
+                                <option value="DAILY">Daily Wage</option>
+                                <option value="HOURLY">Hourly Rate</option>
+                            </Form.Select>
+                            <Button variant="outline-secondary" size="sm" onClick={() => refetch()} title="Refresh">
+                                <RefreshCw size={15} />
+                            </Button>
+                        </div>
+                        <span className="text-muted small">
+                            Showing <strong>{paginatedTemplates.length}</strong> of <strong>{filteredTemplates.length}</strong> templates
+                        </span>
+                    </div>
+                </Card.Body>
+            </Card>
+
             {/* Templates Grid */}
             <Row className="g-4">
                 {isLoading ? (
-                    <Col xs={12} className="text-center py-5">
-                        <Spinner animation="border" variant="primary" />
-                        <div className="mt-2 text-muted">Loading salary structure templates...</div>
+                    <Col xs={12}>
+                        <CardSkeleton count={4} lg={6} />
                     </Col>
-                ) : templates.length === 0 ? (
+                ) : paginatedTemplates.length === 0 ? (
                     <Col xs={12}>
                         <Card className="border-0 shadow-sm rounded-3 text-center py-5">
                             <Card.Body>
@@ -162,18 +244,24 @@ const SalaryTemplates = () => {
                                 >
                                     <FileText size={48} />
                                 </div>
-                                <h5 className="fw-bold text-dark">No Salary Templates Defined</h5>
+                                <h5 className="fw-bold text-dark">
+                                    {searchTerm || typeFilter ? 'No matching templates found' : 'No Salary Templates Defined'}
+                                </h5>
                                 <p className="text-muted small mx-auto" style={{ maxWidth: '420px' }}>
-                                    Create your first template (e.g. Standard Workshop Staff, Executive CTC) to automatically compute Basic, HRA, PF, and ESI across payslips.
+                                    {searchTerm || typeFilter
+                                        ? 'Try clearing the search or changing the filter options above.'
+                                        : 'Create your first template (e.g. Standard Workshop Staff, Executive CTC) to automatically compute Basic, HRA, PF, and ESI across payslips.'}
                                 </p>
-                                <Button variant="primary" size="sm" onClick={handleCreate} className="mt-2">
-                                    <Plus size={15} className="me-1" /> Create Template
-                                </Button>
+                                {!searchTerm && !typeFilter && (
+                                    <Button variant="primary" size="sm" onClick={handleCreate} className="mt-2">
+                                        <Plus size={15} className="me-1" /> Create Template
+                                    </Button>
+                                )}
                             </Card.Body>
                         </Card>
                     </Col>
                 ) : (
-                    templates.map((tpl) => {
+                    paginatedTemplates.map((tpl) => {
                         const earnings = tpl.components?.filter(c => (c.componentType || c.component_type) === 'EARNING') || [];
                         const deductions = tpl.components?.filter(c => (c.componentType || c.component_type) === 'DEDUCTION') || [];
 
@@ -346,6 +434,17 @@ const SalaryTemplates = () => {
                     })
                 )}
             </Row>
+
+            {/* Pagination */}
+            {filteredTemplates.length > pageSize && (
+                <div className="mt-4">
+                    <PaginationBar
+                        pagination={pagination}
+                        onPageChange={(p) => setPage(p)}
+                        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+                    />
+                </div>
+            )}
 
             {/* Salary Template Modal */}
             <SalaryTemplateModal

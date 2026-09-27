@@ -241,23 +241,54 @@
 }
 
 @media print {
+    /* Hide layout navigation, sidebars, headers and buttons */
+    .sidebar,
+    .iq-sidebar,
+    .navbar,
+    .iq-top-navbar,
+    .header,
+    nav,
+    aside,
+    footer,
+    .footer,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    body, html, #root, .wrapper, .main-content {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: auto !important;
+    }
+
     body * {
         visibility: hidden;
     }
-    .salary-slip-card, .salary-slip-card * {
+
+    .salary-slip-card,
+    .salary-slip-card * {
         visibility: visible;
     }
+
     .salary-slip-card {
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%;
-        box-shadow: none;
-        border: none;
-        padding: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: 1px solid #d1d5db !important;
+        padding: 24px !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        page-break-inside: avoid;
     }
-    .no-print {
-        display: none !important;
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
     }
 }
 
@@ -468,4 +499,296 @@
     background: #1d4ed8;
     transform: scale(1.15) !important;
 }
+
+/* =========================================================================
+   SKELETON LOADER ANIMATIONS & STYLES
+   ========================================================================= */
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-shimmer {
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.skeleton-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.skeleton-pill {
+    height: 22px;
+    width: 70px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    display: inline-block;
+}
+
+.skeleton-card {
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    padding: 16px;
+}
+
+/* =========================================================================
+   LEAVE CALENDAR VIEW STYLES
+   ========================================================================= */
+
+.leave-cal-container {
+    overflow-x: auto;
+}
+
+.leave-cal-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 0.85rem;
+}
+
+.leave-cal-th-emp {
+    position: sticky;
+    left: 0;
+    background: #f8fafc !important;
+    z-index: 10;
+    min-width: 180px;
+    max-width: 220px;
+    border-right: 2px solid #e2e8f0;
+}
+
+.leave-cal-td-emp {
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 9;
+    min-width: 180px;
+    max-width: 220px;
+    border-right: 2px solid #e2e8f0;
+}
+
+.leave-cal-day-col {
+    min-width: 32px;
+    max-width: 38px;
+    text-align: center;
+    padding: 6px 2px !important;
+    font-size: 0.75rem;
+}
+
+.leave-cal-weekend {
+    background-color: #f8fafc !important;
+    color: #94a3b8;
+}
+
+.leave-cal-today {
+    background-color: #eff6ff !important;
+    font-weight: 700;
+}
+
+.leave-bar {
+    height: 24px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.leave-bar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    z-index: 12;
+}
+
+.leave-bar-approved {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.leave-bar-pending {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(245, 158, 11, 0.1) 6px, rgba(245, 158, 11, 0.1) 12px);
+}
+
+.leave-bar-rejected {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    text-decoration: line-through;
+}
+
+.leave-grid-cell {
+    height: 70px;
+    vertical-align: top;
+    padding: 4px !important;
+    transition: background-color 0.15s ease;
+}
+
+.leave-grid-cell:hover {
+    background-color: #f8fafc;
+}
+
+.leave-chip {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* =========================================================================
+   Muster Export Modal Premium Styling
+   ========================================================================= */
+.muster-modal .modal-content {
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2);
+    overflow: hidden;
+}
+
+.muster-modal-header {
+    padding: 20px 24px 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+}
+
+.muster-format-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #ffffff;
+    position: relative;
+    user-select: none;
+}
+
+.muster-format-card:hover {
+    border-color: #94a3b8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.muster-format-card.active {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.12);
+}
+
+.muster-radio-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.muster-format-card.active .muster-radio-dot {
+    border-color: #0284c7;
+    background: #0284c7;
+}
+
+.muster-radio-inner {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffffff;
+}
+
+.muster-preview-wrapper {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.muster-preview-table th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #475569;
+    background: #f1f5f9 !important;
+    padding: 6px 4px !important;
+    text-align: center;
+}
+
+.muster-preview-table td {
+    padding: 6px 4px !important;
+    font-size: 0.75rem;
+    vertical-align: middle;
+}
+
+.muster-day-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.muster-day-P {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.muster-day-A {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.muster-day-WO {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+
 

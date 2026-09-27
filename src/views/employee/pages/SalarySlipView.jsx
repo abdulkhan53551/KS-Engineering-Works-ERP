@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, Table, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Download } from 'lucide-react';
-import { useSalarySlip } from '../hooks/useEmployeeApi';
+import { ArrowLeft, Printer, Download, AlertCircle } from 'lucide-react';
+import { useSalarySlip, useDownloadSalarySlip } from '../hooks/useEmployeeApi';
 import '../employee.css';
 
 const SalarySlipView = () => {
@@ -12,23 +12,57 @@ const SalarySlipView = () => {
     const { data: slipData, isLoading } = useSalarySlip(id);
     const slip = slipData?.id ? slipData : (slipData?.data || null);
 
+    const downloadMutation = useDownloadSalarySlip();
+
     const handlePrint = () => {
         window.print();
     };
 
+    const handleDownloadPdf = () => {
+        if (!slip) return;
+        const safeEmpCode = (slip.empCode || 'EMP').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `SalarySlip-${safeEmpCode}-${slip.month}-${slip.year}.pdf`;
+        downloadMutation.mutate({ id: slip.id, filename });
+    };
+
     if (isLoading) {
         return (
-            <div className="container-fluid p-5 text-center">
-                <Spinner animation="border" variant="primary" />
-                <div className="mt-2 text-muted">Loading payslip...</div>
+            <div className="container-fluid p-3">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div className="skeleton-box" style={{ width: '80px', height: '32px' }} />
+                    <div className="d-flex gap-2">
+                        <div className="skeleton-box" style={{ width: '100px', height: '32px' }} />
+                        <div className="skeleton-box" style={{ width: '120px', height: '32px' }} />
+                    </div>
+                </div>
+                <div className="salary-slip-card shadow-sm p-4">
+                    <div className="text-center mb-4">
+                        <div className="skeleton-box mx-auto mb-2" style={{ width: '280px', height: '28px' }} />
+                        <div className="skeleton-box mx-auto mb-2" style={{ width: '380px', height: '16px' }} />
+                        <div className="skeleton-box mx-auto" style={{ width: '200px', height: '24px', borderRadius: '12px' }} />
+                    </div>
+                    <div className="skeleton-box w-100 mb-3" style={{ height: '120px', borderRadius: '6px' }} />
+                    <div className="skeleton-box w-100 mb-3" style={{ height: '40px', borderRadius: '6px' }} />
+                    <Row className="g-3 mb-3">
+                        <Col md={6}>
+                            <div className="skeleton-box w-100" style={{ height: '160px', borderRadius: '6px' }} />
+                        </Col>
+                        <Col md={6}>
+                            <div className="skeleton-box w-100" style={{ height: '160px', borderRadius: '6px' }} />
+                        </Col>
+                    </Row>
+                    <div className="skeleton-box w-100 mb-4" style={{ height: '60px', borderRadius: '6px' }} />
+                </div>
             </div>
         );
     }
 
     if (!slip) {
         return (
-            <div className="container-fluid p-4 text-center">
-                <h4>Salary slip not found</h4>
+            <div className="container-fluid p-5 text-center">
+                <AlertCircle size={48} className="text-danger mb-3" />
+                <h4 className="fw-bold">Salary slip not found</h4>
+                <p className="text-muted small">The requested salary slip could not be found or may have been removed.</p>
                 <Button variant="primary" size="sm" onClick={() => navigate('/dashboard/employee/payroll')}>
                     Back to Payroll
                 </Button>
@@ -36,7 +70,11 @@ const SalarySlipView = () => {
         );
     }
 
-    const monthName = new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const monthName = `${monthNames[(slip.month || 1) - 1]} ${slip.year}`;
 
     return (
         <div className="container-fluid p-3">
@@ -46,8 +84,25 @@ const SalarySlipView = () => {
                     <ArrowLeft size={16} className="me-1" /> Back
                 </Button>
                 <div className="d-flex gap-2">
-                    <Button variant="primary" size="sm" onClick={handlePrint}>
-                        <Printer size={16} className="me-1" /> Print / Save as PDF
+                    <Button variant="outline-primary" size="sm" onClick={handlePrint}>
+                        <Printer size={16} className="me-1" /> Print
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleDownloadPdf}
+                        disabled={downloadMutation.isPending}
+                        className="d-flex align-items-center"
+                    >
+                        {downloadMutation.isPending ? (
+                            <>
+                                <Spinner size="sm" className="me-2" /> Generating PDF...
+                            </>
+                        ) : (
+                            <>
+                                <Download size={16} className="me-1" /> Download PDF
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>
@@ -75,7 +130,7 @@ const SalarySlipView = () => {
                             <div className="d-flex"><strong style={{ width: '130px' }}>Employee Name:</strong> <span className="fw-bold text-dark">{slip.firstName} {slip.lastName || ''}</span></div>
                             <div className="d-flex"><strong style={{ width: '130px' }}>Department:</strong> <span>{slip.department || '—'}</span></div>
                             <div className="d-flex"><strong style={{ width: '130px' }}>Designation:</strong> <span>{slip.designation || '—'}</span></div>
-                            <div className="d-flex"><strong style={{ width: '130px' }}>Employment Type:</strong> <span>{slip.employmentType}</span></div>
+                            <div className="d-flex"><strong style={{ width: '130px' }}>Employment Type:</strong> <span>{slip.employmentType || '—'}</span></div>
                         </Col>
                         <Col md={6}>
                             <div className="d-flex"><strong style={{ width: '130px' }}>Bank Name:</strong> <span>{slip.bankName || '—'}</span></div>
@@ -90,12 +145,12 @@ const SalarySlipView = () => {
                 {/* Attendance Summary Bar */}
                 <div className="p-2 mb-3 rounded text-center small fw-semibold" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
                     <Row className="g-1">
-                        <Col>Total Days: <span className="text-dark">{slip.totalWorkingDays}</span></Col>
-                        <Col>Present: <span className="text-success">{slip.presentDays}</span></Col>
-                        <Col>Absent: <span className="text-danger">{slip.absentDays}</span></Col>
-                        <Col>Half Days: <span className="text-warning">{slip.halfDays}</span></Col>
-                        <Col>Paid Leaves: <span className="text-primary">{slip.paidLeaveDays}</span></Col>
-                        <Col>Overtime: <span className="text-dark">{slip.overtimeHours} hrs</span></Col>
+                        <Col>Total Days: <span className="text-dark">{slip.totalWorkingDays || slip.total_working_days || 0}</span></Col>
+                        <Col>Present: <span className="text-success">{slip.presentDays || slip.present_days || 0}</span></Col>
+                        <Col>Absent: <span className="text-danger">{slip.absentDays || slip.absent_days || 0}</span></Col>
+                        <Col>Half Days: <span className="text-warning">{slip.halfDays || slip.half_days || 0}</span></Col>
+                        <Col>Paid Leaves: <span className="text-primary">{slip.paidLeaveDays || slip.paid_leave_days || 0}</span></Col>
+                        <Col>Overtime: <span className="text-dark">{slip.overtimeHours || slip.overtime_hours || 0} hrs</span></Col>
                     </Row>
                 </div>
 
@@ -112,13 +167,18 @@ const SalarySlipView = () => {
                                     {slip.earnings?.map((e, idx) => (
                                         <tr key={idx}>
                                             <td className="ps-3">{e.component_name}</td>
-                                            <td className="text-end pe-3 fw-semibold">₹{parseFloat(e.amount).toLocaleString('en-IN')}</td>
+                                            <td className="text-end pe-3 fw-semibold">₹{parseFloat(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                         </tr>
                                     ))}
-                                    {parseFloat(slip.overtimePay || 0) > 0 && (
+                                    {parseFloat(slip.overtimePay || slip.overtime_pay || 0) > 0 && (
                                         <tr>
-                                            <td className="ps-3">Overtime Pay ({slip.overtimeHours} hrs)</td>
-                                            <td className="text-end pe-3 fw-semibold">₹{parseFloat(slip.overtimePay).toLocaleString('en-IN')}</td>
+                                            <td className="ps-3">Overtime Pay ({slip.overtimeHours || slip.overtime_hours} hrs)</td>
+                                            <td className="text-end pe-3 fw-semibold">₹{parseFloat(slip.overtimePay || slip.overtime_pay).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                        </tr>
+                                    )}
+                                    {(!slip.earnings || slip.earnings.length === 0) && !(parseFloat(slip.overtimePay || slip.overtime_pay || 0) > 0) && (
+                                        <tr>
+                                            <td colSpan="2" className="text-center py-2 text-muted small">No earnings recorded</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -126,7 +186,7 @@ const SalarySlipView = () => {
                                     <tr>
                                         <th className="ps-3">Total Earnings (A)</th>
                                         <th className="text-end pe-3 text-success">
-                                            ₹{(parseFloat(slip.grossEarnings || 0) + parseFloat(slip.overtimePay || 0)).toLocaleString('en-IN')}
+                                            ₹{(parseFloat(slip.grossEarnings || slip.gross_earnings || 0) + parseFloat(slip.overtimePay || slip.overtime_pay || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </th>
                                     </tr>
                                 </tfoot>
@@ -150,7 +210,7 @@ const SalarySlipView = () => {
                                         slip.deductions?.map((d, idx) => (
                                             <tr key={idx}>
                                                 <td className="ps-3">{d.component_name}</td>
-                                                <td className="text-end pe-3 fw-semibold">₹{parseFloat(d.amount).toLocaleString('en-IN')}</td>
+                                                <td className="text-end pe-3 fw-semibold">₹{parseFloat(d.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))
                                     )}
@@ -159,7 +219,7 @@ const SalarySlipView = () => {
                                     <tr>
                                         <th className="ps-3">Total Deductions (B)</th>
                                         <th className="text-end pe-3 text-danger">
-                                            ₹{parseFloat(slip.totalDeductions || 0).toLocaleString('en-IN')}
+                                            ₹{parseFloat(slip.totalDeductions || slip.total_deductions || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </th>
                                     </tr>
                                 </tfoot>
@@ -176,7 +236,7 @@ const SalarySlipView = () => {
                     </div>
                     <div className="text-end">
                         <h3 className="fw-bold text-success mb-0">
-                            ₹{parseFloat(slip.netSalary || 0).toLocaleString('en-IN')}
+                            ₹{parseFloat(slip.netSalary || slip.net_salary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </h3>
                     </div>
                 </div>
@@ -198,3 +258,4 @@ const SalarySlipView = () => {
 };
 
 export default SalarySlipView;
+

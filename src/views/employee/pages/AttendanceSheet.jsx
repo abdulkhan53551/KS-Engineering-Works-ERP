@@ -22,6 +22,7 @@ import {
 } from '../hooks/useEmployeeApi';
 import DailyAttendanceRegister from '../components/DailyAttendanceRegister';
 import AttendanceHoursModal from '../components/AttendanceHoursModal';
+import ExportMusterModal from '../components/ExportMusterModal';
 import '../employee.css';
 
 const STATUS_CYCLE = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'WEEKLY_OFF', 'HOLIDAY'];
@@ -51,6 +52,7 @@ const AttendanceSheet = () => {
     // Grid local state: { [employeeId_day]: { status, totalHours, overtimeHours, overtimeType, checkIn, checkOut, remarks } }
     const [matrix, setMatrix] = useState({});
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
 
     // Modal state for editing a specific day's hours
     const [modalState, setModalState] = useState({
@@ -401,6 +403,14 @@ const AttendanceSheet = () => {
                                 💡 Double-click any cell or hover to edit exact hours & OT
                             </span>
                             <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => setShowExportModal(true)}
+                                className="d-flex align-items-center gap-1 shadow-sm px-3"
+                            >
+                                <Download size={15} /> Export Muster Roll
+                            </Button>
+                            <Button
                                 variant={hasUnsavedChanges ? 'success' : 'primary'}
                                 size="sm"
                                 onClick={handleSave}
@@ -648,6 +658,16 @@ const AttendanceSheet = () => {
                 date={modalState.date}
                 initialData={modalState.data}
                 onSaved={handleModalSaved}
+            />
+
+            {/* Attendance Muster Export Modal */}
+            <ExportMusterModal
+                show={showExportModal}
+                onHide={() => setShowExportModal(false)}
+                month={currentMonth}
+                year={currentYear}
+                firmId={firmId}
+                previewEmployees={employees}
             />
         </div>
     );

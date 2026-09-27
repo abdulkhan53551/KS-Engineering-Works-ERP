@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
-import { Row, Col, Card, Table, Button, Badge, Spinner } from 'react-bootstrap';
+import React, { useState, useMemo } from 'react';
+import { Row, Col, Card, Table, Button, Badge, Spinner, InputGroup, Form } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
-import { Clock, Plus, Users, Edit3, Trash2 } from 'lucide-react';
+import {
+    Clock,
+    Plus,
+    Users,
+    Edit3,
+    Trash2,
+    Search,
+    RefreshCw,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown
+} from 'lucide-react';
+import useDebounce from '../../../hooks/useDebounce';
 import { useShifts, useDeleteShift, useShiftAssignments } from '../hooks/useEmployeeApi';
 import ShiftModal from '../components/ShiftModal';
 import ShiftAssignModal from '../components/ShiftAssignModal';
+import PaginationBar from '../../../components/PaginationBar';
+import TableSkeleton from '../components/TableSkeleton';
 import '../employee.css';
 
 const ShiftList = () => {
@@ -12,15 +26,99 @@ const ShiftList = () => {
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
 
+    // Shift search, sort & pagination
+    const [shiftSearch, setShiftSearch] = useState('');
+    const debouncedShiftSearch = useDebounce(shiftSearch, 400);
+    const [shiftSortBy, setShiftSortBy] = useState('is_default');
+    const [shiftSortOrder, setShiftSortOrder] = useState('desc');
+    const [shiftPage, setShiftPage] = useState(1);
+    const [shiftPageSize, setShiftPageSize] = useState(10);
+
+    // Assignment search & pagination
+    const [assignSearch, setAssignSearch] = useState('');
+    const debouncedAssignSearch = useDebounce(assignSearch, 400);
+    const [assignPage, setAssignPage] = useState(1);
+    const [assignPageSize, setAssignPageSize] = useState(10);
+
     const [showShiftModal, setShowShiftModal] = useState(false);
     const [selectedShift, setSelectedShift] = useState(null);
     const [showAssignModal, setShowAssignModal] = useState(false);
 
-    const { data: shiftsRaw, isLoading: loadingShifts } = useShifts({ firmId });
-    const { data: assignmentsRaw, isLoading: loadingAssignments } = useShiftAssignments({ firmId });
-    const shifts = Array.isArray(shiftsRaw) ? shiftsRaw : (Array.isArray(shiftsRaw?.data) ? shiftsRaw.data : []);
-    const assignments = Array.isArray(assignmentsRaw) ? assignmentsRaw : (Array.isArray(assignmentsRaw?.data) ? assignmentsRaw.data : []);
+    // API Queries
+    const {
+        data: shiftsRaw,
+        isLoading: loadingShifts,
+        refetch: refetchShifts
+    } = useShifts({
+        firmId,
+        search: debouncedShiftSearch,
+        sortBy: shiftSortBy,
+        sortOrder: shiftSortOrder
+    });
+
+    const {
+        data: assignmentsRaw,
+        isLoading: loadingAssignments,
+        refetch: refetchAssignments
+    } = useShiftAssignments({
+        firmId,
+        search: debouncedAssignSearch
+    });
+
     const deleteMutation = useDeleteShift();
+
+    const allShifts = useMemo(() => {
+        if (!shiftsRaw) return [];
+        return Array.isArray(shiftsRaw) ? shiftsRaw : (Array.isArray(shiftsRaw?.data) ? shiftsRaw.data : []);
+    }, [shiftsRaw]);
+
+    const allAssignments = useMemo(() => {
+        if (!assignmentsRaw) return [];
+        return Array.isArray(assignmentsRaw) ? assignmentsRaw : (Array.isArray(assignmentsRaw?.data) ? assignmentsRaw.data : []);
+    }, [assignmentsRaw]);
+
+    // Paginated shifts
+    const paginatedShifts = useMemo(() => {
+        const start = (shiftPage - 1) * shiftPageSize;
+        return allShifts.slice(start, start + shiftPageSize);
+    }, [allShifts, shiftPage, shiftPageSize]);
+
+    const shiftPagination = {
+        page: shiftPage,
+        pageSize: shiftPageSize,
+        total: allShifts.length,
+        totalPages: Math.ceil(allShifts.length / shiftPageSize) || 1
+    };
+
+    // Paginated assignments
+    const paginatedAssignments = useMemo(() => {
+        const start = (assignPage - 1) * assignPageSize;
+        return allAssignments.slice(start, start + assignPageSize);
+    }, [allAssignments, assignPage, assignPageSize]);
+
+    const assignPagination = {
+        page: assignPage,
+        pageSize: assignPageSize,
+        total: allAssignments.length,
+        totalPages: Math.ceil(allAssignments.length / assignPageSize) || 1
+    };
+
+    const handleShiftSort = (col) => {
+        if (shiftSortBy === col) {
+            setShiftSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setShiftSortBy(col);
+            setShiftSortOrder('asc');
+        }
+        setShiftPage(1);
+    };
+
+    const ShiftSortIcon = ({ column }) => {
+        if (shiftSortBy !== column) return <ArrowUpDown size={12} className="ms-1 text-muted opacity-50" />;
+        return shiftSortOrder === 'asc'
+            ? <ArrowUp size={12} className="ms-1 text-primary" />
+            : <ArrowDown size={12} className="ms-1 text-primary" />;
+    };
 
     const handleCreate = () => {
         setSelectedShift(null);
@@ -40,7 +138,7 @@ const ShiftList = () => {
 
     return (
         <div className="container-fluid p-3">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <div>
                     <h4 className="fw-bold mb-0 text-dark">Shifts & Rosters</h4>
                     <span className="text-muted small">
@@ -62,38 +160,76 @@ const ShiftList = () => {
                 <Col md={12}>
                     <Card className="border-0 shadow-sm rounded-3">
                         <Card.Header className="bg-white border-0 py-3">
-                            <h6 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
-                                <Clock size={18} /> Configured Shifts
-                            </h6>
+                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h6 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
+                                    <Clock size={18} /> Configured Shifts
+                                    <Badge bg="primary-subtle" className="text-primary border border-primary-subtle ms-1">
+                                        {allShifts.length}
+                                    </Badge>
+                                </h6>
+                                <div className="d-flex align-items-center gap-2">
+                                    <InputGroup size="sm" style={{ width: '220px' }}>
+                                        <InputGroup.Text className="bg-light border-end-0">
+                                            <Search size={13} className="text-muted" />
+                                        </InputGroup.Text>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Search shifts..."
+                                            className="border-start-0 ps-0"
+                                            value={shiftSearch}
+                                            onChange={(e) => { setShiftSearch(e.target.value); setShiftPage(1); }}
+                                        />
+                                        {shiftSearch && (
+                                            <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                className="border-start-0"
+                                                onClick={() => { setShiftSearch(''); setShiftPage(1); }}
+                                            >
+                                                ×
+                                            </Button>
+                                        )}
+                                    </InputGroup>
+                                    <Button variant="outline-secondary" size="sm" onClick={() => refetchShifts()} title="Refresh">
+                                        <RefreshCw size={14} />
+                                    </Button>
+                                </div>
+                            </div>
                         </Card.Header>
                         <Card.Body className="p-0">
                             <div className="table-responsive">
                                 <Table hover className="align-middle mb-0">
                                     <thead className="table-light">
                                         <tr>
-                                            <th>Shift Name</th>
-                                            <th>Code</th>
-                                            <th>Timings</th>
-                                            <th>Break Minutes</th>
-                                            <th>Default</th>
+                                            <th style={{ cursor: 'pointer' }} onClick={() => handleShiftSort('shift_name')}>
+                                                Shift Name <ShiftSortIcon column="shift_name" />
+                                            </th>
+                                            <th style={{ cursor: 'pointer' }} onClick={() => handleShiftSort('shift_code')}>
+                                                Code <ShiftSortIcon column="shift_code" />
+                                            </th>
+                                            <th style={{ cursor: 'pointer' }} onClick={() => handleShiftSort('start_time')}>
+                                                Timings <ShiftSortIcon column="start_time" />
+                                            </th>
+                                            <th style={{ cursor: 'pointer' }} onClick={() => handleShiftSort('break_minutes')}>
+                                                Break Minutes <ShiftSortIcon column="break_minutes" />
+                                            </th>
+                                            <th style={{ cursor: 'pointer' }} onClick={() => handleShiftSort('is_default')}>
+                                                Default <ShiftSortIcon column="is_default" />
+                                            </th>
                                             <th className="text-end">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loadingShifts ? (
+                                            <TableSkeleton rows={4} cols={6} hasCheckbox={false} hasAvatar={false} />
+                                        ) : paginatedShifts.length === 0 ? (
                                             <tr>
                                                 <td colSpan="6" className="text-center py-4 text-muted">
-                                                    <Spinner size="sm" className="me-2" /> Loading shifts...
-                                                </td>
-                                            </tr>
-                                        ) : shifts.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="6" className="text-center py-4 text-muted">
-                                                    No shifts defined yet. Click <strong>Create Shift</strong> above.
+                                                    {shiftSearch ? 'No shifts match your search.' : 'No shifts defined yet. Click Create Shift above.'}
                                                 </td>
                                             </tr>
                                         ) : (
-                                            shifts.map(s => (
+                                            paginatedShifts.map(s => (
                                                 <tr key={s.id}>
                                                     <td className="fw-semibold text-dark">{s.shiftName}</td>
                                                     <td>
@@ -138,6 +274,16 @@ const ShiftList = () => {
                                     </tbody>
                                 </Table>
                             </div>
+
+                            {allShifts.length > shiftPageSize && (
+                                <div className="p-3 border-top">
+                                    <PaginationBar
+                                        pagination={shiftPagination}
+                                        onPageChange={(p) => setShiftPage(p)}
+                                        onPageSizeChange={(s) => { setShiftPageSize(s); setShiftPage(1); }}
+                                    />
+                                </div>
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>
@@ -145,13 +291,42 @@ const ShiftList = () => {
                 {/* Active Shift Rosters / Assignments */}
                 <Col md={12}>
                     <Card className="border-0 shadow-sm rounded-3">
-                        <Card.Header className="bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                            <h6 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
-                                <Users size={18} /> Active Employee Shift Assignments
-                            </h6>
-                            <span className="text-muted small">
-                                Total Assigned: <strong>{assignments.length}</strong>
-                            </span>
+                        <Card.Header className="bg-white border-0 py-3">
+                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h6 className="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
+                                    <Users size={18} /> Active Employee Shift Assignments
+                                    <Badge bg="primary-subtle" className="text-primary border border-primary-subtle ms-1">
+                                        {allAssignments.length}
+                                    </Badge>
+                                </h6>
+                                <div className="d-flex align-items-center gap-2">
+                                    <InputGroup size="sm" style={{ width: '250px' }}>
+                                        <InputGroup.Text className="bg-light border-end-0">
+                                            <Search size={13} className="text-muted" />
+                                        </InputGroup.Text>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Search staff, dept, shift..."
+                                            className="border-start-0 ps-0"
+                                            value={assignSearch}
+                                            onChange={(e) => { setAssignSearch(e.target.value); setAssignPage(1); }}
+                                        />
+                                        {assignSearch && (
+                                            <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                className="border-start-0"
+                                                onClick={() => { setAssignSearch(''); setAssignPage(1); }}
+                                            >
+                                                ×
+                                            </Button>
+                                        )}
+                                    </InputGroup>
+                                    <Button variant="outline-secondary" size="sm" onClick={() => refetchAssignments()} title="Refresh">
+                                        <RefreshCw size={14} />
+                                    </Button>
+                                </div>
+                            </div>
                         </Card.Header>
                         <Card.Body className="p-0">
                             <div className="table-responsive">
@@ -168,19 +343,15 @@ const ShiftList = () => {
                                     </thead>
                                     <tbody>
                                         {loadingAssignments ? (
+                                            <TableSkeleton rows={5} cols={6} hasCheckbox={false} hasAvatar={false} />
+                                        ) : paginatedAssignments.length === 0 ? (
                                             <tr>
                                                 <td colSpan="6" className="text-center py-4 text-muted">
-                                                    <Spinner size="sm" className="me-2" /> Loading shift assignments...
-                                                </td>
-                                            </tr>
-                                        ) : assignments.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="6" className="text-center py-4 text-muted">
-                                                    No employees currently assigned to shifts.
+                                                    {assignSearch ? 'No shift assignments match your search.' : 'No employees currently assigned to shifts.'}
                                                 </td>
                                             </tr>
                                         ) : (
-                                            assignments.map(a => (
+                                            paginatedAssignments.map(a => (
                                                 <tr key={a.id}>
                                                     <td>
                                                         <div className="fw-semibold text-dark">
@@ -205,6 +376,16 @@ const ShiftList = () => {
                                     </tbody>
                                 </Table>
                             </div>
+
+                            {allAssignments.length > assignPageSize && (
+                                <div className="p-3 border-top">
+                                    <PaginationBar
+                                        pagination={assignPagination}
+                                        onPageChange={(p) => setAssignPage(p)}
+                                        onPageSizeChange={(s) => { setAssignPageSize(s); setAssignPage(1); }}
+                                    />
+                                </div>
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>

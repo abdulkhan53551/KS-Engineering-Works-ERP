@@ -114,6 +114,8 @@ export const fetchShifts = asyncHandler(async (params = {}) => {
     const query = new URLSearchParams();
     if (params.firmId) query.append("firmId", params.firmId);
     if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
 
     const res = await api.request({
         url: `/shifts?${query.toString()}`,
@@ -170,6 +172,7 @@ export const fetchShiftAssignments = asyncHandler(async (params = {}) => {
     if (params.firmId) query.append("firmId", params.firmId);
     if (params.shiftId) query.append("shiftId", params.shiftId);
     if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.search) query.append("search", params.search);
 
     const res = await api.request({
         url: `/shifts/assignments?${query.toString()}`,
@@ -241,6 +244,40 @@ export const fetchAttendanceSummary = asyncHandler(async (params = {}) => {
     return res.data;
 });
 
+export const exportAttendanceMuster = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.branchId) query.append("branchId", params.branchId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.includeOt !== undefined) query.append("includeOt", params.includeOt);
+    if (params.format) query.append("format", params.format);
+
+    const isPdf = params.format === 'pdf';
+    const res = await api.request({
+        url: `/attendance/muster/export?${query.toString()}`,
+        method: requestMethod.GET,
+        responseType: 'blob'
+    });
+
+    const contentType = isPdf
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const ext = isPdf ? 'pdf' : 'xlsx';
+
+    const blob = new Blob([res.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `AttendanceMuster-${params.month}-${params.year}.${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true };
+});
+
 /* =========================================================================
    LEAVES APIS
    ========================================================================= */
@@ -255,6 +292,9 @@ export const fetchLeaves = asyncHandler(async (params = {}) => {
     if (params.leaveType) query.append("leaveType", params.leaveType);
     if (params.startDate) query.append("startDate", params.startDate);
     if (params.endDate) query.append("endDate", params.endDate);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
 
     const res = await api.request({
         url: `/leaves?${query.toString()}`,
@@ -376,6 +416,8 @@ export const fetchSalarySlips = asyncHandler(async (params = {}) => {
     if (params.status) query.append("status", params.status);
     if (params.employeeId) query.append("employeeId", params.employeeId);
     if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
 
     const res = await api.request({
         url: `/payroll/slips?${query.toString()}`,
@@ -390,6 +432,38 @@ export const fetchSalarySlipById = asyncHandler(async (id) => {
         method: requestMethod.GET
     });
     return res.data;
+});
+
+export const downloadSalarySlipPdf = asyncHandler(async (id, filename = '') => {
+    try {
+        const res = await api.request({
+            url: `/payroll/slips/${id}/pdf`,
+            method: requestMethod.GET,
+            responseType: 'blob'
+        });
+
+        const blob = new Blob([res.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename || `SalarySlip-${id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        return { success: true };
+    } catch (error) {
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                error.response.data = JSON.parse(text);
+            } catch (e) {
+                error.message = text;
+            }
+        }
+        throw error;
+    }
 });
 
 export const generatePayroll = asyncHandler(async (data) => {
@@ -429,4 +503,38 @@ export const fetchPayrollReport = asyncHandler(async (params = {}) => {
         method: requestMethod.GET
     });
     return res.data;
+});
+
+export const exportSalaryMuster = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.type) query.append("type", params.type);
+    if (params.format) query.append("format", params.format);
+
+    const isPdf = params.format === 'pdf';
+    const res = await api.request({
+        url: `/payroll/muster/export?${query.toString()}`,
+        method: requestMethod.GET,
+        responseType: 'blob'
+    });
+
+    const contentType = isPdf
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const ext = isPdf ? 'pdf' : 'xlsx';
+    const prefix = params.type === 'bank' ? 'BankTransfer-NEFT' : 'SalaryWageMuster';
+
+    const blob = new Blob([res.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${prefix}-${params.month}-${params.year}.${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true };
 });

@@ -36,10 +36,13 @@ import {
     deleteSalaryTemplate,
     fetchSalarySlips,
     fetchSalarySlipById,
+    downloadSalarySlipPdf,
     generatePayroll,
     approveSalarySlip,
     bulkPaySlips,
-    fetchPayrollReport
+    fetchPayrollReport,
+    exportAttendanceMuster,
+    exportSalaryMuster
 } from "../api";
 
 const EMPTY_ARRAY = [];
@@ -484,6 +487,18 @@ export const useSalarySlip = (id) => {
     });
 };
 
+export const useDownloadSalarySlip = () => {
+    return useMutation({
+        mutationFn: ({ id, filename }) => downloadSalarySlipPdf(id, filename),
+        onSuccess: () => {
+            toast.success("Salary slip PDF downloaded successfully.");
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to download salary slip PDF.");
+        }
+    });
+};
+
 export const useGeneratePayroll = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -538,3 +553,29 @@ export const usePayrollReport = (params = {}) => {
         enabled: Boolean(params.month && params.year)
     });
 };
+
+export const useExportAttendanceMuster = () => {
+    return useMutation({
+        mutationFn: exportAttendanceMuster,
+        onSuccess: () => {
+            toast.success("Attendance muster downloaded successfully.");
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to download attendance muster.");
+        }
+    });
+};
+
+export const useExportSalaryMuster = () => {
+    return useMutation({
+        mutationFn: exportSalaryMuster,
+        onSuccess: (data, vars) => {
+            const label = vars.type === 'bank' ? 'Bank transfer file (NEFT/RTGS)' : 'Salary wage muster';
+            toast.success(`${label} downloaded successfully.`);
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to download wage muster.");
+        }
+    });
+};
+

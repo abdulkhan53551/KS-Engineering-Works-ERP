@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -15,7 +15,11 @@ import {
     Clock,
     Eye,
     Edit3,
-    RotateCcw
+    RotateCcw,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    CheckSquare
 } from 'lucide-react';
 import useDebounce from '../../../hooks/useDebounce';
 import {
@@ -25,6 +29,7 @@ import {
     useRestoreEmployee
 } from '../hooks/useEmployeeApi';
 import PaginationBar from '../../../components/PaginationBar';
+import TableSkeleton from '../components/TableSkeleton';
 import '../employee.css';
 
 const EmployeeList = () => {
@@ -41,9 +46,38 @@ const EmployeeList = () => {
     const [deptFilter, setDeptFilter] = useState('');
     const [isTrash, setIsTrash] = useState(false);
 
+    // Sorting
+    const [sortBy, setSortBy] = useState('created_at');
+    const [sortOrder, setSortOrder] = useState('desc');
+
+    // Selection for Bulk Actions
+    const [selectedIds, setSelectedIds] = useState([]);
+
     // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+
+    // Clear selection on page/filter change
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [page, pageSize, debouncedSearch, statusFilter, typeFilter, deptFilter, isTrash]);
+
+    const handleSort = (column) => {
+        if (sortBy === column) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+        setPage(1);
+    };
+
+    const SortIcon = ({ column }) => {
+        if (sortBy !== column) return <ArrowUpDown size={12} className="ms-1 text-muted opacity-50" />;
+        return sortOrder === 'asc'
+            ? <ArrowUp size={12} className="ms-1 text-primary" />
+            : <ArrowDown size={12} className="ms-1 text-primary" />;
+    };
 
     // API Queries
     const { data: result, isLoading, refetch } = useEmployees({
@@ -54,7 +88,9 @@ const EmployeeList = () => {
         employmentType: typeFilter,
         department: deptFilter,
         firmId,
-        trash: isTrash
+        trash: isTrash,
+        sortBy,
+        sortOrder
     });
 
     const { data: meta } = useEmployeesMeta({ firmId });
@@ -70,6 +106,18 @@ const EmployeeList = () => {
             : (Array.isArray(result) ? result : []));
     const pagination = result?.pagination || result?.data?.pagination || { page: 1, pageSize: 10, total: 0, totalPages: 1 };
 
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === employees.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(employees.map(e => e.id));
+        }
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm(isTrash ? 'Permanently delete this employee?' : 'Move this employee to recycle bin?')) {
             await deleteMutation.mutateAsync({ id, permanent: isTrash });
@@ -78,6 +126,29 @@ const EmployeeList = () => {
 
     const handleRestore = async (id) => {
         await restoreMutation.mutateAsync(id);
+    };
+
+    const handleBulkDelete = async () => {
+        const msg = isTrash
+            ? `Permanently delete ${selectedIds.length} employee(s)? This action cannot be undone.`
+            : `Move ${selectedIds.length} employee(s) to the recycle bin?`;
+        if (!window.confirm(msg)) return;
+        try {
+            await Promise.all(selectedIds.map(id => deleteMutation.mutateAsync({ id, permanent: isTrash })));
+            setSelectedIds([]);
+        } catch (err) {
+            console.error('Bulk delete failed:', err);
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        if (!window.confirm(`Restore ${selectedIds.length} employee(s) from recycle bin?`)) return;
+        try {
+            await Promise.all(selectedIds.map(id => restoreMutation.mutateAsync(id)));
+            setSelectedIds([]);
+        } catch (err) {
+            console.error('Bulk restore failed:', err);
+        }
     };
 
     const getTypeBadge = (type) => {
@@ -276,32 +347,76 @@ const EmployeeList = () => {
                         </div>
                     </div>
 
+                    {/* Bulk Actions Banner */}
+                    {selectedIds.length > 0 && (
+                        <div className="alert alert-primary d-flex justify-content-between align-items-center py-2 px-3 mb-3 border-0 rounded-3 shadow-sm">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="fw-semibold">
+                                    {selectedIds.length} employee{selectedIds.length > 1 ? 's' : ''} selected
+                                </span>
+                            </div>
+                            <div className="d-flex align-items-center gap-2">
+                                {!isTrash ? (
+                                    <Button variant="outline-danger" size="sm" onClick={handleBulkDelete}>
+                                        <Trash2 size={14} className="me-1" /> Move Selected to Trash
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button variant="success" size="sm" onClick={handleBulkRestore}>
+                                            <RotateCcw size={14} className="me-1" /> Restore Selected
+                                        </Button>
+                                        <Button variant="danger" size="sm" onClick={handleBulkDelete}>
+                                            <Trash2 size={14} className="me-1" /> Permanently Delete
+                                        </Button>
+                                    </>
+                                )}
+                                <Button variant="light" size="sm" onClick={() => setSelectedIds([])}>
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Employee Directory Table */}
                     <div className="table-responsive">
                         <Table hover className="align-middle mb-0">
                             <thead className="table-light">
                                 <tr>
-                                    <th style={{ width: '12%' }}>Emp Code</th>
-                                    <th style={{ width: '22%' }}>Employee Name</th>
-                                    <th style={{ width: '16%' }}>Department & Role</th>
-                                    <th style={{ width: '13%' }}>Type</th>
-                                    <th style={{ width: '13%' }}>Shift</th>
-                                    <th style={{ width: '12%' }}>Base Salary</th>
-                                    <th style={{ width: '8%' }}>Status</th>
-                                    <th style={{ width: '12%' }} className="text-end">Actions</th>
+                                    <th style={{ width: '40px' }}>
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={employees.length > 0 && selectedIds.length === employees.length}
+                                            onChange={handleSelectAll}
+                                        />
+                                    </th>
+                                    <th style={{ width: '12%', cursor: 'pointer' }} onClick={() => handleSort('emp_code')}>
+                                        Emp Code <SortIcon column="emp_code" />
+                                    </th>
+                                    <th style={{ width: '20%', cursor: 'pointer' }} onClick={() => handleSort('first_name')}>
+                                        Employee Name <SortIcon column="first_name" />
+                                    </th>
+                                    <th style={{ width: '15%', cursor: 'pointer' }} onClick={() => handleSort('department')}>
+                                        Department & Role <SortIcon column="department" />
+                                    </th>
+                                    <th style={{ width: '12%', cursor: 'pointer' }} onClick={() => handleSort('employment_type')}>
+                                        Type <SortIcon column="employment_type" />
+                                    </th>
+                                    <th style={{ width: '12%' }}>Shift</th>
+                                    <th style={{ width: '12%', cursor: 'pointer' }} onClick={() => handleSort('base_salary')}>
+                                        Base Salary <SortIcon column="base_salary" />
+                                    </th>
+                                    <th style={{ width: '9%', cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                                        Status <SortIcon column="status" />
+                                    </th>
+                                    <th style={{ width: '10%' }} className="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
-                                    <tr>
-                                        <td colSpan="8" className="text-center py-4 text-muted">
-                                            <div className="spinner-border spinner-border-sm me-2" role="status" />
-                                            Loading employee records...
-                                        </td>
-                                    </tr>
+                                    <TableSkeleton rows={pageSize > 10 ? 8 : 5} cols={9} hasCheckbox={true} hasAvatar={true} avatarColIndex={2} />
                                 ) : employees.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="text-center py-5 text-muted">
+                                        <td colSpan="9" className="text-center py-5 text-muted">
                                             <Users size={36} className="text-secondary mb-2" />
                                             <div>No employee records found.</div>
                                             {!isTrash && (
@@ -318,7 +433,14 @@ const EmployeeList = () => {
                                     </tr>
                                 ) : (
                                     employees.map((emp) => (
-                                        <tr key={emp.id}>
+                                        <tr key={emp.id} className={selectedIds.includes(emp.id) ? 'table-active' : ''}>
+                                            <td onClick={(e) => e.stopPropagation()}>
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(emp.id)}
+                                                    onChange={() => toggleSelect(emp.id)}
+                                                />
+                                            </td>
                                             <td className="fw-bold text-primary font-monospace">
                                                 {emp.empCode}
                                             </td>

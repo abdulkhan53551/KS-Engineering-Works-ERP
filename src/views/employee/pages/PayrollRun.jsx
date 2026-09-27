@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Row, Col, Card, Table, Button, Form, Badge, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card, Table, Button, Form, Badge, Spinner, InputGroup, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -8,20 +8,30 @@ import {
     CheckCircle,
     Settings,
     FileText,
+    FileSpreadsheet,
     Download,
     CreditCard,
     ChevronLeft,
     ChevronRight,
-    Eye
+    Eye,
+    Search,
+    RefreshCw,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown
 } from 'lucide-react';
+import useDebounce from '../../../hooks/useDebounce';
 import {
     useSalarySlips,
     useGeneratePayroll,
     useApproveSalarySlip,
-    usePayrollReport
+    usePayrollReport,
+    useDownloadSalarySlip,
+    useExportSalaryMuster
 } from '../hooks/useEmployeeApi';
 import BulkPayModal from '../components/BulkPayModal';
 import PaginationBar from '../../../components/PaginationBar';
+import TableSkeleton from '../components/TableSkeleton';
 import '../employee.css';
 
 const PayrollRun = () => {
@@ -34,11 +44,40 @@ const PayrollRun = () => {
     const [month, setMonth] = useState(today.getMonth() + 1);
     const [year, setYear] = useState(today.getFullYear());
     const [statusFilter, setStatusFilter] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 400);
+
+    // Sorting
+    const [sortBy, setSortBy] = useState('id');
+    const [sortOrder, setSortOrder] = useState('desc');
+
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
 
     const [selectedSlipIds, setSelectedSlipIds] = useState([]);
     const [showBulkPayModal, setShowBulkPayModal] = useState(false);
+
+    // Reset selection on filter/month changes
+    useEffect(() => {
+        setSelectedSlipIds([]);
+    }, [month, year, statusFilter, debouncedSearch, page, pageSize]);
+
+    const handleSort = (column) => {
+        if (sortBy === column) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+        }
+        setPage(1);
+    };
+
+    const SortIcon = ({ column }) => {
+        if (sortBy !== column) return <ArrowUpDown size={12} className="ms-1 text-muted opacity-50" />;
+        return sortOrder === 'asc'
+            ? <ArrowUp size={12} className="ms-1 text-primary" />
+            : <ArrowDown size={12} className="ms-1 text-primary" />;
+    };
 
     // Queries
     const { data: slipsResult, isLoading: loadingSlips, refetch } = useSalarySlips({
@@ -46,6 +85,9 @@ const PayrollRun = () => {
         month,
         year,
         status: statusFilter,
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
         page,
         pageSize
     });
@@ -58,6 +100,8 @@ const PayrollRun = () => {
 
     const generateMutation = useGeneratePayroll();
     const approveMutation = useApproveSalarySlip();
+    const downloadMutation = useDownloadSalarySlip();
+    const exportMusterMutation = useExportSalaryMuster();
 
     const slips = Array.isArray(slipsResult?.slips)
         ? slipsResult.slips
@@ -144,6 +188,55 @@ const PayrollRun = () => {
                     <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/payroll-settings')}>
                         <Settings size={15} className="me-1" /> Settings
                     </Button>
+
+                    {/* Wage Muster Export Dropdown */}
+                    <Dropdown>
+                        <Dropdown.Toggle
+                            variant="outline-success"
+                            size="sm"
+                            id="dropdown-export-muster"
+                            disabled={exportMusterMutation.isPending}
+                            className="d-flex align-items-center gap-1 shadow-sm"
+                        >
+                            <Download size={15} />
+                            {exportMusterMutation.isPending ? 'Exporting...' : 'Export Muster'}
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu align="end" className="shadow border-0 p-2" style={{ minWidth: '280px' }}>
+                            <Dropdown.Item
+                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'full' })}
+                                className="d-flex align-items-start gap-2 py-2 rounded"
+                            >
+                                <FileSpreadsheet size={18} className="text-success mt-1" />
+                                <div>
+                                    <div className="fw-bold text-dark">Wage Muster Roll (.xlsx)</div>
+                                    <small className="text-muted d-block">Form T register with all earnings & deductions</small>
+                                </div>
+                            </Dropdown.Item>
+                            <Dropdown.Divider />
+                            <Dropdown.Item
+                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'bank' })}
+                                className="d-flex align-items-start gap-2 py-2 rounded"
+                            >
+                                <CreditCard size={18} className="text-primary mt-1" />
+                                <div>
+                                    <div className="fw-bold text-dark">Bank Transfer File (NEFT/RTGS)</div>
+                                    <small className="text-muted d-block">A/C, IFSC & Net Salary for bank upload</small>
+                                </div>
+                            </Dropdown.Item>
+                            <Dropdown.Divider />
+                            <Dropdown.Item
+                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, format: 'pdf' })}
+                                className="d-flex align-items-start gap-2 py-2 rounded"
+                            >
+                                <FileText size={18} className="text-danger mt-1" />
+                                <div>
+                                    <div className="fw-bold text-dark">Download Form T (PDF)</div>
+                                    <small className="text-muted d-block">Official landscape statutory register ready to print</small>
+                                </div>
+                            </Dropdown.Item>
+                        </Dropdown.Menu>
+                    </Dropdown>
+
                     <Button
                         variant="primary"
                         size="sm"
@@ -228,18 +321,43 @@ const PayrollRun = () => {
             <Card className="border-0 shadow-sm rounded-3">
                 <Card.Body className="p-3">
                     <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-                        <div className="d-flex align-items-center gap-2">
+                        <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ maxWidth: '600px' }}>
+                            <InputGroup size="sm" style={{ maxWidth: '280px' }}>
+                                <InputGroup.Text className="bg-light border-end-0">
+                                    <Search size={14} className="text-muted" />
+                                </InputGroup.Text>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Search employee name, code..."
+                                    className="border-start-0 ps-0"
+                                    value={searchTerm}
+                                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                />
+                                {searchTerm && (
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        className="border-start-0"
+                                        onClick={() => { setSearchTerm(''); setPage(1); }}
+                                    >
+                                        ×
+                                    </Button>
+                                )}
+                            </InputGroup>
                             <Form.Select
                                 size="sm"
                                 value={statusFilter}
                                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                                style={{ width: '160px' }}
+                                style={{ width: '150px' }}
                             >
                                 <option value="">All Statuses</option>
                                 <option value="GENERATED">Generated</option>
                                 <option value="APPROVED">Approved</option>
                                 <option value="PAID">Paid</option>
                             </Form.Select>
+                            <Button variant="outline-secondary" size="sm" onClick={() => refetch()} title="Refresh">
+                                <RefreshCw size={15} />
+                            </Button>
                             {selectedSlipIds.length > 0 && (
                                 <span className="text-muted small">
                                     Selected: <strong>{selectedSlipIds.length}</strong>
@@ -252,7 +370,7 @@ const PayrollRun = () => {
                                 variant="success"
                                 size="sm"
                                 onClick={() => setShowBulkPayModal(true)}
-                                className="d-flex align-items-center gap-1"
+                                className="d-flex align-items-center gap-1 shadow-sm"
                             >
                                 <CreditCard size={15} /> Mark Selected as PAID ({selectedSlipIds.length})
                             </Button>
@@ -270,23 +388,33 @@ const PayrollRun = () => {
                                             onChange={handleSelectAll}
                                         />
                                     </th>
-                                    <th>Employee</th>
-                                    <th>Attendance</th>
-                                    <th>Gross Pay</th>
-                                    <th>Overtime</th>
-                                    <th>Deductions</th>
-                                    <th>Net Salary</th>
-                                    <th>Status</th>
-                                    <th className="text-end">Actions</th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('first_name')}>
+                                        Employee <SortIcon column="first_name" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('present_days')}>
+                                        Attendance <SortIcon column="present_days" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('gross_earnings')}>
+                                        Gross Pay <SortIcon column="gross_earnings" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('overtime_pay')}>
+                                        Overtime <SortIcon column="overtime_pay" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('total_deductions')}>
+                                        Deductions <SortIcon column="total_deductions" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('net_salary')}>
+                                        Net Salary <SortIcon column="net_salary" />
+                                    </th>
+                                    <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                                        Status <SortIcon column="status" />
+                                    </th>
+                                    <th style={{ width: '10%' }} className="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loadingSlips ? (
-                                    <tr>
-                                        <td colSpan="9" className="text-center py-4 text-muted">
-                                            <Spinner size="sm" className="me-2" /> Loading salary slips...
-                                        </td>
-                                    </tr>
+                                    <TableSkeleton rows={pageSize > 10 ? 8 : 5} cols={9} hasCheckbox={true} hasAvatar={false} />
                                 ) : slips.length === 0 ? (
                                     <tr>
                                         <td colSpan="9" className="text-center py-5 text-muted">
@@ -351,6 +479,25 @@ const PayrollRun = () => {
                                                         title="View Printable Pay Slip"
                                                     >
                                                         <Eye size={14} /> Slip
+                                                    </Button>
+                                                    <Button
+                                                        variant="light"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const safeEmpCode = (slip.empCode || 'EMP').replace(/[^a-zA-Z0-9_-]/g, '_');
+                                                            downloadMutation.mutate({
+                                                                id: slip.id,
+                                                                filename: `SalarySlip-${safeEmpCode}-${slip.month}-${slip.year}.pdf`
+                                                            });
+                                                        }}
+                                                        title="Download Slip PDF"
+                                                        disabled={downloadMutation.isPending && downloadMutation.variables?.id === slip.id}
+                                                    >
+                                                        {downloadMutation.isPending && downloadMutation.variables?.id === slip.id ? (
+                                                            <Spinner size="sm" animation="border" style={{ width: '12px', height: '12px' }} />
+                                                        ) : (
+                                                            <Download size={14} />
+                                                        )}
                                                     </Button>
                                                     {slip.status === 'GENERATED' && (
                                                         <Button
