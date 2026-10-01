@@ -345,18 +345,30 @@ export const fetchPayrollSettings = asyncHandler(async (params = {}) => {
     const query = new URLSearchParams();
     if (params.firmId) query.append("firmId", params.firmId);
 
+    const headers = {};
+    if (params.firmId && params.firmId !== 'all') {
+        headers['x-firm-id'] = params.firmId;
+    }
+
     const res = await api.request({
         url: `/payroll/settings?${query.toString()}`,
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        headers
     });
     return res.data;
 });
 
 export const updatePayrollSettings = asyncHandler(async (data) => {
+    const headers = {};
+    if (data?.firmId && data.firmId !== 'all') {
+        headers['x-firm-id'] = data.firmId;
+    }
+
     const res = await api.request({
         url: `/payroll/settings`,
         method: requestMethod.PUT,
-        data
+        data,
+        headers
     });
     return res.data;
 });

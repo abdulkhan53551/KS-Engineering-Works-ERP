@@ -2,18 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Form, Button, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Settings, Save, ArrowLeft, Shield, Clock, Calendar } from 'lucide-react';
+import { Save, ArrowLeft, Shield, Clock, Calendar, Building2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { usePayrollSettings, useUpdatePayrollSettings } from '../hooks/useEmployeeApi';
 import '../employee.css';
 
 const PayrollSettings = () => {
     const navigate = useNavigate();
     const currentUser = useSelector((state) => state.authReducer?.user);
-    const { activeFirm, userFirms = [] } = useSelector((state) => state.firmReducer || {});
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
-    const firmId = isAllFirms ? (userFirms[0]?.id || currentUser?.firmId) : activeFirm?.id;
+    const firmId = isAllFirms ? null : Number(activeFirm?.id);
 
-    const { data: settingsData, isLoading } = usePayrollSettings({ firmId });
+    const { data: settingsData, isLoading, isFetching } = usePayrollSettings(
+        { firmId },
+        { enabled: Boolean(firmId) }
+    );
     const updateMutation = useUpdatePayrollSettings();
 
     const [formData, setFormData] = useState({
@@ -27,7 +31,7 @@ const PayrollSettings = () => {
         pfEnabled: false,
         pfEmployerPercent: 12.00,
         pfEmployeePercent: 12.00,
-        pfWageCeiling: 15000,
+        pfWageCeiling: 25000,
         esiEnabled: false,
         esiEmployerPercent: 3.25,
         esiEmployeePercent: 0.75,
@@ -37,44 +41,49 @@ const PayrollSettings = () => {
     });
 
     useEffect(() => {
-        const s = settingsData?.data || (settingsData?.working_days_per_month !== undefined ? settingsData : null);
+        // Robust extraction supporting direct object, nested .data, camelCase, and snake_case properties
+        const s = settingsData?.data || (settingsData?.id || settingsData?.workingDaysPerMonth !== undefined || settingsData?.working_days_per_month !== undefined ? settingsData : null);
         if (s) {
             setFormData({
-                workingDaysPerMonth: s.working_days_per_month !== undefined ? s.working_days_per_month : 26,
-                weeklyOffDay: s.weekly_off_day || 'SUNDAY',
-                otRateType: s.ot_rate_type || 'FIXED',
-                otHourlyRate: parseFloat(s.ot_hourly_rate || 0),
-                otMultiplierNormal: parseFloat(s.ot_multiplier_normal || 1.5),
-                otMultiplierHoliday: parseFloat(s.ot_multiplier_holiday || 2.0),
-                otMultiplierWeekend: parseFloat(s.ot_multiplier_weekend || 2.0),
-                pfEnabled: Boolean(s.pf_enabled),
-                pfEmployerPercent: parseFloat(s.pf_employer_percent || 12.00),
-                pfEmployeePercent: parseFloat(s.pf_employee_percent || 12.00),
-                pfWageCeiling: parseFloat(s.pf_wage_ceiling || 15000),
-                esiEnabled: Boolean(s.esi_enabled),
-                esiEmployerPercent: parseFloat(s.esi_employer_percent || 3.25),
-                esiEmployeePercent: parseFloat(s.esi_employee_percent || 0.75),
-                esiWageCeiling: parseFloat(s.esi_wage_ceiling || 21000),
-                ptEnabled: Boolean(s.pt_enabled),
-                ptMonthlyAmount: parseFloat(s.pt_monthly_amount || 200)
+                workingDaysPerMonth: s.workingDaysPerMonth !== undefined ? s.workingDaysPerMonth : (s.working_days_per_month !== undefined ? s.working_days_per_month : 26),
+                weeklyOffDay: s.weeklyOffDay || s.weekly_off_day || 'SUNDAY',
+                otRateType: s.otRateType || s.ot_rate_type || 'FIXED',
+                otHourlyRate: parseFloat(s.otHourlyRate !== undefined ? s.otHourlyRate : (s.ot_hourly_rate !== undefined ? s.ot_hourly_rate : 0)) || 0,
+                otMultiplierNormal: parseFloat(s.otMultiplierNormal !== undefined ? s.otMultiplierNormal : (s.ot_multiplier_normal !== undefined ? s.ot_multiplier_normal : 1.5)) || 1.5,
+                otMultiplierHoliday: parseFloat(s.otMultiplierHoliday !== undefined ? s.otMultiplierHoliday : (s.ot_multiplier_holiday !== undefined ? s.ot_multiplier_holiday : 2.0)) || 2.0,
+                otMultiplierWeekend: parseFloat(s.otMultiplierWeekend !== undefined ? s.otMultiplierWeekend : (s.ot_multiplier_weekend !== undefined ? s.ot_multiplier_weekend : 2.0)) || 2.0,
+                pfEnabled: Boolean(s.pfEnabled !== undefined ? s.pfEnabled : s.pf_enabled),
+                pfEmployerPercent: parseFloat(s.pfEmployerPercent !== undefined ? s.pfEmployerPercent : (s.pf_employer_percent !== undefined ? s.pf_employer_percent : 12.00)) || 12.00,
+                pfEmployeePercent: parseFloat(s.pfEmployeePercent !== undefined ? s.pfEmployeePercent : (s.pf_employee_percent !== undefined ? s.pf_employee_percent : 12.00)) || 12.00,
+                pfWageCeiling: parseFloat(s.pfWageCeiling !== undefined ? s.pfWageCeiling : (s.pf_wage_ceiling !== undefined ? s.pf_wage_ceiling : 25000)) || 25000,
+                esiEnabled: Boolean(s.esiEnabled !== undefined ? s.esiEnabled : s.esi_enabled),
+                esiEmployerPercent: parseFloat(s.esiEmployerPercent !== undefined ? s.esiEmployerPercent : (s.esi_employer_percent !== undefined ? s.esi_employer_percent : 3.25)) || 3.25,
+                esiEmployeePercent: parseFloat(s.esiEmployeePercent !== undefined ? s.esiEmployeePercent : (s.esi_employee_percent !== undefined ? s.esi_employee_percent : 0.75)) || 0.75,
+                esiWageCeiling: parseFloat(s.esiWageCeiling !== undefined ? s.esiWageCeiling : (s.esi_wage_ceiling !== undefined ? s.esi_wage_ceiling : 21000)) || 21000,
+                ptEnabled: Boolean(s.ptEnabled !== undefined ? s.ptEnabled : s.pt_enabled),
+                ptMonthlyAmount: parseFloat(s.ptMonthlyAmount !== undefined ? s.ptMonthlyAmount : (s.pt_monthly_amount !== undefined ? s.pt_monthly_amount : 200)) || 200
             });
         }
     }, [settingsData]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!firmId) {
+            toast.warning('Please select a specific firm from the header to save payroll settings.');
+            return;
+        }
         try {
             await updateMutation.mutateAsync({
                 ...formData,
                 firmId,
-                workingDaysPerMonth: parseInt(formData.workingDaysPerMonth, 10),
+                workingDaysPerMonth: parseInt(formData.workingDaysPerMonth, 10) || 26,
                 otHourlyRate: parseFloat(formData.otHourlyRate) || 0,
                 otMultiplierNormal: parseFloat(formData.otMultiplierNormal) || 1.5,
                 otMultiplierHoliday: parseFloat(formData.otMultiplierHoliday) || 2.0,
                 otMultiplierWeekend: parseFloat(formData.otMultiplierWeekend) || 2.0,
                 pfEmployerPercent: parseFloat(formData.pfEmployerPercent) || 12,
                 pfEmployeePercent: parseFloat(formData.pfEmployeePercent) || 12,
-                pfWageCeiling: parseFloat(formData.pfWageCeiling) || 15000,
+                pfWageCeiling: parseFloat(formData.pfWageCeiling) || 25000,
                 esiEmployerPercent: parseFloat(formData.esiEmployerPercent) || 3.25,
                 esiEmployeePercent: parseFloat(formData.esiEmployeePercent) || 0.75,
                 esiWageCeiling: parseFloat(formData.esiWageCeiling) || 21000,
@@ -96,7 +105,7 @@ const PayrollSettings = () => {
 
     return (
         <div className="container-fluid p-3">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div className="d-flex align-items-center gap-2">
                     <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/payroll')}>
                         <ArrowLeft size={16} />
@@ -108,16 +117,40 @@ const PayrollSettings = () => {
                         </span>
                     </div>
                 </div>
-                <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSubmit}
-                    disabled={updateMutation.isPending}
-                    className="d-flex align-items-center gap-1"
-                >
-                    <Save size={16} /> {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
-                </Button>
+
+                <div className="d-flex align-items-center gap-3">
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={isAllFirms || updateMutation.isPending || isLoading}
+                        className="d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
+                    >
+                        <Save size={16} /> {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                </div>
             </div>
+
+            {isFetching && !isLoading && !isAllFirms && (
+                <div className="text-muted small mb-3 d-flex align-items-center gap-2">
+                    <Spinner animation="border" size="sm" variant="primary" /> Refreshing settings for selected firm...
+                </div>
+            )}
+
+            {isAllFirms ? (
+                <Card className="border-0 shadow-sm rounded-3 p-5 text-center my-4">
+                    <Card.Body>
+                        <div className="rounded-circle bg-warning-subtle text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                            <Building2 size={32} />
+                        </div>
+                        <h5 className="fw-bold text-dark mb-2">Select a Firm from the Header</h5>
+                        <p className="text-muted mb-0" style={{ maxWidth: '520px', margin: '0 auto' }}>
+                            Payroll rules (working days, overtime rate, PF, ESI, and Professional Tax) are configured on a per-firm basis.
+                            Please use the <strong>firm dropdown in the top navigation header</strong> to choose a specific firm.
+                        </p>
+                    </Card.Body>
+                </Card>
+            ) : (
 
             <Form onSubmit={handleSubmit}>
                 <Row className="g-4">
@@ -322,7 +355,7 @@ const PayrollSettings = () => {
                                             />
                                             <Form.Label htmlFor="pfWageCeiling">Wage Ceiling (₹)</Form.Label>
                                         </Form.Floating>
-                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>PF calculated up to ₹15,000.</div>
+                                        <div className="text-muted small ps-1" style={{ marginTop: '-8px' }}>PF calculated up to ₹25,000.</div>
                                     </Col>
 
                                     {/* ESI */}
@@ -404,6 +437,7 @@ const PayrollSettings = () => {
                     </Col>
                 </Row>
             </Form>
+        )}
         </div>
     );
 };

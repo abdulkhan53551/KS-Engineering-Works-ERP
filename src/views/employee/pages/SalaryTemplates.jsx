@@ -353,7 +353,7 @@ const SalaryTemplates = () => {
                                                                         </div>
                                                                         <div className="text-muted" style={{ fontSize: '0.7rem' }}>
                                                                             {(c.calcType || c.calc_type) === 'PERCENT_OF_BASIC' ? '% of Basic' :
-                                                                             ((c.calcType || c.calc_type) === 'PERCENT_OF_GROSS' ? '% of Gross CTC' : 'Fixed Allowance')}
+                                                                                ((c.calcType || c.calc_type) === 'PERCENT_OF_GROSS' ? '% of Gross CTC' : 'Fixed Allowance')}
                                                                         </div>
                                                                     </div>
                                                                     <div className="fw-bold text-success text-end small">
@@ -403,7 +403,7 @@ const SalaryTemplates = () => {
                                                                         </div>
                                                                         <div className="text-muted" style={{ fontSize: '0.7rem' }}>
                                                                             {(c.calcType || c.calc_type) === 'PERCENT_OF_BASIC' ? '% of Basic' :
-                                                                             ((c.calcType || c.calc_type) === 'PERCENT_OF_GROSS' ? '% of Gross Base' : 'Fixed Deduction')}
+                                                                                ((c.calcType || c.calc_type) === 'PERCENT_OF_GROSS' ? '% of Gross Base' : 'Fixed Deduction')}
                                                                         </div>
                                                                     </div>
                                                                     <div className="fw-bold text-danger text-end small">

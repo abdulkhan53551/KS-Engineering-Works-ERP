@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Badge } from 'react-bootstrap';
 import { Clock, Calendar, User, Save, X, AlertCircle } from 'lucide-react';
 import { useMarkAttendance } from '../hooks/useEmployeeApi';
+import moment from 'moment';
 
 const STANDARD_SHIFT_HOURS = 8.0;
 
@@ -134,12 +135,7 @@ const AttendanceHoursModal = ({ show, onHide, employee, date, initialData, onSav
         }
     };
 
-    const formattedDate = date ? new Date(date).toLocaleDateString('en-IN', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    }) : '';
+    const formattedDate = date ? moment(date).format('dddd, DD MMMM YYYY') : '';
 
     return (
         <Modal show={show} onHide={onHide} centered backdrop="static" size="lg">

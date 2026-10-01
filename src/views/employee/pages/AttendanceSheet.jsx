@@ -10,9 +10,12 @@ import {
     ChevronRight,
     AlertCircle,
     Download,
-    Edit3
+    Edit3,
+    CalendarCheck,
+    CheckCircle2
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import moment from 'moment';
 import {
     useEmployees,
     useAttendance,
@@ -36,6 +39,16 @@ const STATUS_LABELS = {
     WEEKLY_OFF: { short: 'WO', class: 'att-WO', label: 'Weekly Off' }
 };
 
+// Safely extract day of month (1-31) from date string (YYYY-MM-DD or ISO string)
+const extractDay = (val) => {
+    if (!val) return null;
+    if (typeof val === 'string' && val.length === 10 && val.includes('-')) {
+        const d = parseInt(val.split('-')[2], 10);
+        if (!isNaN(d)) return d;
+    }
+    return moment(val).date();
+};
+
 const AttendanceSheet = () => {
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
@@ -51,6 +64,7 @@ const AttendanceSheet = () => {
 
     // Grid local state: { [employeeId_day]: { status, totalHours, overtimeHours, overtimeType, checkIn, checkOut, remarks } }
     const [matrix, setMatrix] = useState({});
+    const [dirtyRecords, setDirtyRecords] = useState({});
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
 
@@ -87,11 +101,13 @@ const AttendanceSheet = () => {
         return [];
     }, [empResult]);
 
-    // Fetch monthly attendance from backend
-    const { data: attendanceLogsRaw, isLoading: loadingAttendance, refetch: refetchAttendance } = useAttendance({
+    // Fetch monthly attendance from backend (only when monthly tab is active)
+    const { data: attendanceLogsRaw, isLoading: loadingAttendance } = useAttendance({
         firmId,
         month: currentMonth,
         year: currentYear
+    }, {
+        enabled: activeView === 'monthly'
     });
     const attendanceLogs = useMemo(() => {
         if (Array.isArray(attendanceLogsRaw)) return attendanceLogsRaw;
@@ -104,16 +120,17 @@ const AttendanceSheet = () => {
 
     // Days in selected month
     const daysInMonth = useMemo(() => {
-        return new Date(currentYear, currentMonth, 0).getDate();
+        return moment([currentYear, currentMonth - 1]).daysInMonth();
     }, [currentYear, currentMonth]);
 
     const daysArray = useMemo(() => {
         const days = [];
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateObj = new Date(currentYear, currentMonth - 1, d);
-            const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'narrow' }); // M, T, W...
-            const isSunday = dateObj.getDay() === 0;
-            days.push({ day: d, dayOfWeek, isSunday, dateStr: dateObj.toISOString().split('T')[0] });
+            const m = moment([currentYear, currentMonth - 1, d]);
+            const dayOfWeek = m.format('dd')[0]; // Narrow single letter e.g. 'M', 'T', 'W'...
+            const isSunday = m.day() === 0;
+            const dateStr = m.format('YYYY-MM-DD');
+            days.push({ day: d, dayOfWeek, isSunday, dateStr });
         }
         return days;
     }, [daysInMonth, currentMonth, currentYear]);
@@ -123,7 +140,9 @@ const AttendanceSheet = () => {
         const initialMatrix = {};
         if (Array.isArray(attendanceLogs)) {
             attendanceLogs.forEach(rec => {
-                const day = new Date(rec.attendanceDate).getDate();
+                if (!rec.attendanceDate) return;
+                const day = extractDay(rec.attendanceDate);
+                if (!day) return;
                 const key = `${rec.employeeId}_${day}`;
                 initialMatrix[key] = {
                     status: rec.status,
@@ -137,6 +156,7 @@ const AttendanceSheet = () => {
             });
         }
         setMatrix(initialMatrix);
+        setDirtyRecords({});
         setHasUnsavedChanges(false);
     }, [attendanceLogs]);
 
@@ -161,6 +181,8 @@ const AttendanceSheet = () => {
             overtimeHours = 0.0;
         }
 
+        const dateStr = moment([currentYear, currentMonth - 1, day]).format('YYYY-MM-DD');
+
         setMatrix(prev => ({
             ...prev,
             [key]: {
@@ -170,6 +192,22 @@ const AttendanceSheet = () => {
                 overtimeHours
             }
         }));
+
+        setDirtyRecords(prev => ({
+            ...prev,
+            [key]: {
+                employeeId: parseInt(empId, 10),
+                attendanceDate: dateStr,
+                status: nextStatus,
+                totalHours: totalHours !== undefined && totalHours !== null ? parseFloat(totalHours) : 0,
+                overtimeHours: overtimeHours !== undefined && overtimeHours !== null ? parseFloat(overtimeHours) : 0,
+                overtimeType: current.overtimeType || 'NORMAL',
+                checkIn: current.checkIn || null,
+                checkOut: current.checkOut || null,
+                remarks: current.remarks || null
+            }
+        }));
+
         setHasUnsavedChanges(true);
     };
 
@@ -213,7 +251,8 @@ const AttendanceSheet = () => {
 
     // Modal saved callback
     const handleModalSaved = (savedRecord) => {
-        const day = new Date(savedRecord.attendanceDate).getDate();
+        const day = extractDay(savedRecord.attendanceDate);
+        if (!day) return;
         const key = `${savedRecord.employeeId}_${day}`;
         setMatrix(prev => ({
             ...prev,
@@ -227,70 +266,68 @@ const AttendanceSheet = () => {
                 remarks: savedRecord.remarks
             }
         }));
-        refetchAttendance();
+        // Remove from dirtyRecords since it was already saved directly by modal
+        setDirtyRecords(prev => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
     };
 
     // Quick bulk mark a day column
     const handleMarkDay = (dayObj, status) => {
         const newEntries = {};
+        const newDirty = {};
+        const isPresent = status === 'PRESENT';
+        const totalHours = isPresent ? 8.0 : (status === 'HALF_DAY' ? 4.0 : 0.0);
+
         employees.forEach(emp => {
             const key = `${emp.id}_${dayObj.day}`;
-            const isPresent = status === 'PRESENT';
+            const current = matrix[key] || {};
             newEntries[key] = {
-                ...(matrix[key] || {}),
+                ...current,
                 status,
-                totalHours: isPresent ? 8.0 : (status === 'HALF_DAY' ? 4.0 : 0.0),
+                totalHours,
                 overtimeHours: 0.0
             };
+            newDirty[key] = {
+                employeeId: emp.id,
+                attendanceDate: dayObj.dateStr,
+                status,
+                totalHours,
+                overtimeHours: 0.0,
+                overtimeType: 'NORMAL',
+                checkIn: null,
+                checkOut: null,
+                remarks: null
+            };
         });
+
         setMatrix(prev => ({ ...prev, ...newEntries }));
+        setDirtyRecords(prev => ({ ...prev, ...newDirty }));
         setHasUnsavedChanges(true);
     };
 
-    // Save changes to backend
+    // Save changes to backend in a single atomic API call
     const handleSave = async () => {
+        const recordsToSave = Object.values(dirtyRecords);
+        if (recordsToSave.length === 0) {
+            toast.info("No changes to save.");
+            setHasUnsavedChanges(false);
+            return;
+        }
+
         try {
-            // Group changed entries by date
-            const recordsByDate = {};
-
-            Object.entries(matrix).forEach(([key, val]) => {
-                const [empIdStr, dayStr] = key.split('_');
-                const empId = parseInt(empIdStr, 10);
-                const day = parseInt(dayStr, 10);
-                const dateStr = new Date(currentYear, currentMonth - 1, day).toISOString().split('T')[0];
-
-                if (!recordsByDate[dateStr]) {
-                    recordsByDate[dateStr] = [];
-                }
-
-                recordsByDate[dateStr].push({
-                    employeeId: empId,
-                    status: val.status,
-                    totalHours: val.totalHours !== undefined && val.totalHours !== null ? parseFloat(val.totalHours) : 0,
-                    overtimeHours: val.overtimeHours || 0,
-                    overtimeType: val.overtimeType || 'NORMAL',
-                    checkIn: val.checkIn || null,
-                    checkOut: val.checkOut || null,
-                    remarks: val.remarks || null
-                });
+            await bulkMarkMutation.mutateAsync({
+                firmId,
+                records: recordsToSave
             });
 
-            // Save each date batch
-            for (const [dateStr, records] of Object.entries(recordsByDate)) {
-                if (records.length > 0) {
-                    await bulkMarkMutation.mutateAsync({
-                        firmId,
-                        attendanceDate: dateStr,
-                        records
-                    });
-                }
-            }
-
-            toast.success("All attendance records saved successfully.");
+            toast.success(`Saved ${recordsToSave.length} attendance record${recordsToSave.length > 1 ? 's' : ''} successfully.`);
+            setDirtyRecords({});
             setHasUnsavedChanges(false);
-            refetchAttendance();
         } catch (err) {
-            toast.error("Failed to save attendance.");
+            // Error notification is handled by the mutation hook
         }
     };
 
@@ -303,7 +340,8 @@ const AttendanceSheet = () => {
                 status
             });
             // Update local matrix
-            const day = new Date(dateStr).getDate();
+            const day = extractDay(dateStr);
+            if (!day) return;
             const newEntries = {};
             employees.forEach(emp => {
                 const key = `${emp.id}_${day}`;
@@ -315,7 +353,14 @@ const AttendanceSheet = () => {
                 };
             });
             setMatrix(prev => ({ ...prev, ...newEntries }));
-            refetchAttendance();
+            // Remove affected day's records from dirtyRecords since they're already persisted
+            setDirtyRecords(prev => {
+                const next = { ...prev };
+                employees.forEach(emp => {
+                    delete next[`${emp.id}_${day}`];
+                });
+                return next;
+            });
         } catch (err) {
             // Handled in hook
         }
@@ -339,45 +384,59 @@ const AttendanceSheet = () => {
         }
     };
 
-    const monthName = new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+    const monthName = moment([currentYear, currentMonth - 1]).format('MMMM YYYY');
 
     return (
         <div className="container-fluid p-3">
-            {/* Header with Navigation Switcher (Daily vs Monthly) */}
-            <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-                <div>
-                    <h4 className="fw-bold mb-0 text-dark">Staff Attendance & Time Tracker</h4>
-                    <span className="text-muted small">
-                        Log worker check-in/out, hours worked (10h, 11h), and overtime calculations.
-                    </span>
-                </div>
+            {/* Header Hero Card with Segmented Switcher (Daily vs Monthly) */}
+            <Card className="attendance-hero-card border-0 shadow-sm rounded-4 mb-3">
+                <Card.Body className="p-3 p-md-4">
+                    <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="header-icon-box">
+                                <Clock size={24} />
+                            </div>
+                            <div>
+                                <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <h4 className="fw-bold mb-0 text-dark">Staff Attendance & Time Tracker</h4>
+                                    <Badge bg="primary-subtle" className="text-primary border border-primary-subtle rounded-pill px-2 py-1 small fw-semibold">
+                                        Live Muster
+                                    </Badge>
+                                </div>
+                                <p className="text-muted small mb-0">
+                                    Log worker check-in/out, hours worked (10h, 11h), and overtime calculations.
+                                </p>
+                            </div>
+                        </div>
 
-                {/* Primary Mode Switcher Tab */}
-                <Nav variant="pills" className="emp-form-tabs p-1 bg-white border rounded-3 shadow-sm d-inline-flex">
-                    <Nav.Item>
-                        <Nav.Link
-                            active={activeView === 'daily'}
-                            onClick={() => setActiveView('daily')}
-                            className="d-flex align-items-center gap-2 cursor-pointer py-1 px-3"
-                        >
-                            <Clock size={16} /> Daily Time Register
-                        </Nav.Link>
-                    </Nav.Item>
-                    <Nav.Item>
-                        <Nav.Link
-                            active={activeView === 'monthly'}
-                            onClick={() => setActiveView('monthly')}
-                            className="d-flex align-items-center gap-2 cursor-pointer py-1 px-3"
-                        >
-                            <Calendar size={16} /> Monthly Calendar Sheet
-                        </Nav.Link>
-                    </Nav.Item>
-                </Nav>
-            </div>
+                        {/* Segmented Mode Switcher */}
+                        <div className="segmented-nav-control shadow-none">
+                            <button
+                                type="button"
+                                className={`segmented-nav-btn ${activeView === 'daily' ? 'active' : ''}`}
+                                onClick={() => setActiveView('daily')}
+                            >
+                                <Clock size={15} /> Daily Time Register
+                            </button>
+                            <button
+                                type="button"
+                                className={`segmented-nav-btn ${activeView === 'monthly' ? 'active' : ''}`}
+                                onClick={() => setActiveView('monthly')}
+                            >
+                                <Calendar size={15} /> Monthly Calendar Sheet
+                            </button>
+                        </div>
+                    </div>
+                </Card.Body>
+            </Card>
 
             {/* TAB CONTENT 1: DAILY TIME & MUSTER REGISTER */}
             {activeView === 'daily' && (
-                <DailyAttendanceRegister firmId={firmId} />
+                <DailyAttendanceRegister 
+                    firmId={firmId} 
+                    employees={employees} 
+                    loadingEmployees={loadingEmployees} 
+                />
             )}
 
             {/* TAB CONTENT 2: MONTHLY CALENDAR MATRIX SHEET */}
@@ -387,12 +446,12 @@ const AttendanceSheet = () => {
                     <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                         <div className="d-flex align-items-center gap-2">
                             {/* Month Picker */}
-                            <div className="d-flex align-items-center bg-white border rounded px-2 py-1 shadow-sm">
-                                <Button variant="link" className="p-0 text-dark" onClick={handlePrevMonth}>
+                            <div className="d-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm">
+                                <Button variant="link" className="p-0 text-dark" onClick={handlePrevMonth} title="Previous Month">
                                     <ChevronLeft size={18} />
                                 </Button>
                                 <span className="mx-3 fw-bold text-primary">{monthName}</span>
-                                <Button variant="link" className="p-0 text-dark" onClick={handleNextMonth}>
+                                <Button variant="link" className="p-0 text-dark" onClick={handleNextMonth} title="Next Month">
                                     <ChevronRight size={18} />
                                 </Button>
                             </div>
@@ -406,19 +465,35 @@ const AttendanceSheet = () => {
                                 variant="outline-primary"
                                 size="sm"
                                 onClick={() => setShowExportModal(true)}
-                                className="d-flex align-items-center gap-1 shadow-sm px-3"
+                                className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm"
                             >
                                 <Download size={15} /> Export Muster Roll
                             </Button>
                             <Button
-                                variant={hasUnsavedChanges ? 'success' : 'primary'}
+                                variant={hasUnsavedChanges ? 'success' : 'light'}
                                 size="sm"
                                 onClick={handleSave}
                                 disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
-                                className="d-flex align-items-center gap-1 shadow-sm px-3"
+                                className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm ${
+                                    hasUnsavedChanges ? 'btn-save-pulse' : 'text-muted border'
+                                }`}
                             >
-                                <Save size={15} />
-                                {bulkMarkMutation.isPending ? 'Saving...' : (hasUnsavedChanges ? 'Save Changes *' : 'Saved')}
+                                {bulkMarkMutation.isPending ? (
+                                    <>
+                                        <Spinner size="sm" animation="border" className="me-1" />
+                                        Saving...
+                                    </>
+                                ) : hasUnsavedChanges ? (
+                                    <>
+                                        <Save size={15} />
+                                        Save Changes *
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={15} className="text-success" />
+                                        All Saved
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>

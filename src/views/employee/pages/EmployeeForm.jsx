@@ -18,15 +18,53 @@ const EmployeeForm = ({ mode = 'create' }) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const currentUser = useSelector((state) => state.authReducer?.user);
-    const { activeFirm, userFirms = [] } = useSelector((state) => state.firmReducer || {});
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
 
-    // Determine effective firm ID
+    // Determine effective firm ID: purely from header activeFirm (no fallback)
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
-    const effectiveFirmId = isAllFirms ? (userFirms[0]?.id || currentUser?.firmId) : activeFirm?.id;
+    const effectiveFirmId = isAllFirms ? undefined : activeFirm?.id;
 
     const isEdit = mode === 'edit' || Boolean(id);
     const [activeTab, setActiveTab] = useState('personal');
     const [errors, setErrors] = useState({});
+
+    const [formData, setFormData] = useState({
+        empCode: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: 'MALE',
+        bloodGroup: '',
+        address: '',
+        pincode: '',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+
+        dateOfJoining: new Date().toISOString().split('T')[0],
+        dateOfExit: '',
+        employmentType: 'PERMANENT',
+        department: '',
+        designation: '',
+        shiftId: '',
+        weeklyOffDay: 'SUNDAY',
+
+        salaryType: 'MONTHLY',
+        baseSalary: '',
+        salaryTemplateId: '',
+
+        panNumber: '',
+        aadharNumber: '',
+        bankName: '',
+        bankBranch: '',
+        bankAccountNo: '',
+        ifscCode: '',
+
+        uanNumber: '',
+        pfNumber: '',
+        esicNumber: ''
+    });
 
     const { data: employeeDataRaw, isLoading: isFetchingEmployee } = useEmployee(id);
     const employeeData = employeeDataRaw?.id ? employeeDataRaw : (employeeDataRaw?.data || null);
@@ -37,7 +75,7 @@ const EmployeeForm = ({ mode = 'create' }) => {
         refetch: refetchNextCode,
         isFetching: isFetchingCode
     } = useNextEmployeeCode(effectiveFirmId, {
-        enabled: !isEdit
+        enabled: !isEdit && Boolean(effectiveFirmId)
     });
 
     const { data: shiftsRaw } = useShifts({ firmId: effectiveFirmId });
@@ -57,42 +95,6 @@ const EmployeeForm = ({ mode = 'create' }) => {
     const createMutation = useCreateEmployee();
     const updateMutation = useUpdateEmployee();
 
-    const [formData, setFormData] = useState({
-        empCode: '',
-        targetFirmId: effectiveFirmId || '',
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        dateOfBirth: '',
-        gender: 'MALE',
-        bloodGroup: '',
-        address: '',
-        pincode: '',
-        emergencyContactName: '',
-        emergencyContactPhone: '',
-
-        dateOfJoining: new Date().toISOString().split('T')[0],
-        dateOfExit: '',
-        department: '',
-        designation: '',
-        employmentType: 'PERMANENT',
-        status: 'ACTIVE',
-        shiftId: '',
-
-        salaryType: 'MONTHLY',
-        baseSalary: 0,
-        salaryTemplateId: '',
-
-        bankName: '',
-        accountNumber: '',
-        ifscCode: '',
-        panNumber: '',
-        aadharNumber: '',
-        uanNumber: '',
-        esiNumber: ''
-    });
-
     // Populate auto-generated employee code for new employees
     useEffect(() => {
         const code = nextCodeData?.nextCode || nextCodeData?.nextEmpCode;
@@ -102,12 +104,6 @@ const EmployeeForm = ({ mode = 'create' }) => {
     }, [isEdit, nextCodeData, formData.empCode]);
 
     useEffect(() => {
-        if (!isEdit && effectiveFirmId && !formData.targetFirmId) {
-            setFormData(prev => ({ ...prev, targetFirmId: effectiveFirmId }));
-        }
-    }, [isEdit, effectiveFirmId, formData.targetFirmId]);
-
-    useEffect(() => {
         if (isEdit && employeeData) {
             const dob = employeeData.dateOfBirth || employeeData.date_of_birth;
             const doj = employeeData.dateOfJoining || employeeData.date_of_joining;
@@ -115,7 +111,6 @@ const EmployeeForm = ({ mode = 'create' }) => {
 
             setFormData({
                 empCode: employeeData.empCode || employeeData.emp_code || '',
-                targetFirmId: employeeData.firmId || employeeData.firm_id || effectiveFirmId || '',
                 firstName: employeeData.firstName || employeeData.first_name || '',
                 lastName: employeeData.lastName || employeeData.last_name || '',
                 email: employeeData.email || '',
@@ -243,10 +238,9 @@ const EmployeeForm = ({ mode = 'create' }) => {
         }
 
         try {
-            const selectedFirmId = formData.targetFirmId || effectiveFirmId;
             const payload = {
                 ...formData,
-                firmId: selectedFirmId,
+                firmId: effectiveFirmId,
                 dateOfBirth: formData.dateOfBirth || null,
                 dateOfExit: formData.dateOfExit || null,
                 dateOfJoining: formData.dateOfJoining || null,
@@ -345,7 +339,7 @@ const EmployeeForm = ({ mode = 'create' }) => {
                                 <Tab.Pane eventKey="personal">
                                     <h6 className="fw-bold mb-3 text-primary">Personal Details</h6>
                                     <Row className="g-3">
-                                        <Col md={isAllFirms && userFirms.length > 1 ? 4 : 4}>
+                                        <Col md={4}>
                                             <div className="position-relative">
                                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
                                                     <Form.Control
@@ -378,23 +372,6 @@ const EmployeeForm = ({ mode = 'create' }) => {
                                                 )}
                                             </div>
                                         </Col>
-
-                                        {isAllFirms && userFirms.length > 1 && (
-                                            <Col md={4}>
-                                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">
-                                                    <Form.Select
-                                                        id="targetFirmId"
-                                                        value={formData.targetFirmId}
-                                                        onChange={(e) => handleChange('targetFirmId', Number(e.target.value))}
-                                                    >
-                                                        {userFirms.map(f => (
-                                                            <option key={f.id} value={f.id}>{f.firmName || f.name}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                    <Form.Label htmlFor="targetFirmId">Assign to Firm <span className="text-danger">*</span></Form.Label>
-                                                </Form.Floating>
-                                            </Col>
-                                        )}
 
                                         <Col md={4}>
                                             <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-3">

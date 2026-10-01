@@ -8,6 +8,10 @@ import {
     ChevronLeft,
     ChevronRight,
     Users,
+    UserCheck,
+    UserX,
+    Briefcase,
+    CheckCircle,
     CheckCircle2,
     XCircle,
     AlertTriangle,
@@ -15,6 +19,7 @@ import {
     RotateCcw
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import moment from 'moment';
 import {
     useEmployees,
     useAttendance,
@@ -24,25 +29,31 @@ import {
 
 const STANDARD_SHIFT_HOURS = 8.0;
 
-const DailyAttendanceRegister = ({ firmId }) => {
+const DailyAttendanceRegister = ({ firmId, employees: passedEmployees, loadingEmployees: passedLoading }) => {
     // Current selected date (YYYY-MM-DD)
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayStr = useMemo(() => moment().format('YYYY-MM-DD'), []);
     const [selectedDate, setSelectedDate] = useState(todayStr);
     const [searchTerm, setSearchTerm] = useState('');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    // Fetch active employees
-    const { data: empResult, isLoading: loadingEmployees } = useEmployees({
+    // Fetch active employees only if not already passed from parent
+    const { data: empResult, isLoading: queryLoadingEmployees } = useEmployees({
         firmId,
         pageSize: 500,
         status: 'ACTIVE'
+    }, {
+        enabled: !passedEmployees
     });
+
     const employees = useMemo(() => {
+        if (Array.isArray(passedEmployees) && passedEmployees.length > 0) return passedEmployees;
         if (Array.isArray(empResult?.employees)) return empResult.employees;
         if (Array.isArray(empResult?.data?.employees)) return empResult.data.employees;
         if (Array.isArray(empResult)) return empResult;
         return [];
-    }, [empResult]);
+    }, [passedEmployees, empResult]);
+
+    const loadingEmployees = passedLoading !== undefined ? passedLoading : queryLoadingEmployees;
 
     // Fetch attendance for the specific date
     const { data: attendanceLogsRaw, isLoading: loadingAttendance, refetch } = useAttendance({
@@ -277,6 +288,7 @@ const DailyAttendanceRegister = ({ firmId }) => {
                 employeeId: emp.id,
                 branchId: emp.branchId || emp.branch_id || null,
                 shiftId: emp.shiftId || emp.shift_id || null,
+                attendanceDate: selectedDate,
                 status: rec.status || 'PRESENT',
                 checkIn: rec.checkIn || null,
                 checkOut: rec.checkOut || null,
@@ -295,7 +307,6 @@ const DailyAttendanceRegister = ({ firmId }) => {
             });
             toast.success(`Day's attendance saved for ${records.length} staff.`);
             setHasUnsavedChanges(false);
-            refetch();
         } catch (err) {
             toast.error("Failed to save daily attendance.");
         }
@@ -303,15 +314,11 @@ const DailyAttendanceRegister = ({ firmId }) => {
 
     // Date navigation
     const handlePrevDay = () => {
-        const d = new Date(selectedDate);
-        d.setDate(d.getDate() - 1);
-        setSelectedDate(d.toISOString().split('T')[0]);
+        setSelectedDate(prev => moment(prev).subtract(1, 'days').format('YYYY-MM-DD'));
     };
 
     const handleNextDay = () => {
-        const d = new Date(selectedDate);
-        d.setDate(d.getDate() + 1);
-        setSelectedDate(d.toISOString().split('T')[0]);
+        setSelectedDate(prev => moment(prev).add(1, 'days').format('YYYY-MM-DD'));
     };
 
     const handleToday = () => {
@@ -357,62 +364,87 @@ const DailyAttendanceRegister = ({ firmId }) => {
         return { present, absent, halfDay, leave, otWorkers, totalOTHours };
     }, [employees, recordsMap]);
 
-    const formattedDateTitle = new Date(selectedDate).toLocaleDateString('en-IN', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    });
+    const formattedDateTitle = useMemo(() => {
+        return moment(selectedDate).format('dddd, DD MMMM YYYY');
+    }, [selectedDate]);
 
     return (
         <div className="daily-attendance-container">
             {/* Top Toolbar: Date Picker & Quick Actions */}
-            <Card className="border-0 shadow-sm rounded-3 mb-3">
+            <Card className="border-0 shadow-sm rounded-4 mb-3 bg-white">
                 <Card.Body className="p-3">
                     <Row className="g-3 align-items-center justify-content-between">
                         {/* Date Navigation */}
-                        <Col lg={5} md={6}>
-                            <div className="d-flex align-items-center gap-2">
-                                <div className="btn-group shadow-sm">
-                                    <Button variant="outline-secondary" size="sm" onClick={handlePrevDay} title="Previous Day">
+                        <Col lg={6} md={12}>
+                            <div className="d-flex flex-wrap align-items-center gap-2">
+                                <div className="date-pill-group">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevDay}
+                                        className="date-pill-btn"
+                                        title="Previous Day"
+                                    >
                                         <ChevronLeft size={16} />
-                                    </Button>
-                                    <Button variant="outline-primary" size="sm" onClick={handleToday} className="fw-semibold">
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleToday}
+                                        className={`date-pill-btn ${selectedDate === todayStr ? 'active-today' : ''}`}
+                                    >
                                         Today
-                                    </Button>
-                                    <Button variant="outline-secondary" size="sm" onClick={handleNextDay} title="Next Day">
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNextDay}
+                                        className="date-pill-btn"
+                                        title="Next Day"
+                                    >
                                         <ChevronRight size={16} />
-                                    </Button>
+                                    </button>
                                 </div>
 
-                                <Form.Control
-                                    type="date"
-                                    size="sm"
-                                    value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="fw-bold text-primary shadow-sm"
-                                    style={{ maxWidth: '160px' }}
-                                />
+                                <div className="d-flex align-items-center bg-light border rounded-pill px-3 py-1">
+                                    <Calendar size={14} className="text-primary me-2 flex-shrink-0" />
+                                    <Form.Control
+                                        type="date"
+                                        size="sm"
+                                        value={selectedDate}
+                                        onChange={(e) => setSelectedDate(e.target.value)}
+                                        className="fw-bold text-dark border-0 p-0 shadow-none bg-transparent"
+                                        style={{ width: '130px', fontSize: '0.85rem' }}
+                                    />
+                                </div>
 
-                                <span className="d-none d-xl-inline text-muted small fw-semibold">
+                                <span className="d-none d-xl-inline text-secondary small fw-medium">
                                     {formattedDateTitle}
                                 </span>
                             </div>
                         </Col>
 
                         {/* Search & Actions */}
-                        <Col lg={7} md={6} className="d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                        <Col lg={6} md={12} className="d-flex flex-wrap align-items-center justify-content-lg-end gap-2">
                             {/* Search Filter */}
-                            <InputGroup size="sm" style={{ maxWidth: '220px' }}>
-                                <InputGroup.Text className="bg-white border-end-0">
-                                    <Search size={14} className="text-muted" />
+                            <InputGroup size="sm" style={{ maxWidth: '210px' }} className="rounded-pill overflow-hidden border">
+                                <InputGroup.Text className="bg-white border-0 ps-3 pe-2 text-muted">
+                                    <Search size={14} />
                                 </InputGroup.Text>
                                 <Form.Control
                                     placeholder="Search staff..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="border-start-0"
+                                    className="border-0 shadow-none ps-0 bg-white"
+                                    style={{ fontSize: '0.85rem' }}
                                 />
+                                {searchTerm && (
+                                    <Button
+                                        variant="light"
+                                        size="sm"
+                                        className="border-0 bg-transparent text-muted px-2"
+                                        onClick={() => setSearchTerm('')}
+                                    >
+                                        ×
+                                    </Button>
+                                )}
                             </InputGroup>
 
                             {/* Quick Fill Button */}
@@ -420,8 +452,8 @@ const DailyAttendanceRegister = ({ firmId }) => {
                                 variant="outline-success"
                                 size="sm"
                                 onClick={handleFillAllPresent}
-                                className="d-flex align-items-center gap-1 shadow-sm"
-                                title="Set all workers to Present with 8 hours"
+                                className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small shadow-none btn-soft-emerald"
+                                title="Set all workers to Present with standard 8 hours"
                             >
                                 <Zap size={14} />
                                 Set All (8h)
@@ -429,58 +461,132 @@ const DailyAttendanceRegister = ({ firmId }) => {
 
                             {/* Save Button */}
                             <Button
-                                variant={hasUnsavedChanges ? "success" : "primary"}
+                                variant={hasUnsavedChanges ? "success" : "light"}
                                 size="sm"
                                 onClick={handleSaveDay}
                                 disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
-                                className="d-flex align-items-center gap-1 shadow-sm px-3"
+                                className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small transition-all ${
+                                    hasUnsavedChanges ? 'btn-save-pulse shadow-sm' : 'text-muted border'
+                                }`}
                             >
-                                <Save size={15} />
-                                {bulkMarkMutation.isPending ? 'Saving...' : (hasUnsavedChanges ? 'Save Day *' : 'Saved')}
+                                {bulkMarkMutation.isPending ? (
+                                    <>
+                                        <Spinner size="sm" animation="border" className="me-1" />
+                                        Saving...
+                                    </>
+                                ) : hasUnsavedChanges ? (
+                                    <>
+                                        <Save size={14} />
+                                        Save Changes *
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={14} className="text-success" />
+                                        All Saved
+                                    </>
+                                )}
                             </Button>
                         </Col>
                     </Row>
                 </Card.Body>
             </Card>
 
-            {/* Daily KPI Metric Badges */}
-            <Row className="g-2 mb-3">
-                <Col xl={2} md={4} xs={6}>
-                    <div className="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between shadow-sm">
-                        <span className="text-muted small">Total Staff</span>
-                        <span className="fw-bold fs-6 text-dark">{employees.length}</span>
+            {/* Daily KPI Metric Cards */}
+            <Row className="g-3 mb-3">
+                <Col xl col={6} md={4}>
+                    <div className="daily-kpi-card kpi-accent-slate">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="text-muted small fw-semibold text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                Total Staff
+                            </span>
+                            <div className="kpi-icon-pill icon-slate">
+                                <Users size={16} />
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-baseline gap-2">
+                            <h3 className="fw-bold mb-0 text-dark">{employees.length}</h3>
+                            <span className="text-muted small">Roster</span>
+                        </div>
                     </div>
                 </Col>
-                <Col xl={2} md={4} xs={6}>
-                    <div className="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between shadow-sm border-start border-success border-3">
-                        <span className="text-muted small">Present</span>
-                        <span className="fw-bold fs-6 text-success">{metrics.present}</span>
+
+                <Col xl col={6} md={4}>
+                    <div className="daily-kpi-card kpi-accent-emerald">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="text-success small fw-semibold text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                Present
+                            </span>
+                            <div className="kpi-icon-pill icon-emerald">
+                                <UserCheck size={16} />
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-baseline gap-2">
+                            <h3 className="fw-bold mb-0 text-success">{metrics.present}</h3>
+                            <Badge bg="success-subtle" className="text-success border border-success-subtle rounded-pill small fw-medium">
+                                {employees.length > 0 ? Math.round((metrics.present / employees.length) * 100) : 0}% rate
+                            </Badge>
+                        </div>
                     </div>
                 </Col>
-                <Col xl={3} md={4} xs={6}>
-                    <div className="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between shadow-sm border-start border-warning border-3">
-                        <span className="text-muted small">Overtime Workers</span>
-                        <span className="fw-bold fs-6 text-warning">
-                            {metrics.otWorkers} <span className="small text-muted font-monospace">({metrics.totalOTHours}h OT)</span>
-                        </span>
+
+                <Col xl col={6} md={4}>
+                    <div className="daily-kpi-card kpi-accent-amber">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="text-warning-emphasis small fw-semibold text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                Overtime Workers
+                            </span>
+                            <div className="kpi-icon-pill icon-amber">
+                                <Clock size={16} />
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-baseline gap-2">
+                            <h3 className="fw-bold mb-0 text-warning-emphasis">{metrics.otWorkers}</h3>
+                            <Badge bg="warning-subtle" className="text-warning-emphasis border border-warning-subtle rounded-pill small font-monospace">
+                                {metrics.totalOTHours}h OT
+                            </Badge>
+                        </div>
                     </div>
                 </Col>
-                <Col xl={2} md={4} xs={6}>
-                    <div className="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between shadow-sm border-start border-danger border-3">
-                        <span className="text-muted small">Absent</span>
-                        <span className="fw-bold fs-6 text-danger">{metrics.absent}</span>
+
+                <Col xl col={6} md={6}>
+                    <div className="daily-kpi-card kpi-accent-rose">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="text-danger small fw-semibold text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                Absent / Leave
+                            </span>
+                            <div className="kpi-icon-pill icon-rose">
+                                <UserX size={16} />
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-baseline gap-2">
+                            <h3 className="fw-bold mb-0 text-danger">{metrics.absent}</h3>
+                            <span className="text-muted small">
+                                {metrics.leave > 0 ? `${metrics.leave} on leave` : '0 on leave'}
+                            </span>
+                        </div>
                     </div>
                 </Col>
-                <Col xl={3} md={4} xs={12}>
-                    <div className="p-2 border rounded-3 bg-white d-flex align-items-center justify-content-between shadow-sm border-start border-primary border-3">
-                        <span className="text-muted small">Standard Shift</span>
-                        <span className="fw-bold fs-6 text-primary">{STANDARD_SHIFT_HOURS} Hours / day</span>
+
+                <Col xl col={12} md={6}>
+                    <div className="daily-kpi-card kpi-accent-indigo">
+                        <div className="d-flex align-items-center justify-content-between mb-2">
+                            <span className="text-primary small fw-semibold text-uppercase" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                                Standard Shift
+                            </span>
+                            <div className="kpi-icon-pill icon-indigo">
+                                <Briefcase size={16} />
+                            </div>
+                        </div>
+                        <div className="d-flex align-items-baseline gap-2">
+                            <h3 className="fw-bold mb-0 text-primary">{STANDARD_SHIFT_HOURS}h</h3>
+                            <span className="text-muted small">Standard / day</span>
+                        </div>
                     </div>
                 </Col>
             </Row>
 
             {/* Daily Staff Attendance Table */}
-            <Card className="border-0 shadow-sm rounded-3">
+            <Card className="border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
                 <Card.Body className="p-0">
                     {loadingEmployees || loadingAttendance ? (
                         <div className="text-center py-5">
@@ -521,16 +627,23 @@ const DailyAttendanceRegister = ({ firmId }) => {
                                             <tr key={emp.id} className={hasOT ? 'row-has-ot' : ''}>
                                                 <td className="text-center text-muted small">{index + 1}</td>
                                                 <td>
-                                                    <div className="fw-semibold text-dark">
-                                                        {emp.firstName} {emp.lastName || ''}
-                                                    </div>
-                                                    <div className="d-flex align-items-center gap-1">
-                                                        <span className="text-primary font-monospace" style={{ fontSize: '0.72rem' }}>
-                                                            {emp.empCode}
-                                                        </span>
-                                                        <span className="text-muted" style={{ fontSize: '0.72rem' }}>
-                                                            &bull; {emp.department || 'Workshop'}
-                                                        </span>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div className="emp-avatar-circle">
+                                                            {(emp.firstName?.[0] || 'E') + (emp.lastName?.[0] || '')}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-semibold text-dark">
+                                                                {emp.firstName} {emp.lastName || ''}
+                                                            </div>
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <span className="text-primary font-monospace" style={{ fontSize: '0.72rem' }}>
+                                                                    {emp.empCode}
+                                                                </span>
+                                                                <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                                                    &bull; {emp.department || 'Workshop'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </td>
 
@@ -656,9 +769,9 @@ const DailyAttendanceRegister = ({ firmId }) => {
 
                 {/* Footer Bar with Save Notice */}
                 {hasUnsavedChanges && (
-                    <Card.Footer className="bg-light py-2 px-3 d-flex align-items-center justify-content-between border-top">
-                        <div className="d-flex align-items-center gap-2 text-warning fw-semibold small">
-                            <AlertTriangle size={16} />
+                    <Card.Footer className="bg-light-subtle py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2 border-top">
+                        <div className="d-flex align-items-center gap-2 text-warning-emphasis fw-semibold small">
+                            <AlertTriangle size={18} />
                             <span>You have unsaved attendance changes for {formattedDateTitle}.</span>
                         </div>
                         <Button
@@ -666,7 +779,7 @@ const DailyAttendanceRegister = ({ firmId }) => {
                             size="sm"
                             onClick={handleSaveDay}
                             disabled={bulkMarkMutation.isPending}
-                            className="d-flex align-items-center gap-1 shadow-sm px-3"
+                            className="rounded-pill px-4 py-2 d-flex align-items-center gap-1 shadow-sm fw-semibold btn-save-pulse"
                         >
                             <Save size={15} />
                             {bulkMarkMutation.isPending ? 'Saving...' : 'Save Changes Now'}

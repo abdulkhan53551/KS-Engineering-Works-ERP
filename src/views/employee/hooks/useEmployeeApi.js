@@ -55,12 +55,14 @@ const selectList = (result) => Array.isArray(result?.data) ? result.data : (Arra
    EMPLOYEES HOOKS
    ========================================================================= */
 
-export const useEmployees = (params = {}) => {
+export const useEmployees = (params = {}, options = {}) => {
     return useQuery({
         queryKey: ["employees", params],
         queryFn: () => fetchEmployees(params),
         select: selectData,
-        keepPreviousData: true
+        keepPreviousData: true,
+        staleTime: 5 * 60 * 1000,
+        ...options
     });
 };
 
@@ -96,9 +98,9 @@ export const useCreateEmployee = () => {
         mutationFn: createEmployee,
         onSuccess: () => {
             toast.success("Employee created successfully.");
-            queryClient.invalidateQueries(["employees"]);
-            queryClient.invalidateQueries(["employees-meta"]);
-            queryClient.invalidateQueries(["employees-dropdown"]);
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-meta"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-dropdown"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to create employee.");
@@ -112,10 +114,10 @@ export const useUpdateEmployee = () => {
         mutationFn: updateEmployee,
         onSuccess: (res, vars) => {
             toast.success("Employee updated successfully.");
-            queryClient.invalidateQueries(["employees"]);
-            queryClient.invalidateQueries(["employee", vars.id]);
-            queryClient.invalidateQueries(["employees-meta"]);
-            queryClient.invalidateQueries(["employees-dropdown"]);
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employee", vars.id] });
+            queryClient.invalidateQueries({ queryKey: ["employees-meta"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-dropdown"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to update employee.");
@@ -129,9 +131,9 @@ export const useDeleteEmployee = () => {
         mutationFn: deleteEmployee,
         onSuccess: (res, vars) => {
             toast.success(vars.permanent ? "Employee deleted permanently." : "Employee moved to recycle bin.");
-            queryClient.invalidateQueries(["employees"]);
-            queryClient.invalidateQueries(["employees-meta"]);
-            queryClient.invalidateQueries(["employees-dropdown"]);
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-meta"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-dropdown"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to delete employee.");
@@ -145,9 +147,9 @@ export const useRestoreEmployee = () => {
         mutationFn: restoreEmployee,
         onSuccess: () => {
             toast.success("Employee restored successfully.");
-            queryClient.invalidateQueries(["employees"]);
-            queryClient.invalidateQueries(["employees-meta"]);
-            queryClient.invalidateQueries(["employees-dropdown"]);
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-meta"] });
+            queryClient.invalidateQueries({ queryKey: ["employees-dropdown"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to restore employee.");
@@ -190,7 +192,7 @@ export const useCreateShift = () => {
         mutationFn: createShift,
         onSuccess: () => {
             toast.success("Shift created successfully.");
-            queryClient.invalidateQueries(["shifts"]);
+            queryClient.invalidateQueries({ queryKey: ["shifts"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to create shift.");
@@ -204,8 +206,8 @@ export const useUpdateShift = () => {
         mutationFn: updateShift,
         onSuccess: (res, vars) => {
             toast.success("Shift updated successfully.");
-            queryClient.invalidateQueries(["shifts"]);
-            queryClient.invalidateQueries(["shift", vars.id]);
+            queryClient.invalidateQueries({ queryKey: ["shifts"] });
+            queryClient.invalidateQueries({ queryKey: ["shift", vars.id] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to update shift.");
@@ -219,7 +221,7 @@ export const useDeleteShift = () => {
         mutationFn: deleteShift,
         onSuccess: () => {
             toast.success("Shift deleted successfully.");
-            queryClient.invalidateQueries(["shifts"]);
+            queryClient.invalidateQueries({ queryKey: ["shifts"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to delete shift.");
@@ -233,9 +235,9 @@ export const useAssignShift = () => {
         mutationFn: assignShift,
         onSuccess: () => {
             toast.success("Shift assigned successfully.");
-            queryClient.invalidateQueries(["shifts"]);
-            queryClient.invalidateQueries(["shift-assignments"]);
-            queryClient.invalidateQueries(["employees"]);
+            queryClient.invalidateQueries({ queryKey: ["shifts"] });
+            queryClient.invalidateQueries({ queryKey: ["shift-assignments"] });
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to assign shift.");
@@ -255,11 +257,12 @@ export const useShiftAssignments = (params = {}) => {
    ATTENDANCE HOOKS
    ========================================================================= */
 
-export const useAttendance = (params = {}) => {
+export const useAttendance = (params = {}, options = {}) => {
     return useQuery({
         queryKey: ["attendance", params],
         queryFn: () => fetchAttendance(params),
-        select: selectList
+        select: selectList,
+        ...options
     });
 };
 
@@ -269,8 +272,8 @@ export const useMarkAttendance = () => {
         mutationFn: markAttendance,
         onSuccess: () => {
             toast.success("Attendance marked successfully.");
-            queryClient.invalidateQueries(["attendance"]);
-            queryClient.invalidateQueries(["attendance-summary"]);
+            queryClient.invalidateQueries({ queryKey: ["attendance"] });
+            queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to mark attendance.");
@@ -283,9 +286,8 @@ export const useBulkMarkAttendance = () => {
     return useMutation({
         mutationFn: bulkMarkAttendance,
         onSuccess: () => {
-            toast.success("Attendance marked successfully.");
-            queryClient.invalidateQueries(["attendance"]);
-            queryClient.invalidateQueries(["attendance-summary"]);
+            queryClient.invalidateQueries({ queryKey: ["attendance"] });
+            queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to save attendance.");
@@ -299,8 +301,8 @@ export const useMarkDateStatus = () => {
         mutationFn: markDateStatus,
         onSuccess: () => {
             toast.success("Date status applied successfully.");
-            queryClient.invalidateQueries(["attendance"]);
-            queryClient.invalidateQueries(["attendance-summary"]);
+            queryClient.invalidateQueries({ queryKey: ["attendance"] });
+            queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to mark date status.");
@@ -345,7 +347,7 @@ export const useApplyLeave = () => {
         mutationFn: applyLeave,
         onSuccess: () => {
             toast.success("Leave application submitted.");
-            queryClient.invalidateQueries(["leaves"]);
+            queryClient.invalidateQueries({ queryKey: ["leaves"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to submit leave.");
@@ -359,9 +361,9 @@ export const useReviewLeave = () => {
         mutationFn: reviewLeave,
         onSuccess: (res, vars) => {
             toast.success(`Leave application ${vars.status.toLowerCase()} successfully.`);
-            queryClient.invalidateQueries(["leaves"]);
-            queryClient.invalidateQueries(["attendance"]);
-            queryClient.invalidateQueries(["attendance-summary"]);
+            queryClient.invalidateQueries({ queryKey: ["leaves"] });
+            queryClient.invalidateQueries({ queryKey: ["attendance"] });
+            queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to review leave.");
@@ -375,7 +377,7 @@ export const useCancelLeave = () => {
         mutationFn: cancelLeave,
         onSuccess: () => {
             toast.success("Leave application cancelled.");
-            queryClient.invalidateQueries(["leaves"]);
+            queryClient.invalidateQueries({ queryKey: ["leaves"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to cancel leave.");
@@ -387,11 +389,12 @@ export const useCancelLeave = () => {
    PAYROLL HOOKS
    ========================================================================= */
 
-export const usePayrollSettings = (params = {}) => {
+export const usePayrollSettings = (params = {}, options = {}) => {
     return useQuery({
         queryKey: ["payroll-settings", params],
         queryFn: () => fetchPayrollSettings(params),
-        select: selectData
+        select: selectData,
+        ...options
     });
 };
 
@@ -401,7 +404,7 @@ export const useUpdatePayrollSettings = () => {
         mutationFn: updatePayrollSettings,
         onSuccess: () => {
             toast.success("Payroll settings updated successfully.");
-            queryClient.invalidateQueries(["payroll-settings"]);
+            queryClient.invalidateQueries({ queryKey: ["payroll-settings"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to update payroll settings.");
@@ -432,7 +435,7 @@ export const useCreateSalaryTemplate = () => {
         mutationFn: createSalaryTemplate,
         onSuccess: () => {
             toast.success("Salary template created successfully.");
-            queryClient.invalidateQueries(["salary-templates"]);
+            queryClient.invalidateQueries({ queryKey: ["salary-templates"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to create salary template.");
@@ -446,8 +449,8 @@ export const useUpdateSalaryTemplate = () => {
         mutationFn: updateSalaryTemplate,
         onSuccess: (res, vars) => {
             toast.success("Salary template updated successfully.");
-            queryClient.invalidateQueries(["salary-templates"]);
-            queryClient.invalidateQueries(["salary-template", vars.id]);
+            queryClient.invalidateQueries({ queryKey: ["salary-templates"] });
+            queryClient.invalidateQueries({ queryKey: ["salary-template", vars.id] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to update salary template.");
@@ -461,7 +464,7 @@ export const useDeleteSalaryTemplate = () => {
         mutationFn: deleteSalaryTemplate,
         onSuccess: () => {
             toast.success("Salary template deleted successfully.");
-            queryClient.invalidateQueries(["salary-templates"]);
+            queryClient.invalidateQueries({ queryKey: ["salary-templates"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to delete salary template.");
@@ -505,8 +508,8 @@ export const useGeneratePayroll = () => {
         mutationFn: generatePayroll,
         onSuccess: (res) => {
             toast.success(res?.message || "Payroll generated successfully.");
-            queryClient.invalidateQueries(["salary-slips"]);
-            queryClient.invalidateQueries(["payroll-report"]);
+            queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
+            queryClient.invalidateQueries({ queryKey: ["payroll-report"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to generate payroll.");
@@ -520,9 +523,9 @@ export const useApproveSalarySlip = () => {
         mutationFn: approveSalarySlip,
         onSuccess: () => {
             toast.success("Salary slip approved successfully.");
-            queryClient.invalidateQueries(["salary-slips"]);
-            queryClient.invalidateQueries(["salary-slip"]);
-            queryClient.invalidateQueries(["payroll-report"]);
+            queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
+            queryClient.invalidateQueries({ queryKey: ["salary-slip"] });
+            queryClient.invalidateQueries({ queryKey: ["payroll-report"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to approve salary slip.");
@@ -536,8 +539,8 @@ export const useBulkPaySlips = () => {
         mutationFn: bulkPaySlips,
         onSuccess: () => {
             toast.success("Salary slips marked as PAID successfully.");
-            queryClient.invalidateQueries(["salary-slips"]);
-            queryClient.invalidateQueries(["payroll-report"]);
+            queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
+            queryClient.invalidateQueries({ queryKey: ["payroll-report"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to mark slips as paid.");
