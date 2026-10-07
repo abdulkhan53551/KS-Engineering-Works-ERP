@@ -1001,3 +1001,243 @@
     justify-content: center;
     flex-shrink: 0;
 }
+
+/* =========================================================================
+   CRISP & CLEAR TYPOGRAPHY + FLOATING INPUTS FOR ADVANCE SYSTEM
+   ========================================================================= */
+.advance-modal-content {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    border-radius: 14px !important;
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+.advance-modal-content .modal-title {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.015em !important;
+}
+
+.advance-modal-content .custom-form-floating-sm > label {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    letter-spacing: 0.01em !important;
+}
+
+.advance-modal-content .custom-form-floating-sm > .form-control,
+.advance-modal-content .custom-form-floating-sm > .form-select {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    letter-spacing: 0.005em !important;
+}
+
+.advance-modal-content .custom-form-floating-sm > .form-control:focus,
+.advance-modal-content .custom-form-floating-sm > .form-select:focus {
+    border-color: #3a57e8 !important;
+    box-shadow: 0 0 0 3px rgba(58, 87, 232, 0.15) !important;
+}
+
+.advance-modal-content .custom-form-floating-sm > .form-control.is-invalid,
+.advance-modal-content .custom-form-floating-sm > .form-select.is-invalid {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
+}
+
+.advance-modal-content .invalid-feedback {
+    font-size: 0.76rem !important;
+    font-weight: 500 !important;
+    margin-top: 0.25rem !important;
+    color: #dc2626 !important;
+}
+
+/* =========================================================================
+   ADVANCE DIRECT REPAYMENT MODAL ENHANCED EXPERIENCE
+   ========================================================================= */
+.repay-summary-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    position: relative;
+}
+
+.repay-summary-card .emp-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #e0e7ff;
+    color: #4338ca;
+    font-weight: 700;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.repay-due-badge {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    text-align: right;
+}
+
+.repay-due-badge .label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #991b1b;
+}
+
+.repay-due-badge .amount {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #dc2626;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    line-height: 1.1;
+}
+
+/* Quick Action Chips */
+.quick-action-chip {
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.22rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.quick-action-chip:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.quick-action-chip.active-chip {
+    background: #ecfdf5;
+    border-color: #059669;
+    color: #065f46;
+    box-shadow: 0 0 0 1px #059669;
+}
+
+/* Hero Amount Input Styling */
+.repay-amount-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 9px;
+    background: #ffffff;
+    padding: 0.35rem 0.85rem;
+    transition: all 0.15s ease;
+}
+
+.repay-amount-wrapper:focus-within {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.repay-amount-wrapper.is-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.repay-currency-sign {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-right: 0.4rem;
+    user-select: none;
+}
+
+.repay-amount-input {
+    border: none;
+    outline: none;
+    box-shadow: none !important;
+    background: transparent;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    width: 100%;
+    padding: 0.2rem 0;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Payment Mode Segmented Selector */
+.payment-mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+.payment-mode-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 0.65rem 0.85rem;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.payment-mode-card:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.payment-mode-card.selected {
+    border-color: #059669;
+    background: #f0fdf4;
+    color: #065f46;
+    box-shadow: 0 0 0 1px #059669;
+}
+
+/* Live Balance Calculator Box */
+.live-balance-box {
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.80rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.live-balance-box.standard {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    color: #475569;
+}
+
+.live-balance-box.full-settle {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.live-balance-box.excess {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+

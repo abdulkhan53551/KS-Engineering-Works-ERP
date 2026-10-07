@@ -819,6 +819,16 @@ const VerticalNav = memo((props) => {
                                 </Link>
                             </li>
                             <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/employee/advances') ? 'active' : ''} nav-link`} to="/dashboard/employee/advances">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Advances & Loans</span>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
                                 <Link className={`${location.pathname.includes('/employee/salary-templates') ? 'active' : ''} nav-link`} to="/dashboard/employee/salary-templates">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">

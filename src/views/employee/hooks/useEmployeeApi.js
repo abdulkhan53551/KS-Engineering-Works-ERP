@@ -40,9 +40,16 @@ import {
     generatePayroll,
     approveSalarySlip,
     bulkPaySlips,
-    fetchPayrollReport,
     exportAttendanceMuster,
-    exportSalaryMuster
+    exportSalaryMuster,
+    fetchAdvances,
+    fetchAdvanceById,
+    fetchEmployeeAdvanceSummary,
+    createAdvance,
+    updateAdvance,
+    togglePauseAdvance,
+    recordAdvanceRepayment,
+    updateSalarySlipAdvanceDeduction
 } from "../api";
 
 const EMPTY_ARRAY = [];
@@ -526,6 +533,9 @@ export const useApproveSalarySlip = () => {
             queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
             queryClient.invalidateQueries({ queryKey: ["salary-slip"] });
             queryClient.invalidateQueries({ queryKey: ["payroll-report"] });
+            queryClient.invalidateQueries({ queryKey: ["advances"] });
+            queryClient.invalidateQueries({ queryKey: ["advance"] });
+            queryClient.invalidateQueries({ queryKey: ["employee-advance-summary"] });
         },
         onError: (err) => {
             toast.error(err?.response?.data?.message || err?.message || "Failed to approve salary slip.");
@@ -581,4 +591,118 @@ export const useExportSalaryMuster = () => {
         }
     });
 };
+
+/* =========================================================================
+   EMPLOYEE ADVANCES & LOANS HOOKS
+   ========================================================================= */
+
+export const useAdvances = (params = {}, options = {}) => {
+    return useQuery({
+        queryKey: ["advances", params],
+        queryFn: () => fetchAdvances(params),
+        select: selectData,
+        keepPreviousData: true,
+        ...options
+    });
+};
+
+export const useAdvanceById = (id, options = {}) => {
+    return useQuery({
+        queryKey: ["advance", id],
+        queryFn: () => fetchAdvanceById(id),
+        select: selectData,
+        enabled: Boolean(id),
+        ...options
+    });
+};
+
+export const useEmployeeAdvanceSummary = (employeeId, firmId = null, options = {}) => {
+    return useQuery({
+        queryKey: ["employee-advance-summary", employeeId, firmId],
+        queryFn: () => fetchEmployeeAdvanceSummary(employeeId, firmId),
+        select: selectData,
+        enabled: Boolean(employeeId),
+        ...options
+    });
+};
+
+export const useCreateAdvance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createAdvance,
+        onSuccess: () => {
+            toast.success("Advance disbursed successfully.");
+            queryClient.invalidateQueries({ queryKey: ["advances"] });
+            queryClient.invalidateQueries({ queryKey: ["employee-advance-summary"] });
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to disburse advance.");
+        }
+    });
+};
+
+export const useUpdateAdvance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateAdvance,
+        onSuccess: (data, vars) => {
+            toast.success("Advance terms updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["advances"] });
+            queryClient.invalidateQueries({ queryKey: ["advance", vars.id] });
+            queryClient.invalidateQueries({ queryKey: ["employee-advance-summary"] });
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to update advance terms.");
+        }
+    });
+};
+
+export const useTogglePauseAdvance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: togglePauseAdvance,
+        onSuccess: (data, vars) => {
+            toast.success(vars.isPaused ? "Advance recovery paused." : "Advance recovery resumed.");
+            queryClient.invalidateQueries({ queryKey: ["advances"] });
+            queryClient.invalidateQueries({ queryKey: ["advance", vars.id] });
+            queryClient.invalidateQueries({ queryKey: ["employee-advance-summary"] });
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to toggle advance pause state.");
+        }
+    });
+};
+
+export const useRecordAdvanceRepayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: recordAdvanceRepayment,
+        onSuccess: (data, vars) => {
+            toast.success("Manual repayment recorded successfully.");
+            queryClient.invalidateQueries({ queryKey: ["advances"] });
+            queryClient.invalidateQueries({ queryKey: ["advance", vars.id] });
+            queryClient.invalidateQueries({ queryKey: ["employee-advance-summary"] });
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to record repayment.");
+        }
+    });
+};
+
+export const useUpdateSlipAdvanceDeduction = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateSalarySlipAdvanceDeduction,
+        onSuccess: (data, vars) => {
+            toast.success("Salary slip advance deduction updated.");
+            queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
+            queryClient.invalidateQueries({ queryKey: ["salary-slip", vars.id] });
+            queryClient.invalidateQueries({ queryKey: ["payroll-report"] });
+        },
+        onError: (err) => {
+            toast.error(err?.response?.data?.message || err?.message || "Failed to update advance deduction.");
+        }
+    });
+};
+
 

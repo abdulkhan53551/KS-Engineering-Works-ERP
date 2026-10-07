@@ -18,7 +18,8 @@ import {
     RefreshCw,
     ArrowUpDown,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
+    Edit3
 } from 'lucide-react';
 import useDebounce from '../../../hooks/useDebounce';
 import {
@@ -30,6 +31,7 @@ import {
     useExportSalaryMuster
 } from '../hooks/useEmployeeApi';
 import BulkPayModal from '../components/BulkPayModal';
+import EditAdvanceDeductionModal from '../components/EditAdvanceDeductionModal';
 import PaginationBar from '../../../components/PaginationBar';
 import TableSkeleton from '../components/TableSkeleton';
 import '../employee.css';
@@ -56,6 +58,7 @@ const PayrollRun = () => {
 
     const [selectedSlipIds, setSelectedSlipIds] = useState([]);
     const [showBulkPayModal, setShowBulkPayModal] = useState(false);
+    const [slipForAdvanceEdit, setSlipForAdvanceEdit] = useState(null);
 
     // Reset selection on filter/month changes
     useEffect(() => {
@@ -403,6 +406,7 @@ const PayrollRun = () => {
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('total_deductions')}>
                                         Deductions <SortIcon column="total_deductions" />
                                     </th>
+                                    <th>Advance Recovery</th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('net_salary')}>
                                         Net Salary <SortIcon column="net_salary" />
                                     </th>
@@ -461,6 +465,41 @@ const PayrollRun = () => {
                                             </td>
                                             <td className="text-danger">
                                                 -₹{parseFloat(slip.totalDeductions || 0).toLocaleString('en-IN')}
+                                            </td>
+                                            <td>
+                                                {parseFloat(slip.advanceDeduction || 0) > 0 ? (
+                                                    <div className="d-flex align-items-center gap-1">
+                                                        <span className="text-danger fw-semibold">
+                                                            -₹{parseFloat(slip.advanceDeduction).toLocaleString('en-IN')}
+                                                        </span>
+                                                        {slip.status === 'GENERATED' && (
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                className="p-0 text-decoration-none text-muted"
+                                                                onClick={() => setSlipForAdvanceEdit(slip)}
+                                                                title="Adjust Advance Deduction"
+                                                            >
+                                                                <Edit3 size={13} />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-muted">
+                                                        —
+                                                        {slip.status === 'GENERATED' && (
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                className="p-0 ms-1 text-decoration-none text-muted"
+                                                                onClick={() => setSlipForAdvanceEdit(slip)}
+                                                                title="Set Advance Deduction"
+                                                            >
+                                                                <Edit3 size={12} />
+                                                            </Button>
+                                                        )}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="fw-bold text-success fs-6">
                                                 ₹{parseFloat(slip.netSalary || 0).toLocaleString('en-IN')}
@@ -534,6 +573,12 @@ const PayrollRun = () => {
                 show={showBulkPayModal}
                 onHide={() => { setShowBulkPayModal(false); setSelectedSlipIds([]); }}
                 selectedSlipIds={selectedSlipIds}
+            />
+
+            <EditAdvanceDeductionModal
+                show={Boolean(slipForAdvanceEdit)}
+                onHide={() => setSlipForAdvanceEdit(null)}
+                slip={slipForAdvanceEdit}
             />
         </div>
     );

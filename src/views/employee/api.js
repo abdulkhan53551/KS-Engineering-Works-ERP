@@ -550,3 +550,90 @@ export const exportSalaryMuster = asyncHandler(async (params = {}) => {
 
     return { success: true };
 });
+
+/* =========================================================================
+   EMPLOYEE ADVANCES & LOANS APIS
+   ========================================================================= */
+
+export const fetchAdvances = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    if (params.firmId && params.firmId !== 'all') query.append("firmId", params.firmId);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.status) query.append("status", params.status);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/advances?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchAdvanceById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/advances/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchEmployeeAdvanceSummary = asyncHandler(async (employeeId, firmId = null) => {
+    const query = new URLSearchParams();
+    if (firmId && firmId !== 'all') query.append("firmId", firmId);
+
+    const res = await api.request({
+        url: `/advances/employee/${employeeId}?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createAdvance = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/advances`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateAdvance = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/advances/${id}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const togglePauseAdvance = asyncHandler(async ({ id, isPaused }) => {
+    const res = await api.request({
+        url: `/advances/${id}/pause`,
+        method: requestMethod.PATCH,
+        data: { isPaused }
+    });
+    return res.data;
+});
+
+export const recordAdvanceRepayment = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/advances/${id}/repayments`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateSalarySlipAdvanceDeduction = asyncHandler(async ({ id, advanceDeduction }) => {
+    const res = await api.request({
+        url: `/payroll/slips/${id}/advance-deduction`,
+        method: requestMethod.PATCH,
+        data: { advanceDeduction }
+    });
+    return res.data;
+});
+

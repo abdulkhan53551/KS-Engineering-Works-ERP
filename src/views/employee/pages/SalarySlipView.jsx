@@ -233,6 +233,11 @@ const SalarySlipView = () => {
                     <div>
                         <div className="small text-muted fw-semibold">NET SALARY PAYABLE (A - B)</div>
                         <div className="small text-muted fst-italic">Payment Status: <strong>{slip.status}</strong></div>
+                        {parseFloat(slip.advance_deduction || slip.advanceDeduction || 0) > 0 && (
+                            <div className="small text-danger fw-semibold mt-1">
+                                Includes Salary Advance Recovery: ₹{parseFloat(slip.advance_deduction || slip.advanceDeduction).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </div>
+                        )}
                     </div>
                     <div className="text-end">
                         <h3 className="fw-bold text-success mb-0">

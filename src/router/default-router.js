@@ -94,6 +94,7 @@ import PayrollRun from '../views/employee/pages/PayrollRun';
 import PayrollSettings from '../views/employee/pages/PayrollSettings';
 import SalaryTemplates from '../views/employee/pages/SalaryTemplates';
 import SalarySlipView from '../views/employee/pages/SalarySlipView';
+import AdvanceList from '../views/employee/pages/AdvanceList';
 
 
 export const DefaultRouter = [
@@ -184,6 +185,7 @@ export const DefaultRouter = [
                     { path: 'employee/payroll-settings', element: <PayrollSettings /> },
                     { path: 'employee/salary-templates', element: <SalaryTemplates /> },
                     { path: 'employee/salary-slip/:id', element: <SalarySlipView /> },
+                    { path: 'employee/advances', element: <AdvanceList /> },
 
                     // Also support /dashboard/employee/* paths
                     { path: 'dashboard/employee', element: <EmployeeList /> },
@@ -198,6 +200,7 @@ export const DefaultRouter = [
                     { path: 'dashboard/employee/payroll-settings', element: <PayrollSettings /> },
                     { path: 'dashboard/employee/salary-templates', element: <SalaryTemplates /> },
                     { path: 'dashboard/employee/salary-slip/:id', element: <SalarySlipView /> },
+                    { path: 'dashboard/employee/advances', element: <AdvanceList /> },
                 ]
             },
             {
