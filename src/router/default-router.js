@@ -83,18 +83,18 @@ import VendorPaymentDetail from '../views/payments/pages/VendorPaymentDetail';
 import RolesPermissionStudio from '../views/admin/roles-permissions/RolesPermissionStudio';
 
 // Employee & Payroll Management
-import EmployeeList from '../views/employee/pages/EmployeeList';
-import EmployeeForm from '../views/employee/pages/EmployeeForm';
-import EmployeeDetail from '../views/employee/pages/EmployeeDetail';
-import AttendanceSheet from '../views/employee/pages/AttendanceSheet';
-import AttendanceSummary from '../views/employee/pages/AttendanceSummary';
-import ShiftList from '../views/employee/pages/ShiftList';
-import LeaveList from '../views/employee/pages/LeaveList';
-import PayrollRun from '../views/employee/pages/PayrollRun';
-import PayrollSettings from '../views/employee/pages/PayrollSettings';
-import SalaryTemplates from '../views/employee/pages/SalaryTemplates';
-import SalarySlipView from '../views/employee/pages/SalarySlipView';
-import AdvanceList from '../views/employee/pages/AdvanceList';
+import EmployeeList from '../views/employee/directory/pages/EmployeeList';
+import EmployeeForm from '../views/employee/directory/pages/EmployeeForm';
+import EmployeeDetail from '../views/employee/directory/pages/EmployeeDetail';
+import AttendanceSheet from '../views/employee/attendance/pages/AttendanceSheet';
+import AttendanceSummary from '../views/employee/attendance/pages/AttendanceSummary';
+import ShiftList from '../views/employee/shifts/pages/ShiftList';
+import LeaveList from '../views/employee/leaves/pages/LeaveList';
+import PayrollRun from '../views/employee/payroll/pages/PayrollRun';
+import PayrollSettings from '../views/employee/payroll/pages/PayrollSettings';
+import SalaryTemplates from '../views/employee/payroll/pages/SalaryTemplates';
+import SalarySlipView from '../views/employee/payroll/pages/SalarySlipView';
+import AdvanceList from '../views/employee/advances/pages/AdvanceList';
 
 
 export const DefaultRouter = [
