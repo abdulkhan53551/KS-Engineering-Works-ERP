@@ -82,6 +82,20 @@ import VendorPaymentForm from '../views/payments/pages/VendorPaymentForm';
 import VendorPaymentDetail from '../views/payments/pages/VendorPaymentDetail';
 import RolesPermissionStudio from '../views/admin/roles-permissions/RolesPermissionStudio';
 
+// Employee & Payroll Management
+import EmployeeList from '../views/employee/directory/pages/EmployeeList';
+import EmployeeForm from '../views/employee/directory/pages/EmployeeForm';
+import EmployeeDetail from '../views/employee/directory/pages/EmployeeDetail';
+import AttendanceSheet from '../views/employee/attendance/pages/AttendanceSheet';
+import AttendanceSummary from '../views/employee/attendance/pages/AttendanceSummary';
+import ShiftList from '../views/employee/shifts/pages/ShiftList';
+import LeaveList from '../views/employee/leaves/pages/LeaveList';
+import PayrollRun from '../views/employee/payroll/pages/PayrollRun';
+import PayrollSettings from '../views/employee/payroll/pages/PayrollSettings';
+import SalaryTemplates from '../views/employee/payroll/pages/SalaryTemplates';
+import SalarySlipView from '../views/employee/payroll/pages/SalarySlipView';
+import AdvanceList from '../views/employee/advances/pages/AdvanceList';
+
 
 export const DefaultRouter = [
     {
@@ -157,6 +171,36 @@ export const DefaultRouter = [
                     { path: 'payments/vendor-payments', element: <VendorPaymentList /> },
                     { path: 'payments/vendor-payments/create', element: <VendorPaymentForm /> },
                     { path: 'payments/vendor-payments/:id', element: <VendorPaymentDetail /> },
+
+                    /* Employee & Payroll Management */
+                    { path: 'employee', element: <EmployeeList /> },
+                    { path: 'employee/create', element: <EmployeeForm mode="create" /> },
+                    { path: 'employee/:id/edit', element: <EmployeeForm mode="edit" /> },
+                    { path: 'employee/:id', element: <EmployeeDetail /> },
+                    { path: 'employee/attendance', element: <AttendanceSheet /> },
+                    { path: 'employee/attendance-summary', element: <AttendanceSummary /> },
+                    { path: 'employee/shifts', element: <ShiftList /> },
+                    { path: 'employee/leaves', element: <LeaveList /> },
+                    { path: 'employee/payroll', element: <PayrollRun /> },
+                    { path: 'employee/payroll-settings', element: <PayrollSettings /> },
+                    { path: 'employee/salary-templates', element: <SalaryTemplates /> },
+                    { path: 'employee/salary-slip/:id', element: <SalarySlipView /> },
+                    { path: 'employee/advances', element: <AdvanceList /> },
+
+                    // Also support /dashboard/employee/* paths
+                    { path: 'dashboard/employee', element: <EmployeeList /> },
+                    { path: 'dashboard/employee/create', element: <EmployeeForm mode="create" /> },
+                    { path: 'dashboard/employee/:id/edit', element: <EmployeeForm mode="edit" /> },
+                    { path: 'dashboard/employee/:id', element: <EmployeeDetail /> },
+                    { path: 'dashboard/employee/attendance', element: <AttendanceSheet /> },
+                    { path: 'dashboard/employee/attendance-summary', element: <AttendanceSummary /> },
+                    { path: 'dashboard/employee/shifts', element: <ShiftList /> },
+                    { path: 'dashboard/employee/leaves', element: <LeaveList /> },
+                    { path: 'dashboard/employee/payroll', element: <PayrollRun /> },
+                    { path: 'dashboard/employee/payroll-settings', element: <PayrollSettings /> },
+                    { path: 'dashboard/employee/salary-templates', element: <SalaryTemplates /> },
+                    { path: 'dashboard/employee/salary-slip/:id', element: <SalarySlipView /> },
+                    { path: 'dashboard/employee/advances', element: <AdvanceList /> },
                 ]
             },
             {
