@@ -29,6 +29,7 @@ import {
     AlertTriangle
 } from 'lucide-react';
 import useDebounce from '../../../../hooks/useDebounce';
+import usePermission from '../../../../hooks/usePermission';
 import PaginationBar from '../../../../components/PaginationBar';
 import {
     useEmployee,
@@ -46,6 +47,7 @@ import '../../employee.css';
 const EmployeeDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
 
     const [activeTab, setActiveTab] = useState('profile');
@@ -149,9 +151,11 @@ const EmployeeDetail = () => {
                     <h4 className="fw-bold mb-0">Employee Profile</h4>
                 </div>
                 <div className="d-flex gap-2">
-                    <Button variant="primary" size="sm" onClick={() => navigate(`/dashboard/employee/${id}/edit`)}>
-                        <Edit3 size={15} className="me-1" /> Edit Profile
-                    </Button>
+                    {(isSuperAdmin || can('employees', 'update')) && (
+                        <Button variant="primary" size="sm" onClick={() => navigate(`/dashboard/employee/${id}/edit`)}>
+                            <Edit3 size={15} className="me-1" /> Edit Profile
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -367,9 +371,11 @@ const EmployeeDetail = () => {
                             <Tab.Pane eventKey="shifts">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <h6 className="fw-bold mb-0 text-primary">Shift Assignments</h6>
-                                    <Button variant="outline-primary" size="sm" onClick={() => setShowShiftModal(true)}>
-                                        <Plus size={15} className="me-1" /> Re-assign Shift
-                                    </Button>
+                                    {(isSuperAdmin || can('shifts', 'update')) && (
+                                        <Button variant="outline-primary" size="sm" onClick={() => setShowShiftModal(true)}>
+                                            <Plus size={15} className="me-1" /> Re-assign Shift
+                                        </Button>
+                                    )}
                                 </div>
                                 <div className="table-responsive">
                                     <Table hover className="align-middle mb-0">
@@ -530,9 +536,11 @@ const EmployeeDetail = () => {
                                             </Badge>
                                         )}
                                     </div>
-                                    <Button variant="primary" size="sm" onClick={() => setShowAdvanceModal(true)} className="d-inline-flex align-items-center gap-1 shadow-sm">
-                                        <Plus size={15} /> Disburse Advance
-                                    </Button>
+                                    {(isSuperAdmin || can('payroll', 'create')) && (
+                                        <Button variant="primary" size="sm" onClick={() => setShowAdvanceModal(true)} className="d-inline-flex align-items-center gap-1 shadow-sm">
+                                            <Plus size={15} /> Disburse Advance
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {/* Advance Stats Bar */}
@@ -817,7 +825,7 @@ const EmployeeDetail = () => {
                                                                         <span>Ledger</span>
                                                                     </Button>
 
-                                                                    {!isClosed && (
+                                                                    {!isClosed && (isSuperAdmin || can('payroll', 'update')) && (
                                                                         <Button
                                                                             variant="outline-success"
                                                                             size="sm"
@@ -830,7 +838,7 @@ const EmployeeDetail = () => {
                                                                         </Button>
                                                                     )}
 
-                                                                    {!isClosed && (
+                                                                    {!isClosed && (isSuperAdmin || can('payroll', 'update')) && (
                                                                         <Button
                                                                             variant={isPaused ? "outline-success" : "outline-secondary"}
                                                                             size="sm"

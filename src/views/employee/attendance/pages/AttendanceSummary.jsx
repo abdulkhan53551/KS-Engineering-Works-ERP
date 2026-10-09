@@ -3,9 +3,11 @@ import { Row, Col, Card, Table, Button, Form, Spinner } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
 import { Calendar, Download, Users, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAttendanceSummary } from '../../common/hooks/useEmployeeApi';
+import { usePermission } from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const AttendanceSummary = () => {
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -99,15 +101,17 @@ const AttendanceSummary = () => {
                         </Button>
                     </div>
 
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={handleExportCSV}
-                        disabled={breakdown.length === 0}
-                        className="d-flex align-items-center gap-1 shadow-sm"
-                    >
-                        <Download size={15} /> Export CSV
-                    </Button>
+                    {(isSuperAdmin || can('attendance', 'read') || can('attendance', 'print')) && (
+                        <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={handleExportCSV}
+                            disabled={breakdown.length === 0}
+                            className="d-flex align-items-center gap-1 shadow-sm"
+                        >
+                            <Download size={15} /> Export CSV
+                        </Button>
+                    )}
                 </div>
             </div>
 

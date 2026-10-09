@@ -24,9 +24,11 @@ import LeaveReviewModal from '../components/LeaveReviewModal';
 import LeaveCalendar from '../components/LeaveCalendar';
 import PaginationBar from '../../../../components/PaginationBar';
 import TableSkeleton from '../../common/components/TableSkeleton';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const LeaveList = () => {
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -198,9 +200,11 @@ const LeaveList = () => {
                             <CalendarIcon size={16} className="me-1" /> Calendar View
                         </Button>
                     </div>
-                    <Button variant="primary" size="sm" onClick={() => setShowApplyModal(true)}>
-                        <Plus size={16} className="me-1" /> Apply Leave
-                    </Button>
+                    {(isSuperAdmin || can('leaves', 'create')) && (
+                        <Button variant="primary" size="sm" onClick={() => setShowApplyModal(true)}>
+                            <Plus size={16} className="me-1" /> Apply Leave
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -282,15 +286,21 @@ const LeaveList = () => {
                                 </span>
                             </div>
                             <div className="d-flex align-items-center gap-2">
-                                <Button variant="success" size="sm" onClick={handleBulkApprove}>
-                                    <CheckCircle size={14} className="me-1" /> Approve Selected
-                                </Button>
-                                <Button variant="danger" size="sm" onClick={handleBulkReject}>
-                                    <XCircle size={14} className="me-1" /> Reject Selected
-                                </Button>
-                                <Button variant="outline-danger" size="sm" onClick={handleBulkCancel}>
-                                    <Trash2 size={14} className="me-1" /> Cancel Selected
-                                </Button>
+                                {(isSuperAdmin || can('leaves', 'approve')) && (
+                                    <>
+                                        <Button variant="success" size="sm" onClick={handleBulkApprove}>
+                                            <CheckCircle size={14} className="me-1" /> Approve Selected
+                                        </Button>
+                                        <Button variant="danger" size="sm" onClick={handleBulkReject}>
+                                            <XCircle size={14} className="me-1" /> Reject Selected
+                                        </Button>
+                                    </>
+                                )}
+                                {(isSuperAdmin || can('leaves', 'delete') || can('leaves', 'update')) && (
+                                    <Button variant="outline-danger" size="sm" onClick={handleBulkCancel}>
+                                        <Trash2 size={14} className="me-1" /> Cancel Selected
+                                    </Button>
+                                )}
                                 <Button variant="light" size="sm" onClick={() => setSelectedIds([])}>
                                     Cancel
                                 </Button>
@@ -391,20 +401,24 @@ const LeaveList = () => {
                                             <td className="text-end">
                                                 {leave.status === 'PENDING' && (
                                                     <div className="btn-group">
-                                                        <Button
-                                                            variant="outline-primary"
-                                                            size="sm"
-                                                            onClick={() => handleReview(leave)}
-                                                        >
-                                                            Review
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline-danger"
-                                                            size="sm"
-                                                            onClick={() => handleCancel(leave.id)}
-                                                        >
-                                                            Cancel
-                                                        </Button>
+                                                        {(isSuperAdmin || can('leaves', 'approve')) && (
+                                                            <Button
+                                                                variant="outline-primary"
+                                                                size="sm"
+                                                                onClick={() => handleReview(leave)}
+                                                            >
+                                                                Review
+                                                            </Button>
+                                                        )}
+                                                        {(isSuperAdmin || can('leaves', 'delete') || can('leaves', 'update')) && (
+                                                            <Button
+                                                                variant="outline-danger"
+                                                                size="sm"
+                                                                onClick={() => handleCancel(leave.id)}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>

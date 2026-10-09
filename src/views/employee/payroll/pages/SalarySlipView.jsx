@@ -3,11 +3,13 @@ import { Card, Table, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Download, AlertCircle } from 'lucide-react';
 import { useSalarySlip, useDownloadSalarySlip } from '../../common/hooks/useEmployeeApi';
+import { usePermission } from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const SalarySlipView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
 
     const { data: slipData, isLoading } = useSalarySlip(id);
     const slip = slipData?.id ? slipData : (slipData?.data || null);
@@ -84,26 +86,30 @@ const SalarySlipView = () => {
                     <ArrowLeft size={16} className="me-1" /> Back
                 </Button>
                 <div className="d-flex gap-2">
-                    <Button variant="outline-primary" size="sm" onClick={handlePrint}>
-                        <Printer size={16} className="me-1" /> Print
-                    </Button>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleDownloadPdf}
-                        disabled={downloadMutation.isPending}
-                        className="d-flex align-items-center"
-                    >
-                        {downloadMutation.isPending ? (
-                            <>
-                                <Spinner size="sm" className="me-2" /> Generating PDF...
-                            </>
-                        ) : (
-                            <>
-                                <Download size={16} className="me-1" /> Download PDF
-                            </>
-                        )}
-                    </Button>
+                    {(isSuperAdmin || can('payroll', 'print') || can('payroll', 'read')) && (
+                        <>
+                            <Button variant="outline-primary" size="sm" onClick={handlePrint}>
+                                <Printer size={16} className="me-1" /> Print
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={handleDownloadPdf}
+                                disabled={downloadMutation.isPending}
+                                className="d-flex align-items-center"
+                            >
+                                {downloadMutation.isPending ? (
+                                    <>
+                                        <Spinner size="sm" className="me-2" /> Generating PDF...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={16} className="me-1" /> Download PDF
+                                    </>
+                                )}
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
 

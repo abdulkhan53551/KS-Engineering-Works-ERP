@@ -22,6 +22,7 @@ import {
     CheckSquare
 } from 'lucide-react';
 import useDebounce from '../../../../hooks/useDebounce';
+import usePermission from '../../../../hooks/usePermission';
 import {
     useEmployees,
     useEmployeesMeta,
@@ -34,6 +35,7 @@ import '../../employee.css';
 
 const EmployeeList = () => {
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -188,18 +190,26 @@ const EmployeeList = () => {
                     </p>
                 </div>
                 <div className="d-flex flex-wrap gap-2">
-                    <Button variant="outline-primary" size="sm" onClick={() => navigate('/dashboard/employee/attendance')}>
-                        <Calendar size={15} className="me-1" /> Attendance Sheet
-                    </Button>
-                    <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/shifts')}>
-                        <Clock size={15} className="me-1" /> Shifts
-                    </Button>
-                    <Button variant="outline-success" size="sm" onClick={() => navigate('/dashboard/employee/payroll')}>
-                        <DollarSign size={15} className="me-1" /> Payroll Run
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={() => navigate('/dashboard/employee/create')}>
-                        <Plus size={16} className="me-1" /> Add Employee
-                    </Button>
+                    {(isSuperAdmin || can('attendance', 'read')) && (
+                        <Button variant="outline-primary" size="sm" onClick={() => navigate('/dashboard/employee/attendance')}>
+                            <Calendar size={15} className="me-1" /> Attendance Sheet
+                        </Button>
+                    )}
+                    {(isSuperAdmin || can('shifts', 'read')) && (
+                        <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/shifts')}>
+                            <Clock size={15} className="me-1" /> Shifts
+                        </Button>
+                    )}
+                    {(isSuperAdmin || can('payroll', 'read')) && (
+                        <Button variant="outline-success" size="sm" onClick={() => navigate('/dashboard/employee/payroll')}>
+                            <DollarSign size={15} className="me-1" /> Payroll Run
+                        </Button>
+                    )}
+                    {(isSuperAdmin || can('employees', 'create')) && (
+                        <Button variant="primary" size="sm" onClick={() => navigate('/dashboard/employee/create')}>
+                            <Plus size={16} className="me-1" /> Add Employee
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -357,17 +367,23 @@ const EmployeeList = () => {
                             </div>
                             <div className="d-flex align-items-center gap-2">
                                 {!isTrash ? (
-                                    <Button variant="outline-danger" size="sm" onClick={handleBulkDelete}>
-                                        <Trash2 size={14} className="me-1" /> Move Selected to Trash
-                                    </Button>
+                                    (isSuperAdmin || can('employees', 'delete')) && (
+                                        <Button variant="outline-danger" size="sm" onClick={handleBulkDelete}>
+                                            <Trash2 size={14} className="me-1" /> Move Selected to Trash
+                                        </Button>
+                                    )
                                 ) : (
                                     <>
-                                        <Button variant="success" size="sm" onClick={handleBulkRestore}>
-                                            <RotateCcw size={14} className="me-1" /> Restore Selected
-                                        </Button>
-                                        <Button variant="danger" size="sm" onClick={handleBulkDelete}>
-                                            <Trash2 size={14} className="me-1" /> Permanently Delete
-                                        </Button>
+                                        {(isSuperAdmin || can('employees', 'delete')) && (
+                                            <Button variant="success" size="sm" onClick={handleBulkRestore}>
+                                                <RotateCcw size={14} className="me-1" /> Restore Selected
+                                            </Button>
+                                        )}
+                                        {(isSuperAdmin || can('employees', 'delete')) && (
+                                            <Button variant="danger" size="sm" onClick={handleBulkDelete}>
+                                                <Trash2 size={14} className="me-1" /> Permanently Delete
+                                            </Button>
+                                        )}
                                     </>
                                 )}
                                 <Button variant="light" size="sm" onClick={() => setSelectedIds([])}>
@@ -496,44 +512,52 @@ const EmployeeList = () => {
                                             </td>
                                             <td className="text-end">
                                                 {isTrash ? (
-                                                    <Button
-                                                        variant="outline-success"
-                                                        size="sm"
-                                                        className="p-1 px-2 me-1"
-                                                        onClick={() => handleRestore(emp.id)}
-                                                        title="Restore Employee"
-                                                    >
-                                                        <RotateCcw size={14} /> Restore
-                                                    </Button>
+                                                    (isSuperAdmin || can('employees', 'delete')) && (
+                                                        <Button
+                                                            variant="outline-success"
+                                                            size="sm"
+                                                            className="p-1 px-2 me-1"
+                                                            onClick={() => handleRestore(emp.id)}
+                                                            title="Restore Employee"
+                                                        >
+                                                            <RotateCcw size={14} /> Restore
+                                                        </Button>
+                                                    )
                                                 ) : (
                                                     <div className="btn-group">
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            className="p-1 px-2"
-                                                            onClick={() => navigate(`/dashboard/employee/${emp.id}`)}
-                                                            title="View Profile"
-                                                        >
-                                                            <Eye size={14} />
-                                                        </Button>
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            className="p-1 px-2"
-                                                            onClick={() => navigate(`/dashboard/employee/${emp.id}/edit`)}
-                                                            title="Edit Employee"
-                                                        >
-                                                            <Edit3 size={14} />
-                                                        </Button>
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            className="p-1 px-2 text-danger"
-                                                            onClick={() => handleDelete(emp.id)}
-                                                            title="Move to Trash"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </Button>
+                                                        {(isSuperAdmin || can('employees', 'read')) && (
+                                                            <Button
+                                                                variant="light"
+                                                                size="sm"
+                                                                className="p-1 px-2"
+                                                                onClick={() => navigate(`/dashboard/employee/${emp.id}`)}
+                                                                title="View Profile"
+                                                            >
+                                                                <Eye size={14} />
+                                                            </Button>
+                                                        )}
+                                                        {(isSuperAdmin || can('employees', 'update')) && (
+                                                            <Button
+                                                                variant="light"
+                                                                size="sm"
+                                                                className="p-1 px-2"
+                                                                onClick={() => navigate(`/dashboard/employee/${emp.id}/edit`)}
+                                                                title="Edit Employee"
+                                                            >
+                                                                <Edit3 size={14} />
+                                                            </Button>
+                                                        )}
+                                                        {(isSuperAdmin || can('employees', 'delete')) && (
+                                                            <Button
+                                                                variant="light"
+                                                                size="sm"
+                                                                className="p-1 px-2 text-danger"
+                                                                onClick={() => handleDelete(emp.id)}
+                                                                title="Move to Trash"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>

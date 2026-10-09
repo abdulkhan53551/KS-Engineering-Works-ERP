@@ -28,10 +28,12 @@ import AdvanceRepaymentModal from '../components/AdvanceRepaymentModal';
 import AdvanceDetailModal from '../components/AdvanceDetailModal';
 import PaginationBar from '../../../../components/PaginationBar';
 import TableSkeleton from '../../common/components/TableSkeleton';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const AdvanceList = () => {
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -122,14 +124,16 @@ const AdvanceList = () => {
                         <RefreshCw size={14} className={isFetching ? 'spin' : ''} />
                         Refresh
                     </Button>
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setShowDisburseModal(true)}
-                        className="d-flex align-items-center gap-1"
-                    >
-                        <Plus size={16} /> Disburse Advance
-                    </Button>
+                    {(isSuperAdmin || can('payroll', 'create')) && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setShowDisburseModal(true)}
+                            className="d-flex align-items-center gap-1"
+                        >
+                            <Plus size={16} /> Disburse Advance
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -442,7 +446,7 @@ const AdvanceList = () => {
                                                             <span>Ledger</span>
                                                         </Button>
 
-                                                        {!isClosed && (
+                                                        {!isClosed && (isSuperAdmin || can('payroll', 'update')) && (
                                                             <Button
                                                                 variant="outline-success"
                                                                 size="sm"
@@ -455,7 +459,7 @@ const AdvanceList = () => {
                                                             </Button>
                                                         )}
 
-                                                        {!isClosed && (
+                                                        {!isClosed && (isSuperAdmin || can('payroll', 'update')) && (
                                                             <Button
                                                                 variant={isPaused ? "outline-success" : "outline-secondary"}
                                                                 size="sm"

@@ -3,6 +3,8 @@ import { Row, Col, Card, Form, Button, Tab, Nav, Spinner } from 'react-bootstrap
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowLeft, Save, User, Briefcase, DollarSign, CreditCard, RefreshCw } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { usePermission } from '../../../../hooks/usePermission';
 import {
     useEmployee,
     useShifts,
@@ -15,6 +17,7 @@ import '../../employee.css';
 const EmployeeForm = ({ mode = 'create' }) => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const currentUser = useSelector((state) => state.authReducer?.user);
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
 
@@ -23,6 +26,7 @@ const EmployeeForm = ({ mode = 'create' }) => {
     const effectiveFirmId = isAllFirms ? undefined : activeFirm?.id;
 
     const isEdit = mode === 'edit' || Boolean(id);
+    const canSubmit = isSuperAdmin || (isEdit ? can('employees', 'update') : can('employees', 'create'));
     const [activeTab, setActiveTab] = useState('personal');
 
     const [formData, setFormData] = useState({
@@ -215,17 +219,19 @@ const EmployeeForm = ({ mode = 'create' }) => {
                     <Button variant="secondary" size="sm" onClick={() => navigate('/dashboard/employee')}>
                         Cancel
                     </Button>
-                    <Button variant="primary" size="sm" onClick={onSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? (
-                            <>
-                                <Spinner size="sm" className="me-1" /> Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save size={16} className="me-1" /> {isEdit ? 'Update Employee' : 'Save Employee'}
-                            </>
-                        )}
-                    </Button>
+                    {canSubmit && (
+                        <Button variant="primary" size="sm" onClick={onSubmit} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <>
+                                    <Spinner size="sm" className="me-1" /> Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save size={16} className="me-1" /> {isEdit ? 'Update Employee' : 'Save Employee'}
+                                </>
+                            )}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -773,9 +779,11 @@ const EmployeeForm = ({ mode = 'create' }) => {
                                         <Button variant="outline-secondary" size="sm" onClick={() => setActiveTab('salary')}>
                                             ← Back to Salary
                                         </Button>
-                                        <Button variant="success" size="sm" type="submit" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Saving...' : (isEdit ? '✓ Update Employee Profile' : '✓ Create Employee Profile')}
-                                        </Button>
+                                        {canSubmit && (
+                                            <Button variant="success" size="sm" type="submit" disabled={isSubmitting}>
+                                                {isSubmitting ? 'Saving...' : (isEdit ? '✓ Update Employee Profile' : '✓ Create Employee Profile')}
+                                            </Button>
+                                        )}
                                     </div>
                                 </Tab.Pane>
                             </Tab.Content>

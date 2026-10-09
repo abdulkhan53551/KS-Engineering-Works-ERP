@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Save, ArrowLeft, Shield, Clock, Calendar, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { usePermission } from '../../../../hooks/usePermission';
 import { usePayrollSettings } from '../../common/hooks/useEmployeeApi';
 import { usePayrollSettingsSubmit } from '../hooks/usePayrollSettingsSubmit';
 import '../../employee.css';
 
 const PayrollSettings = () => {
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const currentUser = useSelector((state) => state.authReducer?.user);
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
@@ -104,15 +106,17 @@ const PayrollSettings = () => {
                 </div>
 
                 <div className="d-flex align-items-center gap-3">
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={onSubmit}
-                        disabled={isAllFirms || isSubmitting || isLoading}
-                        className="d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
-                    >
-                        <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Settings'}
-                    </Button>
+                    {(isSuperAdmin || can('payroll-settings', 'update')) && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={onSubmit}
+                            disabled={isAllFirms || isSubmitting || isLoading}
+                            className="d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
+                        >
+                            <Save size={16} /> {isSubmitting ? 'Saving...' : 'Save Settings'}
+                        </Button>
+                    )}
                 </div>
             </div>
 

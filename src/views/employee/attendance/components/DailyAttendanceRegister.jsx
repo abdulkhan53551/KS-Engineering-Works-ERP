@@ -26,10 +26,13 @@ import {
     useBulkMarkAttendance,
     useMarkDateStatus
 } from '../../common/hooks/useEmployeeApi';
+import usePermission from '../../../../hooks/usePermission';
 
 const STANDARD_SHIFT_HOURS = 8.0;
 
 const DailyAttendanceRegister = ({ firmId, employees: passedEmployees, loadingEmployees: passedLoading }) => {
+    const { can, isSuperAdmin } = usePermission();
+    const canEditAttendance = isSuperAdmin || can('attendance', 'create') || can('attendance', 'update');
     // Current selected date (YYYY-MM-DD)
     const todayStr = useMemo(() => moment().format('YYYY-MM-DD'), []);
     const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -448,44 +451,48 @@ const DailyAttendanceRegister = ({ firmId, employees: passedEmployees, loadingEm
                             </InputGroup>
 
                             {/* Quick Fill Button */}
-                            <Button
-                                variant="outline-success"
-                                size="sm"
-                                onClick={handleFillAllPresent}
-                                className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small shadow-none btn-soft-emerald"
-                                title="Set all workers to Present with standard 8 hours"
-                            >
-                                <Zap size={14} />
-                                Set All (8h)
-                            </Button>
+                            {canEditAttendance && (
+                                <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={handleFillAllPresent}
+                                    className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small shadow-none btn-soft-emerald"
+                                    title="Set all workers to Present with standard 8 hours"
+                                >
+                                    <Zap size={14} />
+                                    Set All (8h)
+                                </Button>
+                            )}
 
                             {/* Save Button */}
-                            <Button
-                                variant={hasUnsavedChanges ? "success" : "light"}
-                                size="sm"
-                                onClick={handleSaveDay}
-                                disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
-                                className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small transition-all ${
-                                    hasUnsavedChanges ? 'btn-save-pulse shadow-sm' : 'text-muted border'
-                                }`}
-                            >
-                                {bulkMarkMutation.isPending ? (
-                                    <>
-                                        <Spinner size="sm" animation="border" className="me-1" />
-                                        Saving...
-                                    </>
-                                ) : hasUnsavedChanges ? (
-                                    <>
-                                        <Save size={14} />
-                                        Save Changes *
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 size={14} className="text-success" />
-                                        All Saved
-                                    </>
-                                )}
-                            </Button>
+                            {canEditAttendance && (
+                                <Button
+                                    variant={hasUnsavedChanges ? "success" : "light"}
+                                    size="sm"
+                                    onClick={handleSaveDay}
+                                    disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
+                                    className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 fw-semibold small transition-all ${
+                                        hasUnsavedChanges ? 'btn-save-pulse shadow-sm' : 'text-muted border'
+                                    }`}
+                                >
+                                    {bulkMarkMutation.isPending ? (
+                                        <>
+                                            <Spinner size="sm" animation="border" className="me-1" />
+                                            Saving...
+                                        </>
+                                    ) : hasUnsavedChanges ? (
+                                        <>
+                                            <Save size={14} />
+                                            Save Changes *
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={14} className="text-success" />
+                                            All Saved
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </Col>
                     </Row>
                 </Card.Body>
@@ -768,7 +775,7 @@ const DailyAttendanceRegister = ({ firmId, employees: passedEmployees, loadingEm
                 </Card.Body>
 
                 {/* Footer Bar with Save Notice */}
-                {hasUnsavedChanges && (
+                {hasUnsavedChanges && canEditAttendance && (
                     <Card.Footer className="bg-light-subtle py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2 border-top">
                         <div className="d-flex align-items-center gap-2 text-warning-emphasis fw-semibold small">
                             <AlertTriangle size={18} />

@@ -34,10 +34,12 @@ import BulkPayModal from '../components/BulkPayModal';
 import EditAdvanceDeductionModal from '../../advances/components/EditAdvanceDeductionModal';
 import PaginationBar from '../../../../components/PaginationBar';
 import TableSkeleton from '../../common/components/TableSkeleton';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const PayrollRun = () => {
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -185,71 +187,79 @@ const PayrollRun = () => {
                         </Button>
                     </div>
 
-                    <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/salary-templates')}>
-                        <FileText size={15} className="me-1" /> Templates
-                    </Button>
-                    <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/payroll-settings')}>
-                        <Settings size={15} className="me-1" /> Settings
-                    </Button>
+                    {(isSuperAdmin || can('salary-templates', 'read')) && (
+                        <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/salary-templates')}>
+                            <FileText size={15} className="me-1" /> Templates
+                        </Button>
+                    )}
+                    {(isSuperAdmin || can('payroll-settings', 'read')) && (
+                        <Button variant="outline-secondary" size="sm" onClick={() => navigate('/dashboard/employee/payroll-settings')}>
+                            <Settings size={15} className="me-1" /> Settings
+                        </Button>
+                    )}
 
                     {/* Wage Muster Export Dropdown */}
-                    <Dropdown>
-                        <Dropdown.Toggle
-                            variant="outline-success"
+                    {(isSuperAdmin || can('payroll', 'read') || can('payroll', 'print')) && (
+                        <Dropdown>
+                            <Dropdown.Toggle
+                                variant="outline-success"
+                                size="sm"
+                                id="dropdown-export-muster"
+                                disabled={exportMusterMutation.isPending}
+                                className="d-flex align-items-center gap-1 shadow-sm"
+                            >
+                                <Download size={15} />
+                                {exportMusterMutation.isPending ? 'Exporting...' : 'Export Muster'}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu align="end" className="shadow border-0 p-2" style={{ minWidth: '280px' }}>
+                                <Dropdown.Item
+                                    onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'full' })}
+                                    className="d-flex align-items-start gap-2 py-2 rounded"
+                                >
+                                    <FileSpreadsheet size={18} className="text-success mt-1" />
+                                    <div>
+                                        <div className="fw-bold text-dark">Wage Muster Roll (.xlsx)</div>
+                                        <small className="text-muted d-block">Form T register with all earnings & deductions</small>
+                                    </div>
+                                </Dropdown.Item>
+                                <Dropdown.Divider />
+                                <Dropdown.Item
+                                    onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'bank' })}
+                                    className="d-flex align-items-start gap-2 py-2 rounded"
+                                >
+                                    <CreditCard size={18} className="text-primary mt-1" />
+                                    <div>
+                                        <div className="fw-bold text-dark">Bank Transfer File (NEFT/RTGS)</div>
+                                        <small className="text-muted d-block">A/C, IFSC & Net Salary for bank upload</small>
+                                    </div>
+                                </Dropdown.Item>
+                                <Dropdown.Divider />
+                                <Dropdown.Item
+                                    onClick={() => exportMusterMutation.mutate({ firmId, month, year, format: 'pdf' })}
+                                    className="d-flex align-items-start gap-2 py-2 rounded"
+                                >
+                                    <FileText size={18} className="text-danger mt-1" />
+                                    <div>
+                                        <div className="fw-bold text-dark">Download Form T (PDF)</div>
+                                        <small className="text-muted d-block">Official landscape statutory register ready to print</small>
+                                    </div>
+                                </Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    )}
+
+                    {(isSuperAdmin || can('payroll', 'create')) && (
+                        <Button
+                            variant="primary"
                             size="sm"
-                            id="dropdown-export-muster"
-                            disabled={exportMusterMutation.isPending}
+                            onClick={handleGenerate}
+                            disabled={generateMutation.isPending}
                             className="d-flex align-items-center gap-1 shadow-sm"
                         >
-                            <Download size={15} />
-                            {exportMusterMutation.isPending ? 'Exporting...' : 'Export Muster'}
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu align="end" className="shadow border-0 p-2" style={{ minWidth: '280px' }}>
-                            <Dropdown.Item
-                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'full' })}
-                                className="d-flex align-items-start gap-2 py-2 rounded"
-                            >
-                                <FileSpreadsheet size={18} className="text-success mt-1" />
-                                <div>
-                                    <div className="fw-bold text-dark">Wage Muster Roll (.xlsx)</div>
-                                    <small className="text-muted d-block">Form T register with all earnings & deductions</small>
-                                </div>
-                            </Dropdown.Item>
-                            <Dropdown.Divider />
-                            <Dropdown.Item
-                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, type: 'bank' })}
-                                className="d-flex align-items-start gap-2 py-2 rounded"
-                            >
-                                <CreditCard size={18} className="text-primary mt-1" />
-                                <div>
-                                    <div className="fw-bold text-dark">Bank Transfer File (NEFT/RTGS)</div>
-                                    <small className="text-muted d-block">A/C, IFSC & Net Salary for bank upload</small>
-                                </div>
-                            </Dropdown.Item>
-                            <Dropdown.Divider />
-                            <Dropdown.Item
-                                onClick={() => exportMusterMutation.mutate({ firmId, month, year, format: 'pdf' })}
-                                className="d-flex align-items-start gap-2 py-2 rounded"
-                            >
-                                <FileText size={18} className="text-danger mt-1" />
-                                <div>
-                                    <div className="fw-bold text-dark">Download Form T (PDF)</div>
-                                    <small className="text-muted d-block">Official landscape statutory register ready to print</small>
-                                </div>
-                            </Dropdown.Item>
-                        </Dropdown.Menu>
-                    </Dropdown>
-
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleGenerate}
-                        disabled={generateMutation.isPending}
-                        className="d-flex align-items-center gap-1 shadow-sm"
-                    >
-                        <Play size={15} />
-                        {generateMutation.isPending ? 'Calculating...' : 'Run Payroll'}
-                    </Button>
+                            <Play size={15} />
+                            {generateMutation.isPending ? 'Calculating...' : 'Run Payroll'}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -368,7 +378,7 @@ const PayrollRun = () => {
                             )}
                         </div>
 
-                        {selectedSlipIds.length > 0 && (
+                        {selectedSlipIds.length > 0 && (isSuperAdmin || can('payroll', 'update')) && (
                             <Button
                                 variant="success"
                                 size="sm"
@@ -472,7 +482,7 @@ const PayrollRun = () => {
                                                         <span className="text-danger fw-semibold">
                                                             -₹{parseFloat(slip.advanceDeduction).toLocaleString('en-IN')}
                                                         </span>
-                                                        {slip.status === 'GENERATED' && (
+                                                        {slip.status === 'GENERATED' && (isSuperAdmin || can('payroll', 'update')) && (
                                                             <Button
                                                                 variant="link"
                                                                 size="sm"
@@ -487,7 +497,7 @@ const PayrollRun = () => {
                                                 ) : (
                                                     <span className="text-muted">
                                                         —
-                                                        {slip.status === 'GENERATED' && (
+                                                        {slip.status === 'GENERATED' && (isSuperAdmin || can('payroll', 'update')) && (
                                                             <Button
                                                                 variant="link"
                                                                 size="sm"
@@ -511,34 +521,38 @@ const PayrollRun = () => {
                                             </td>
                                             <td className="text-end">
                                                 <div className="btn-group">
-                                                    <Button
-                                                        variant="light"
-                                                        size="sm"
-                                                        onClick={() => navigate(`/dashboard/employee/salary-slip/${slip.id}`)}
-                                                        title="View Printable Pay Slip"
-                                                    >
-                                                        <Eye size={14} /> Slip
-                                                    </Button>
-                                                    <Button
-                                                        variant="light"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            const safeEmpCode = (slip.empCode || 'EMP').replace(/[^a-zA-Z0-9_-]/g, '_');
-                                                            downloadMutation.mutate({
-                                                                id: slip.id,
-                                                                filename: `SalarySlip-${safeEmpCode}-${slip.month}-${slip.year}.pdf`
-                                                            });
-                                                        }}
-                                                        title="Download Slip PDF"
-                                                        disabled={downloadMutation.isPending && downloadMutation.variables?.id === slip.id}
-                                                    >
-                                                        {downloadMutation.isPending && downloadMutation.variables?.id === slip.id ? (
-                                                            <Spinner size="sm" animation="border" style={{ width: '12px', height: '12px' }} />
-                                                        ) : (
-                                                            <Download size={14} />
-                                                        )}
-                                                    </Button>
-                                                    {slip.status === 'GENERATED' && (
+                                                    {(isSuperAdmin || can('payroll', 'read')) && (
+                                                        <Button
+                                                            variant="light"
+                                                            size="sm"
+                                                            onClick={() => navigate(`/dashboard/employee/salary-slip/${slip.id}`)}
+                                                            title="View Printable Pay Slip"
+                                                        >
+                                                            <Eye size={14} /> Slip
+                                                        </Button>
+                                                    )}
+                                                    {(isSuperAdmin || can('payroll', 'read') || can('payroll', 'print')) && (
+                                                        <Button
+                                                            variant="light"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                const safeEmpCode = (slip.empCode || 'EMP').replace(/[^a-zA-Z0-9_-]/g, '_');
+                                                                downloadMutation.mutate({
+                                                                    id: slip.id,
+                                                                    filename: `SalarySlip-${safeEmpCode}-${slip.month}-${slip.year}.pdf`
+                                                                });
+                                                            }}
+                                                            title="Download Slip PDF"
+                                                            disabled={downloadMutation.isPending && downloadMutation.variables?.id === slip.id}
+                                                        >
+                                                            {downloadMutation.isPending && downloadMutation.variables?.id === slip.id ? (
+                                                                <Spinner size="sm" animation="border" style={{ width: '12px', height: '12px' }} />
+                                                            ) : (
+                                                                <Download size={14} />
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                    {slip.status === 'GENERATED' && (isSuperAdmin || can('payroll', 'approve')) && (
                                                         <Button
                                                             variant="outline-primary"
                                                             size="sm"

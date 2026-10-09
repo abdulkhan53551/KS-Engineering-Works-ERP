@@ -26,6 +26,7 @@ import {
 import DailyAttendanceRegister from '../components/DailyAttendanceRegister';
 import AttendanceHoursModal from '../components/AttendanceHoursModal';
 import ExportMusterModal from '../components/ExportMusterModal';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const STATUS_CYCLE = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'WEEKLY_OFF', 'HOLIDAY'];
@@ -50,6 +51,8 @@ const extractDay = (val) => {
 };
 
 const AttendanceSheet = () => {
+    const { can, isSuperAdmin } = usePermission();
+    const canEditAttendance = isSuperAdmin || can('attendance', 'create') || can('attendance', 'update');
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -461,40 +464,44 @@ const AttendanceSheet = () => {
                             <span className="text-muted small d-none d-md-inline">
                                 💡 Double-click any cell or hover to edit exact hours & OT
                             </span>
-                            <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() => setShowExportModal(true)}
-                                className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm"
-                            >
-                                <Download size={15} /> Export Muster Roll
-                            </Button>
-                            <Button
-                                variant={hasUnsavedChanges ? 'success' : 'light'}
-                                size="sm"
-                                onClick={handleSave}
-                                disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
-                                className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm ${
-                                    hasUnsavedChanges ? 'btn-save-pulse' : 'text-muted border'
-                                }`}
-                            >
-                                {bulkMarkMutation.isPending ? (
-                                    <>
-                                        <Spinner size="sm" animation="border" className="me-1" />
-                                        Saving...
-                                    </>
-                                ) : hasUnsavedChanges ? (
-                                    <>
-                                        <Save size={15} />
-                                        Save Changes *
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 size={15} className="text-success" />
-                                        All Saved
-                                    </>
-                                )}
-                            </Button>
+                            {(isSuperAdmin || can('attendance', 'read') || can('attendance', 'print')) && (
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => setShowExportModal(true)}
+                                    className="rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm"
+                                >
+                                    <Download size={15} /> Export Muster Roll
+                                </Button>
+                            )}
+                            {canEditAttendance && (
+                                <Button
+                                    variant={hasUnsavedChanges ? 'success' : 'light'}
+                                    size="sm"
+                                    onClick={handleSave}
+                                    disabled={bulkMarkMutation.isPending || !hasUnsavedChanges}
+                                    className={`rounded-pill px-3 py-1 d-flex align-items-center gap-1 shadow-sm ${
+                                        hasUnsavedChanges ? 'btn-save-pulse' : 'text-muted border'
+                                    }`}
+                                >
+                                    {bulkMarkMutation.isPending ? (
+                                        <>
+                                            <Spinner size="sm" animation="border" className="me-1" />
+                                            Saving...
+                                        </>
+                                    ) : hasUnsavedChanges ? (
+                                        <>
+                                            <Save size={15} />
+                                            Save Changes *
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={15} className="text-success" />
+                                            All Saved
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </div>
 

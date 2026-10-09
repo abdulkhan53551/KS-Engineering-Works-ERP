@@ -19,9 +19,11 @@ import ShiftModal from '../components/ShiftModal';
 import ShiftAssignModal from '../components/ShiftAssignModal';
 import PaginationBar from '../../../../components/PaginationBar';
 import TableSkeleton from '../../common/components/TableSkeleton';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const ShiftList = () => {
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -146,12 +148,16 @@ const ShiftList = () => {
                     </span>
                 </div>
                 <div className="d-flex gap-2">
-                    <Button variant="outline-primary" size="sm" onClick={() => setShowAssignModal(true)}>
-                        <Users size={16} className="me-1" /> Assign Shift to Staff
-                    </Button>
-                    <Button variant="primary" size="sm" onClick={handleCreate}>
-                        <Plus size={16} className="me-1" /> Create Shift
-                    </Button>
+                    {(isSuperAdmin || can('shifts', 'update')) && (
+                        <Button variant="outline-primary" size="sm" onClick={() => setShowAssignModal(true)}>
+                            <Users size={16} className="me-1" /> Assign Shift to Staff
+                        </Button>
+                    )}
+                    {(isSuperAdmin || can('shifts', 'create')) && (
+                        <Button variant="primary" size="sm" onClick={handleCreate}>
+                            <Plus size={16} className="me-1" /> Create Shift
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -249,24 +255,28 @@ const ShiftList = () => {
                                                         )}
                                                     </td>
                                                     <td className="text-end">
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            className="p-1 px-2 me-1"
-                                                            onClick={() => handleEdit(s)}
-                                                            title="Edit Shift"
-                                                        >
-                                                            <Edit3 size={14} />
-                                                        </Button>
-                                                        <Button
-                                                            variant="light"
-                                                            size="sm"
-                                                            className="p-1 px-2 text-danger"
-                                                            onClick={() => handleDelete(s.id)}
-                                                            title="Delete Shift"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </Button>
+                                                        {(isSuperAdmin || can('shifts', 'update')) && (
+                                                            <Button
+                                                                variant="light"
+                                                                size="sm"
+                                                                className="p-1 px-2 me-1"
+                                                                onClick={() => handleEdit(s)}
+                                                                title="Edit Shift"
+                                                            >
+                                                                <Edit3 size={14} />
+                                                            </Button>
+                                                        )}
+                                                        {(isSuperAdmin || can('shifts', 'delete')) && (
+                                                            <Button
+                                                                variant="light"
+                                                                size="sm"
+                                                                className="p-1 px-2 text-danger"
+                                                                onClick={() => handleDelete(s.id)}
+                                                                title="Delete Shift"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </Button>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))

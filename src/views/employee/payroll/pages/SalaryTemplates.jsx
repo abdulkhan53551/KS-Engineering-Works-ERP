@@ -21,10 +21,12 @@ import { useSalaryTemplates, useDeleteSalaryTemplate } from '../../common/hooks/
 import SalaryTemplateModal from '../components/SalaryTemplateModal';
 import PaginationBar from '../../../../components/PaginationBar';
 import CardSkeleton from '../../common/components/CardSkeleton';
+import usePermission from '../../../../hooks/usePermission';
 import '../../employee.css';
 
 const SalaryTemplates = () => {
     const navigate = useNavigate();
+    const { can, isSuperAdmin } = usePermission();
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const isAllFirms = !activeFirm || activeFirm?.id === 'all';
     const firmId = isAllFirms ? undefined : activeFirm?.id;
@@ -121,9 +123,11 @@ const SalaryTemplates = () => {
                         </span>
                     </div>
                 </div>
-                <Button variant="primary" size="sm" className="d-flex align-items-center gap-1 shadow-sm px-3" onClick={handleCreate}>
-                    <Plus size={16} /> Create Template
-                </Button>
+                {(isSuperAdmin || can('salary-templates', 'create')) && (
+                    <Button variant="primary" size="sm" className="d-flex align-items-center gap-1 shadow-sm px-3" onClick={handleCreate}>
+                        <Plus size={16} /> Create Template
+                    </Button>
+                )}
             </div>
 
             {/* Metrics Overview Bar */}
@@ -252,7 +256,7 @@ const SalaryTemplates = () => {
                                         ? 'Try clearing the search or changing the filter options above.'
                                         : 'Create your first template (e.g. Standard Workshop Staff, Executive CTC) to automatically compute Basic, HRA, PF, and ESI across payslips.'}
                                 </p>
-                                {!searchTerm && !typeFilter && (
+                                {!searchTerm && !typeFilter && (isSuperAdmin || can('salary-templates', 'create')) && (
                                     <Button variant="primary" size="sm" onClick={handleCreate} className="mt-2">
                                         <Plus size={15} className="me-1" /> Create Template
                                     </Button>
@@ -303,24 +307,28 @@ const SalaryTemplates = () => {
                                         </div>
 
                                         <div className="d-flex gap-1 align-items-center ms-2">
-                                            <Button
-                                                variant="light"
-                                                size="sm"
-                                                className="p-1 px-2 border"
-                                                onClick={() => handleEdit(tpl)}
-                                                title="Edit Template"
-                                            >
-                                                <Edit3 size={14} className="text-secondary" />
-                                            </Button>
-                                            <Button
-                                                variant="light"
-                                                size="sm"
-                                                className="p-1 px-2 border text-danger"
-                                                onClick={() => handleDelete(tpl.id, tpl.templateName)}
-                                                title="Delete Template"
-                                            >
-                                                <Trash2 size={14} />
-                                            </Button>
+                                            {(isSuperAdmin || can('salary-templates', 'update')) && (
+                                                <Button
+                                                    variant="light"
+                                                    size="sm"
+                                                    className="p-1 px-2 border"
+                                                    onClick={() => handleEdit(tpl)}
+                                                    title="Edit Template"
+                                                >
+                                                    <Edit3 size={14} className="text-secondary" />
+                                                </Button>
+                                            )}
+                                            {(isSuperAdmin || can('salary-templates', 'delete')) && (
+                                                <Button
+                                                    variant="light"
+                                                    size="sm"
+                                                    className="p-1 px-2 border text-danger"
+                                                    onClick={() => handleDelete(tpl.id, tpl.templateName)}
+                                                    title="Delete Template"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                            )}
                                         </div>
                                     </Card.Header>
 
