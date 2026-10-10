@@ -1,17 +1,5 @@
-import axios from "axios";
-// import client from "./client";
 import { wait } from "../utitlity";
 import api from "../../lib/axios";
-import { localStorageKey } from "../constant/constants";
-
-let isRefreshing = false;
-let subscribers = [];
-
-const subscribeTokenRefresh = (cb) => subscribers.push(cb);
-const onRefreshed = (token) => {
-    subscribers.forEach((cb) => cb(token));
-    subscribers = [];
-};
 
 export const apiRequest = async ({
     url,
@@ -30,36 +18,7 @@ export const apiRequest = async ({
         } catch (error) {
             const status = error.response?.status;
 
-            // 🔹 Token refresh on 401
-            if (status === 401 && !error.config._retry) {
-                if (!isRefreshing) {
-                    isRefreshing = true;
-                    try {
-                        const res = await api.post("/auth/refresh", {}, { withCredentials: true });
-                        const newToken = res.data.accessToken;
-
-                        localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, newToken);
-                        api.defaults.headers.Authorization = `Bearer ${newToken}`;
-                        isRefreshing = false;
-                        onRefreshed(newToken);
-                    } catch {
-                        isRefreshing = false;
-                        localStorage.clear();
-                        window.location.href = "/login";
-                        return { success: false, message: "Session expired" };
-                    }
-                }
-
-                return new Promise((resolve) => {
-                    subscribeTokenRefresh((token) => {
-                        error.config._retry = true;
-                        error.config.headers.Authorization = `Bearer ${token}`;
-                        resolve(api(error.config));
-                    });
-                });
-            }
-
-            // 🔹 Retry on network/server issues
+            // Retry on network or 5xx server issues (not on client 4xx auth errors)
             const shouldRetry =
                 attempt < retries &&
                 (error.code === "ECONNABORTED" ||
@@ -77,9 +36,10 @@ export const apiRequest = async ({
                 message:
                     error.code === "ECONNABORTED"
                         ? "Request timeout"
-                        : error.message || "Server error",
+                        : error.response?.data?.message || error.message || "Server error",
                 data: error.response?.data,
             };
         }
     }
 };
+

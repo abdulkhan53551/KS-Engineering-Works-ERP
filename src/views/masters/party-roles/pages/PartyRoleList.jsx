@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, FormCheck } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
 import Card from '../../../../components/Card';
@@ -29,7 +29,7 @@ import PartyRoleModal from '../components/PartyRoleModal';
 import TrashTabFilter from '../../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import useListManager from '../../../../hooks/useListManager';
+import { useListPagination, useRowSelection } from '../../../../hooks/useListManager';
 import useTrashActions from '../../../../hooks/useTrashActions';
 
 /**
@@ -62,10 +62,7 @@ const PartyRoleList = () => {
     const { mutate: bulkDeleteRoles } = useBulkDeletePartyRoles();
     const { mutate: bulkRestoreRoles } = useBulkRestorePartyRoles();
 
-    // 3. Temp items for selection sync
-    const [tempItems, setTempItems] = useState([]);
-
-    // 4. List Manager Hook
+    // 3. Pagination & Search Hook
     const {
         page,
         setPage,
@@ -76,17 +73,10 @@ const PartyRoleList = () => {
         handleSearch,
         clearSearch: handleClearSearch,
         isTrash,
-        handleTabChange,
-        selectedIds,
-        handleSelectAll,
-        handleSelectRow,
-        handleDeselectAll,
-        isAllSelected,
-        isIndeterminate,
-        selectedCount
-    } = useListManager({
-        items: tempItems,
-        idKey: 'id',
+        handlePageChange,
+        handlePageSizeChange,
+        handleTabChange: handlePaginationTabChange
+    } = useListPagination({
         initialPageSize: 10
     });
 
@@ -188,10 +178,24 @@ const PartyRoleList = () => {
         return sortedAndFilteredList.slice(start, start + pageSize);
     }, [sortedAndFilteredList, page, pageSize]);
 
-    // Sync paged list with useListManager for select-all calculation
-    useEffect(() => {
-        setTempItems(pagedList);
-    }, [pagedList]);
+    // Row Selection Hook directly operates on pagedList
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useRowSelection({
+        items: pagedList,
+        idKey: 'id'
+    });
+
+    const handleTabChange = useCallback((trashState) => {
+        handlePaginationTabChange(trashState);
+        handleDeselectAll();
+    }, [handlePaginationTabChange, handleDeselectAll]);
 
     const handleOpenModal = (mode = 'create', item = null) => {
         setModalState({

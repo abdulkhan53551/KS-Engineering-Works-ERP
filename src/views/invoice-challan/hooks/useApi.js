@@ -16,27 +16,34 @@ import { clearLoading } from "../../../store/uiModal.slice";
 import { useDispatch } from "react-redux";
 import { useUIManager } from "../../../contexts/UIManagerContext";
 
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+export const selectInvoiceChallanPagination = (result) => {
+    return result?.data?.pagination ?? EMPTY_OBJECT;
+};
+
+export const selectInvoiceChallanList = (result) => {
+    const list = result?.data;
+    if (!Array.isArray(list) || list.length === 0) return EMPTY_ARRAY;
+    return list.map(item => ({
+        ...item,
+        color: item.isInvoiced ? 'bg-success' : 'bg-danger',
+        invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
+    }));
+};
+
+export const selectInvoiceChallanById = (result) => {
+    return result?.data ?? EMPTY_OBJECT;
+};
+
 // Get invoice challan pagination
 export const useGetInvoiceChallanPagination = ({ page, pageSize, search, trash = false }) => {
     return useQuery({
         queryKey: ["invoiceChallanPagination", page, pageSize, search, trash],
         queryFn: () => getInvoiceChallanPagination({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const pagination = result?.data?.pagination ?? {};
-            const total = pagination.total ?? 0;
-            const totalPages = pagination.totalPages ?? (total > 0 && pageSize ? Math.ceil(total / pageSize) : 1);
-
-            const pageStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
-            const pageEnd = Math.min(page * pageSize, total);
-
-            return {
-                ...pagination,
-                totalPages,
-                pageStart,
-                pageEnd
-            };
-        }
+        placeholderData: (prev) => prev,
+        select: selectInvoiceChallanPagination
     });
 };
 
@@ -45,16 +52,8 @@ export const useGetInvoiceChallan = ({ page, pageSize, search, trash = false }) 
     return useQuery({
         queryKey: ["invoiceChallanList", page, pageSize, search, trash],
         queryFn: () => getInvoiceChallan({ page, pageSize, search, trash }),
-        keepPreviousData: true,
-        select: (result) => {
-            const data = result?.data?.map(item => ({
-                ...item,
-                color: item.isInvoiced ? 'bg-success' : 'bg-danger',
-                invoiceStatus: item.isInvoiced ? 'Invoiced' : 'Pending'
-            })) ?? [];
-
-            return data;
-        }
+        placeholderData: (prev) => prev,
+        select: selectInvoiceChallanList
     });
 };
 
@@ -64,9 +63,7 @@ export const useGetInvoiceChallanById = (id = 0) => {
         queryKey: ["invoiceChallanById", id],
         queryFn: () => getInvoiceChallanById(id),
         enabled: !!id,
-        select: (result) => {
-            return result?.data ?? {};
-        }
+        select: selectInvoiceChallanById
     });
 };
 

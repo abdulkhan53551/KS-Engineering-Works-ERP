@@ -171,7 +171,7 @@ const PartyAutocompleteInput = ({
 
     return (
         <div ref={containerRef} className="party-autocomplete-container">
-            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-4">
+            <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
                 <Form.Control
                     type="text"
                     name="customerName"
@@ -196,10 +196,6 @@ const PartyAutocompleteInput = ({
                 <Form.Label htmlFor="customerName" style={{ fontSize: '0.78rem' }}>
                     {label} {required && <span className="text-danger label-required">*</span>}
                 </Form.Label>
-                <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
-                    {errorMessage}
-                </Form.Control.Feedback>
-
                 {/* Right side status indicator */}
                 {isLoading || isFetchingDetails ? (
                     <div className="party-autocomplete-spinner">
@@ -220,6 +216,11 @@ const PartyAutocompleteInput = ({
                     </button>
                 ) : null}
             </Form.Floating>
+            {isInvalid && errorMessage && (
+                <div className="invalid-feedback d-block mt-1 ps-1" style={{ fontSize: '0.75rem' }}>
+                    {errorMessage}
+                </div>
+            )}
 
             {/* Suggestions Dropdown */}
             {isOpen && (

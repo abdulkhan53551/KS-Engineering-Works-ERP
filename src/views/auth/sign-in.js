@@ -20,9 +20,19 @@ import "react-toastify/dist/ReactToastify.css";
 // import Toast from '../../utilities/toast'
 
 const SignIn = () => {
-   const { isAuthenticated } = useSelector((state) => state.authReducer);
-   const { accessToken } = useSelector((state) => state.authReducer)
-   const userProfile = useSelector((state) => state.userReducer)
+   const navigate = useNavigate();
+   const location = useLocation();
+   const { isAuthenticated, user, isInitializing } = useSelector((state) => state.authReducer);
+   const { accessToken } = useSelector((state) => state.authReducer);
+   const userProfile = useSelector((state) => state.userReducer);
+
+   // Redirect authenticated users to intended destination or dashboard only once profile is loaded
+   useEffect(() => {
+      if (!isInitializing && isAuthenticated && user) {
+         const from = location.state?.from?.pathname || "/dashboard";
+         navigate(from, { replace: true });
+      }
+   }, [isAuthenticated, user, isInitializing, navigate, location]);
 
    const { mutate: loginApi, isPending, isError, error } = useLogin();
    const { register, handleSubmit, formState: { errors } } = useForm({

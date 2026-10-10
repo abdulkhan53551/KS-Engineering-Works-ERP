@@ -78,6 +78,7 @@ const PartyForm = ({ mode = 'create' }) => {
             tanNumber: '',
             website: '',
             remarks: '',
+            creditPeriodDays: 0,
             logoUrl: '',
             logoPublicId: '',
             status: 'ACTIVE'
@@ -105,6 +106,7 @@ const PartyForm = ({ mode = 'create' }) => {
                 tanNumber: party.tanNumber || '',
                 website: party.website || '',
                 remarks: party.remarks || '',
+                creditPeriodDays: party.creditPeriodDays ?? 0,
                 logoUrl: party.logoUrl || party.logo || '',
                 logoPublicId: party.logoPublicId || '',
                 status: party.status || 'ACTIVE'
@@ -150,6 +152,7 @@ const PartyForm = ({ mode = 'create' }) => {
             tanNumber: formData.tanNumber ? formData.tanNumber.trim().toUpperCase() : null,
             website: formData.website ? formData.website.trim() : null,
             remarks: formData.remarks ? formData.remarks.trim() : null,
+            creditPeriodDays: Number(formData.creditPeriodDays) || 0,
             logoUrl: formData.logoUrl || null,
             logoPublicId: formData.logoPublicId || null,
             status: formData.status || 'ACTIVE'
@@ -314,7 +317,7 @@ const PartyForm = ({ mode = 'create' }) => {
                                             </Col>
 
                                             {/* Legal Name */}
-                                            <Col xs={12}>
+                                            <Col md={8} xs={12}>
                                                 <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                                     <Form.Control
                                                         type="text"
@@ -329,6 +332,28 @@ const PartyForm = ({ mode = 'create' }) => {
                                                     </Form.Label>
                                                     <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                                         {errors.legalName?.message}
+                                                    </Form.Control.Feedback>
+                                                </Form.Floating>
+                                            </Col>
+
+                                            {/* Credit Period (Days) */}
+                                            <Col md={4} xs={12}>
+                                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                                    <Form.Control
+                                                        type="number"
+                                                        id="creditPeriodDays"
+                                                        placeholder="Credit Period (Days)"
+                                                        min={0}
+                                                        max={365}
+                                                        style={{ fontSize: '0.84rem' }}
+                                                        isInvalid={!!errors.creditPeriodDays}
+                                                        {...register('creditPeriodDays')}
+                                                    />
+                                                    <Form.Label htmlFor="creditPeriodDays" style={{ fontSize: '0.78rem' }}>
+                                                        Credit Period (Days)
+                                                    </Form.Label>
+                                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                        {errors.creditPeriodDays?.message}
                                                     </Form.Control.Feedback>
                                                 </Form.Floating>
                                             </Col>
@@ -394,7 +419,7 @@ const PartyForm = ({ mode = 'create' }) => {
                                     </Col>
 
                                     {/* Legal Name */}
-                                    <Col xs={12}>
+                                    <Col lg={8} xs={12}>
                                         <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
                                             <Form.Control
                                                 type="text"
@@ -409,6 +434,28 @@ const PartyForm = ({ mode = 'create' }) => {
                                             </Form.Label>
                                             <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
                                                 {errors.legalName?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Floating>
+                                    </Col>
+
+                                    {/* Credit Period (Days) */}
+                                    <Col lg={4} xs={12}>
+                                        <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                            <Form.Control
+                                                type="number"
+                                                id="creditPeriodDays"
+                                                placeholder="Credit Period (Days)"
+                                                min={0}
+                                                max={365}
+                                                style={{ fontSize: '0.84rem' }}
+                                                isInvalid={!!errors.creditPeriodDays}
+                                                {...register('creditPeriodDays')}
+                                            />
+                                            <Form.Label htmlFor="creditPeriodDays" style={{ fontSize: '0.78rem' }}>
+                                                Credit Period (Days)
+                                            </Form.Label>
+                                            <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                {errors.creditPeriodDays?.message}
                                             </Form.Control.Feedback>
                                         </Form.Floating>
                                     </Col>

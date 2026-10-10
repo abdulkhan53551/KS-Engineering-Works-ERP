@@ -2,10 +2,23 @@
 import React from 'react';
 import { Box, Pagination, Typography } from '@mui/material';
 
-const PaginationBar = ({ page, pageSize, total, totalPages, onPageChange }) => {
-    if (!total) return null;
+const PaginationBar = ({
+    page,
+    pageSize,
+    total,
+    totalPages,
+    currentPage,
+    onPageChange,
+    pagination
+}) => {
+    const curTotal = total !== undefined ? total : (pagination?.total !== undefined ? pagination.total : (totalPages ? totalPages : 0));
+    const curPage = page || currentPage || pagination?.page || 1;
+    const curPageSize = pageSize || pagination?.pageSize || 10;
+    const curTotalPages = totalPages || pagination?.totalPages;
 
-    const count = Number(totalPages) || (total && pageSize ? Math.ceil(total / pageSize) : 1) || 1;
+    if (!curTotal && !curTotalPages) return null;
+
+    const count = Number(curTotalPages) || (curTotal && curPageSize ? Math.ceil(curTotal / curPageSize) : 1) || 1;
 
     return (
         <Box
@@ -17,7 +30,7 @@ const PaginationBar = ({ page, pageSize, total, totalPages, onPageChange }) => {
         >
             <Pagination
                 count={count}
-                page={Number(page) || 1}
+                page={Number(curPage) || 1}
                 onChange={(e, value) => onPageChange && onPageChange(value)}
                 color="primary"
                 shape="rounded"
@@ -27,4 +40,4 @@ const PaginationBar = ({ page, pageSize, total, totalPages, onPageChange }) => {
     );
 };
 
-export default PaginationBar;
+export default React.memo(PaginationBar);

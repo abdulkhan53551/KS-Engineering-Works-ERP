@@ -2,15 +2,15 @@ import api from "../../lib/axios";
 import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
-// Login
+// Logged-in user profile
 export const getUserProfile = asyncHandler(async () => {
   const res = await api.request({
-    url: '/users/current-user',
+    url: '/auth/me',
     method: requestMethod.GET
   });
 
   return res.data;
-})
+});
 
 // Get state
 export const getState = asyncHandler(async () => {
