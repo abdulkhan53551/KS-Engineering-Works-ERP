@@ -1,12 +1,25 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Table, Button, Form, Badge, OverlayTrigger, Tooltip, Spinner, InputGroup } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { usePayments, usePaymentsMeta, usePaymentsSummary } from '../hooks/usePaymentApi';
+import { useSelector } from 'react-redux';
+import {
+    usePayments,
+    usePaymentsMeta,
+    usePaymentsSummary,
+    useDeletePayment,
+    useRestorePayment,
+    useBulkDeletePayments,
+    useBulkRestorePayments
+} from '../hooks/usePaymentApi';
 import { usePaymentMode } from '../../dashboard/hooks/api.hooks';
 import { downloadPaymentPdf } from '../api';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import CancelPaymentModal from '../components/modals/CancelPaymentModal';
 import ApplyAdvanceModal from '../components/modals/ApplyAdvanceModal';
+import { useRowSelection } from '../../../hooks/useListManager';
+import { useTrashActions } from '../../../hooks/useTrashActions';
+import TrashTabFilter from '../../../components/trash/TrashTabFilter';
+import BulkActionBar from '../../../components/trash/BulkActionBar';
 import {
     FaPlus,
     FaSearch,
@@ -24,7 +37,9 @@ import {
     FaCreditCard,
     FaCheckCircle,
     FaWallet,
-    FaBolt
+    FaBolt,
+    FaTrash,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 import moment from 'moment';
 import { toast } from 'react-toastify';
@@ -37,6 +52,14 @@ import './payment-receipt-form.scss';
 const PaymentReceiptList = () => {
     const navigate = useNavigate();
 
+    // Tenant / Firm Context
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? '' : activeFirm?.id;
+
+    // Active vs Recycle Bin Tab State
+    const [isTrash, setIsTrash] = useState(false);
+
     // Filters & Pagination State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -47,6 +70,11 @@ const PaymentReceiptList = () => {
     const [endDate, setEndDate] = useState('');
     const [sortBy, setSortBy] = useState('payment_date');
     const [sortOrder, setSortOrder] = useState('desc');
+
+    // Reset pagination to page 1 when firm changes
+    useEffect(() => {
+        setPage(1);
+    }, [firmId]);
 
     // Cancel modal state
     const [cancelModalState, setCancelModalState] = useState({ show: false, payment: null });
@@ -64,20 +92,63 @@ const PaymentReceiptList = () => {
         search: search.trim(),
         status: statusFilter,
         paymentModeId: paymentModeFilter,
+        firmId,
         startDate,
         endDate,
         sortBy,
-        sortOrder
-    }), [page, pageSize, search, statusFilter, paymentModeFilter, startDate, endDate, sortBy, sortOrder]);
+        sortOrder,
+        trash: isTrash
+    }), [page, pageSize, search, statusFilter, paymentModeFilter, firmId, startDate, endDate, sortBy, sortOrder, isTrash]);
 
     // Fetch Receipts & Meta for Table
     const { data: receipts = [], isLoading, isFetching } = usePayments(queryParams);
     const { data: meta = {} } = usePaymentsMeta(queryParams);
 
+    // Mutation Hooks for Trash & Delete Actions
+    const deletePaymentMutation = useDeletePayment();
+    const restorePaymentMutation = useRestorePayment();
+    const bulkDeleteMutation = useBulkDeletePayments();
+    const bulkRestoreMutation = useBulkRestorePayments();
+
+    // Row Multi-Check Selection
+    const {
+        selectedIds,
+        handleSelectAll,
+        handleSelectRow,
+        handleDeselectAll,
+        isAllSelected,
+        isIndeterminate,
+        selectedCount
+    } = useRowSelection({
+        items: receipts,
+        idKey: 'id'
+    });
+
+    // Confirmation Modals for Trash Actions
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete,
+        confirmBulkSoftDelete,
+        confirmBulkRestore,
+        confirmBulkPermanentDelete
+    } = useTrashActions({
+        entityName: 'Payment Receipt',
+        pluralEntityName: 'Payment Receipts'
+    });
+
+    // Handle Tab Switch (Active vs Recycle Bin)
+    const handleTabChange = useCallback((trashState) => {
+        setIsTrash(trashState);
+        setPage(1);
+        handleDeselectAll();
+    }, [handleDeselectAll]);
+
     // Fetch Overall Aggregate Summary Metrics (independent of page/pageSize)
     const { data: summary = {}, isLoading: isSummaryLoading } = usePaymentsSummary({
         startDate,
         endDate,
+        firmId,
         paymentModeId: paymentModeFilter,
         status: statusFilter,
         search: search.trim()
@@ -151,14 +222,22 @@ const PaymentReceiptList = () => {
                         </div>
 
                         <div className="d-flex align-items-center gap-2">
-                            <Link
-                                to="/payments/receipts/create"
-                                className="btn btn-primary btn-sm px-3.5 py-1.5 d-flex align-items-center shadow-sm"
-                                style={{ fontSize: '0.84rem', fontWeight: 600, borderRadius: '8px' }}
-                            >
-                                <FaPlus size={12} style={{ marginRight: '0.45rem' }} />
-                                <span>Record Payment</span>
-                            </Link>
+                            <TrashTabFilter
+                                isTrash={isTrash}
+                                onTabChange={handleTabChange}
+                                activeCount={meta?.activeCount}
+                                trashCount={meta?.trashCount}
+                            />
+                            {!isTrash && (
+                                <Link
+                                    to="/payments/receipts/create"
+                                    className="btn btn-primary btn-sm px-3.5 py-1.5 d-flex align-items-center shadow-sm"
+                                    style={{ fontSize: '0.84rem', fontWeight: 600, borderRadius: '8px' }}
+                                >
+                                    <FaPlus size={12} style={{ marginRight: '0.45rem' }} />
+                                    <span>Record Payment</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </Card.Body>
@@ -237,83 +316,83 @@ const PaymentReceiptList = () => {
             <Card className="border-0 shadow-sm bg-white mb-4" style={{ borderRadius: '10px', overflow: 'hidden' }}>
                 {/* Clean, Integrated Filter Header Toolbar */}
                 <div className="p-3 border-bottom bg-white">
-                    <Row className="g-2.5 align-items-center">
-                        {/* Search Input */}
-                        <Col lg={4} md={5}>
-                            <InputGroup size="sm">
-                                <InputGroup.Text className="bg-light border-end-0 text-muted ps-2.5">
-                                    <FaSearch size={12} />
-                                </InputGroup.Text>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Search receipt no, customer, UTR..."
-                                    value={search}
-                                    onChange={(e) => {
-                                        setSearch(e.target.value);
-                                        setPage(1);
-                                    }}
-                                    className="bg-light border-start-0 border-end-0 ps-1"
-                                    style={{ fontSize: '0.82rem' }}
-                                />
-                                {search && (
-                                    <Button
-                                        variant="light"
-                                        size="sm"
-                                        className="bg-light border-start-0 text-muted px-2"
-                                        onClick={() => {
-                                            setSearch('');
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2.5">
+                        <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                            {/* Search Input */}
+                            <div style={{ minWidth: '220px', maxWidth: '320px', flex: '1 1 220px' }}>
+                                <InputGroup size="sm">
+                                    <InputGroup.Text className="bg-light border-end-0 text-muted ps-2.5">
+                                        <FaSearch size={12} />
+                                    </InputGroup.Text>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Search receipt no, customer, UTR..."
+                                        value={search}
+                                        onChange={(e) => {
+                                            setSearch(e.target.value);
                                             setPage(1);
                                         }}
-                                        title="Clear search"
-                                    >
-                                        <FaTimes size={11} />
-                                    </Button>
-                                )}
-                            </InputGroup>
-                        </Col>
+                                        className="bg-light border-start-0 border-end-0 ps-1"
+                                        style={{ fontSize: '0.82rem' }}
+                                    />
+                                    {search && (
+                                        <Button
+                                            variant="light"
+                                            size="sm"
+                                            className="bg-light border-start-0 text-muted px-2"
+                                            onClick={() => {
+                                                setSearch('');
+                                                setPage(1);
+                                            }}
+                                            title="Clear search"
+                                        >
+                                            <FaTimes size={11} />
+                                        </Button>
+                                    )}
+                                </InputGroup>
+                            </div>
 
-                        {/* Status Filter */}
-                        <Col lg={2} md={3} sm={6}>
-                            <Form.Select
-                                size="sm"
-                                value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="bg-light"
-                                style={{ fontSize: '0.82rem' }}
-                            >
-                                <option value="">All Statuses</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </Form.Select>
-                        </Col>
+                            {/* Status Filter */}
+                            <div style={{ minWidth: '135px', flex: '0 0 auto' }}>
+                                <Form.Select
+                                    size="sm"
+                                    value={statusFilter}
+                                    onChange={(e) => {
+                                        setStatusFilter(e.target.value);
+                                        setPage(1);
+                                    }}
+                                    className="bg-light"
+                                    style={{ fontSize: '0.82rem' }}
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="COMPLETED">Completed</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </Form.Select>
+                            </div>
 
-                        {/* Payment Mode Filter */}
-                        <Col lg={2} md={4} sm={6}>
-                            <Form.Select
-                                size="sm"
-                                value={paymentModeFilter}
-                                onChange={(e) => {
-                                    setPaymentModeFilter(e.target.value);
-                                    setPage(1);
-                                }}
-                                className="bg-light"
-                                style={{ fontSize: '0.82rem' }}
-                            >
-                                <option value="">All Payment Modes</option>
-                                {paymentModes.map((m) => (
-                                    <option key={m.id || m.value} value={m.id || m.value}>
-                                        {m.label || m.name}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Col>
+                            {/* Payment Mode Filter - sufficient width so 'All Payment Modes' is never truncated */}
+                            <div style={{ minWidth: '175px', flex: '0 0 auto' }}>
+                                <Form.Select
+                                    size="sm"
+                                    value={paymentModeFilter}
+                                    onChange={(e) => {
+                                        setPaymentModeFilter(e.target.value);
+                                        setPage(1);
+                                    }}
+                                    className="bg-light"
+                                    style={{ fontSize: '0.82rem' }}
+                                >
+                                    <option value="">All Payment Modes</option>
+                                    {paymentModes.map((m) => (
+                                        <option key={m.id || m.value} value={m.id || m.value}>
+                                            {m.label || m.name}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </div>
 
-                        {/* Date Range: From & To */}
-                        <Col lg={3} md={8}>
-                            <div className="d-flex align-items-center gap-1.5">
+                            {/* Date Range: From & To - clean fixed widths without overflow */}
+                            <div className="d-flex align-items-center gap-1.5" style={{ flex: '0 0 auto' }}>
                                 <Form.Control
                                     type="date"
                                     size="sm"
@@ -323,7 +402,7 @@ const PaymentReceiptList = () => {
                                         setPage(1);
                                     }}
                                     className="bg-light"
-                                    style={{ fontSize: '0.80rem' }}
+                                    style={{ fontSize: '0.80rem', width: '135px' }}
                                     title="Start Date"
                                 />
                                 <span className="text-muted small px-0.5">to</span>
@@ -336,39 +415,69 @@ const PaymentReceiptList = () => {
                                         setPage(1);
                                     }}
                                     className="bg-light"
-                                    style={{ fontSize: '0.80rem' }}
+                                    style={{ fontSize: '0.80rem', width: '135px' }}
                                     title="End Date"
                                 />
                             </div>
-                        </Col>
+                        </div>
 
-                        {/* Reset / Actions */}
-                        <Col lg={1} md={4} className="text-end">
-                            {activeFilterCount > 0 ? (
+                        {/* Reset Action (only shown when filters active, avoiding collision) */}
+                        {activeFilterCount > 0 && (
+                            <div className="ms-auto" style={{ flex: '0 0 auto' }}>
                                 <Button
                                     variant="outline-danger"
                                     size="sm"
                                     onClick={handleResetFilters}
-                                    className="w-100 d-flex align-items-center justify-content-center gap-1 py-1"
+                                    className="d-flex align-items-center gap-1 py-1 px-2.5"
                                     style={{ fontSize: '0.78rem', borderRadius: '6px' }}
                                     title="Clear all filters"
                                 >
                                     <FaUndo size={10} />
-                                    <span>Reset</span>
+                                    <span>Reset ({activeFilterCount})</span>
                                 </Button>
-                            ) : (
-                                <div className="d-flex align-items-center justify-content-center text-muted small py-1" style={{ fontSize: '0.76rem' }}>
-                                    <FaFilter size={10} className="me-1 opacity-50" />
-                                    <span>Filter</span>
-                                </div>
-                            )}
-                        </Col>
-                    </Row>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* Bulk Actions Floating Bar */}
+                <div className="px-3">
+                    <BulkActionBar
+                        selectedCount={selectedCount}
+                        isTrash={isTrash}
+                        onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                            bulkDeleteMutation.mutate({ ids: selectedIds, isPermanentDelete: false });
+                            handleDeselectAll();
+                        })}
+                        onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                            bulkRestoreMutation.mutate({ ids: selectedIds });
+                            handleDeselectAll();
+                        })}
+                        onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                            bulkDeleteMutation.mutate({ ids: selectedIds, isPermanentDelete: true });
+                            handleDeselectAll();
+                        })}
+                        onClearSelection={handleDeselectAll}
+                        isLoading={bulkDeleteMutation.isPending || bulkRestoreMutation.isPending}
+                    />
+                </div>
+
                 <div className="table-responsive">
                     <Table hover className="align-middle mb-0 text-nowrap" style={{ fontSize: '0.84rem' }}>
                         <thead className="bg-light text-muted text-uppercase" style={{ fontSize: '0.74rem', letterSpacing: '0.04em' }}>
                             <tr>
+                                {/* Select All Checkbox Column */}
+                                <th className="py-2.5 px-3 text-center" style={{ width: '40px', minWidth: '40px' }}>
+                                    <Form.Check
+                                        type="checkbox"
+                                        checked={isAllSelected}
+                                        ref={(el) => {
+                                            if (el) el.indeterminate = isIndeterminate;
+                                        }}
+                                        onChange={handleSelectAll}
+                                        aria-label="Select all receipts"
+                                    />
+                                </th>
                                 {/* ID Column */}
                                 <th className="py-2.5 px-3 text-center" style={{ width: '65px', cursor: 'pointer' }} onClick={() => handleSort('id')}>
                                     <div className="d-flex align-items-center justify-content-center gap-1">
@@ -399,23 +508,29 @@ const PaymentReceiptList = () => {
                                 <th className="py-2.5 px-3 text-end">Allocated Cash</th>
                                 <th className="py-2.5 px-3 text-end">Advance Retained</th>
                                 <th className="py-2.5 px-3 text-center">Status</th>
-                                <th className="py-2.5 px-3 text-center" style={{ width: '140px', minWidth: '140px' }}>Actions</th>
+                                <th className="py-2.5 px-3 text-center" style={{ width: '150px', minWidth: '150px' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={10} className="text-center py-5">
+                                    <td colSpan={11} className="text-center py-5">
                                         <Spinner animation="border" size="sm" variant="primary" className="mb-2" />
                                         <p className="text-muted small mb-0">Loading payment receipts...</p>
                                     </td>
                                 </tr>
                             ) : receipts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="text-center py-5 text-muted">
+                                    <td colSpan={11} className="text-center py-5 text-muted">
                                         <FaReceipt size={28} className="mb-2 text-secondary opacity-50" />
-                                        <p className="fw-semibold mb-1">No payment receipts found</p>
-                                        <span className="small">Try adjusting search filters or record a new customer payment.</span>
+                                        <p className="fw-semibold mb-1">
+                                            {isTrash ? 'Recycle Bin is empty' : 'No payment receipts found'}
+                                        </p>
+                                        <span className="small">
+                                            {isTrash
+                                                ? 'Deleted payment receipts will appear here.'
+                                                : 'Try adjusting search filters or record a new customer payment.'}
+                                        </span>
                                     </td>
                                 </tr>
                             ) : (
@@ -428,6 +543,16 @@ const PaymentReceiptList = () => {
 
                                     return (
                                         <tr key={item.id} className={isCancelled ? 'table-light opacity-75' : ''}>
+                                            {/* Row Selection Checkbox */}
+                                            <td className="px-3 py-2.5 text-center">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(item.id)}
+                                                    onChange={() => handleSelectRow(item.id)}
+                                                    aria-label={`Select receipt ${paymentNo}`}
+                                                />
+                                            </td>
+
                                             {/* ID Column */}
                                             <td className="px-3 py-2.5 text-center text-muted font-monospace" style={{ fontSize: '0.82rem', fontWeight: 600 }}>
                                                 #{item.id}
@@ -449,8 +574,15 @@ const PaymentReceiptList = () => {
                                             </td>
 
                                             {/* Customer Name */}
-                                            <td className="px-3 py-2.5 fw-semibold text-dark">
-                                                {item.customerName || item.partyName || 'Customer'}
+                                            <td className="px-3 py-2.5">
+                                                <div className="fw-semibold text-dark">
+                                                    {item.customerName || item.partyName || 'Customer'}
+                                                </div>
+                                                {isAllFirms && item.firmName && (
+                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5 mt-0.5 fw-normal" style={{ fontSize: '0.68rem' }}>
+                                                        🏢 {item.firmName}
+                                                    </Badge>
+                                                )}
                                             </td>
 
                                             {/* Mode & Ref */}
@@ -481,7 +613,7 @@ const PaymentReceiptList = () => {
                                                         className="text-success font-monospace px-2 py-0.5 cursor-pointer"
                                                         style={{ fontSize: '0.78rem', cursor: 'pointer' }}
                                                         title="Click to apply advance to invoices"
-                                                        onClick={() => !isCancelled && setApplyAdvanceReceipt(item)}
+                                                        onClick={() => !isCancelled && !isTrash && setApplyAdvanceReceipt(item)}
                                                     >
                                                         +₹{advance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                     </Badge>
@@ -496,64 +628,112 @@ const PaymentReceiptList = () => {
                                             </td>
 
                                             {/* Actions */}
-                                            <td className="px-3 py-2.5 text-center" style={{ width: '140px', minWidth: '140px' }}>
-                                                <div className="d-flex align-items-center justify-content-center" style={{ gap: '8px' }}>
+                                            <td className="px-3 py-2.5 text-center" style={{ width: '150px', minWidth: '150px' }}>
+                                                <div className="d-flex align-items-center justify-content-center" style={{ gap: '6px' }}>
                                                     {/* View Details */}
                                                     <OverlayTrigger overlay={<Tooltip>View Receipt Breakdown</Tooltip>}>
                                                         <Link
                                                             to={`/payments/receipts/${item.id}`}
                                                             className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center"
-                                                            style={{ width: '32px', height: '32px', borderRadius: '7px', padding: 0 }}
+                                                            style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
                                                             title="View Receipt"
                                                         >
-                                                            <FaEye size={13} />
+                                                            <FaEye size={12} />
                                                         </Link>
                                                     </OverlayTrigger>
 
-                                                    {/* Apply Advance Action (if unallocated funds exist) */}
-                                                    {advance > 0 && !isCancelled && (
-                                                        <OverlayTrigger overlay={<Tooltip>Apply Advance to Invoices</Tooltip>}>
-                                                            <Button
-                                                                variant="outline-success"
-                                                                size="sm"
-                                                                className="d-inline-flex align-items-center justify-content-center"
-                                                                style={{ width: '32px', height: '32px', borderRadius: '7px', padding: 0 }}
-                                                                onClick={() => setApplyAdvanceReceipt(item)}
-                                                                title="Apply Advance"
-                                                            >
-                                                                <FaBolt size={12} />
-                                                            </Button>
-                                                        </OverlayTrigger>
-                                                    )}
+                                                    {!isTrash ? (
+                                                        <>
+                                                            {/* Apply Advance Action (if unallocated funds exist) */}
+                                                            {advance > 0 && !isCancelled && (
+                                                                <OverlayTrigger overlay={<Tooltip>Apply Advance to Invoices</Tooltip>}>
+                                                                    <Button
+                                                                        variant="outline-success"
+                                                                        size="sm"
+                                                                        className="d-inline-flex align-items-center justify-content-center"
+                                                                        style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                        onClick={() => setApplyAdvanceReceipt(item)}
+                                                                        title="Apply Advance"
+                                                                    >
+                                                                        <FaBolt size={11} />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                            )}
 
-                                                    {/* Download PDF */}
-                                                    <OverlayTrigger overlay={<Tooltip>Download PDF Voucher</Tooltip>}>
-                                                        <Button
-                                                            variant="outline-primary"
-                                                            size="sm"
-                                                            className="d-inline-flex align-items-center justify-content-center"
-                                                            style={{ width: '32px', height: '32px', borderRadius: '7px', padding: 0 }}
-                                                            onClick={() => handleDownloadPdf(item.id, paymentNo)}
-                                                            title="Download PDF"
-                                                        >
-                                                            <FaFileDownload size={13} />
-                                                        </Button>
-                                                    </OverlayTrigger>
+                                                            {/* Download PDF */}
+                                                            <OverlayTrigger overlay={<Tooltip>Download PDF Voucher</Tooltip>}>
+                                                                <Button
+                                                                    variant="outline-primary"
+                                                                    size="sm"
+                                                                    className="d-inline-flex align-items-center justify-content-center"
+                                                                    style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                    onClick={() => handleDownloadPdf(item.id, paymentNo)}
+                                                                    title="Download PDF"
+                                                                >
+                                                                    <FaFileDownload size={12} />
+                                                                </Button>
+                                                            </OverlayTrigger>
 
-                                                    {/* Cancel Action (only for active receipts) */}
-                                                    {!isCancelled && (
-                                                        <OverlayTrigger overlay={<Tooltip>Cancel & Rollback Invoices</Tooltip>}>
-                                                            <Button
-                                                                variant="outline-danger"
-                                                                size="sm"
-                                                                className="d-inline-flex align-items-center justify-content-center"
-                                                                style={{ width: '32px', height: '32px', borderRadius: '7px', padding: 0 }}
-                                                                onClick={() => setCancelModalState({ show: true, payment: item })}
-                                                                title="Cancel Receipt"
-                                                            >
-                                                                <FaTimesCircle size={13} />
-                                                            </Button>
-                                                        </OverlayTrigger>
+                                                            {/* Cancel Action (only for active receipts) */}
+                                                            {!isCancelled && (
+                                                                <OverlayTrigger overlay={<Tooltip>Cancel & Rollback Invoices</Tooltip>}>
+                                                                    <Button
+                                                                        variant="outline-warning"
+                                                                        size="sm"
+                                                                        className="d-inline-flex align-items-center justify-content-center"
+                                                                        style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                        onClick={() => setCancelModalState({ show: true, payment: item })}
+                                                                        title="Cancel Receipt"
+                                                                    >
+                                                                        <FaTimesCircle size={12} />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                            )}
+
+                                                            {/* Move to Recycle Bin (Trash) */}
+                                                            <OverlayTrigger overlay={<Tooltip>Move to Recycle Bin</Tooltip>}>
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    className="d-inline-flex align-items-center justify-content-center"
+                                                                    style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                    onClick={() => confirmSoftDelete(paymentNo, () => deletePaymentMutation.mutate({ id: item.id, isPermanentDelete: false }))}
+                                                                    title="Move to Trash"
+                                                                >
+                                                                    <FaTrash size={11} />
+                                                                </Button>
+                                                            </OverlayTrigger>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {/* Restore from Recycle Bin */}
+                                                            <OverlayTrigger overlay={<Tooltip>Restore from Recycle Bin</Tooltip>}>
+                                                                <Button
+                                                                    variant="outline-success"
+                                                                    size="sm"
+                                                                    className="d-inline-flex align-items-center justify-content-center"
+                                                                    style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                    onClick={() => confirmRestore(paymentNo, () => restorePaymentMutation.mutate(item.id))}
+                                                                    title="Restore Receipt"
+                                                                >
+                                                                    <FaUndo size={11} />
+                                                                </Button>
+                                                            </OverlayTrigger>
+
+                                                            {/* Permanently Delete */}
+                                                            <OverlayTrigger overlay={<Tooltip>Delete Permanently</Tooltip>}>
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    className="d-inline-flex align-items-center justify-content-center"
+                                                                    style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                    onClick={() => confirmPermanentDelete(paymentNo, () => deletePaymentMutation.mutate({ id: item.id, isPermanentDelete: true }))}
+                                                                    title="Delete Permanently"
+                                                                >
+                                                                    <FaExclamationTriangle size={11} />
+                                                                </Button>
+                                                            </OverlayTrigger>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>

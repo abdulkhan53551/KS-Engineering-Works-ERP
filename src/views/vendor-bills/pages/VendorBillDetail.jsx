@@ -9,7 +9,7 @@ import {
     Badge,
     Spinner
 } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     FaArrowLeft,
     FaEdit,
@@ -37,6 +37,7 @@ import useVendorBillDetail from '../hooks/useVendorBillDetail';
 const VendorBillDetail = () => {
     const {
         id,
+        navigate,
         bill,
         isLoading,
         total,

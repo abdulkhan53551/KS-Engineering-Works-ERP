@@ -65,7 +65,8 @@ const VendorPaymentForm = ({ mode = 'create' }) => {
         handleDetachParty,
         onSubmit,
         onValidationErrors,
-        handleDownloadPdf
+        handleDownloadPdf,
+        activeFirm
     } = useVendorPaymentForm({ mode });
 
     // Loading existing payment
@@ -132,6 +133,11 @@ const VendorPaymentForm = ({ mode = 'create' }) => {
                                     <span className="badge bg-soft-primary text-primary font-monospace" style={{ fontSize: '0.80rem' }}>
                                         {paymentNo}
                                     </span>
+                                    {activeFirm && activeFirm.id !== 'all' && (
+                                        <span className="badge bg-soft-secondary text-secondary border small px-2 py-1" style={{ fontSize: '0.74rem' }}>
+                                            🏢 {activeFirm.firmName}
+                                        </span>
+                                    )}
                                     {existingPayment?.status && (
                                         <PaymentStatusBadge status={existingPayment.status} />
                                     )}

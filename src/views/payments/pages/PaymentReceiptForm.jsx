@@ -3,6 +3,7 @@ import { Row, Col, Card, Form, Badge, Container } from 'react-bootstrap';
 import { useForm, useWatch } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { createPaymentValidationSchema } from '../../../validation/payment.validation';
 import { useCreatePayment, useNextReceiptNumber, useUnpaidInvoices } from '../hooks/usePaymentApi';
 import usePaymentAllocation from '../hooks/usePaymentAllocation';
@@ -21,6 +22,11 @@ import './payment-receipt-form.scss';
  */
 const PaymentReceiptForm = () => {
     const navigate = useNavigate();
+
+    // Tenant / Firm Context
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const effectiveFirmId = isAllFirms ? undefined : activeFirm?.id;
 
     const { data: nextReceiptNo = 'REC-AUTO' } = useNextReceiptNumber();
     const { mutate: createPaymentMutate, isPending: isCreating } = useCreatePayment();
@@ -64,8 +70,8 @@ const PaymentReceiptForm = () => {
     const watchTotalAmount = useWatch({ control, name: 'totalAmount' });
     const watchPaymentModeId = useWatch({ control, name: 'paymentModeId' });
 
-    // Fetch unpaid invoices whenever a customer is selected
-    const { data: unpaidInvoices = [], isLoading: isLoadingInvoices } = useUnpaidInvoices(watchPartyId);
+    // Fetch unpaid invoices whenever a customer is selected (scoped to effective firm)
+    const { data: unpaidInvoices = [], isLoading: isLoadingInvoices } = useUnpaidInvoices(watchPartyId, effectiveFirmId);
 
     // Multi-invoice allocation math and invariant engine
     const {
@@ -105,6 +111,7 @@ const PaymentReceiptForm = () => {
         const payload = {
             paymentDate: formData.paymentDate,
             partyId: Number(formData.partyId),
+            firmId: effectiveFirmId,
             totalAmount: Number(formData.totalAmount),
             paymentModeId: Number(formData.paymentModeId),
             referenceNo: formData.referenceNo ? formData.referenceNo.trim() : undefined,
@@ -165,8 +172,13 @@ const PaymentReceiptForm = () => {
                                 </div>
                             </div>
 
-                            {/* Receipt Preview Badge */}
-                            <div className="d-flex align-items-center gap-2">
+                            {/* Receipt Preview Badge & Firm Badge */}
+                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                {activeFirm && activeFirm.id !== 'all' && (
+                                    <Badge bg="soft-primary" className="text-primary border border-primary-subtle px-2.5 py-1.5" style={{ fontSize: '0.78rem' }}>
+                                        🏢 {activeFirm.firmName}
+                                    </Badge>
+                                )}
                                 <span className="text-muted small" style={{ marginRight: '0.35rem' }}>Receipt No:</span>
                                 <Badge bg="primary" className="font-monospace px-3 py-1.5" style={{ fontSize: '0.88rem', letterSpacing: '0.04em' }}>
                                     {nextReceiptNo}

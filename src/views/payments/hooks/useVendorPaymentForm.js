@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useForm, useWatch } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -28,6 +29,11 @@ export const useVendorPaymentForm = ({ mode = 'create' } = {}) => {
     const [searchParams] = useSearchParams();
     const queryPartyId = searchParams.get('partyId');
     const queryBillId = searchParams.get('billId');
+
+    // Tenant / Firm Context
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const effectiveFirmId = isAllFirms ? undefined : activeFirm?.id;
 
     const isView = mode === 'view' || window.location.pathname.endsWith('/view');
     const isEdit = mode === 'edit' || (Boolean(id) && !isView);
@@ -278,6 +284,7 @@ export const useVendorPaymentForm = ({ mode = 'create' } = {}) => {
         const payload = {
             paymentDate: pDateStr,
             partyId: Number(formData.partyId || selectedParty?.id),
+            firmId: effectiveFirmId,
             totalAmount: Number(formData.totalAmount),
             paymentModeId: Number(formData.paymentModeId),
             referenceNo: formData.referenceNo ? formData.referenceNo.trim() : undefined,
@@ -367,7 +374,9 @@ export const useVendorPaymentForm = ({ mode = 'create' } = {}) => {
         handleDetachParty,
         onSubmit,
         onValidationErrors,
-        handleDownloadPdf
+        handleDownloadPdf,
+        activeFirm,
+        effectiveFirmId
     };
 };
 

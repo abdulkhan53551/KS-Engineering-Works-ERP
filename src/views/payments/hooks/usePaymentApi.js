@@ -12,11 +12,16 @@ import {
     createVendorPayment,
     updateVendorPayment,
     getVendorPayments,
+    getVendorPaymentsMeta,
     getVendorPaymentsSummary,
     getNextOutwardPaymentNumber,
     cancelVendorPayment,
     getCustomerAdvances,
-    applyAdvanceReceipt
+    applyAdvanceReceipt,
+    deletePayment,
+    restorePayment,
+    bulkDeletePayments,
+    bulkRestorePayments
 } from "../api";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
@@ -38,10 +43,10 @@ export const useNextReceiptNumber = () => {
 /**
  * Hook to fetch all unpaid invoices for a given customer
  */
-export const useUnpaidInvoices = (partyId) => {
+export const useUnpaidInvoices = (partyId, firmId) => {
     return useQuery({
-        queryKey: ["unpaidInvoices", partyId],
-        queryFn: () => getUnpaidInvoices(partyId),
+        queryKey: ["unpaidInvoices", partyId, firmId],
+        queryFn: () => getUnpaidInvoices(partyId, firmId),
         enabled: Boolean(partyId && Number(partyId) > 0),
         staleTime: 30 * 1000,
         select: (res) => {
@@ -119,10 +124,10 @@ export const usePaymentsMeta = (filters = {}) => {
  * Cached for 1 minute; ONLY re-fetches when filters change, NEVER when turning pages!
  */
 export const usePaymentsSummary = (filters = {}) => {
-    const { startDate, endDate, partyId, paymentModeId, status, search } = filters;
+    const { startDate, endDate, partyId, firmId, paymentModeId, status, search } = filters;
     return useQuery({
-        queryKey: ["paymentsSummary", { startDate, endDate, partyId, paymentModeId, status, search }],
-        queryFn: () => getPaymentsSummary({ startDate, endDate, partyId, paymentModeId, status, search }),
+        queryKey: ["paymentsSummary", { startDate, endDate, partyId, firmId, paymentModeId, status, search }],
+        queryFn: () => getPaymentsSummary({ startDate, endDate, partyId, firmId, paymentModeId, status, search }),
         placeholderData: (prev) => prev,
         staleTime: 60 * 1000,
         select: selectPaymentsSummary
@@ -208,6 +213,160 @@ export const useCancelPayment = () => {
 };
 
 /**
+ * Hook to delete a payment record (Soft delete to Recycle Bin or Permanent Delete)
+ */
+export const useDeletePayment = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["deletePayment"],
+        mutationFn: (param) => {
+            if (typeof param === 'object' && param !== null) {
+                return deletePayment(param);
+            }
+            return deletePayment({ id: param, isPermanentDelete: false });
+        },
+        onSuccess: (res, vars) => {
+            dispatch(clearLoading());
+            closeModal();
+            const isPermanent = typeof vars === 'object' && Boolean(vars?.isPermanentDelete);
+            toast.success(
+                res?.message || (isPermanent ? "Payment record permanently deleted." : "Payment record moved to Recycle Bin.")
+            );
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to delete payment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to restore a payment record from Recycle Bin back to active
+ */
+export const useRestorePayment = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["restorePayment"],
+        mutationFn: (id) => restorePayment(id),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Payment record restored from Recycle Bin successfully.");
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to restore payment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to bulk delete payment records (Soft delete or Permanent Delete)
+ */
+export const useBulkDeletePayments = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkDeletePayments"],
+        mutationFn: ({ ids, isPermanentDelete = false }) => bulkDeletePayments({ ids, isPermanentDelete }),
+        onSuccess: (res, vars) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(
+                res?.message || (vars?.isPermanentDelete ? "Selected payment records permanently deleted." : "Selected payment records moved to Recycle Bin.")
+            );
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to bulk delete payments.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to bulk restore payment records from Recycle Bin
+ */
+export const useBulkRestorePayments = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["bulkRestorePayments"],
+        mutationFn: ({ ids }) => bulkRestorePayments({ ids }),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res?.message || "Selected payment records restored from Recycle Bin successfully.");
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+            queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
+        },
+        onError: (err) => {
+            dispatch(clearLoading());
+            closeModal();
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to bulk restore payments.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
  * Hook to fetch payment history for a specific invoice
  */
 export const useInvoicePaymentHistory = (invoiceId) => {
@@ -254,10 +413,10 @@ export const useVendorPayments = (filters = {}) => {
  * Hook to fetch outward vendor payments summary KPIs
  */
 export const useVendorPaymentsSummary = (filters = {}) => {
-    const { startDate, endDate, partyId, paymentModeId, status, search } = filters;
+    const { startDate, endDate, partyId, firmId, paymentModeId, status, search } = filters;
     return useQuery({
-        queryKey: ["vendorPaymentsSummary", { startDate, endDate, partyId, paymentModeId, status, search }],
-        queryFn: () => getVendorPaymentsSummary({ startDate, endDate, partyId, paymentModeId, status, search }),
+        queryKey: ["vendorPaymentsSummary", { startDate, endDate, partyId, firmId, paymentModeId, status, search }],
+        queryFn: () => getVendorPaymentsSummary({ startDate, endDate, partyId, firmId, paymentModeId, status, search }),
         placeholderData: (prev) => prev,
         staleTime: 60 * 1000,
         select: (res) => {
@@ -271,6 +430,18 @@ export const useVendorPaymentsSummary = (filters = {}) => {
                 totalCount: Number(data.totalCount ?? data.total_count ?? 0)
             };
         }
+    });
+};
+
+/**
+ * Hook to fetch outward vendor payments pagination metadata
+ */
+export const useVendorPaymentsMeta = (filters = {}) => {
+    return useQuery({
+        queryKey: ["vendorPaymentsMeta", filters],
+        queryFn: () => getVendorPaymentsMeta(filters),
+        placeholderData: (prev) => prev,
+        select: selectPaymentsMeta
     });
 };
 
@@ -340,6 +511,7 @@ export const useCancelVendorPayment = () => {
             closeModal();
             toast.success(res?.message || "Vendor payment cancelled successfully and bill balances restored.");
             queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
             queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
             queryClient.invalidateQueries({ queryKey: ["vendorBills"] });
             queryClient.invalidateQueries({ queryKey: ["vendorBillsSummary"] });

@@ -23,11 +23,14 @@ export const getNextReceiptNumber = asyncHandler(async () => {
  * Fetch unpaid invoices for a specific customer
  * Endpoint: GET /payments/unpaid-invoices/:partyId
  */
-export const getUnpaidInvoices = asyncHandler(async (partyId) => {
+export const getUnpaidInvoices = asyncHandler(async (partyId, firmId) => {
     if (!partyId) return { success: true, data: [] };
+    const params = {};
+    if (firmId) params.firmId = firmId;
     const res = await api.request({
         url: `/payments/unpaid-invoices/${partyId}`,
-        method: requestMethod.GET
+        method: requestMethod.GET,
+        params
     });
     return res.data;
 });
@@ -55,22 +58,27 @@ export const getPayments = asyncHandler(async ({
     pageSize = 10,
     search = '',
     partyId = '',
+    firmId = '',
     paymentModeId = '',
     status = '',
     startDate = '',
     endDate = '',
     sortBy = 'payment_date',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    trash = false,
+    isTrash = false
 } = {}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
     if (paymentModeId) params.paymentModeId = paymentModeId;
     if (status) params.status = status;
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
+    if (trash || isTrash) params.trash = true;
 
     const res = await api.request({
         url: '/payments/receipts',
@@ -89,18 +97,23 @@ export const getPaymentsMeta = asyncHandler(async ({
     pageSize = 10,
     search = '',
     partyId = '',
+    firmId = '',
     paymentModeId = '',
     status = '',
     startDate = '',
-    endDate = ''
+    endDate = '',
+    trash = false,
+    isTrash = false
 } = {}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
     if (paymentModeId) params.paymentModeId = paymentModeId;
     if (status) params.status = status;
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
+    if (trash || isTrash) params.trash = true;
 
     const res = await api.request({
         url: '/payments/receipts/pagination',
@@ -118,6 +131,7 @@ export const getPaymentsSummary = asyncHandler(async ({
     startDate = '',
     endDate = '',
     partyId = '',
+    firmId = '',
     paymentModeId = '',
     status = '',
     search = ''
@@ -125,6 +139,7 @@ export const getPaymentsSummary = asyncHandler(async ({
     const params = {};
     if (search) params.search = search;
     if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
     if (paymentModeId) params.paymentModeId = paymentModeId;
     if (status) params.status = status;
     if (startDate) params.startDate = startDate;
@@ -159,6 +174,57 @@ export const cancelPayment = asyncHandler(async (id, reason = '') => {
         url: `/payments/receipts/${id}/cancel`,
         method: requestMethod.POST,
         data: reason ? { reason } : {}
+    });
+    return res.data;
+});
+
+/**
+ * Delete a payment record (soft delete to Recycle Bin or permanent delete)
+ * Endpoint: DELETE /payments/:id
+ */
+export const deletePayment = asyncHandler(async ({ id, isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: `/payments/${id}`,
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Restore a payment record from Recycle Bin back to active
+ * Endpoint: PATCH /payments/:id/restore
+ */
+export const restorePayment = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/payments/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+/**
+ * Bulk delete payment records (soft delete to Recycle Bin or permanent delete)
+ * Endpoint: POST /payments/bulk-delete
+ */
+export const bulkDeletePayments = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
+    const res = await api.request({
+        url: '/payments/bulk-delete',
+        method: requestMethod.POST,
+        data: { ids, isPermanentDelete }
+    });
+    return res.data;
+});
+
+/**
+ * Bulk restore payment records from Recycle Bin
+ * Endpoint: PATCH /payments/bulk-restore
+ */
+export const bulkRestorePayments = asyncHandler(async ({ ids = [] }) => {
+    const res = await api.request({
+        url: '/payments/bulk-restore',
+        method: requestMethod.PATCH,
+        data: { ids }
     });
     return res.data;
 });
@@ -278,25 +344,65 @@ export const getVendorPayments = asyncHandler(async ({
     pageSize = 10,
     search = '',
     partyId = '',
+    firmId = '',
     paymentModeId = '',
     status = '',
     startDate = '',
     endDate = '',
     sortBy = 'payment_date',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    trash = false,
+    isTrash = false
 } = {}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
     if (paymentModeId) params.paymentModeId = paymentModeId;
     if (status) params.status = status;
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (sortBy) params.sortBy = sortBy;
     if (sortOrder) params.sortOrder = sortOrder;
+    if (trash || isTrash) params.trash = true;
 
     const res = await api.request({
         url: '/payments/vendor-payments',
+        method: requestMethod.GET,
+        params
+    });
+    return res.data;
+});
+
+/**
+ * Fetch pagination metadata for outward vendor payments
+ * Endpoint: GET /payments/vendor-payments/pagination
+ */
+export const getVendorPaymentsMeta = asyncHandler(async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    partyId = '',
+    firmId = '',
+    paymentModeId = '',
+    status = '',
+    startDate = '',
+    endDate = '',
+    trash = false,
+    isTrash = false
+} = {}) => {
+    const params = { page, pageSize };
+    if (search) params.search = search;
+    if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
+    if (paymentModeId) params.paymentModeId = paymentModeId;
+    if (status) params.status = status;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (trash || isTrash) params.trash = true;
+
+    const res = await api.request({
+        url: '/payments/vendor-payments/pagination',
         method: requestMethod.GET,
         params
     });
@@ -311,6 +417,7 @@ export const getVendorPaymentsSummary = asyncHandler(async ({
     startDate = '',
     endDate = '',
     partyId = '',
+    firmId = '',
     paymentModeId = '',
     status = '',
     search = ''
@@ -318,6 +425,7 @@ export const getVendorPaymentsSummary = asyncHandler(async ({
     const params = {};
     if (search) params.search = search;
     if (partyId) params.partyId = partyId;
+    if (firmId) params.firmId = firmId;
     if (paymentModeId) params.paymentModeId = paymentModeId;
     if (status) params.status = status;
     if (startDate) params.startDate = startDate;

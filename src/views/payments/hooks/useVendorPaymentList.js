@@ -1,18 +1,32 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import {
     useVendorPayments,
+    useVendorPaymentsMeta,
     useVendorPaymentsSummary,
-    useCancelVendorPayment
+    useCancelVendorPayment,
+    useDeletePayment,
+    useRestorePayment,
+    useBulkDeletePayments,
+    useBulkRestorePayments
 } from './usePaymentApi';
 import { downloadVendorPaymentPdf } from '../api';
 
 /**
  * useVendorPaymentList Hook
  * Encapsulates filter state, data queries, sorting, pagination,
- * PDF download, and cancellation modal logic for VendorPaymentList.
+ * PDF download, trash/recycle bin actions, and cancellation modal logic for VendorPaymentList.
  */
 export const useVendorPaymentList = () => {
+    // Tenant / Firm Context
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const isAllFirms = !activeFirm || activeFirm?.id === 'all';
+    const firmId = isAllFirms ? '' : activeFirm?.id;
+
+    // Active vs Recycle Bin State
+    const [isTrash, setIsTrash] = useState(false);
+
     // Filters state
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -23,22 +37,35 @@ export const useVendorPaymentList = () => {
     const [sortBy, setSortBy] = useState('payment_date');
     const [sortOrder, setSortOrder] = useState('desc');
 
+    // Reset pagination to page 1 on firm switch or tab switch
+    useEffect(() => {
+        setPage(1);
+    }, [firmId, isTrash]);
+
     // Cancel modal state
     const [cancelModalItem, setCancelModalItem] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
 
     const filters = useMemo(() => {
-        const f = { page, pageSize, sortBy, sortOrder };
-        if (search) f.search = search;
+        const f = { page, pageSize, sortBy, sortOrder, trash: isTrash };
+        if (search) f.search = search.trim();
         if (statusFilter) f.status = statusFilter;
+        if (firmId) f.firmId = firmId;
         if (startDate) f.startDate = startDate;
         if (endDate) f.endDate = endDate;
         return f;
-    }, [page, pageSize, search, statusFilter, startDate, endDate, sortBy, sortOrder]);
+    }, [page, pageSize, search, statusFilter, firmId, startDate, endDate, sortBy, sortOrder, isTrash]);
 
     const { data: payments = [], isLoading } = useVendorPayments(filters);
+    const { data: meta = {} } = useVendorPaymentsMeta(filters);
     const { data: summary = {} } = useVendorPaymentsSummary(filters);
     const { mutate: cancelPaymentMutate, isPending: isCancelling } = useCancelVendorPayment();
+
+    // Trash & Delete Mutations
+    const deletePaymentMutation = useDeletePayment();
+    const restorePaymentMutation = useRestorePayment();
+    const bulkDeleteMutation = useBulkDeletePayments();
+    const bulkRestoreMutation = useBulkRestorePayments();
 
     // Sorting handler
     const handleSort = (field) => {
@@ -109,7 +136,17 @@ export const useVendorPaymentList = () => {
         handleSort,
         handleDownloadPdf,
         handleConfirmCancel,
-        handleResetFilters
+        handleResetFilters,
+        isAllFirms,
+        activeFirm,
+        firmId,
+        isTrash,
+        setIsTrash,
+        meta,
+        deletePaymentMutation,
+        restorePaymentMutation,
+        bulkDeleteMutation,
+        bulkRestoreMutation
     };
 };
 

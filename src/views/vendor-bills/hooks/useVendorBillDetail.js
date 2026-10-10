@@ -61,6 +61,7 @@ export const useVendorBillDetail = () => {
 
     return {
         id,
+        navigate,
         bill,
         isLoading,
         total,
