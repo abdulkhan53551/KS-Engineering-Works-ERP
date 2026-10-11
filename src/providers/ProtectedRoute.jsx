@@ -11,9 +11,19 @@ export default function ProtectedRoute({ allowedRoles, module: moduleName, actio
     // While session is hydrating or user profile is being fetched, show loading spinner
     if (isInitializing || (isAuthenticated && !user)) {
         return (
-            <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-                <div className="spinner-border text-primary" role="status" style={{ width: "3rem", height: "3rem" }}>
+            <div 
+                className="d-flex flex-column justify-content-center align-items-center vh-100" 
+                style={{ backgroundColor: "#f8f9fa" }}
+            >
+                <div 
+                    className="spinner-border text-primary mb-3" 
+                    role="status" 
+                    style={{ width: "3rem", height: "3rem", borderWidth: "0.25rem" }}
+                >
                     <span className="visually-hidden">Loading session...</span>
+                </div>
+                <div className="text-secondary fw-semibold small" style={{ letterSpacing: "0.04em" }}>
+                    Initializing KS Engineering Works...
                 </div>
             </div>
         );
