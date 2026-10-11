@@ -3,8 +3,19 @@ import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip } from 'react
 import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt } from 'react-icons/fa';
 import PartyStatusBadge from './PartyStatusBadge';
 import PartyDocumentSection from './sections/PartyDocumentSection';
-import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
+
+/**
+ * Extract 2-letter initials for lightweight CSS avatar
+ */
+const getPartyInitials = (party) => {
+    const name = party?.displayName || party?.legalName || party?.partyCode || 'P';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+};
 
 /**
  * Helper to copy text to clipboard with toast notification
@@ -69,16 +80,44 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
         >
             <Offcanvas.Header closeButton className="border-bottom bg-light py-3">
                 <div className="d-flex align-items-center gap-3">
-                    <img
-                        className="bg-soft-primary rounded img-fluid avatar-40 p-1"
-                        src={party.logoUrl || party.logo || defaultLogo}
-                        alt="Party Logo"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = defaultLogo;
+                    <div
+                        className="rounded d-inline-flex align-items-center justify-content-center overflow-hidden bg-soft-primary"
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            border: '1px solid rgba(58, 87, 232, 0.2)',
+                            flexShrink: 0
                         }}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-                    />
+                    >
+                        {party.logoUrl || party.logo ? (
+                            <img
+                                src={party.logoUrl || party.logo}
+                                alt="Party Logo"
+                                loading="lazy"
+                                decoding="async"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                    }
+                                }}
+                            />
+                        ) : null}
+                        <span
+                            className="fw-bold text-primary"
+                            style={{
+                                display: (party.logoUrl || party.logo) ? 'none' : 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.9rem',
+                                letterSpacing: '0.02em',
+                                lineHeight: 1
+                            }}
+                        >
+                            {getPartyInitials(party)}
+                        </span>
+                    </div>
                     <div>
                         <div className="d-flex align-items-center gap-2 mb-1">
                             <Badge bg="primary" className="font-monospace px-2 py-1" style={{ fontSize: '0.78rem' }}>

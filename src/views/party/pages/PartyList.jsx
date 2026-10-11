@@ -18,11 +18,22 @@ import GstBadge from '../components/GstBadge';
 import PartyDetailsDrawer from '../components/PartyDetailsDrawer';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
-import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+
+/**
+ * Extract 2-letter initials for lightweight CSS avatar
+ */
+const getPartyInitials = (party) => {
+    const name = party?.displayName || party?.legalName || party?.partyCode || 'P';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+};
 
 /**
  * Format date string safely to DD/MM/YYYY, hh:mm A
@@ -647,18 +658,46 @@ const PartyList = () => {
                                                             {party.id}
                                                         </td>
 
-                                                        {/* 2. Logo Column */}
+                                                        {/* 2. Logo / Avatar Column (High-Performance CSS Initials) */}
                                                         <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
-                                                            <Image
-                                                                className="bg-soft-primary rounded img-fluid avatar-35 p-1"
-                                                                src={party.logoUrl || party.logo || defaultLogo}
-                                                                alt={party.displayName || 'Party Logo'}
-                                                                onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.src = defaultLogo;
+                                                            <div
+                                                                className="rounded d-inline-flex align-items-center justify-content-center overflow-hidden bg-soft-primary"
+                                                                style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    border: '1px solid rgba(58, 87, 232, 0.2)',
+                                                                    flexShrink: 0
                                                                 }}
-                                                                style={{ width: '32px', height: '32px', objectFit: 'cover' }}
-                                                            />
+                                                            >
+                                                                {party.logoUrl || party.logo ? (
+                                                                    <img
+                                                                        src={party.logoUrl || party.logo}
+                                                                        alt={party.displayName || 'Party Logo'}
+                                                                        loading="lazy"
+                                                                        decoding="async"
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            if (e.currentTarget.nextElementSibling) {
+                                                                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                ) : null}
+                                                                <span
+                                                                    className="fw-bold text-primary"
+                                                                    style={{
+                                                                        display: (party.logoUrl || party.logo) ? 'none' : 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '0.74rem',
+                                                                        letterSpacing: '0.02em',
+                                                                        lineHeight: 1
+                                                                    }}
+                                                                >
+                                                                    {getPartyInitials(party)}
+                                                                </span>
+                                                            </div>
                                                         </td>
 
                                                         {/* 3. Party Code */}
@@ -808,68 +847,62 @@ const PartyList = () => {
                                                                 {!isTrash ? (
                                                                     <>
                                                                         {/* Quick View Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Quick View</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-info"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => handleQuickView(party)}
-                                                                            >
-                                                                                <FaEye size={11} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
+                                                                        <Button
+                                                                            variant="outline-info"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => handleQuickView(party)}
+                                                                            title="Quick View"
+                                                                        >
+                                                                            <FaEye size={11} />
+                                                                        </Button>
 
                                                                         {/* Edit Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Edit Party</Tooltip>}>
-                                                                            <Link to={`/parties/${party.id}/edit`}>
-                                                                                <Button
-                                                                                    variant="outline-success"
-                                                                                    size="sm"
-                                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                >
-                                                                                    <FaPen size={10} />
-                                                                                </Button>
-                                                                            </Link>
-                                                                        </OverlayTrigger>
-
-                                                                        {/* Delete Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Move to Bin</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-danger"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                disabled={isDeleting}
-                                                                                onClick={() => confirmSoftDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: false }))}
-                                                                            >
-                                                                                <FaTrash size={10} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        {/* Restore Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Restore Party</Tooltip>}>
+                                                                        <Link to={`/parties/${party.id}/edit`} title="Edit Party">
                                                                             <Button
                                                                                 variant="outline-success"
                                                                                 size="sm"
                                                                                 className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => confirmRestore(party.displayName || party.legalName || party.partyCode, () => restoreParty(party.id))}
                                                                             >
-                                                                                <FaUndo size={10} />
+                                                                                <FaPen size={10} />
                                                                             </Button>
-                                                                        </OverlayTrigger>
+                                                                        </Link>
+
+                                                                        {/* Delete Button */}
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            disabled={isDeleting}
+                                                                            onClick={() => confirmSoftDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: false }))}
+                                                                            title="Move to Bin"
+                                                                        >
+                                                                            <FaTrash size={10} />
+                                                                        </Button>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        {/* Restore Button */}
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => confirmRestore(party.displayName || party.legalName || party.partyCode, () => restoreParty(party.id))}
+                                                                            title="Restore Party"
+                                                                        >
+                                                                            <FaUndo size={10} />
+                                                                        </Button>
 
                                                                         {/* Permanent Delete Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Delete Permanently</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-danger"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => confirmPermanentDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: true }))}
-                                                                            >
-                                                                                <FaExclamationTriangle size={10} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            onClick={() => confirmPermanentDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: true }))}
+                                                                            title="Delete Permanently"
+                                                                        >
+                                                                            <FaExclamationTriangle size={10} />
+                                                                        </Button>
                                                                     </>
                                                                 )}
                                                             </div>
