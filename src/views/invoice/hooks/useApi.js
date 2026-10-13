@@ -24,10 +24,19 @@ import { useUIManager } from "../../../contexts/UIManagerContext";
 import { useState } from "react";
 
 // Get invoice pagination
-export const useInvoicePagination = ({ page, pageSize, search, trash = false }) => {
+export const useInvoicePagination = ({
+    page,
+    pageSize,
+    search,
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     return useQuery({
-        queryKey: ["invoicePagination", page, pageSize, search, trash],
-        queryFn: () => getInvoicePagination({ page, pageSize, search, trash }),
+        queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
@@ -48,10 +57,19 @@ export const useInvoicePagination = ({ page, pageSize, search, trash = false }) 
 };
 
 // Get invoice
-export const useInvoice = ({ page, pageSize, search, trash = false }) => {
+export const useInvoice = ({
+    page,
+    pageSize,
+    search,
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     return useQuery({
-        queryKey: ["invoiceList", page, pageSize, search, trash],
-        queryFn: () => getInvoice({ page, pageSize, search, trash }),
+        queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
         select: (result) => {
             const paymentStatusColor = {

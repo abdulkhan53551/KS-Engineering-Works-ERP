@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
 import {
@@ -13,7 +13,10 @@ import {
     FaSyncAlt,
     FaCopy,
     FaMoneyCheckAlt,
-    FaHistory
+    FaHistory,
+    FaFilter,
+    FaCheck,
+    FaCalendarAlt
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
@@ -33,7 +36,8 @@ import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
+import { useListPagination, useRowSelection, usePageClamping } from '../../../hooks/useListManager';
+import useInvoiceFilters from '../hooks/useInvoiceFilters';
 import useTrashActions from '../../../hooks/useTrashActions';
 import useBranchAction from '../../../hooks/useBranchAction';
 
@@ -65,7 +69,7 @@ const InvoiceList = () => {
     // Financial calculations hook
     const { getFinancials } = useInvoiceFinancials();
 
-    // Pagination & Search Manager Hook
+    // Pagination & Search Manager Hook (Synchronized with URL query string)
     const {
         page,
         setPage,
@@ -83,20 +87,61 @@ const InvoiceList = () => {
         initialPageSize: 10
     });
 
-    // Fetch data
+    // Invoice Filters Hook (Synchronized with URL query parameters)
+    const {
+        statusFilter,
+        startDate,
+        endDate,
+        ewayBillFilter,
+        datePreset,
+        hasActiveFilters,
+        tempStartDate,
+        setTempStartDate,
+        tempEndDate,
+        setTempEndDate,
+        handleStatusChange,
+        handleEwayBillChange,
+        handleDatePresetChange,
+        handleApplyCustomDates,
+        handleResetFilters,
+        getDateLabel
+    } = useInvoiceFilters({
+        clearSearch,
+        onFilterChange: () => handleDeselectAll?.()
+    });
+
+    // Fetch data with all filters
     const {
         data: invoice = [],
         isLoading: isListLoading,
         isFetching: isListFetching,
         refetch: refetchList
-    } = useInvoice({ page, pageSize, search: debouncedSearch, trash: isTrash });
+    } = useInvoice({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        trash: isTrash,
+        paymentStatus: statusFilter,
+        startDate,
+        endDate,
+        hasEwayBill: ewayBillFilter
+    });
 
     const {
         data: pagination = {},
         isLoading: isPaginationLoading,
         isFetching: isPaginationFetching,
         refetch: refetchPagination
-    } = useInvoicePagination({ page, pageSize, search: debouncedSearch, trash: isTrash });
+    } = useInvoicePagination({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        trash: isTrash,
+        paymentStatus: statusFilter,
+        startDate,
+        endDate,
+        hasEwayBill: ewayBillFilter
+    });
 
     const isFetching = isListFetching || isPaginationFetching;
     const isLoading = isListLoading || isPaginationLoading;
@@ -127,6 +172,14 @@ const InvoiceList = () => {
     } = useRowSelection({
         items: sortedList,
         idKey: 'invoiceId'
+    });
+
+    // Auto-clamping: if current page exceeds totalPages (e.g. data reduction)
+    usePageClamping({
+        page,
+        setPage,
+        totalPages: pagination.totalPages,
+        isLoading: isPaginationLoading
     });
 
     const handleTabChange = useCallback((trashState) => {
@@ -184,66 +237,375 @@ const InvoiceList = () => {
                         />
 
                         <Card.Body className="px-0">
-                            {/* Controls & Filter Bar with Integrated Search & Refresh */}
-                            <Col className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
-                                {/* Show Entries Selector */}
-                                <div className="d-flex align-items-center">
-                                    <Form.Label className="mb-0 text-muted small">Show</Form.Label>
-                                    <Form.Select
-                                        className="form-select-sm"
-                                        style={{ marginLeft: '0.5rem', marginRight: '0.5rem', width: '5.8rem', minWidth: '5.8rem' }}
-                                        value={pageSize}
-                                        onChange={(e) => {
-                                            setPageSize(Number(e.target.value));
-                                            setPage(1);
-                                            handleDeselectAll();
-                                        }}
-                                    >
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </Form.Select>
-                                    <Form.Label className="mb-0 text-muted small">entries</Form.Label>
-                                </div>
+                            {/* Professional Controls & Filter Toolbar */}
+                            <div className="px-4 pt-1 pb-3">
+                                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2.5">
+                                    {/* Left Side: Show Entries Selector */}
+                                    <div className="d-flex align-items-center text-muted small">
+                                        <span className="me-1.5 text-secondary">Show</span>
+                                        <Form.Select
+                                            size="sm"
+                                            className="form-select-sm border shadow-none"
+                                            style={{ width: '4.8rem', borderRadius: '6px' }}
+                                            value={pageSize}
+                                            onChange={(e) => {
+                                                setPageSize(Number(e.target.value));
+                                                setPage(1);
+                                                handleDeselectAll();
+                                            }}
+                                        >
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </Form.Select>
+                                        <span className="ms-1.5 text-secondary">entries</span>
+                                    </div>
 
-                                {/* Integrated Search & Refresh Input Group */}
-                                <div className="d-flex align-items-center flex-wrap gap-2">
-                                    <InputGroup size="sm" style={{ width: '19rem' }}>
-                                        <InputGroup.Text className="bg-white border-end-0">
-                                            <FaSearch className="text-muted" size={12} />
-                                        </InputGroup.Text>
-                                        <Form.Control
-                                            type="search"
-                                            placeholder="Search invoices..."
-                                            value={search}
-                                            onChange={handleSearch}
-                                            className="border-start-0 border-end-0 ps-0"
-                                            style={{ fontSize: '0.84rem' }}
-                                        />
-                                        {search && (
-                                            <Button
-                                                variant="outline-secondary"
-                                                className="bg-white border-start-0 border-end-0 px-2"
-                                                onClick={clearSearch}
-                                                title="Clear search"
+                                    {/* Right Side: Search & Filter Controls Group */}
+                                    <div className="d-flex align-items-center flex-wrap gap-2">
+                                        {/* Search Input */}
+                                        <InputGroup size="sm" style={{ width: '230px' }} className="shadow-none">
+                                            <InputGroup.Text className="bg-white border-end-0 text-muted ps-2.5 pe-1">
+                                                <FaSearch size={11} />
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="search"
+                                                placeholder="Search invoices..."
+                                                value={search}
+                                                onChange={handleSearch}
+                                                className="border-start-0 border-end-0 ps-1"
+                                                style={{ fontSize: '0.82rem' }}
+                                            />
+                                            {search && (
+                                                <Button
+                                                    variant="white"
+                                                    className="bg-white border border-start-0 border-end-0 text-muted px-2"
+                                                    onClick={clearSearch}
+                                                    title="Clear search"
+                                                >
+                                                    <FaTimes size={10} />
+                                                </Button>
+                                            )}
+                                        </InputGroup>
+
+                                        {/* Payment Status Dropdown */}
+                                        <Dropdown>
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                variant="light"
+                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${statusFilter ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
+                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
                                             >
-                                                <FaTimes size={11} className="text-muted" />
-                                            </Button>
-                                        )}
+                                                <span className="text-truncate">
+                                                    {statusFilter ? `Status: ${statusFilter === 'PAID' ? 'Paid' : statusFilter === 'PARTIAL' ? 'Partially Paid' : 'Pending'}` : 'All Statuses'}
+                                                </span>
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '175px' }}>
+                                                <Dropdown.Item
+                                                    active={!statusFilter}
+                                                    onClick={() => handleStatusChange('')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span>All Statuses</span>
+                                                    {!statusFilter && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                                <Dropdown.Divider className="my-1" />
+                                                <Dropdown.Item
+                                                    active={statusFilter === 'PAID'}
+                                                    onClick={() => handleStatusChange('PAID')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span className="d-flex align-items-center gap-2">
+                                                        <span className="badge bg-success rounded-circle p-1"> </span>
+                                                        <span>Paid</span>
+                                                    </span>
+                                                    {statusFilter === 'PAID' && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                                <Dropdown.Item
+                                                    active={statusFilter === 'PARTIAL'}
+                                                    onClick={() => handleStatusChange('PARTIAL')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span className="d-flex align-items-center gap-2">
+                                                        <span className="badge bg-info rounded-circle p-1"> </span>
+                                                        <span>Partially Paid</span>
+                                                    </span>
+                                                    {statusFilter === 'PARTIAL' && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                                <Dropdown.Item
+                                                    active={statusFilter === 'PENDING'}
+                                                    onClick={() => handleStatusChange('PENDING')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span className="d-flex align-items-center gap-2">
+                                                        <span className="badge bg-warning rounded-circle p-1"> </span>
+                                                        <span>Pending</span>
+                                                    </span>
+                                                    {statusFilter === 'PENDING' && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+
+                                        {/* Date Range Dropdown with Presets & Custom Pickers */}
+                                        <Dropdown autoClose="outside">
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                variant="light"
+                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${datePreset || startDate || endDate ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
+                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
+                                            >
+                                                <FaCalendarAlt size={11} className={datePreset || startDate || endDate ? 'text-primary' : 'text-muted'} />
+                                                <span className="text-truncate">{getDateLabel()}</span>
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu className="shadow-lg border-0 p-3" style={{ minWidth: '295px' }}>
+                                                <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
+                                                    Quick Presets
+                                                </div>
+                                                <div className="d-flex flex-wrap gap-1.5 mb-3">
+                                                    <Button
+                                                        variant={datePreset === 'today' ? 'primary' : 'light'}
+                                                        size="sm"
+                                                        className="py-1 px-2.5 border"
+                                                        style={{ fontSize: '0.76rem' }}
+                                                        onClick={() => handleDatePresetChange('today')}
+                                                    >
+                                                        Today
+                                                    </Button>
+                                                    <Button
+                                                        variant={datePreset === 'thisMonth' ? 'primary' : 'light'}
+                                                        size="sm"
+                                                        className="py-1 px-2.5 border"
+                                                        style={{ fontSize: '0.76rem' }}
+                                                        onClick={() => handleDatePresetChange('thisMonth')}
+                                                    >
+                                                        This Month
+                                                    </Button>
+                                                    <Button
+                                                        variant={datePreset === 'lastMonth' ? 'primary' : 'light'}
+                                                        size="sm"
+                                                        className="py-1 px-2.5 border"
+                                                        style={{ fontSize: '0.76rem' }}
+                                                        onClick={() => handleDatePresetChange('lastMonth')}
+                                                    >
+                                                        Last Month
+                                                    </Button>
+                                                    <Button
+                                                        variant={datePreset === 'thisFY' ? 'primary' : 'light'}
+                                                        size="sm"
+                                                        className="py-1 px-2.5 border"
+                                                        style={{ fontSize: '0.76rem' }}
+                                                        onClick={() => handleDatePresetChange('thisFY')}
+                                                    >
+                                                        Current FY
+                                                    </Button>
+                                                </div>
+
+                                                <Dropdown.Divider className="my-2" />
+
+                                                <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
+                                                    Custom Range
+                                                </div>
+                                                <Row className="g-2 mb-2">
+                                                    <Col xs={6}>
+                                                        <Form.Label className="text-muted small mb-1" style={{ fontSize: '0.72rem' }}>From</Form.Label>
+                                                        <Form.Control
+                                                            type="date"
+                                                            size="sm"
+                                                            value={tempStartDate}
+                                                            onChange={(e) => setTempStartDate(e.target.value)}
+                                                            style={{ fontSize: '0.78rem' }}
+                                                        />
+                                                    </Col>
+                                                    <Col xs={6}>
+                                                        <Form.Label className="text-muted small mb-1" style={{ fontSize: '0.72rem' }}>To</Form.Label>
+                                                        <Form.Control
+                                                            type="date"
+                                                            size="sm"
+                                                            value={tempEndDate}
+                                                            onChange={(e) => setTempEndDate(e.target.value)}
+                                                            style={{ fontSize: '0.78rem' }}
+                                                        />
+                                                    </Col>
+                                                </Row>
+                                                <div className="d-flex justify-content-between align-items-center pt-2">
+                                                    {(startDate || endDate || datePreset) ? (
+                                                        <Button
+                                                            variant="link"
+                                                            size="sm"
+                                                            className="p-0 text-danger text-decoration-none"
+                                                            style={{ fontSize: '0.76rem' }}
+                                                            onClick={() => {
+                                                                handleDatePresetChange('all');
+                                                                setTempStartDate('');
+                                                                setTempEndDate('');
+                                                            }}
+                                                        >
+                                                            Clear Date
+                                                        </Button>
+                                                    ) : <span />}
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        className="px-3 py-1"
+                                                        style={{ fontSize: '0.78rem' }}
+                                                        onClick={handleApplyCustomDates}
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+
+                                        {/* E-Way Bill Filter */}
+                                        <Dropdown>
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                variant="light"
+                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${ewayBillFilter ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
+                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
+                                            >
+                                                <span className="text-truncate">
+                                                    {ewayBillFilter === 'true' ? 'With E-Way' : ewayBillFilter === 'false' ? 'Without E-Way' : 'All E-Way'}
+                                                </span>
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '165px' }}>
+                                                <Dropdown.Item
+                                                    active={!ewayBillFilter}
+                                                    onClick={() => handleEwayBillChange('')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span>All E-Way Bills</span>
+                                                    {!ewayBillFilter && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                                <Dropdown.Item
+                                                    active={ewayBillFilter === 'true'}
+                                                    onClick={() => handleEwayBillChange('true')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span>With E-Way Bill</span>
+                                                    {ewayBillFilter === 'true' && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                                <Dropdown.Item
+                                                    active={ewayBillFilter === 'false'}
+                                                    onClick={() => handleEwayBillChange('false')}
+                                                    className="d-flex align-items-center justify-content-between py-1.5"
+                                                >
+                                                    <span>Without E-Way Bill</span>
+                                                    {ewayBillFilter === 'false' && <FaCheck size={11} className="text-primary" />}
+                                                </Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+
+                                        {/* Refresh Button */}
                                         <OverlayTrigger placement="top" overlay={<Tooltip>Refresh list</Tooltip>}>
                                             <Button
-                                                variant="outline-secondary"
-                                                className="bg-white border-start-0 px-2.5 d-flex align-items-center"
+                                                variant="light"
+                                                size="sm"
+                                                className="border px-2.5 d-flex align-items-center text-muted bg-white shadow-none"
+                                                style={{ height: '31px', borderRadius: '6px' }}
                                                 onClick={handleRefresh}
                                                 disabled={isFetching}
                                             >
-                                                <FaSyncAlt size={11} className={isFetching ? 'fa-spin text-primary' : 'text-muted'} />
+                                                <FaSyncAlt size={11} className={isFetching ? 'fa-spin text-primary' : 'text-secondary'} />
                                             </Button>
                                         </OverlayTrigger>
-                                    </InputGroup>
+
+                                        {/* Reset Filters Button */}
+                                        {hasActiveFilters && (
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={handleResetFilters}
+                                                className="d-flex align-items-center gap-1.5 px-2.5 shadow-none"
+                                                style={{ height: '31px', borderRadius: '6px', fontSize: '0.8rem' }}
+                                                title="Reset all filters"
+                                            >
+                                                <FaUndo size={10} />
+                                                <span>Reset</span>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                            </Col>
+
+                                {/* Active Filter Chips / Badges Row */}
+                                {hasActiveFilters && (
+                                    <div className="d-flex align-items-center gap-2 flex-wrap pt-2.5 mt-2.5 border-top">
+                                        <span className="text-muted small fw-semibold" style={{ fontSize: '0.74rem' }}>
+                                            <FaFilter size={10} className="me-1 text-primary" /> Active Filters:
+                                        </span>
+                                        {statusFilter && (
+                                            <Badge
+                                                bg="soft-primary"
+                                                text="primary"
+                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-primary border-opacity-25 rounded-pill"
+                                                style={{ fontSize: '0.75rem' }}
+                                            >
+                                                Status: {statusFilter === 'PAID' ? 'Paid' : statusFilter === 'PARTIAL' ? 'Partially Paid' : 'Pending'}
+                                                <FaTimes
+                                                    className="cursor-pointer ms-1 hover-opacity"
+                                                    size={9}
+                                                    onClick={() => handleStatusChange('')}
+                                                />
+                                            </Badge>
+                                        )}
+                                        {(startDate || endDate || datePreset) && (
+                                            <Badge
+                                                bg="soft-warning"
+                                                text="dark"
+                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-warning border-opacity-25 rounded-pill"
+                                                style={{ fontSize: '0.75rem' }}
+                                            >
+                                                Date: {getDateLabel()}
+                                                <FaTimes
+                                                    className="cursor-pointer ms-1 hover-opacity"
+                                                    size={9}
+                                                    onClick={() => handleDatePresetChange('all')}
+                                                />
+                                            </Badge>
+                                        )}
+                                        {ewayBillFilter && (
+                                            <Badge
+                                                bg="soft-info"
+                                                text="dark"
+                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-info border-opacity-25 rounded-pill"
+                                                style={{ fontSize: '0.75rem' }}
+                                            >
+                                                E-Way: {ewayBillFilter === 'true' ? 'With E-Way' : 'No E-Way'}
+                                                <FaTimes
+                                                    className="cursor-pointer ms-1 hover-opacity"
+                                                    size={9}
+                                                    onClick={() => handleEwayBillChange('')}
+                                                />
+                                            </Badge>
+                                        )}
+                                        {search && (
+                                            <Badge
+                                                bg="soft-secondary"
+                                                text="dark"
+                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border rounded-pill"
+                                                style={{ fontSize: '0.75rem' }}
+                                            >
+                                                Search: "{search}"
+                                                <FaTimes
+                                                    className="cursor-pointer ms-1 hover-opacity"
+                                                    size={9}
+                                                    onClick={clearSearch}
+                                                />
+                                            </Badge>
+                                        )}
+                                        <Button
+                                            variant="link"
+                                            size="sm"
+                                            onClick={handleResetFilters}
+                                            className="p-0 text-danger text-decoration-none small ms-1"
+                                            style={{ fontSize: '0.74rem' }}
+                                        >
+                                            Clear all
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="table-responsive">
                                 <Table id="invoice-list-table" className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive role="grid">
