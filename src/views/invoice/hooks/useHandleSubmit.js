@@ -34,6 +34,8 @@ const useHandleSubmit = (props) => {
         if (isEditMode) {
             updateInvoice(formPayload);
         } else {
+            // Backend solely auto-assigns invoice_no under pessimistic lock
+            delete formPayload.invoiceNo;
             createInvoice(formPayload);
         }
     };

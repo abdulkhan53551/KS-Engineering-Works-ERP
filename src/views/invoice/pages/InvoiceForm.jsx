@@ -383,7 +383,7 @@ const InvoiceForm = ({ mode }) => {
                                              {...register("invoiceNo")}
                                           />
                                           <Form.Label htmlFor="invoiceNo">
-                                             Invoice No <span className="text-danger">*</span>
+                                             Invoice No
                                              {!isEditMode && <Badge bg="primary-subtle" text="primary" className="ms-1 py-0.5 px-1.5 fw-normal small border border-primary-subtle">Auto-Generated</Badge>}
                                              {isEditMode && <span className="text-muted small ms-1">(Locked)</span>}
                                           </Form.Label>
