@@ -14,6 +14,7 @@ import {
     getUnmappedInvoiceChallanByInvoiceId,
     getUnmappedPurchaseOrderByInvoiceId,
     restoreInvoice,
+    cancelInvoice,
     updateInvoice
 } from "../api";
 import { toast } from "react-toastify";
@@ -282,6 +283,41 @@ export const useRestoreInvoice = () => {
                 error?.response?.data?.message ||
                 error?.message ||
                 "Failed to restore invoice.";
+            toast.error(message);
+        }
+    });
+};
+
+// Cancel invoice
+export const useCancelInvoice = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["cancelInvoice"],
+        mutationFn: (payload) => cancelInvoice(payload),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Invoice cancelled successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedInvoiceChallan"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedPurchaseOrder"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedEwayBill"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            closeModal();
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to cancel invoice.";
             toast.error(message);
         }
     });

@@ -21,8 +21,10 @@ import {
    FaMapMarkerAlt,
    FaPaperclip,
    FaExternalLinkAlt,
-   FaCopy
+   FaCopy,
+   FaBan
 } from 'react-icons/fa';
+import { Ban } from 'lucide-react';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
 import { useInvoiceById } from '../hooks/useApi';
@@ -115,6 +117,7 @@ const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
+
    const isDuplicateMode = !!(mode === 'duplicate');
 
    const handleBack = () => {
@@ -297,6 +300,30 @@ const InvoiceForm = ({ mode }) => {
                                        {invoice.invoiceNo && (
                                           <span className="text-muted fs-6 fw-normal">#{invoice.invoiceNo}</span>
                                        )}
+                                       {invoice.status === 'Cancelled' && (
+                                          <span
+                                             className="badge rounded-pill fw-semibold d-inline-flex align-items-center gap-1.5 ms-2 align-middle"
+                                             style={{
+                                                backgroundColor: '#fee2e2',
+                                                color: '#b91c1c',
+                                                border: '1px solid #fecaca',
+                                                fontSize: '0.72rem',
+                                                letterSpacing: '0.04em',
+                                                padding: '3px 10px'
+                                             }}
+                                          >
+                                             <span
+                                                style={{
+                                                   width: 6,
+                                                   height: 6,
+                                                   borderRadius: '50%',
+                                                   backgroundColor: '#ef4444',
+                                                   display: 'inline-block'
+                                                }}
+                                             />
+                                             CANCELLED
+                                          </span>
+                                       )}
                                     </>
                                  ) : isDuplicateMode ? (
                                     <>
@@ -364,6 +391,85 @@ const InvoiceForm = ({ mode }) => {
                               </div>
                            )}
 
+                           {/* CANCELLED INVOICE NOTICE */}
+                           {isEditMode && invoice?.status === 'Cancelled' && (
+                              <div
+                                 className="p-3 mb-4 rounded-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3"
+                                 style={{
+                                    background: 'linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%)',
+                                    border: '1px solid #fed7d7',
+                                    borderLeft: '4px solid #ef4444',
+                                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.06)'
+                                 }}
+                                 role="alert"
+                              >
+                                 <div className="d-flex align-items-start gap-3">
+                                    <div
+                                       className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5"
+                                       style={{
+                                          width: '38px',
+                                          height: '38px',
+                                          backgroundColor: '#fee2e2',
+                                          color: '#dc2626',
+                                          border: '1px solid #fca5a5'
+                                       }}
+                                    >
+                                       <Ban size={18} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                       <div className="d-flex align-items-center gap-2 flex-wrap">
+                                          <span className="fw-bold text-dark fs-6" style={{ letterSpacing: '-0.01em' }}>
+                                             This Invoice is Cancelled
+                                          </span>
+                                          <span
+                                             className="badge rounded-pill fw-semibold"
+                                             style={{
+                                                backgroundColor: '#fee2e2',
+                                                color: '#b91c1c',
+                                                border: '1px solid #fecaca',
+                                                fontSize: '0.68rem',
+                                                letterSpacing: '0.04em',
+                                                padding: '2px 8px'
+                                             }}
+                                          >
+                                             VOID / READ-ONLY
+                                          </span>
+                                       </div>
+                                       <div className="text-secondary small mt-0.5" style={{ fontSize: '0.80rem', lineHeight: '1.45' }}>
+                                          Under GST compliance regulations, cancelled invoices cannot be modified or re-submitted. Linked Delivery Challans and Purchase Orders have been safely unlinked for re-billing.
+                                       </div>
+                                       {invoice?.cancel_reason && (
+                                          <div className="d-flex align-items-center gap-2 mt-2 pt-1.5 border-top border-danger-subtle small">
+                                             <span className="fw-semibold text-danger" style={{ fontSize: '0.78rem' }}>Cancellation Reason:</span>
+                                             <span className="bg-white px-2.5 py-0.5 rounded border border-danger-subtle text-dark fw-medium fst-italic" style={{ fontSize: '0.78rem' }}>
+                                                "{invoice.cancel_reason}"
+                                             </span>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </div>
+
+                                 {isEditMode && invoiceId && (
+                                    <Button
+                                       variant="outline-danger"
+                                       size="sm"
+                                       className="flex-shrink-0 d-flex align-items-center gap-1.5 rounded-3 fw-semibold shadow-none px-3 py-2 ms-md-auto"
+                                       style={{
+                                          fontSize: '0.80rem',
+                                          backgroundColor: '#ffffff',
+                                          borderColor: '#fca5a5',
+                                          color: '#dc2626'
+                                       }}
+                                       onClick={() => navigate(`/sales/invoice/${invoiceId}/duplicate`)}
+                                       title="Create a new invoice using data from this cancelled invoice"
+                                    >
+                                       <FaCopy size={12} />
+                                       <span>Duplicate to New Invoice</span>
+                                    </Button>
+                                 )}
+                              </div>
+                           )}
+
                            {/* SECTION 1: INVOICE MAIN DETAILS */}
                            <div className="row g-3">
                               {/* Left: Invoice No, Customer, GST, Linked Docs */}
@@ -385,7 +491,11 @@ const InvoiceForm = ({ mode }) => {
                                           <Form.Label htmlFor="invoiceNo">
                                              Invoice No
                                              {!isEditMode && <Badge bg="primary-subtle" text="primary" className="ms-1 py-0.5 px-1.5 fw-normal small border border-primary-subtle">Auto-Generated</Badge>}
-                                             {isEditMode && <span className="text-muted small ms-1">(Locked)</span>}
+                                             {isEditMode && invoice.status === 'Cancelled' ? (
+                                                <span className="text-danger fw-semibold small ms-1">(CANCELLED)</span>
+                                             ) : isEditMode ? (
+                                                <span className="text-muted small ms-1">(Locked)</span>
+                                             ) : null}
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
                                        </Form.Floating>
@@ -1347,7 +1457,7 @@ const InvoiceForm = ({ mode }) => {
                               <SubmitButton
                                  isLoading={createInvoiceIsPending || updateInvoiceIsPending}
                                  isEditMode={isEditMode}
-                                 disabled={isTotalBelowPaid}
+                                 disabled={isTotalBelowPaid || (isEditMode && invoice?.status === 'Cancelled')}
                               />
                            </div>
                         </Card.Body>
