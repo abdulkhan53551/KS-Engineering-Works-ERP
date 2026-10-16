@@ -2,7 +2,7 @@ import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { MdAddBox } from "react-icons/md";
 import { FaPlus } from "react-icons/fa";
 import InvoiceRow from "./InvoiceRow";
-import { Table, Button } from "react-bootstrap";
+import { Table } from "react-bootstrap";
 import { useMemo, useCallback } from "react";
 
 export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFieldRef, isInterState = false }) {
@@ -44,32 +44,54 @@ export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFiel
 
     return (
         <div className="invoice-items-wrapper">
-            <div className="table-responsive">
-                <Table className="table-sortable align-middle mb-0" striped bordered hover responsive="xl">
-                    <thead className="text-center bg-light">
-                        <tr className="light">
-                            <th style={{ width: '40px', minWidth: '40px' }} className="py-2">#</th>
-                            <th style={{ minWidth: '280px' }} className="py-2">Description</th>
-                            <th style={{ width: '130px', minWidth: '120px' }} className="py-2">HSN/SAC</th>
-                            <th style={{ width: '130px', minWidth: '120px' }} className="py-2">Qty</th>
-                            <th style={{ width: '150px', minWidth: '140px' }} className="py-2">Unit</th>
-                            <th style={{ width: '160px', minWidth: '150px' }} className="py-2">Rate (₹)</th>
-                            <th style={{ width: '150px', minWidth: '140px' }} className="py-2">Sub Total (₹)</th>
-                            <th style={{ width: '140px', minWidth: '130px' }} className="py-2">GST Slab</th>
-                            <th style={{ width: '150px', minWidth: '140px' }} className="py-2">Taxable Amt (₹)</th>
+            <div className="invoice-table-scroll-container">
+                <Table className="table-sortable align-middle mb-0" striped bordered hover>
+                    <thead>
+                        <tr className="invoice-table-header-row">
+                            <th style={{ width: '42px', minWidth: '42px' }} className="py-2 text-center">#</th>
+                            <th style={{ minWidth: '260px' }} className="py-2 text-start ps-3">
+                                Description <span className="text-danger">*</span>
+                            </th>
+                            <th style={{ width: '105px', minWidth: '95px' }} className="py-2 text-center">HSN/SAC</th>
+                            <th style={{ width: '90px', minWidth: '80px' }} className="py-2 text-end pe-2">
+                                Qty <span className="text-danger">*</span>
+                            </th>
+                            <th style={{ width: '110px', minWidth: '95px' }} className="py-2 text-center">
+                                Unit <span className="text-danger">*</span>
+                            </th>
+                            <th style={{ width: '135px', minWidth: '120px' }} className="py-2 text-end pe-2">
+                                Rate (₹) <span className="text-danger">*</span>
+                            </th>
+                            <th style={{ width: '135px', minWidth: '125px' }} className="py-2 text-end pe-2">
+                                Sub Total (₹) <span className="th-badge-auto">Auto</span>
+                            </th>
+                            <th style={{ width: '105px', minWidth: '95px' }} className="py-2 text-center">
+                                GST Slab <span className="text-danger">*</span>
+                            </th>
+                            <th style={{ width: '135px', minWidth: '125px' }} className="py-2 text-end pe-2">
+                                Taxable (₹) <span className="th-badge-auto">Auto</span>
+                            </th>
                             {!isInterState ? (
                                 <>
-                                    <th style={{ width: '130px', minWidth: '120px' }} className="py-2">CGST (₹)</th>
-                                    <th style={{ width: '130px', minWidth: '120px' }} className="py-2">SGST (₹)</th>
+                                    <th style={{ width: '115px', minWidth: '105px' }} className="py-2 text-end pe-2">
+                                        CGST (₹) <span className="th-badge-auto">Auto</span>
+                                    </th>
+                                    <th style={{ width: '115px', minWidth: '105px' }} className="py-2 text-end pe-2">
+                                        SGST (₹) <span className="th-badge-auto">Auto</span>
+                                    </th>
                                 </>
                             ) : (
-                                <th style={{ width: '160px', minWidth: '140px' }} className="py-2">IGST (₹)</th>
+                                <th style={{ width: '130px', minWidth: '115px' }} className="py-2 text-end pe-2">
+                                    IGST (₹) <span className="th-badge-auto">Auto</span>
+                                </th>
                             )}
-                            <th style={{ width: '180px', minWidth: '170px' }} className="py-2">Total (₹)</th>
+                            <th style={{ width: '150px', minWidth: '140px' }} className="py-2 text-end pe-3">
+                                Total (₹) <span className="th-badge-calc">Total</span>
+                            </th>
                             <th style={{ width: '65px', minWidth: '65px', padding: '0.4rem 0.1rem' }} className="text-center py-2">
-                                <span title="Add New Row" className="cursor-pointer" onClick={() => append(defaultItem)}>
+                                <span title="Add New Item Row" className="cursor-pointer" onClick={() => append(defaultItem)}>
                                     <MdAddBox
-                                        size={26}
+                                        size={22}
                                         className="text-success cursor-pointer hover-scale transition-transform"
                                     />
                                 </span>
@@ -94,24 +116,33 @@ export default function InvoiceItemsTable({ productUnit, gstSlab, lastEditedFiel
                 </Table>
             </div>
 
-            {/* Table Footer Action & Summary Bar */}
-            <div className="d-flex flex-wrap justify-content-between align-items-center bg-light border border-top-0 p-2 rounded-bottom">
-                <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="d-flex align-items-center gap-2 fw-medium px-3 py-1 shadow-none"
-                    onClick={() => append(defaultItem)}
-                >
-                    <FaPlus size={12} /> Add Line Item
-                </Button>
+            {/* Table Footer Action & Summary Toolbar */}
+            <div className="invoice-table-footer-toolbar">
+                <div className="d-flex align-items-center gap-2">
+                    <button
+                        type="button"
+                        className="btn-add-line-row"
+                        onClick={() => append(defaultItem)}
+                        title="Add another line item to this invoice"
+                    >
+                        <span className="btn-icon-wrap">
+                            <FaPlus size={10} />
+                        </span>
+                        <span className="btn-text">Add Line Item</span>
+                    </button>
+                </div>
 
-                <div className="d-flex align-items-center gap-3 text-muted small">
-                    <span>
-                        Total Items: <strong className="text-dark">{fields.length}</strong>
-                    </span>
-                    <span className="border-start ps-3">
-                        Total Quantity: <strong className="text-dark">{totalQty.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
-                    </span>
+                <div className="table-footer-stats">
+                    <div className="stat-pill" title="Total number of line items">
+                        <span className="stat-label">Items:</span>
+                        <span className="stat-value">{fields.length}</span>
+                    </div>
+                    <div className="stat-pill highlight" title="Sum of all quantities">
+                        <span className="stat-label">Total Qty:</span>
+                        <span className="stat-value font-monospace">
+                            {totalQty.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

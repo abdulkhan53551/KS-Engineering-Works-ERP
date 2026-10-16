@@ -156,6 +156,7 @@ body {
             font-weight: 600;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            color: #ffffff;
         }
 
         .total-amount {
@@ -163,6 +164,7 @@ body {
             font-weight: 800;
             letter-spacing: 0.5px;
             font-family: var(--bs-font-monospace, monospace);
+            color: #ffffff;
         }
     }
 }
@@ -607,7 +609,10 @@ body {
     background-color: #e11d48;
     border-color: #e11d48;
     color: #ffffff;
-    &:hover, &:focus, &:active {
+
+    &:hover,
+    &:focus,
+    &:active {
         background-color: #be123c;
         border-color: #be123c;
         color: #ffffff;
@@ -631,7 +636,10 @@ body {
     background-color: #0d9488;
     border-color: #0d9488;
     color: #ffffff;
-    &:hover, &:focus, &:active {
+
+    &:hover,
+    &:focus,
+    &:active {
         background-color: #0f766e;
         border-color: #0f766e;
         color: #ffffff;
@@ -655,7 +663,10 @@ body {
     background-color: #6366f1;
     border-color: #6366f1;
     color: #ffffff;
-    &:hover, &:focus, &:active {
+
+    &:hover,
+    &:focus,
+    &:active {
         background-color: #4f46e5;
         border-color: #4f46e5;
         color: #ffffff;
@@ -674,7 +685,696 @@ body {
 
 .hover-scale {
     transition: transform 0.15s ease;
+
     &:hover {
         transform: scale(1.1);
+    }
+}
+
+/* ===================================================
+   INVOICE FORM UI/UX ENHANCEMENTS (FLOWING INPUTS & SECTIONS)
+   =================================================== */
+
+.invoice-form-card {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 0.85rem;
+    overflow: hidden;
+
+    .card-header {
+        background-color: #ffffff;
+        border-bottom: 1px solid #eef2f6;
+        padding: 1.15rem 1.5rem;
+    }
+
+    .card-body {
+        background-color: #fafbfc;
+    }
+}
+
+/* Section Containers & Headers */
+.form-section-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+        border-color: #cbd5e1;
+    }
+}
+
+.form-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.85rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+
+    .section-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .section-icon-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+
+        &.primary {
+            background-color: rgba(58, 87, 232, 0.1);
+            color: #3a57e8;
+        }
+
+        &.success {
+            background-color: rgba(22, 163, 74, 0.1);
+            color: #16a34a;
+        }
+
+        &.indigo {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+        }
+    }
+
+    .section-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .section-subtitle {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.15rem;
+        margin-bottom: 0;
+    }
+}
+
+/* GST Toggle Switch Box (42px height to match floating inputs) */
+.gst-toggle-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 42px;
+    padding: 0 0.85rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+
+    &:hover {
+        border-color: #94a3b8;
+        background-color: #f8fafc;
+    }
+
+    &.active {
+        border-color: #3a57e8;
+        background-color: rgba(58, 87, 232, 0.03);
+    }
+
+    .form-check {
+        margin-bottom: 0;
+        padding-left: 2.25rem;
+
+        .form-check-input {
+            cursor: pointer;
+            width: 2rem;
+            height: 1.15rem;
+            margin-top: 0;
+
+            &:focus {
+                border-color: #3a57e8;
+                box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.15);
+            }
+
+            &:checked {
+                background-color: #3a57e8;
+                border-color: #3a57e8;
+            }
+        }
+    }
+
+    .gst-label-text {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #334155;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+}
+
+/* Due Terms & Days Card */
+.due-terms-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+
+    .due-input-group {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+
+        .terms-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .due-number-input {
+            width: 70px;
+            height: 30px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-align: center;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            padding: 0 0.35rem;
+
+            &:focus {
+                border-color: #3a57e8;
+                box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.15);
+                outline: none;
+            }
+        }
+
+        .days-unit {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+    }
+
+    .due-chips-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+
+        .chip-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-right: 0.2rem;
+        }
+    }
+}
+
+/* ===================================================
+   FLOATING LABELS & DISABLED FORM CONTROLS (Hope UI Standard)
+   =================================================== */
+
+/* Ensure disabled inputs in custom-form-floating keep clean active label positioning */
+.custom-form-floating,
+.custom-form-floating-sm {
+    > .form-control:disabled ~ label,
+    > .form-select:disabled ~ label,
+    > .form-control-readonly-modern ~ label {
+        transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+    }
+
+    > .form-control:disabled,
+    > .form-select:disabled {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #334155 !important;
+        cursor: not-allowed !important;
+        opacity: 1 !important;
+    }
+}
+
+/* ===================================================
+   PROFESSIONAL READ-ONLY & CALCULATED FIELDS
+   (Clear, distinct disabled appearance for non-editable fields)
+   =================================================== */
+
+.form-control-readonly-modern {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    cursor: not-allowed !important;
+    font-weight: 500 !important;
+    user-select: text !important;
+    box-shadow: none !important;
+
+    &:hover,
+    &:focus {
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    &::placeholder {
+        color: #94a3b8 !important;
+        font-style: italic;
+    }
+}
+
+/* Readonly Floating Field Wrapper (e.g. Invoice No) */
+.readonly-floating-wrapper {
+    position: relative;
+
+    .readonly-watermark-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 0.8rem;
+        pointer-events: none;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .readonly-pill-tag {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        background-color: #e2e8f0;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        line-height: 1;
+
+        &.primary {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border-color: #bfdbfe;
+        }
+
+        &.danger {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+    }
+}
+
+/* Modern Line Items Table Enhancements (Crisp, Sleek, Compact) */
+.invoice-items-wrapper {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+
+    .invoice-table-scroll-container {
+        overflow-x: auto;
+        overflow-y: visible;
+        padding-bottom: 8px;
+        margin-bottom: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f8fafc;
+        min-height: 80px;
+
+        &::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 9999px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+            transition: background 0.15s ease;
+
+            &:hover {
+                background: #94a3b8;
+            }
+        }
+    }
+
+    .table-sortable {
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 0 !important;
+
+        thead th,
+        .invoice-table-header-row th {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+            color: #334155 !important;
+            font-size: 0.74rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.03em !important;
+            text-transform: uppercase;
+            border-bottom: 2px solid #cbd5e1 !important;
+            vertical-align: middle !important;
+            padding: 0.5rem 0.4rem !important;
+            white-space: nowrap;
+        }
+
+        tbody tr.invoice-table-row {
+            transition: background-color 0.15s ease;
+
+            &:hover {
+                background-color: #f8fafc !important;
+            }
+
+            &:focus-within {
+                background-color: #eff6ff !important;
+
+                .line-item-index {
+                    background-color: #3b82f6 !important;
+                    color: #ffffff !important;
+                    border-color: #2563eb !important;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+                }
+            }
+        }
+
+        tbody td {
+            padding: 0.35rem 0.4rem !important;
+            vertical-align: middle !important;
+        }
+
+        /* Sleek, crisp, compact inputs & selects across all table cells */
+        .form-control,
+        .form-select {
+            height: 32px !important;
+            min-height: 32px !important;
+            font-size: 0.8125rem !important;
+            line-height: 1.35 !important;
+            padding: 0.25rem 0.5rem !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 4px !important;
+            color: #1e293b !important;
+            font-weight: 500 !important;
+            background-color: #ffffff;
+            box-shadow: none !important;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+            &:focus {
+                border-color: #3b82f6 !important;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18) !important;
+                background-color: #ffffff !important;
+            }
+
+            &.is-invalid {
+                border-color: #dc2626 !important;
+                box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
+            }
+        }
+
+        .form-select {
+            padding-right: 1.4rem !important;
+            background-position: right 0.4rem center !important;
+            background-size: 12px 8px !important;
+            cursor: pointer;
+        }
+
+        /* Number inputs styling */
+        input.text-end {
+            font-family: var(--bs-font-monospace, monospace);
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            font-size: 0.8125rem;
+        }
+
+        /* Autocomplete inside table */
+        .product-autocomplete-container {
+            .form-control {
+                padding-right: 24px !important;
+            }
+
+            .product-autocomplete-clear-btn {
+                font-size: 11px;
+                right: 7px;
+            }
+        }
+    }
+
+    /* Index circle badge in table */
+    .line-item-index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 0.72rem;
+        font-weight: 700;
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        transition: all 0.18s ease;
+    }
+
+    /* Row Micro Action Buttons */
+    .btn-row-action {
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        background: transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+
+        &.btn-row-duplicate {
+            color: #3b82f6;
+
+            &:hover {
+                background-color: #eff6ff;
+                border-color: #bfdbfe;
+                color: #1d4ed8;
+            }
+        }
+
+        &.btn-row-delete {
+            color: #ef4444;
+
+            &:hover:not(.disabled) {
+                background-color: #fef2f2;
+                border-color: #fecaca;
+                color: #b91c1c;
+            }
+
+            &.disabled {
+                color: #94a3b8;
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    .th-badge-auto {
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.1rem 0.35rem;
+        border-radius: 3px;
+        background-color: #e2e8f0;
+        color: #64748b;
+        margin-left: 0.3rem;
+        letter-spacing: 0.04em;
+    }
+
+    .th-badge-calc {
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.1rem 0.35rem;
+        border-radius: 3px;
+        background-color: #dbeafe;
+        color: #1e40af;
+        margin-left: 0.3rem;
+        letter-spacing: 0.04em;
+    }
+
+    /* Modern Table Footer Toolbar */
+    .invoice-table-footer-toolbar {
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        padding: 0.65rem 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+
+        .btn-add-line-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f0f7ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            border-radius: 6px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+            .btn-icon-wrap {
+                background: #3b82f6;
+                color: #ffffff;
+                border-radius: 4px;
+                width: 18px;
+                height: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.18s ease;
+            }
+
+            &:hover {
+                background: #3b82f6;
+                border-color: #2563eb;
+                color: #ffffff;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.22);
+                transform: translateY(-1px);
+
+                .btn-icon-wrap {
+                    background: #ffffff;
+                    color: #3b82f6;
+                }
+            }
+
+            &:active {
+                transform: translateY(0);
+            }
+        }
+
+        .table-footer-stats {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+
+            .stat-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                padding: 0.3rem 0.65rem;
+                border-radius: 6px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                font-size: 0.78rem;
+
+                .stat-label {
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                .stat-value {
+                    color: #0f172a;
+                    font-weight: 700;
+                }
+
+                &.highlight {
+                    background: #eff6ff;
+                    border-color: #bfdbfe;
+
+                    .stat-label {
+                        color: #2563eb;
+                        font-weight: 600;
+                    }
+
+                    .stat-value {
+                        color: #1d4ed8;
+                        font-weight: 800;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Table Calculated / Non-Editable Cell Inputs - Fully selectable, copyable, scrollable & accessible */
+.form-control-readonly-calculated {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    font-family: var(--bs-font-monospace, monospace) !important;
+    font-variant-numeric: tabular-nums !important;
+    letter-spacing: -0.01em !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    text-align: right !important;
+    cursor: text !important;
+    user-select: all !important;
+    border-radius: 4px !important;
+    padding: 0.25rem 0.5rem !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    box-shadow: none !important;
+    transition: all 0.15s ease !important;
+
+    &:hover {
+        background-color: #f1f5f9 !important;
+        border-color: #94a3b8 !important;
+    }
+
+    &:focus {
+        background-color: #ffffff !important;
+        border-color: #3b82f6 !important;
+        color: #0f172a !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18) !important;
+        outline: none !important;
+    }
+
+    &.tax-cell {
+        color: #475569 !important;
+        font-size: 0.8rem !important;
+    }
+
+    &.total-cell {
+        background-color: #eff6ff !important;
+        border: 1px solid #bfdbfe !important;
+        color: #1d4ed8 !important;
+        font-weight: 700 !important;
+        font-size: 0.835rem !important;
+
+        &:hover {
+            background-color: #e0f2fe !important;
+            border-color: #93c5fd !important;
+        }
+
+        &:focus {
+            background-color: #ffffff !important;
+            border-color: #2563eb !important;
+            color: #1e40af !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+        }
     }
 }

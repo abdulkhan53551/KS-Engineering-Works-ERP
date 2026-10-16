@@ -41,7 +41,7 @@ import moment from 'moment';
 import { numberToIndianRupeesWords } from '../../../utilities/numberToWords';
 import { findDbStateByGstCode } from '../../../utilities/gstStateHelper';
 import usePartyBranchLoader from '../hooks/usePartyBranchLoader';
-import { FaBuilding, FaCheckCircle } from 'react-icons/fa';
+import { FaBuilding, FaCheckCircle, FaLock } from 'react-icons/fa';
 
 const defaultFormValue = {
    invoiceNo: "",
@@ -280,7 +280,7 @@ const InvoiceForm = ({ mode }) => {
             <Form noValidate onSubmit={handleSubmit(onSubmit, onError)}>
                <Row>
                   <Col xl="12" lg="12">
-                     <Card className="border-0 shadow-sm mb-4">
+                     <Card className="invoice-form-card shadow-sm border-0 mb-4">
                         <Card.Header className="d-flex justify-content-between align-items-center bg-white border-bottom py-3 flex-wrap gap-2">
                            <div className="header-title d-flex align-items-center gap-2">
                               <Button
@@ -471,236 +471,256 @@ const InvoiceForm = ({ mode }) => {
                            )}
 
                            {/* SECTION 1: INVOICE MAIN DETAILS */}
-                           <div className="row g-3">
-                              {/* Left: Invoice No, Customer, GST, Linked Docs */}
-                              <Col lg="6">
-                                 <Row className="g-3">
-                                    <Col lg="4">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             id="invoiceNo"
-                                             placeholder="Invoice No"
-                                             isInvalid={!!errors.invoiceNo}
-                                             readOnly
-                                             className="bg-light"
-                                             style={{ cursor: 'not-allowed' }}
-                                             tabIndex={-1}
-                                             {...register("invoiceNo")}
+                           <div className="form-section-card">
+                              <div className="form-section-header">
+                                 <div className="section-title-wrap">
+                                    <div className="section-icon-badge primary">
+                                       <FaFileAlt />
+                                    </div>
+                                    <div>
+                                       <h6 className="section-title">Invoice Particulars & Terms</h6>
+                                       <p className="section-subtitle">Core invoice details, customer selection, and payment terms</p>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="row g-3">
+                                 {/* Left: Invoice No, Customer, GST, Linked Docs */}
+                                 <Col lg="6">
+                                    <Row className="g-3">
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0 readonly-floating-wrapper">
+                                             <Form.Control
+                                                type="text"
+                                                id="invoiceNo"
+                                                placeholder="Invoice No"
+                                                isInvalid={!!errors.invoiceNo}
+                                                readOnly
+                                                tabIndex={-1}
+                                                className="form-control-readonly-modern font-monospace"
+                                                {...register("invoiceNo")}
+                                             />
+                                             <Form.Label htmlFor="invoiceNo" className="d-flex align-items-center gap-1.5">
+                                                <FaLock size={10} className="text-muted flex-shrink-0" />
+                                                <span>Invoice No</span>
+                                                {!isEditMode && <span className="readonly-pill-tag primary">AUTO #</span>}
+                                                {isEditMode && invoice.status === 'Cancelled' ? (
+                                                   <span className="readonly-pill-tag danger">CANCELLED</span>
+                                                ) : isEditMode ? (
+                                                   <span className="readonly-pill-tag">LOCKED</span>
+                                                ) : null}
+                                             </Form.Label>
+                                             <span className="readonly-watermark-icon" title="System-generated invoice identifier">
+                                                <FaLock size={11} />
+                                             </span>
+                                             <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="8">
+                                          <PartyAutocompleteInput
+                                             value={customerName || ''}
+                                             onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
+                                             onSelectParty={handlePartySelect}
+                                             onClearParty={handleClearParty}
+                                             onDetachParty={handleDetachParty}
+                                             isInvalid={!!errors.customerName}
+                                             errorMessage={errors.customerName?.message}
+                                             placeholder="Search party by name or code..."
+                                             label="Customer Name"
+                                             required
                                           />
-                                          <Form.Label htmlFor="invoiceNo">
-                                             Invoice No
-                                             {!isEditMode && <Badge bg="primary-subtle" text="primary" className="ms-1 py-0.5 px-1.5 fw-normal small border border-primary-subtle">Auto-Generated</Badge>}
-                                             {isEditMode && invoice.status === 'Cancelled' ? (
-                                                <span className="text-danger fw-semibold small ms-1">(CANCELLED)</span>
-                                             ) : isEditMode ? (
-                                                <span className="text-muted small ms-1">(Locked)</span>
-                                             ) : null}
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
+                                       </Col>
 
-                                    <Col lg="8">
-                                       <PartyAutocompleteInput
-                                          value={customerName || ''}
-                                          onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
-                                          onSelectParty={handlePartySelect}
-                                          onClearParty={handleClearParty}
-                                          onDetachParty={handleDetachParty}
-                                          isInvalid={!!errors.customerName}
-                                          errorMessage={errors.customerName?.message}
-                                          placeholder="Search party by name or code..."
-                                          label="Customer Name"
-                                          required
-                                       />
-                                    </Col>
+                                       {/* GST Row */}
+                                       <Col lg="4" className="d-flex align-items-center">
+                                          <div
+                                             className={`gst-toggle-box w-100 ${hasGst ? 'active' : ''}`}
+                                             onClick={() => {
+                                                const nextVal = !hasGst;
+                                                setValue("hasGst", nextVal, { shouldValidate: true });
+                                             }}
+                                          >
+                                             <span className="gst-label-text">
+                                                GST Registered
+                                             </span>
+                                             <FormCheck
+                                                type="switch"
+                                                id="hasGst"
+                                                checked={!!hasGst}
+                                                className="mb-0"
+                                                isInvalid={!!errors.hasGst}
+                                                {...register("hasGst", {
+                                                   onChange: (e) => {
+                                                      setValue("hasGst", e.target.checked, { shouldValidate: true });
+                                                   }
+                                                })}
+                                                onClick={(e) => e.stopPropagation()}
+                                             />
+                                          </div>
+                                       </Col>
 
-                                    {/* GST Row */}
-                                    <Col lg="4" className="d-flex align-items-center">
-                                       <FormCheck className="form-check-inline mb-0">
-                                          <FormCheck.Input
-                                             type="checkbox"
-                                             id="hasGst"
-                                             isInvalid={!!errors.hasGst}
-                                             {...register("hasGst", {
-                                                onChange: (e) => {
-                                                   setValue("hasGst", e.target.checked, { shouldValidate: true });
-                                                }
-                                             })}
-                                          />
-                                          <FormCheck.Label className="form-check-label ps-1 fw-medium" htmlFor="hasGst">
-                                             GST Available
-                                          </FormCheck.Label>
-                                       </FormCheck>
-                                    </Col>
-
-                                    <Col lg="8">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             id="gstNumber"
-                                             placeholder="GSTIN No."
-                                             disabled={!hasGst}
-                                             maxLength={15}
-                                             className="text-uppercase font-monospace"
-                                             isInvalid={!!errors.gstNumber}
-                                             {...register("gstNumber", {
-                                                onChange: (e) => {
-                                                   const upper = (e.target.value || "").toUpperCase();
-                                                   setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
-                                                   setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
-                                                   if (upper.length >= 2) {
-                                                      const stateCode = upper.substring(0, 2);
-                                                      const dbState = findDbStateByGstCode(stateCode, billingStates);
-                                                      if (dbState?.id) {
-                                                         const dbStateId = Number(dbState.id);
-                                                         setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
-                                                         if (sameAsBilling) {
-                                                            setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
-                                                            clearErrors("shippingAddress.stateId");
+                                       <Col lg="8">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="text"
+                                                id="gstNumber"
+                                                placeholder={hasGst ? "GSTIN No. (15 Characters)" : "GST Not Applicable (Toggle switch to enter)"}
+                                                disabled={!hasGst}
+                                                maxLength={15}
+                                                tabIndex={!hasGst ? -1 : 0}
+                                                className={`text-uppercase font-monospace ${!hasGst ? 'form-control-readonly-modern' : ''}`}
+                                                isInvalid={!!errors.gstNumber}
+                                                {...register("gstNumber", {
+                                                   onChange: (e) => {
+                                                      const upper = (e.target.value || "").toUpperCase();
+                                                      setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                      setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
+                                                      if (upper.length >= 2) {
+                                                         const stateCode = upper.substring(0, 2);
+                                                         const dbState = findDbStateByGstCode(stateCode, billingStates);
+                                                         if (dbState?.id) {
+                                                            const dbStateId = Number(dbState.id);
+                                                            setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                            if (sameAsBilling) {
+                                                               setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                               clearErrors("shippingAddress.stateId");
+                                                            }
                                                          }
                                                       }
                                                    }
-                                                }
-                                             })}
-                                          />
-                                          <Form.Label htmlFor="gstNumber">
-                                             GSTIN No. {hasGst && <span className="text-danger">*</span>}
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors.gstNumber?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
+                                                })}
+                                             />
+                                             <Form.Label htmlFor="gstNumber">
+                                                GSTIN No. {hasGst ? <span className="text-danger">*</span> : <span className="text-muted small fst-italic ms-1">(Not Applicable)</span>}
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.gstNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
 
-                                    {/* Reference Documents (Clean Pill Dock) */}
-                                    <Col lg="12">
-                                       <div className="doc-pill-dock">
-                                          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                             <div className="d-flex align-items-center gap-2">
-                                                <div className="rounded d-flex align-items-center justify-content-center bg-primary text-white" style={{ width: '22px', height: '22px' }}>
-                                                   <FaPaperclip size={11} />
+                                       {/* Reference Documents (Clean Pill Dock) */}
+                                       <Col lg="12">
+                                          <div className="doc-pill-dock">
+                                             <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                <div className="d-flex align-items-center gap-2">
+                                                   <div className="rounded d-flex align-items-center justify-content-center bg-primary text-white" style={{ width: '22px', height: '22px' }}>
+                                                      <FaPaperclip size={11} />
+                                                   </div>
+                                                   <span className="fw-bold text-dark small" style={{ fontSize: '0.82rem' }}>Attach Reference Documents</span>
                                                 </div>
-                                                <span className="fw-bold text-dark small" style={{ fontSize: '0.82rem' }}>Attach Reference Documents</span>
+                                                <small className="text-muted" style={{ fontSize: '0.74rem' }}>
+                                                   Click any button to attach or manage documents
+                                                </small>
                                              </div>
-                                             <small className="text-muted" style={{ fontSize: '0.74rem' }}>
-                                                Click any button to attach or manage documents
-                                             </small>
+
+                                             {/* Interactive Quick-Action Document Pills */}
+                                             <div className="d-flex flex-wrap align-items-center gap-2">
+                                                {/* Challan Pill */}
+                                                <div
+                                                   className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
+                                                   onClick={() => {
+                                                      openModule('challan');
+                                                   }}
+                                                   title="Click to select or manage Challans"
+                                                >
+                                                   <FaFileAlt size={13} className={currentChallanIds.length > 0 ? "text-primary" : "text-secondary"} />
+                                                   <span>Challan</span>
+                                                   {currentChallanIds.length > 0 ? (
+                                                      <span className="badge bg-primary text-white pill-badge">
+                                                         {currentChallanIds.length} Linked
+                                                      </span>
+                                                   ) : (
+                                                      <span className="badge bg-light text-muted border pill-badge">
+                                                         + Add
+                                                      </span>
+                                                   )}
+                                                </div>
+
+                                                {/* Purchase Order Pill */}
+                                                <div
+                                                   className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
+                                                   onClick={() => {
+                                                      openModule('purchaseOrder');
+                                                   }}
+                                                   title="Click to select or manage Purchase Orders"
+                                                >
+                                                   <FaShoppingCart size={13} className={currentPoIds.length > 0 ? "text-success" : "text-secondary"} />
+                                                   <span>Purchase Order</span>
+                                                   {currentPoIds.length > 0 ? (
+                                                      <span className="badge bg-success text-white pill-badge">
+                                                         {currentPoIds.length} Linked
+                                                      </span>
+                                                   ) : (
+                                                      <span className="badge bg-light text-muted border pill-badge">
+                                                         + Add
+                                                      </span>
+                                                   )}
+                                                </div>
+
+                                                {/* E-Way Bill Pill */}
+                                                <div
+                                                   className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
+                                                   onClick={() => {
+                                                      openModule('ewayBill');
+                                                   }}
+                                                   title="Click to select or manage E-Way Bills"
+                                                >
+                                                   <FaTruck size={13} className={currentEwayBillIds.length > 0 ? "text-rose" : "text-secondary"} />
+                                                   <span>E-Way Bill</span>
+                                                   {currentEwayBillIds.length > 0 ? (
+                                                      <span className="badge bg-rose text-white pill-badge">
+                                                         {currentEwayBillIds.length} Linked
+                                                      </span>
+                                                   ) : (
+                                                      <span className="badge bg-light text-muted border pill-badge">
+                                                         + Add
+                                                      </span>
+                                                   )}
+                                                </div>
+                                             </div>
+
+                                             {/* Attached Documents Tag Tray */}
+                                             {(currentChallanIds.length > 0 || currentPoIds.length > 0 || currentEwayBillIds.length > 0) && (
+                                                <div className="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2 border-top border-light-subtle">
+                                                   <span className="text-muted fw-semibold me-1" style={{ fontSize: '0.74rem' }}>Linked:</span>
+                                                   {currentChallanIds.map(id => (
+                                                      <span key={`ch-${id}`} className="badge bg-white text-primary border border-primary-subtle document-badge-chip">
+                                                         <FaFileAlt size={10} /> {getDocumentLabel ? getDocumentLabel('challan', id) : 'Challan'}
+                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('challan', id); }} />
+                                                      </span>
+                                                   ))}
+                                                   {currentPoIds.map(id => (
+                                                      <span key={`po-${id}`} className="badge bg-white text-success border border-success-subtle document-badge-chip">
+                                                         <FaShoppingCart size={10} /> {getDocumentLabel ? getDocumentLabel('purchaseOrder', id) : 'Purchase Order'}
+                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('purchaseOrder', id); }} />
+                                                      </span>
+                                                   ))}
+                                                   {currentEwayBillIds.map(id => (
+                                                      <span key={`ewb-${id}`} className="badge bg-white text-rose border border-rose-subtle document-badge-chip">
+                                                         <FaTruck size={10} className="text-rose" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
+                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('ewayBill', id); }} />
+                                                      </span>
+                                                   ))}
+                                                </div>
+                                             )}
                                           </div>
+                                       </Col>
+                                    </Row>
+                                 </Col>
 
-                                          {/* Interactive Quick-Action Document Pills */}
-                                          <div className="d-flex flex-wrap align-items-center gap-2">
-                                             {/* Challan Pill */}
-                                             <div
-                                                className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
-                                                onClick={() => {
-                                                   openModule('challan');
-                                                }}
-                                                title="Click to select or manage Challans"
-                                             >
-                                                <FaFileAlt size={13} className={currentChallanIds.length > 0 ? "text-primary" : "text-secondary"} />
-                                                <span>Challan</span>
-                                                {currentChallanIds.length > 0 ? (
-                                                   <span className="badge bg-primary text-white pill-badge">
-                                                      {currentChallanIds.length} Linked
-                                                   </span>
-                                                ) : (
-                                                   <span className="badge bg-light text-muted border pill-badge">
-                                                      + Add
-                                                   </span>
-                                                )}
-                                             </div>
-
-                                             {/* Purchase Order Pill */}
-                                             <div
-                                                className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
-                                                onClick={() => {
-                                                   openModule('purchaseOrder');
-                                                }}
-                                                title="Click to select or manage Purchase Orders"
-                                             >
-                                                <FaShoppingCart size={13} className={currentPoIds.length > 0 ? "text-success" : "text-secondary"} />
-                                                <span>Purchase Order</span>
-                                                {currentPoIds.length > 0 ? (
-                                                   <span className="badge bg-success text-white pill-badge">
-                                                      {currentPoIds.length} Linked
-                                                   </span>
-                                                ) : (
-                                                   <span className="badge bg-light text-muted border pill-badge">
-                                                      + Add
-                                                   </span>
-                                                )}
-                                             </div>
-
-                                             {/* E-Way Bill Pill */}
-                                             <div
-                                                className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
-                                                onClick={() => {
-                                                   openModule('ewayBill');
-                                                }}
-                                                title="Click to select or manage E-Way Bills"
-                                             >
-                                                <FaTruck size={13} className={currentEwayBillIds.length > 0 ? "text-rose" : "text-secondary"} />
-                                                <span>E-Way Bill</span>
-                                                {currentEwayBillIds.length > 0 ? (
-                                                   <span className="badge bg-rose text-white pill-badge">
-                                                      {currentEwayBillIds.length} Linked
-                                                   </span>
-                                                ) : (
-                                                   <span className="badge bg-light text-muted border pill-badge">
-                                                      + Add
-                                                   </span>
-                                                )}
-                                             </div>
-                                          </div>
-
-                                          {/* Attached Documents Tag Tray */}
-                                          {(currentChallanIds.length > 0 || currentPoIds.length > 0 || currentEwayBillIds.length > 0) && (
-                                             <div className="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2 border-top border-light-subtle">
-                                                <span className="text-muted fw-semibold me-1" style={{ fontSize: '0.74rem' }}>Linked:</span>
-                                                {currentChallanIds.map(id => (
-                                                   <span key={`ch-${id}`} className="badge bg-white text-primary border border-primary-subtle document-badge-chip">
-                                                      <FaFileAlt size={10} /> {getDocumentLabel ? getDocumentLabel('challan', id) : 'Challan'}
-                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('challan', id); }} />
-                                                   </span>
-                                                ))}
-                                                {currentPoIds.map(id => (
-                                                   <span key={`po-${id}`} className="badge bg-white text-success border border-success-subtle document-badge-chip">
-                                                      <FaShoppingCart size={10} /> {getDocumentLabel ? getDocumentLabel('purchaseOrder', id) : 'Purchase Order'}
-                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('purchaseOrder', id); }} />
-                                                   </span>
-                                                ))}
-                                                {currentEwayBillIds.map(id => (
-                                                   <span key={`ewb-${id}`} className="badge bg-white text-rose border border-rose-subtle document-badge-chip">
-                                                      <FaTruck size={10} className="text-rose" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
-                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('ewayBill', id); }} />
-                                                   </span>
-                                                ))}
-                                             </div>
-                                          )}
-                                       </div>
-                                    </Col>
-                                 </Row>
-                              </Col>
-
-                              {/* Right: Dates, Payment Status, Payment Mode, Due Presets */}
-                              <Col lg="6">
-                                 <Row className="g-3">
-                                    <Col lg="6">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Label htmlFor="invoiceDate" className="fw-medium small mb-1">
-                                             Invoice Date <span className="text-danger">*</span>
-                                          </Form.Label>
+                                 {/* Right: Dates, Payment Status, Payment Mode, Due Presets */}
+                                 <Col lg="6">
+                                    <Row className="g-3">
+                                       {/* Row 1: Dates (42px) */}
+                                       <Col lg="6">
                                           <Controller
                                              name="invoiceDate"
                                              control={control}
                                              defaultValue={new Date()}
                                              render={({ field, fieldState: { error } }) => (
-                                                <div className="input-group">
-                                                   <span className="input-group-text bg-light">
-                                                      <FaRegCalendarAlt />
-                                                   </span>
+                                                <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
                                                    <Flatpickr
                                                       {...field}
+                                                      id="invoiceDate"
                                                       value={field.value}
                                                       onChange={(selectedDates) => {
                                                          const date = selectedDates[0] || null;
@@ -716,33 +736,30 @@ const InvoiceForm = ({ mode }) => {
                                                       }}
                                                       options={invoiceDateOptons}
                                                       className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
-                                                      placeholder="Select Invoice Date..."
+                                                      placeholder=" "
                                                    />
+                                                   <Form.Label htmlFor="invoiceDate">
+                                                      Invoice Date <span className="text-danger">*</span>
+                                                   </Form.Label>
+                                                   <FaRegCalendarAlt className="floating-date-icon" />
                                                    <Form.Control.Feedback type="invalid">
                                                       {errors.invoiceDate?.message}
                                                    </Form.Control.Feedback>
-                                                </div>
+                                                </Form.Floating>
                                              )}
                                           />
-                                       </Form.Group>
-                                    </Col>
+                                       </Col>
 
-                                    <Col lg="6">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Label htmlFor="dueDate" className="fw-medium small mb-1">
-                                             Due Date <span className="text-danger">*</span>
-                                          </Form.Label>
+                                       <Col lg="6">
                                           <Controller
                                              name="dueDate"
                                              control={control}
                                              defaultValue={new Date()}
                                              render={({ field, fieldState: { error } }) => (
-                                                <div className="input-group">
-                                                   <span className="input-group-text bg-light">
-                                                      <FaRegCalendarAlt />
-                                                   </span>
+                                                <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
                                                    <Flatpickr
                                                       {...field}
+                                                      id="dueDate"
                                                       value={field.value}
                                                       onChange={(selectedDates) => {
                                                          const date = selectedDates[0];
@@ -759,461 +776,517 @@ const InvoiceForm = ({ mode }) => {
                                                       }}
                                                       options={dueDateOptons}
                                                       className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
-                                                      placeholder="Select Due Date..."
+                                                      placeholder=" "
                                                    />
+                                                   <Form.Label htmlFor="dueDate">
+                                                      Due Date <span className="text-danger">*</span>
+                                                   </Form.Label>
+                                                   <FaRegCalendarAlt className="floating-date-icon" />
                                                    <Form.Control.Feedback type="invalid">
                                                       {errors.dueDate?.message}
                                                    </Form.Control.Feedback>
-                                                </div>
+                                                </Form.Floating>
                                              )}
                                           />
-                                       </Form.Group>
-                                    </Col>
+                                       </Col>
 
-                                    {/* Due Days & Preset Chips */}
-                                    <Col lg="12">
-                                       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 p-2 bg-light rounded border">
-                                          <div className="d-flex align-items-center gap-2">
-                                             <span className="fw-semibold small text-secondary">Due Days:</span>
-                                             <Form.Control
-                                                type="number"
-                                                id="dueDays"
-                                                min={0}
-                                                step={1}
-                                                style={{ width: '80px' }}
-                                                className="text-center form-control-sm"
-                                                isInvalid={!!errors.dueDays}
-                                                {...register("dueDays", {
-                                                   onChange: ({ target }) => {
-                                                      const days = Math.max(0, target.valueAsNumber || 0);
-                                                      setValue("dueDays", days, { shouldValidate: true });
-                                                      if (invoiceDate) {
-                                                         setValue(
-                                                            "dueDate",
-                                                            moment(invoiceDate).add(days, "days").toDate(),
-                                                            { shouldDirty: true, shouldValidate: true }
-                                                         );
-                                                      }
-                                                   },
+                                       {/* Row 2: Payment Status & Mode (42px) */}
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                name="paymentStatusId"
+                                                id="paymentStatusId"
+                                                isInvalid={!!errors.paymentStatusId}
+                                                {...register("paymentStatusId")}
+                                             >
+                                                <option value="">Select Status</option>
+                                                {paymentStatus.map((item) => (
+                                                   <option key={item.id} value={item.id}>{item.label}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="paymentStatusId">
+                                                Payment Status <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                name="paymentModeId"
+                                                id="paymentModeId"
+                                                isInvalid={!!errors.paymentModeId}
+                                                {...register("paymentModeId")}
+                                             >
+                                                <option value="">Select Mode</option>
+                                                {paymentMode.map((item) => (
+                                                   <option key={item.id} value={item.id}>{item.label}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="paymentModeId">
+                                                Payment Mode <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       {/* Row 3: Due Terms & Quick Presets (Matches height with Document Dock on Left) */}
+                                       <Col lg="12">
+                                          <div className="due-terms-container">
+                                             <div className="due-input-group">
+                                                <span className="terms-label">Payment Terms:</span>
+                                                <Form.Control
+                                                   type="number"
+                                                   id="dueDays"
+                                                   min={0}
+                                                   step={1}
+                                                   className="due-number-input"
+                                                   isInvalid={!!errors.dueDays}
+                                                   {...register("dueDays", {
+                                                      onChange: ({ target }) => {
+                                                         const days = Math.max(0, target.valueAsNumber || 0);
+                                                         setValue("dueDays", days, { shouldValidate: true });
+                                                         if (invoiceDate) {
+                                                            setValue(
+                                                               "dueDate",
+                                                               moment(invoiceDate).add(days, "days").toDate(),
+                                                               { shouldDirty: true, shouldValidate: true }
+                                                            );
+                                                         }
+                                                      },
+                                                   })}
+                                                />
+                                                <span className="days-unit">Days</span>
+                                             </div>
+
+                                             {/* Presets */}
+                                             <div className="due-chips-wrap">
+                                                <span className="chip-label">Quick:</span>
+                                                {DUE_PRESET_DAYS.map((days) => {
+                                                   const isActive = Number(dueDays) === days;
+                                                   return (
+                                                      <span
+                                                         key={days}
+                                                         className={`badge due-preset-badge ${isActive ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
+                                                         onClick={() => handleDuePresetClick(days)}
+                                                      >
+                                                         {days === 0 ? "Immediate" : `${days}d`}
+                                                      </span>
+                                                   );
                                                 })}
-                                             />
+                                             </div>
                                           </div>
-
-                                          {/* Presets */}
-                                          <div className="d-flex flex-wrap gap-1">
-                                             {DUE_PRESET_DAYS.map((days) => {
-                                                const isActive = Number(dueDays) === days;
-                                                return (
-                                                   <span
-                                                      key={days}
-                                                      className={`badge due-preset-badge ${isActive ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
-                                                      onClick={() => handleDuePresetClick(days)}
-                                                   >
-                                                      {days === 0 ? "Immediate" : `${days}d`}
-                                                   </span>
-                                                );
-                                             })}
-                                          </div>
-                                       </div>
-                                    </Col>
-
-                                    <Col lg="6">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Label htmlFor="paymentStatusId" className="fw-medium small mb-1">
-                                             Payment Status <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Select
-                                             name="paymentStatusId"
-                                             id="paymentStatusId"
-                                             isInvalid={!!errors.paymentStatusId}
-                                             {...register("paymentStatusId")}
-                                          >
-                                             <option value="">-- Select Status --</option>
-                                             {paymentStatus.map((item) => (
-                                                <option key={item.id} value={item.id}>{item.label}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
-
-                                    <Col lg="6">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Label htmlFor="paymentModeId" className="fw-medium small mb-1">
-                                             Payment Mode <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Select
-                                             name="paymentModeId"
-                                             id="paymentModeId"
-                                             isInvalid={!!errors.paymentModeId}
-                                             {...register("paymentModeId")}
-                                          >
-                                             <option value="">-- Select Mode --</option>
-                                             {paymentMode.map((item) => (
-                                                <option key={item.id} value={item.id}>{item.label}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
-                                 </Row>
-                              </Col>
+                                       </Col>
+                                    </Row>
+                                 </Col>
+                              </div>
                            </div>
 
-                           <hr className="my-4 border-light-subtle" />
-
-                           {/* SECTION 2: BILLING & SHIPPING ADDRESSES (WITH PROPER MARGINS & OVERLAP FIX) */}
-                           {/* Hidden snapshot inputs to ensure full registration with react-hook-form */}
-                           <input type="hidden" {...register("partyId")} />
-                           <input type="hidden" {...register("branchId")} />
-                           <input type="hidden" {...register("billingAddress.branchName")} />
-                           <input type="hidden" {...register("billingAddress.gstin")} />
-                           <input type="hidden" {...register("shippingAddress.branchName")} />
-                           <input type="hidden" {...register("shippingAddress.gstin")} />
-
-                           <Row className="g-4">
-                              {/* Billing Address */}
-                              <Col lg="6">
-                                 <div className="address-section-header flex-wrap gap-2">
-                                    <div className="d-flex align-items-center gap-2">
-                                       <FaMapMarkerAlt className="text-primary" />
-                                       <h6 className="fw-bold text-dark mb-0">Billing Address</h6>
+                           {/* SECTION 2: BILLING & SHIPPING ADDRESSES */}
+                           <div className="form-section-card">
+                              <div className="form-section-header">
+                                 <div className="section-title-wrap">
+                                    <div className="section-icon-badge indigo">
+                                       <FaMapMarkerAlt />
                                     </div>
-                                    <span className="badge bg-soft-primary text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style={{ fontSize: '0.72rem' }}>
-                                       Buyer Location
-                                    </span>
+                                    <div>
+                                       <h6 className="section-title">Address & Delivery Logistics</h6>
+                                       <p className="section-subtitle">Billing address and delivery facility specifications</p>
+                                    </div>
                                  </div>
+                              </div>
+                              {/* Hidden snapshot inputs to ensure full registration with react-hook-form */}
+                              <input type="hidden" {...register("partyId")} />
+                              <input type="hidden" {...register("branchId")} />
+                              <input type="hidden" {...register("billingAddress.branchName")} />
+                              <input type="hidden" {...register("billingAddress.gstin")} />
+                              <input type="hidden" {...register("shippingAddress.branchName")} />
+                              <input type="hidden" {...register("shippingAddress.gstin")} />
 
-                                 {/* Symmetrical Billing Facility Selector */}
-                                 <div className="facility-select-card active-billing">
-                                    <div className="d-flex align-items-center gap-2 text-truncate">
-                                       <FaBuilding className="text-primary flex-shrink-0" size={13} />
-                                       <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Billing Facility:</span>
-                                    </div>
-                                    {partyBranches && partyBranches.length > 1 ? (
-                                       <Form.Select
-                                          size="sm"
-                                          value={selectedBillingBranchId || ''}
-                                          onChange={(e) => handleSelectBillingBranch(Number(e.target.value))}
-                                          className="facility-select"
-                                       >
-                                          {partyBranches.map((branch) => (
-                                             <option key={branch.id} value={branch.id}>
-                                                {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
-                                             </option>
-                                          ))}
-                                       </Form.Select>
-                                    ) : partyBranches && partyBranches.length === 1 ? (
-                                       <span className="fw-semibold text-dark small text-truncate d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
-                                          {partyBranches[0]?.branchName || 'Head Office'}
-                                          {partyBranches[0]?.isDefault && <span className="badge bg-soft-primary text-primary rounded-pill px-1.5 py-0.5 ms-1" style={{ fontSize: '0.68rem' }}>Default ★</span>}
-                                       </span>
-                                    ) : (
-                                       <span className="text-muted small fst-italic" style={{ fontSize: '0.78rem' }}>
-                                          {customerName ? 'Primary Location' : 'Select Customer'}
-                                       </span>
-                                    )}
-                                 </div>
-
-                                 <Row className="g-3">
-                                    <Col lg="12">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             as="textarea"
-                                             placeholder="Billing Address"
-                                             style={{ height: '95px' }}
-                                             isInvalid={!!errors?.billingAddress?.addressLine1}
-                                             {...register("billingAddress.addressLine1")}
-                                          />
-                                          <Form.Label htmlFor="billingAddress.addressLine1">
-                                             Billing Address <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.addressLine1?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
-
-                                    <Col lg="6">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             placeholder="Phone, Landline or 1800 No."
-                                             isInvalid={!!errors?.billingAddress?.phoneNumber}
-                                             maxLength={15}
-                                             {...register("billingAddress.phoneNumber", {
-                                                onChange: (e) => {
-                                                   const onlyNumbers = e.target.value.replace(/\D/g, "");
-                                                   setValue("billingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
-                                                }
-                                             })}
-                                          />
-                                          <Form.Label htmlFor="billingAddress.phoneNumber">
-                                             Phone Number
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.phoneNumber?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
-
-                                    <Col lg="6">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="email"
-                                             placeholder="Billing Email"
-                                             isInvalid={!!errors?.billingAddress?.email}
-                                             {...register("billingAddress.email")}
-                                          />
-                                          <Form.Label htmlFor="billingAddress.email">Email Address</Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.email?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
-
-                                    <Col lg="4">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Select
-                                             isInvalid={!!errors?.billingAddress?.stateId}
-                                             {...register("billingAddress.stateId")}
-                                          >
-                                             <option value="">-- State --</option>
-                                             {billingStates.map((state) => (
-                                                <option key={state.id} value={state.id}>{state.name}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.stateId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
-
-                                    <Col lg="4">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Select
-                                             disabled={!selectedBillingState || isFetchingBillingCities}
-                                             isInvalid={!!errors?.billingAddress?.cityId}
-                                             {...register("billingAddress.cityId")}
-                                          >
-                                             <option value="">{isFetchingBillingCities ? "Loading cities..." : "-- City --"}</option>
-                                             {billingCities.map((city) => (
-                                                <option key={city.id} value={city.id}>{city.name}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.cityId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
-
-                                    <Col lg="4">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             placeholder="Pincode"
-                                             isInvalid={!!errors?.billingAddress?.pincode}
-                                             maxLength={6}
-                                             {...register("billingAddress.pincode")}
-                                          />
-                                          <Form.Label htmlFor="billingAddress.pincode">
-                                             Pincode <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.billingAddress?.pincode?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
-                                 </Row>
-                              </Col>
-
-                              {/* Shipping Address */}
-                              <Col lg="6">
-                                 <div className="address-section-header flex-wrap gap-2">
-                                    <div className="d-flex align-items-center gap-2">
-                                       <FaTruck className="text-primary" />
-                                       <h6 className="fw-bold text-dark mb-0">Shipping Address</h6>
-                                    </div>
-                                    {/* Modern Segmented Pill Selector when party has branches, otherwise fallback to simple Same-As-Billing toggle */}
-                                    {partyBranches && partyBranches.length > 0 ? (
-                                       <div className="ship-mode-pills">
-                                          <button
-                                             type="button"
-                                             className={`ship-mode-pill ${shippingMode === 'SAME_AS_BILLING' ? 'active-same' : ''}`}
-                                             onClick={() => handleShippingModeChange('SAME_AS_BILLING')}
-                                          >
-                                             Same as Billing
-                                          </button>
-                                          {partyBranches.length > 1 && (
-                                             <button
-                                                type="button"
-                                                className={`ship-mode-pill ${shippingMode === 'OTHER_BRANCH' ? 'active-branch' : ''}`}
-                                                onClick={() => handleShippingModeChange('OTHER_BRANCH')}
-                                             >
-                                                Other Branch
-                                             </button>
-                                          )}
-                                          <button
-                                             type="button"
-                                             className={`ship-mode-pill ${shippingMode === 'CUSTOM_SITE' ? 'active-custom' : ''}`}
-                                             onClick={() => handleShippingModeChange('CUSTOM_SITE')}
-                                          >
-                                             Custom Site
-                                          </button>
+                              <Row className="g-4">
+                                 {/* Billing Address */}
+                                 <Col lg="6">
+                                    <div className="address-section-header flex-wrap gap-2">
+                                       <div className="d-flex align-items-center gap-2">
+                                          <FaMapMarkerAlt className="text-primary" />
+                                          <h6 className="fw-bold text-dark mb-0">Billing Address</h6>
                                        </div>
-                                    ) : (
-                                       <FormCheck
-                                          type="checkbox"
-                                          id="sameAsBilling"
-                                          label="Same as Billing"
-                                          className="small fw-semibold text-secondary cursor-pointer mb-0"
-                                          style={{ fontSize: '0.82rem' }}
-                                          checked={sameAsBilling}
-                                          onChange={(e) => handleSameAsBillingChange(e.target.checked)}
-                                       />
-                                    )}
-                                 </div>
+                                       <span className="badge bg-soft-primary text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style={{ fontSize: '0.72rem' }}>
+                                          Buyer Location
+                                       </span>
+                                    </div>
 
-                                 {/* Symmetrical Shipping Facility Bar */}
-                                 <div className="facility-select-card active-shipping">
-                                    {shippingMode === 'SAME_AS_BILLING' ? (
-                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
-                                          <FaCheckCircle className="text-primary flex-shrink-0" size={13} />
-                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
-                                             Deliver to: <strong className="text-dark">{billingBranchName || partyBranches?.find(b => Number(b.id) === Number(selectedBillingBranchId))?.branchName || 'Billing Facility'}</strong>
-                                          </span>
+                                    {/* Symmetrical Billing Facility Selector */}
+                                    <div className="facility-select-card active-billing">
+                                       <div className="d-flex align-items-center gap-2 text-truncate">
+                                          <FaBuilding className="text-primary flex-shrink-0" size={13} />
+                                          <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Billing Facility:</span>
                                        </div>
-                                    ) : shippingMode === 'OTHER_BRANCH' ? (
-                                       <>
-                                          <div className="d-flex align-items-center gap-2 text-truncate">
-                                             <FaBuilding className="text-success flex-shrink-0" size={13} />
-                                             <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Ship To Branch:</span>
-                                          </div>
+                                       {partyBranches && partyBranches.length > 1 ? (
                                           <Form.Select
                                              size="sm"
-                                             value={selectedShippingBranchId || ''}
-                                             onChange={(e) => handleSelectShippingBranch(Number(e.target.value))}
-                                             className="facility-select border-success-subtle"
+                                             value={selectedBillingBranchId || ''}
+                                             onChange={(e) => handleSelectBillingBranch(Number(e.target.value))}
+                                             className="facility-select"
                                           >
-                                             <option value="" disabled>-- Select Shipping Branch --</option>
                                              {partyBranches.map((branch) => (
                                                 <option key={branch.id} value={branch.id}>
                                                    {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
                                                 </option>
                                              ))}
                                           </Form.Select>
-                                       </>
-                                    ) : (
-                                       <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
-                                          <FaMapMarkerAlt className="text-secondary flex-shrink-0" size={13} />
-                                          <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
-                                             Custom delivery site / consignee address specified below
+                                       ) : partyBranches && partyBranches.length === 1 ? (
+                                          <span className="fw-semibold text-dark small text-truncate d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                             {partyBranches[0]?.branchName || 'Head Office'}
+                                             {partyBranches[0]?.isDefault && <span className="badge bg-soft-primary text-primary rounded-pill px-1.5 py-0.5 ms-1" style={{ fontSize: '0.68rem' }}>Default ★</span>}
                                           </span>
+                                       ) : (
+                                          <span className="text-muted small fst-italic" style={{ fontSize: '0.78rem' }}>
+                                             {customerName ? 'Primary Location' : 'Select Customer'}
+                                          </span>
+                                       )}
+                                    </div>
+
+                                    <Row className="g-3">
+                                       <Col lg="12">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                as="textarea"
+                                                placeholder="Billing Address"
+                                                style={{ height: '95px' }}
+                                                isInvalid={!!errors?.billingAddress?.addressLine1}
+                                                {...register("billingAddress.addressLine1")}
+                                             />
+                                             <Form.Label htmlFor="billingAddress.addressLine1">
+                                                Billing Address <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.addressLine1?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Phone, Landline or 1800 No."
+                                                isInvalid={!!errors?.billingAddress?.phoneNumber}
+                                                maxLength={15}
+                                                {...register("billingAddress.phoneNumber", {
+                                                   onChange: (e) => {
+                                                      const onlyNumbers = e.target.value.replace(/\D/g, "");
+                                                      setValue("billingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
+                                                   }
+                                                })}
+                                             />
+                                             <Form.Label htmlFor="billingAddress.phoneNumber">
+                                                Phone Number
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.phoneNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="email"
+                                                placeholder="Billing Email"
+                                                isInvalid={!!errors?.billingAddress?.email}
+                                                {...register("billingAddress.email")}
+                                             />
+                                             <Form.Label htmlFor="billingAddress.email">Email Address</Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.email?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                id="billingStateId"
+                                                isInvalid={!!errors?.billingAddress?.stateId}
+                                                {...register("billingAddress.stateId")}
+                                             >
+                                                <option value="">Select State</option>
+                                                {billingStates.map((state) => (
+                                                   <option key={state.id} value={state.id}>{state.name}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="billingStateId">
+                                                State <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.stateId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                id="billingCityId"
+                                                disabled={!selectedBillingState || isFetchingBillingCities}
+                                                isInvalid={!!errors?.billingAddress?.cityId}
+                                                {...register("billingAddress.cityId")}
+                                             >
+                                                <option value="">{isFetchingBillingCities ? "Loading cities..." : "Select City"}</option>
+                                                {billingCities.map((city) => (
+                                                   <option key={city.id} value={city.id}>{city.name}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="billingCityId">
+                                                City <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.cityId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Pincode"
+                                                isInvalid={!!errors?.billingAddress?.pincode}
+                                                maxLength={6}
+                                                {...register("billingAddress.pincode")}
+                                             />
+                                             <Form.Label htmlFor="billingAddress.pincode">
+                                                Pincode <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.billingAddress?.pincode?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                    </Row>
+                                 </Col>
+
+                                 {/* Shipping Address */}
+                                 <Col lg="6">
+                                    <div className="address-section-header flex-wrap gap-2">
+                                       <div className="d-flex align-items-center gap-2">
+                                          <FaTruck className="text-primary" />
+                                          <h6 className="fw-bold text-dark mb-0">Shipping Address</h6>
                                        </div>
-                                    )}
-                                 </div>
-
-                                 <Row className="g-3">
-                                    <Col lg="12">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             as="textarea"
-                                             placeholder="Shipping Address"
-                                             style={{ height: '95px' }}
-                                             disabled={sameAsBilling}
-                                             isInvalid={!!errors?.shippingAddress?.addressLine1}
-                                             {...register("shippingAddress.addressLine1")}
+                                       {/* Modern Segmented Pill Selector when party has branches, otherwise fallback to simple Same-As-Billing toggle */}
+                                       {partyBranches && partyBranches.length > 0 ? (
+                                          <div className="ship-mode-pills">
+                                             <button
+                                                type="button"
+                                                className={`ship-mode-pill ${shippingMode === 'SAME_AS_BILLING' ? 'active-same' : ''}`}
+                                                onClick={() => handleShippingModeChange('SAME_AS_BILLING')}
+                                             >
+                                                Same as Billing
+                                             </button>
+                                             {partyBranches.length > 1 && (
+                                                <button
+                                                   type="button"
+                                                   className={`ship-mode-pill ${shippingMode === 'OTHER_BRANCH' ? 'active-branch' : ''}`}
+                                                   onClick={() => handleShippingModeChange('OTHER_BRANCH')}
+                                                >
+                                                   Other Branch
+                                                </button>
+                                             )}
+                                             <button
+                                                type="button"
+                                                className={`ship-mode-pill ${shippingMode === 'CUSTOM_SITE' ? 'active-custom' : ''}`}
+                                                onClick={() => handleShippingModeChange('CUSTOM_SITE')}
+                                             >
+                                                Custom Site
+                                             </button>
+                                          </div>
+                                       ) : (
+                                          <FormCheck
+                                             type="checkbox"
+                                             id="sameAsBilling"
+                                             label="Same as Billing"
+                                             className="small fw-semibold text-secondary cursor-pointer mb-0"
+                                             style={{ fontSize: '0.82rem' }}
+                                             checked={sameAsBilling}
+                                             onChange={(e) => handleSameAsBillingChange(e.target.checked)}
                                           />
-                                          <Form.Label htmlFor="shippingAddress.addressLine1">
-                                             Shipping Address <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.addressLine1?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
+                                       )}
+                                    </div>
 
-                                    <Col lg="6">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             placeholder="Shipping Phone Number"
-                                             disabled={sameAsBilling}
-                                             isInvalid={!!errors?.shippingAddress?.phoneNumber}
-                                             maxLength={15}
-                                             {...register("shippingAddress.phoneNumber", {
-                                                onChange: (e) => {
-                                                   const onlyNumbers = e.target.value.replace(/\D/g, "");
-                                                   setValue("shippingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
-                                                }
-                                             })}
-                                          />
-                                          <Form.Label htmlFor="shippingAddress.phoneNumber">
-                                             Phone Number
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.phoneNumber?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
+                                    {/* Symmetrical Shipping Facility Bar */}
+                                    <div className="facility-select-card active-shipping">
+                                       {shippingMode === 'SAME_AS_BILLING' ? (
+                                          <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                             <FaCheckCircle className="text-primary flex-shrink-0" size={13} />
+                                             <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                                Deliver to: <strong className="text-dark">{billingBranchName || partyBranches?.find(b => Number(b.id) === Number(selectedBillingBranchId))?.branchName || 'Billing Facility'}</strong>
+                                             </span>
+                                          </div>
+                                       ) : shippingMode === 'OTHER_BRANCH' ? (
+                                          <>
+                                             <div className="d-flex align-items-center gap-2 text-truncate">
+                                                <FaBuilding className="text-success flex-shrink-0" size={13} />
+                                                <span className="small text-secondary fw-semibold text-nowrap" style={{ fontSize: '0.78rem' }}>Ship To Branch:</span>
+                                             </div>
+                                             <Form.Select
+                                                size="sm"
+                                                value={selectedShippingBranchId || ''}
+                                                onChange={(e) => handleSelectShippingBranch(Number(e.target.value))}
+                                                className="facility-select border-success-subtle"
+                                             >
+                                                <option value="" disabled>-- Select Shipping Branch --</option>
+                                                {partyBranches.map((branch) => (
+                                                   <option key={branch.id} value={branch.id}>
+                                                      {branch.branchName || 'Branch'} {branch.isDefault ? '★ (Default)' : ''}
+                                                   </option>
+                                                ))}
+                                             </Form.Select>
+                                          </>
+                                       ) : (
+                                          <div className="d-flex align-items-center gap-2 w-100 py-0.5 text-truncate">
+                                             <FaMapMarkerAlt className="text-secondary flex-shrink-0" size={13} />
+                                             <span className="small text-secondary text-truncate" style={{ fontSize: '0.78rem' }}>
+                                                Custom delivery site / consignee address specified below
+                                             </span>
+                                          </div>
+                                       )}
+                                    </div>
 
-                                    <Col lg="6">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="email"
-                                             placeholder="Shipping Email"
-                                             disabled={sameAsBilling}
-                                             isInvalid={!!errors?.shippingAddress?.email}
-                                             {...register("shippingAddress.email")}
-                                          />
-                                          <Form.Label htmlFor="shippingAddress.email">Email Address</Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.email?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
 
-                                    <Col lg="4">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Select
-                                             disabled={sameAsBilling}
-                                             isInvalid={!!errors?.shippingAddress?.stateId}
-                                             {...register("shippingAddress.stateId")}
-                                          >
-                                             <option value="">-- State --</option>
-                                             {shippingStates.map((state) => (
-                                                <option key={state.id} value={state.id}>{state.name}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.stateId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
+                                    <Row className="g-3">
+                                       <Col lg="12">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                as="textarea"
+                                                placeholder="Shipping Address"
+                                                style={{ height: '95px' }}
+                                                disabled={sameAsBilling}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.addressLine1}
+                                                {...register("shippingAddress.addressLine1")}
+                                             />
+                                             <Form.Label htmlFor="shippingAddress.addressLine1">
+                                                Shipping Address <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.addressLine1?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
 
-                                    <Col lg="4">
-                                       <Form.Group className="form-group mb-0">
-                                          <Form.Select
-                                             disabled={sameAsBilling || !selectedShippingState || isFetchingShippingCities}
-                                             isInvalid={!!errors?.shippingAddress?.cityId}
-                                             {...register("shippingAddress.cityId")}
-                                          >
-                                             <option value="">{isFetchingShippingCities ? "Loading..." : "-- City --"}</option>
-                                             {shippingCities.map((city) => (
-                                                <option key={city.id} value={city.id}>{city.name}</option>
-                                             ))}
-                                          </Form.Select>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.cityId?.message}</Form.Control.Feedback>
-                                       </Form.Group>
-                                    </Col>
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Shipping Phone Number"
+                                                disabled={sameAsBilling}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.phoneNumber}
+                                                maxLength={15}
+                                                {...register("shippingAddress.phoneNumber", {
+                                                   onChange: (e) => {
+                                                      const onlyNumbers = e.target.value.replace(/\D/g, "");
+                                                      setValue("shippingAddress.phoneNumber", onlyNumbers, { shouldValidate: true });
+                                                   }
+                                                })}
+                                             />
+                                             <Form.Label htmlFor="shippingAddress.phoneNumber">
+                                                Phone Number
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.phoneNumber?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
 
-                                    <Col lg="4">
-                                       <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                          <Form.Control
-                                             type="text"
-                                             placeholder="Pincode"
-                                             disabled={sameAsBilling}
-                                             isInvalid={!!errors?.shippingAddress?.pincode}
-                                             maxLength={6}
-                                             {...register("shippingAddress.pincode")}
-                                          />
-                                          <Form.Label htmlFor="shippingAddress.pincode">
-                                             Pincode <span className="text-danger">*</span>
-                                          </Form.Label>
-                                          <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.pincode?.message}</Form.Control.Feedback>
-                                       </Form.Floating>
-                                    </Col>
-                                 </Row>
-                              </Col>
-                           </Row>
+                                       <Col lg="6">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="email"
+                                                placeholder="Shipping Email"
+                                                disabled={sameAsBilling}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.email}
+                                                {...register("shippingAddress.email")}
+                                             />
+                                             <Form.Label htmlFor="shippingAddress.email">Email Address</Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.email?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
 
-                           <hr className="my-4 border-light-subtle" />
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                id="shippingStateId"
+                                                disabled={sameAsBilling}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.stateId}
+                                                {...register("shippingAddress.stateId")}
+                                             >
+                                                <option value="">Select State</option>
+                                                {shippingStates.map((state) => (
+                                                   <option key={state.id} value={state.id}>{state.name}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="shippingStateId">
+                                                State <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.stateId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Select
+                                                id="shippingCityId"
+                                                disabled={sameAsBilling || !selectedShippingState || isFetchingShippingCities}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.cityId}
+                                                {...register("shippingAddress.cityId")}
+                                             >
+                                                <option value="">{isFetchingShippingCities ? "Loading..." : "Select City"}</option>
+                                                {shippingCities.map((city) => (
+                                                   <option key={city.id} value={city.id}>{city.name}</option>
+                                                ))}
+                                             </Form.Select>
+                                             <Form.Label htmlFor="shippingCityId">
+                                                City <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.cityId?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+
+                                       <Col lg="4">
+                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                             <Form.Control
+                                                type="text"
+                                                placeholder="Pincode"
+                                                disabled={sameAsBilling}
+                                                className={sameAsBilling ? "form-control-readonly-modern" : ""}
+                                                isInvalid={!!errors?.shippingAddress?.pincode}
+                                                maxLength={6}
+                                                {...register("shippingAddress.pincode")}
+                                             />
+                                             <Form.Label htmlFor="shippingAddress.pincode">
+                                                Pincode <span className="text-danger">*</span>
+                                             </Form.Label>
+                                             <Form.Control.Feedback type="invalid">{errors?.shippingAddress?.pincode?.message}</Form.Control.Feedback>
+                                          </Form.Floating>
+                                       </Col>
+                                    </Row>
+                                 </Col>
+                              </Row>
+                           </div>
 
                            {/* SECTION 3: LINE ITEMS TABLE */}
-                           <div className="mb-4">
-                              <div className="d-flex justify-content-between align-items-center mb-2">
-                                 <h5 className="fw-bold text-dark mb-0">Invoice Line Items</h5>
-                                 <small className="text-muted">Rates and taxes calculate automatically</small>
+                           <div className="form-section-card">
+                              <div className="form-section-header">
+                                 <div className="section-title-wrap">
+                                    <div className="section-icon-badge success">
+                                       <FaShoppingCart />
+                                    </div>
+                                    <div>
+                                       <div className="d-flex align-items-center gap-2">
+                                          <h6 className="section-title mb-0">Invoice Line Items</h6>
+                                          {isInterState ? (
+                                             <Badge bg="info-subtle" text="info" className="border border-info-subtle font-monospace px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
+                                                Inter-State (IGST)
+                                             </Badge>
+                                          ) : (
+                                             <Badge bg="primary-subtle" text="primary" className="border border-primary-subtle font-monospace px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
+                                                Intra-State (CGST + SGST)
+                                             </Badge>
+                                          )}
+                                       </div>
+                                       <p className="section-subtitle">Line items, quantities, rates, and taxes calculate automatically</p>
+                                    </div>
+                                 </div>
                               </div>
                               <InvoiceItemsTable
                                  productUnit={productUnit}
@@ -1380,21 +1453,21 @@ const InvoiceForm = ({ mode }) => {
                                     {/* Sub Total */}
                                     <div className="summary-row">
                                        <span className="label">Sub Total</span>
-                                       <span className="value">₹ {Number(watchedSubTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                       <span className="value">₹ {Number(watchedSubTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
                                     {/* Discount */}
                                     {Number(watchedDiscountAmount || 0) > 0 && (
                                        <div className="summary-row text-danger">
                                           <span className="label">Discount</span>
-                                          <span className="value">- ₹ {Number(watchedDiscountAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                          <span className="value">- ₹ {Number(watchedDiscountAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                        </div>
                                     )}
 
                                     {/* Taxable Amount */}
                                     <div className="summary-row highlight">
                                        <span className="label">Taxable Amount</span>
-                                       <span className="value">₹ {Number(watchedTaxableAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                       <span className="value">₹ {Number(watchedTaxableAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
                                     {/* Taxes: Intra vs Inter */}
@@ -1402,17 +1475,17 @@ const InvoiceForm = ({ mode }) => {
                                        <>
                                           <div className="summary-row">
                                              <span className="label">CGST</span>
-                                             <span className="value">+ ₹ {Number(watchedCgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                             <span className="value">+ ₹ {Number(watchedCgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                           </div>
                                           <div className="summary-row">
                                              <span className="label">SGST</span>
-                                             <span className="value">+ ₹ {Number(watchedSgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                             <span className="value">+ ₹ {Number(watchedSgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                           </div>
                                        </>
                                     ) : (
                                        <div className="summary-row">
                                           <span className="label">IGST</span>
-                                          <span className="value">+ ₹ {Number(watchedIgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                          <span className="value">+ ₹ {Number(watchedIgst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                        </div>
                                     )}
 
@@ -1420,7 +1493,7 @@ const InvoiceForm = ({ mode }) => {
                                     {Number(watchedOther || 0) > 0 && (
                                        <div className="summary-row">
                                           <span className="label">Other Charges</span>
-                                          <span className="value">+ ₹ {Number(watchedOther || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                          <span className="value">+ ₹ {Number(watchedOther || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                        </div>
                                     )}
 
@@ -1429,7 +1502,7 @@ const InvoiceForm = ({ mode }) => {
                                        <span className="label">Round Off</span>
                                        <span className="value">
                                           {Number(watchedRoundOff || 0) >= 0 ? '+ ' : '- '}
-                                          ₹ {Math.abs(Number(watchedRoundOff || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                          ₹ {Math.abs(Number(watchedRoundOff || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                        </span>
                                     </div>
 

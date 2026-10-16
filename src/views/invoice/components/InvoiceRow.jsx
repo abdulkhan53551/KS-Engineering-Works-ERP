@@ -17,6 +17,22 @@ const InvoiceRow = ({
     const { register, setValue, control, formState: { errors } } = useFormContext();
     const descriptionValue = useWatch({ control, name: `items.${index}.description` });
 
+    // Watch calculated fields for live formatted Indian currency display
+    const watchedSubTotal = useWatch({ control, name: `items.${index}.subTotal` });
+    const watchedTaxableAmount = useWatch({ control, name: `items.${index}.taxableAmount` });
+    const watchedCgst = useWatch({ control, name: `items.${index}.cgst` });
+    const watchedSgst = useWatch({ control, name: `items.${index}.sgst` });
+    const watchedIgst = useWatch({ control, name: `items.${index}.igst` });
+    const watchedTotal = useWatch({ control, name: `items.${index}.total` });
+
+    const formatIndianNumber = (val) => {
+        if (val === undefined || val === null || val === "" || isNaN(Number(val))) return "0.00";
+        return Number(val).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
     const isSingleRow = totalRows <= 1;
 
     const handleSelectProduct = (product) => {
@@ -37,16 +53,16 @@ const InvoiceRow = ({
     };
 
     return (
-        <tr className="align-middle">
+        <tr className="align-middle invoice-table-row">
             {/* Index # Column */}
-            <td className="text-center fw-semibold text-muted" style={{ width: '40px', minWidth: '40px', fontSize: '0.85rem' }}>
-                <span className="badge bg-light text-dark border px-2 py-1">
+            <td className="text-center" style={{ width: '42px', minWidth: '42px' }}>
+                <span className="line-item-index" title={`Line Item #${index + 1}`}>
                     {index + 1}
                 </span>
             </td>
 
             {/* Description with Product Autocomplete */}
-            <td style={{ minWidth: '280px' }}>
+            <td style={{ minWidth: '260px' }}>
                 <ProductAutocompleteInput
                     value={descriptionValue}
                     onChange={(e) => {
@@ -70,10 +86,12 @@ const InvoiceRow = ({
             </td>
 
             {/* HSN/SAC */}
-            <td style={{ width: '130px', minWidth: '120px' }}>
+            <td style={{ width: '105px', minWidth: '95px' }}>
                 <Form.Control
+                    size="sm"
                     type="text"
                     placeholder="HSN/SAC"
+                    className="text-center font-monospace"
                     onFocus={(e) => e.target.select()}
                     onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.hsnSacCode}
@@ -87,11 +105,12 @@ const InvoiceRow = ({
             </td>
 
             {/* Quantity */}
-            <td style={{ width: '130px', minWidth: '120px' }}>
+            <td style={{ width: '90px', minWidth: '80px' }}>
                 <Form.Control
+                    size="sm"
                     type="text"
                     placeholder="Qty"
-                    className="text-end"
+                    className="text-end font-monospace"
                     onFocus={(e) => e.target.select()}
                     onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.qty}
@@ -101,9 +120,11 @@ const InvoiceRow = ({
             </td>
 
             {/* Unit */}
-            <td style={{ width: '150px', minWidth: '140px' }}>
+            <td style={{ width: '110px', minWidth: '95px' }}>
                 <Form.Select
+                    size="sm"
                     name="itemUnitId"
+                    className="text-center"
                     isInvalid={!!errors.items?.[index]?.itemUnitId}
                     {...register(`items.${index}.itemUnitId`)}
                 >
@@ -115,12 +136,13 @@ const InvoiceRow = ({
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.itemUnitId?.message}</Form.Control.Feedback>
             </td>
 
-            {/* Rate */}
-            <td style={{ width: '160px', minWidth: '150px' }}>
+            {/* Rate (₹) */}
+            <td style={{ width: '135px', minWidth: '120px' }}>
                 <Form.Control
+                    size="sm"
                     type="text"
-                    placeholder="Rate"
-                    className="text-end"
+                    placeholder="0.00"
+                    className="text-end font-monospace"
                     onFocus={(e) => e.target.select()}
                     onClick={(e) => e.target.select()}
                     isInvalid={!!errors.items?.[index]?.rate}
@@ -136,23 +158,30 @@ const InvoiceRow = ({
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.rate?.message}</Form.Control.Feedback>
             </td>
 
-            {/* Sub Total */}
-            <td style={{ width: '150px', minWidth: '140px' }}>
+            {/* Sub Total (Formatted with Indian separator) */}
+            <td style={{ width: '135px', minWidth: '125px' }} title={`Sub Total: ₹ ${formatIndianNumber(watchedSubTotal)}`}>
+                <input type="hidden" {...register(`items.${index}.subTotal`)} />
                 <Form.Control
+                    size="sm"
                     type="text"
-                    placeholder="Sub Total"
-                    className="text-end bg-light fw-medium"
-                    disabled={true}
-                    isInvalid={!!errors.items?.[index]?.subTotal}
-                    {...register(`items.${index}.subTotal`)}
+                    placeholder="0.00"
+                    value={formatIndianNumber(watchedSubTotal)}
+                    className="form-control-readonly-calculated"
+                    readOnly={true}
+                    tabIndex={0}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
+                    title={`Sub Total: ₹ ${formatIndianNumber(watchedSubTotal)} (Click to select & copy)`}
                 />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.subTotal?.message}</Form.Control.Feedback>
             </td>
 
             {/* GST Slab */}
-            <td style={{ width: '140px', minWidth: '130px' }}>
+            <td style={{ width: '105px', minWidth: '95px' }}>
                 <Form.Select
+                    size="sm"
                     name="gstSlabId"
+                    className="text-center"
                     isInvalid={!!errors.items?.[index]?.gstSlabId}
                     {...register(`items.${index}.gstSlabId`)}
                 >
@@ -164,15 +193,20 @@ const InvoiceRow = ({
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.gstSlabId?.message}</Form.Control.Feedback>
             </td>
 
-            {/* Taxable Amount */}
-            <td style={{ width: '150px', minWidth: '140px' }}>
+            {/* Taxable Amount (Formatted with Indian separator) */}
+            <td style={{ width: '135px', minWidth: '125px' }} title={`Taxable Amount: ₹ ${formatIndianNumber(watchedTaxableAmount)}`}>
+                <input type="hidden" {...register(`items.${index}.taxableAmount`)} />
                 <Form.Control
+                    size="sm"
                     type="text"
-                    placeholder="Taxable Amt"
-                    className="text-end bg-light"
-                    disabled={true}
-                    isInvalid={!!errors.items?.[index]?.taxableAmount}
-                    {...register(`items.${index}.taxableAmount`)}
+                    placeholder="0.00"
+                    value={formatIndianNumber(watchedTaxableAmount)}
+                    className="form-control-readonly-calculated"
+                    readOnly={true}
+                    tabIndex={0}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
+                    title={`Taxable Amount: ₹ ${formatIndianNumber(watchedTaxableAmount)} (Click to select & copy)`}
                 />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.taxableAmount?.message}</Form.Control.Feedback>
             </td>
@@ -181,72 +215,91 @@ const InvoiceRow = ({
             {!isInterState ? (
                 <>
                     {/* CGST */}
-                    <td style={{ width: '130px', minWidth: '120px' }}>
+                    <td style={{ width: '115px', minWidth: '105px' }} title={`CGST: ₹ ${formatIndianNumber(watchedCgst)}`}>
+                        <input type="hidden" {...register(`items.${index}.cgst`)} />
                         <Form.Control
+                            size="sm"
                             type="text"
-                            placeholder="CGST"
-                            className="text-end bg-light text-muted"
-                            disabled={true}
-                            isInvalid={!!errors.items?.[index]?.cgst}
-                            {...register(`items.${index}.cgst`)}
+                            placeholder="0.00"
+                            value={formatIndianNumber(watchedCgst)}
+                            className="form-control-readonly-calculated tax-cell"
+                            readOnly={true}
+                            tabIndex={0}
+                            onFocus={(e) => e.target.select()}
+                            onClick={(e) => e.target.select()}
+                            title={`CGST: ₹ ${formatIndianNumber(watchedCgst)} (Click to select & copy)`}
                         />
                         <Form.Control.Feedback type="invalid">{errors.items?.[index]?.cgst?.message}</Form.Control.Feedback>
                     </td>
 
                     {/* SGST */}
-                    <td style={{ width: '130px', minWidth: '120px' }}>
+                    <td style={{ width: '115px', minWidth: '105px' }} title={`SGST: ₹ ${formatIndianNumber(watchedSgst)}`}>
+                        <input type="hidden" {...register(`items.${index}.sgst`)} />
                         <Form.Control
+                            size="sm"
                             type="text"
-                            placeholder="SGST"
-                            className="text-end bg-light text-muted"
-                            disabled={true}
-                            isInvalid={!!errors.items?.[index]?.sgst}
-                            {...register(`items.${index}.sgst`)}
+                            placeholder="0.00"
+                            value={formatIndianNumber(watchedSgst)}
+                            className="form-control-readonly-calculated tax-cell"
+                            readOnly={true}
+                            tabIndex={0}
+                            onFocus={(e) => e.target.select()}
+                            onClick={(e) => e.target.select()}
+                            title={`SGST: ₹ ${formatIndianNumber(watchedSgst)} (Click to select & copy)`}
                         />
                         <Form.Control.Feedback type="invalid">{errors.items?.[index]?.sgst?.message}</Form.Control.Feedback>
                     </td>
                 </>
             ) : (
                 /* IGST */
-                <td style={{ width: '160px', minWidth: '140px' }}>
+                <td style={{ width: '130px', minWidth: '115px' }} title={`IGST: ₹ ${formatIndianNumber(watchedIgst)}`}>
+                    <input type="hidden" {...register(`items.${index}.igst`)} />
                     <Form.Control
+                        size="sm"
                         type="text"
-                        placeholder="IGST"
-                        className="text-end bg-light text-primary fw-semibold"
-                        disabled={true}
-                        isInvalid={!!errors.items?.[index]?.igst}
-                        {...register(`items.${index}.igst`)}
+                        placeholder="0.00"
+                        value={formatIndianNumber(watchedIgst)}
+                        className="form-control-readonly-calculated tax-cell"
+                        readOnly={true}
+                        tabIndex={0}
+                        onFocus={(e) => e.target.select()}
+                        onClick={(e) => e.target.select()}
+                        title={`IGST: ₹ ${formatIndianNumber(watchedIgst)} (Click to select & copy)`}
                     />
                     <Form.Control.Feedback type="invalid">{errors.items?.[index]?.igst?.message}</Form.Control.Feedback>
                 </td>
             )}
 
-            {/* Total */}
-            <td style={{ width: '180px', minWidth: '170px' }}>
+            {/* Total (Formatted with Indian separator) */}
+            <td style={{ width: '150px', minWidth: '140px' }} title={`Line Total: ₹ ${formatIndianNumber(watchedTotal)}`}>
+                <input type="hidden" {...register(`items.${index}.total`)} />
                 <Form.Control
+                    size="sm"
                     type="text"
-                    placeholder="Total"
-                    className="text-end bg-light fw-bold text-dark"
-                    disabled={true}
-                    isInvalid={!!errors.items?.[index]?.total}
-                    {...register(`items.${index}.total`)}
+                    placeholder="0.00"
+                    value={formatIndianNumber(watchedTotal)}
+                    className="form-control-readonly-calculated total-cell"
+                    readOnly={true}
+                    tabIndex={0}
+                    onFocus={(e) => e.target.select()}
+                    onClick={(e) => e.target.select()}
+                    title={`Line Total: ₹ ${formatIndianNumber(watchedTotal)} (Click to select & copy)`}
                 />
                 <Form.Control.Feedback type="invalid">{errors.items?.[index]?.total?.message}</Form.Control.Feedback>
             </td>
 
-            {/* Actions: Compact Clone & Delete */}
-            <td style={{ width: '65px', minWidth: '65px', padding: '0.4rem 0.1rem' }} className="text-center">
+            {/* Actions: Duplicate & Delete */}
+            <td style={{ width: '65px', minWidth: '65px' }} className="text-center">
                 <div className="d-flex align-items-center justify-content-center gap-1">
                     {/* Duplicate Row */}
                     <OverlayTrigger placement="top" overlay={<Tooltip>Duplicate Row</Tooltip>}>
                         <button
                             type="button"
-                            className="btn btn-sm p-1 border-0 rounded text-primary hover-scale"
+                            className="btn-row-action btn-row-duplicate"
                             onClick={() => onDuplicate && onDuplicate(index)}
                             title="Duplicate Row"
-                            style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                            <FaCopy size={13} />
+                            <FaCopy size={12} />
                         </button>
                     </OverlayTrigger>
 
@@ -255,13 +308,12 @@ const InvoiceRow = ({
                         <span>
                             <button
                                 type="button"
-                                className={`btn btn-sm p-1 border-0 rounded ${isSingleRow ? 'text-muted opacity-25' : 'text-danger hover-scale'}`}
+                                className={`btn-row-action btn-row-delete ${isSingleRow ? 'disabled' : ''}`}
                                 onClick={() => !isSingleRow && remove(index)}
                                 disabled={isSingleRow}
                                 title={isSingleRow ? "Cannot delete the only row" : "Delete Row"}
-                                style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                                <FaTrashAlt size={13} />
+                                <FaTrashAlt size={12} />
                             </button>
                         </span>
                     </OverlayTrigger>
