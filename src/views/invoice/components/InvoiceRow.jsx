@@ -15,15 +15,15 @@ const InvoiceRow = ({
     isInterState = false
 }) => {
     const { register, setValue, control, formState: { errors } } = useFormContext();
-    const descriptionValue = useWatch({ control, name: `items.${index}.description` });
-
-    // Watch calculated fields for live formatted Indian currency display
-    const watchedSubTotal = useWatch({ control, name: `items.${index}.subTotal` });
-    const watchedTaxableAmount = useWatch({ control, name: `items.${index}.taxableAmount` });
-    const watchedCgst = useWatch({ control, name: `items.${index}.cgst` });
-    const watchedSgst = useWatch({ control, name: `items.${index}.sgst` });
-    const watchedIgst = useWatch({ control, name: `items.${index}.igst` });
-    const watchedTotal = useWatch({ control, name: `items.${index}.total` });
+    // Consolidated single scoped row watch (replaces 7 separate observers per row)
+    const rowItem = useWatch({ control, name: `items.${index}` }) || {};
+    const descriptionValue = rowItem.description;
+    const watchedSubTotal = rowItem.subTotal;
+    const watchedTaxableAmount = rowItem.taxableAmount;
+    const watchedCgst = rowItem.cgst;
+    const watchedSgst = rowItem.sgst;
+    const watchedIgst = rowItem.igst;
+    const watchedTotal = rowItem.total;
 
     const formatIndianNumber = (val) => {
         if (val === undefined || val === null || val === "" || isNaN(Number(val))) return "0.00";

@@ -39,6 +39,7 @@ export const useInvoicePagination = ({
         queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
         queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
             const total = pagination.total ?? 0;
@@ -72,6 +73,7 @@ export const useInvoice = ({
         queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
         queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const paymentStatusColor = {
                 PENDING: 'bg-warning',
@@ -382,11 +384,13 @@ export const useBulkRestoreInvoices = () => {
 };
 
 // Get unmapped invoice challan by invoice id
-export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
+export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedInvoiceChallan", id],
         queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
@@ -403,11 +407,13 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped purchase order by invoice id
-export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
+export const useUnmappedPurchaseOrderByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.poId,
@@ -424,11 +430,13 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped eway bill by invoice id
-export const useUnmappedEwayBillByInvoiceId = (id = 0) => {
+export const useUnmappedEwayBillByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.ewayBillId,

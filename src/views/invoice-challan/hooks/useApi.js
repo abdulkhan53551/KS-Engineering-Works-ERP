@@ -81,6 +81,7 @@ export const useCreatInvoiceChallan = () => {
                 toast.success(res.message || "Challan created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanPagination'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedInvoiceChallan'] });
                 navigate(`/sales/challans/${challanId}/edit`, { replace: true });
             }
         }

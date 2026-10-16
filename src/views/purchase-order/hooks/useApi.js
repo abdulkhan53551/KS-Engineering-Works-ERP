@@ -81,6 +81,7 @@ export const useCreatPurchaseOrder = () => {
                 toast.success(res.message || "Purchase order created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderPagination'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedPurchaseOrder'] });
                 navigate(`/purchase/purchase-order/${id}/edit`, { replace: true });
             }
         }
