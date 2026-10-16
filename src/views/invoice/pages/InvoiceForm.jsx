@@ -154,6 +154,7 @@ const InvoiceForm = ({ mode }) => {
       customerName,
       hasGst,
       dueDays,
+      dueDate,
       watchedTotal,
       watchedSubTotal,
       watchedTaxableAmount,
@@ -177,6 +178,7 @@ const InvoiceForm = ({ mode }) => {
          "customerName",
          "hasGst",
          "dueDays",
+         "dueDate",
          "total",
          "subTotal",
          "taxableAmount",
@@ -483,359 +485,389 @@ const InvoiceForm = ({ mode }) => {
                                     </div>
                                  </div>
                               </div>
-                              <div className="row g-3">
-                                 {/* Left: Invoice No, Customer, GST, Linked Docs */}
-                                 <Col lg="6">
-                                    <Row className="g-3">
-                                       <Col lg="4">
-                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0 readonly-floating-wrapper">
-                                             <Form.Control
-                                                type="text"
-                                                id="invoiceNo"
-                                                placeholder="Invoice No"
-                                                isInvalid={!!errors.invoiceNo}
-                                                readOnly
-                                                tabIndex={-1}
-                                                className="form-control-readonly-modern font-monospace"
-                                                {...register("invoiceNo")}
-                                             />
-                                             <Form.Label htmlFor="invoiceNo" className="d-flex align-items-center gap-1.5">
-                                                <FaLock size={10} className="text-muted flex-shrink-0" />
-                                                <span>Invoice No</span>
-                                                {!isEditMode && <span className="readonly-pill-tag primary">AUTO #</span>}
-                                                {isEditMode && invoice.status === 'Cancelled' ? (
-                                                   <span className="readonly-pill-tag danger">CANCELLED</span>
-                                                ) : isEditMode ? (
-                                                   <span className="readonly-pill-tag">LOCKED</span>
-                                                ) : null}
-                                             </Form.Label>
-                                             <span className="readonly-watermark-icon" title="System-generated invoice identifier">
-                                                <FaLock size={11} />
-                                             </span>
-                                             <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
-                                          </Form.Floating>
-                                       </Col>
-
-                                       <Col lg="8">
-                                          <PartyAutocompleteInput
-                                             value={customerName || ''}
-                                             onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
-                                             onSelectParty={handlePartySelect}
-                                             onClearParty={handleClearParty}
-                                             onDetachParty={handleDetachParty}
-                                             isInvalid={!!errors.customerName}
-                                             errorMessage={errors.customerName?.message}
-                                             placeholder="Search party by name or code..."
-                                             label="Customer Name"
-                                             required
-                                          />
-                                       </Col>
-
-                                       {/* GST Row */}
-                                       <Col lg="4" className="d-flex align-items-center">
-                                          <div
-                                             className={`gst-toggle-box w-100 ${hasGst ? 'active' : ''}`}
-                                             onClick={() => {
-                                                const nextVal = !hasGst;
-                                                setValue("hasGst", nextVal, { shouldValidate: true });
-                                             }}
-                                          >
-                                             <span className="gst-label-text">
-                                                GST Registered
-                                             </span>
-                                             <FormCheck
-                                                type="switch"
-                                                id="hasGst"
-                                                checked={!!hasGst}
-                                                className="mb-0"
-                                                isInvalid={!!errors.hasGst}
-                                                {...register("hasGst", {
-                                                   onChange: (e) => {
-                                                      setValue("hasGst", e.target.checked, { shouldValidate: true });
-                                                   }
-                                                })}
-                                                onClick={(e) => e.stopPropagation()}
-                                             />
-                                          </div>
-                                       </Col>
-
-                                       <Col lg="8">
-                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                             <Form.Control
-                                                type="text"
-                                                id="gstNumber"
-                                                placeholder={hasGst ? "GSTIN No. (15 Characters)" : "GST Not Applicable (Toggle switch to enter)"}
-                                                disabled={!hasGst}
-                                                maxLength={15}
-                                                tabIndex={!hasGst ? -1 : 0}
-                                                className={`text-uppercase font-monospace ${!hasGst ? 'form-control-readonly-modern' : ''}`}
-                                                isInvalid={!!errors.gstNumber}
-                                                {...register("gstNumber", {
-                                                   onChange: (e) => {
-                                                      const upper = (e.target.value || "").toUpperCase();
-                                                      setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
-                                                      setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
-                                                      if (upper.length >= 2) {
-                                                         const stateCode = upper.substring(0, 2);
-                                                         const dbState = findDbStateByGstCode(stateCode, billingStates);
-                                                         if (dbState?.id) {
-                                                            const dbStateId = Number(dbState.id);
-                                                            setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
-                                                            if (sameAsBilling) {
-                                                               setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
-                                                               clearErrors("shippingAddress.stateId");
-                                                            }
-                                                         }
-                                                      }
-                                                   }
-                                                })}
-                                             />
-                                             <Form.Label htmlFor="gstNumber">
-                                                GSTIN No. {hasGst ? <span className="text-danger">*</span> : <span className="text-muted small fst-italic ms-1">(Not Applicable)</span>}
-                                             </Form.Label>
-                                             <Form.Control.Feedback type="invalid">{errors.gstNumber?.message}</Form.Control.Feedback>
-                                          </Form.Floating>
-                                       </Col>
-
-                                       {/* Reference Documents (Clean Pill Dock) */}
-                                       <Col lg="12">
-                                          <div className="doc-pill-dock">
-                                             <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                                <div className="d-flex align-items-center gap-2">
-                                                   <div className="rounded d-flex align-items-center justify-content-center bg-primary text-white" style={{ width: '22px', height: '22px' }}>
-                                                      <FaPaperclip size={11} />
-                                                   </div>
-                                                   <span className="fw-bold text-dark small" style={{ fontSize: '0.82rem' }}>Attach Reference Documents</span>
-                                                </div>
-                                                <small className="text-muted" style={{ fontSize: '0.74rem' }}>
-                                                   Click any button to attach or manage documents
-                                                </small>
-                                             </div>
-
-                                             {/* Interactive Quick-Action Document Pills */}
-                                             <div className="d-flex flex-wrap align-items-center gap-2">
-                                                {/* Challan Pill */}
-                                                <div
-                                                   className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
-                                                   onClick={() => {
-                                                      openModule('challan');
-                                                   }}
-                                                   title="Click to select or manage Challans"
-                                                >
-                                                   <FaFileAlt size={13} className={currentChallanIds.length > 0 ? "text-primary" : "text-secondary"} />
-                                                   <span>Challan</span>
-                                                   {currentChallanIds.length > 0 ? (
-                                                      <span className="badge bg-primary text-white pill-badge">
-                                                         {currentChallanIds.length} Linked
-                                                      </span>
-                                                   ) : (
-                                                      <span className="badge bg-light text-muted border pill-badge">
-                                                         + Add
-                                                      </span>
-                                                   )}
-                                                </div>
-
-                                                {/* Purchase Order Pill */}
-                                                <div
-                                                   className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
-                                                   onClick={() => {
-                                                      openModule('purchaseOrder');
-                                                   }}
-                                                   title="Click to select or manage Purchase Orders"
-                                                >
-                                                   <FaShoppingCart size={13} className={currentPoIds.length > 0 ? "text-success" : "text-secondary"} />
-                                                   <span>Purchase Order</span>
-                                                   {currentPoIds.length > 0 ? (
-                                                      <span className="badge bg-success text-white pill-badge">
-                                                         {currentPoIds.length} Linked
-                                                      </span>
-                                                   ) : (
-                                                      <span className="badge bg-light text-muted border pill-badge">
-                                                         + Add
-                                                      </span>
-                                                   )}
-                                                </div>
-
-                                                {/* E-Way Bill Pill */}
-                                                <div
-                                                   className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
-                                                   onClick={() => {
-                                                      openModule('ewayBill');
-                                                   }}
-                                                   title="Click to select or manage E-Way Bills"
-                                                >
-                                                   <FaTruck size={13} className={currentEwayBillIds.length > 0 ? "text-rose" : "text-secondary"} />
-                                                   <span>E-Way Bill</span>
-                                                   {currentEwayBillIds.length > 0 ? (
-                                                      <span className="badge bg-rose text-white pill-badge">
-                                                         {currentEwayBillIds.length} Linked
-                                                      </span>
-                                                   ) : (
-                                                      <span className="badge bg-light text-muted border pill-badge">
-                                                         + Add
-                                                      </span>
-                                                   )}
-                                                </div>
-                                             </div>
-
-                                             {/* Attached Documents Tag Tray */}
-                                             {(currentChallanIds.length > 0 || currentPoIds.length > 0 || currentEwayBillIds.length > 0) && (
-                                                <div className="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2 border-top border-light-subtle">
-                                                   <span className="text-muted fw-semibold me-1" style={{ fontSize: '0.74rem' }}>Linked:</span>
-                                                   {currentChallanIds.map(id => (
-                                                      <span key={`ch-${id}`} className="badge bg-white text-primary border border-primary-subtle document-badge-chip">
-                                                         <FaFileAlt size={10} /> {getDocumentLabel ? getDocumentLabel('challan', id) : 'Challan'}
-                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('challan', id); }} />
-                                                      </span>
-                                                   ))}
-                                                   {currentPoIds.map(id => (
-                                                      <span key={`po-${id}`} className="badge bg-white text-success border border-success-subtle document-badge-chip">
-                                                         <FaShoppingCart size={10} /> {getDocumentLabel ? getDocumentLabel('purchaseOrder', id) : 'Purchase Order'}
-                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('purchaseOrder', id); }} />
-                                                      </span>
-                                                   ))}
-                                                   {currentEwayBillIds.map(id => (
-                                                      <span key={`ewb-${id}`} className="badge bg-white text-rose border border-rose-subtle document-badge-chip">
-                                                         <FaTruck size={10} className="text-rose" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
-                                                         <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('ewayBill', id); }} />
-                                                      </span>
-                                                   ))}
-                                                </div>
-                                             )}
-                                          </div>
-                                       </Col>
-                                    </Row>
+                              <Row className="g-3 align-items-stretch">
+                                 {/* ROW 1: Invoice No (2) + Customer Name (4) + Invoice Date (3) + Due Date (3) = 12 Cols */}
+                                 <Col lg="2" md="4" sm="4">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0 readonly-floating-wrapper">
+                                       <Form.Control
+                                          type="text"
+                                          id="invoiceNo"
+                                          placeholder="Invoice No"
+                                          isInvalid={!!errors.invoiceNo}
+                                          readOnly
+                                          tabIndex={-1}
+                                          className="form-control-readonly-modern font-monospace"
+                                          {...register("invoiceNo")}
+                                       />
+                                       <Form.Label htmlFor="invoiceNo" className="d-flex align-items-center gap-1.5">
+                                          <FaLock size={10} className="text-muted flex-shrink-0" />
+                                          <span>Invoice No</span>
+                                          {!isEditMode && <span className="readonly-pill-tag primary">AUTO #</span>}
+                                          {isEditMode && invoice.status === 'Cancelled' ? (
+                                             <span className="readonly-pill-tag danger">CANCELLED</span>
+                                          ) : isEditMode ? (
+                                             <span className="readonly-pill-tag">LOCKED</span>
+                                          ) : null}
+                                       </Form.Label>
+                                       <span className="readonly-watermark-icon" title="System-generated invoice identifier">
+                                          <FaLock size={11} />
+                                       </span>
+                                       <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
                                  </Col>
 
-                                 {/* Right: Dates, Payment Status, Payment Mode, Due Presets */}
-                                 <Col lg="6">
-                                    <Row className="g-3">
-                                       {/* Row 1: Dates (42px) */}
-                                       <Col lg="6">
-                                          <Controller
-                                             name="invoiceDate"
-                                             control={control}
-                                             defaultValue={new Date()}
-                                             render={({ field, fieldState: { error } }) => (
-                                                <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
-                                                   <Flatpickr
-                                                      {...field}
-                                                      id="invoiceDate"
-                                                      value={field.value}
-                                                      onChange={(selectedDates) => {
-                                                         const date = selectedDates[0] || null;
-                                                         field.onChange(date);
-                                                         const days = getValues("dueDays") ?? 0;
-                                                         if (date) {
-                                                            setValue(
-                                                               "dueDate",
-                                                               moment(date).add(days, "days").toDate(),
-                                                               { shouldDirty: true, shouldValidate: true }
-                                                            );
-                                                         }
-                                                      }}
-                                                      options={invoiceDateOptons}
-                                                      className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
-                                                      placeholder=" "
-                                                   />
-                                                   <Form.Label htmlFor="invoiceDate">
-                                                      Invoice Date <span className="text-danger">*</span>
-                                                   </Form.Label>
-                                                   <FaRegCalendarAlt className="floating-date-icon" />
-                                                   <Form.Control.Feedback type="invalid">
-                                                      {errors.invoiceDate?.message}
-                                                   </Form.Control.Feedback>
-                                                </Form.Floating>
-                                             )}
-                                          />
-                                       </Col>
+                                 <Col lg="4" md="8" sm="8">
+                                    <PartyAutocompleteInput
+                                       value={customerName || ''}
+                                       onChange={(e) => setValue('customerName', e.target.value, { shouldValidate: true, shouldDirty: true })}
+                                       onSelectParty={handlePartySelect}
+                                       onClearParty={handleClearParty}
+                                       onDetachParty={handleDetachParty}
+                                       isInvalid={!!errors.customerName}
+                                       errorMessage={errors.customerName?.message}
+                                       placeholder="Search party by name or code..."
+                                       label="Customer Name"
+                                       required
+                                    />
+                                 </Col>
 
-                                       <Col lg="6">
-                                          <Controller
-                                             name="dueDate"
-                                             control={control}
-                                             defaultValue={new Date()}
-                                             render={({ field, fieldState: { error } }) => (
-                                                <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
-                                                   <Flatpickr
-                                                      {...field}
-                                                      id="dueDate"
-                                                      value={field.value}
-                                                      onChange={(selectedDates) => {
-                                                         const date = selectedDates[0];
-                                                         field.onChange(date);
-                                                         if (invoiceDate && date) {
-                                                            const days = moment(date)
-                                                               .startOf("day")
-                                                               .diff(moment(invoiceDate).startOf("day"), "days");
-                                                            setValue("dueDays", Math.max(0, days), {
-                                                               shouldDirty: true,
-                                                               shouldValidate: true,
-                                                            });
-                                                         }
-                                                      }}
-                                                      options={dueDateOptons}
-                                                      className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
-                                                      placeholder=" "
-                                                   />
-                                                   <Form.Label htmlFor="dueDate">
-                                                      Due Date <span className="text-danger">*</span>
-                                                   </Form.Label>
-                                                   <FaRegCalendarAlt className="floating-date-icon" />
-                                                   <Form.Control.Feedback type="invalid">
-                                                      {errors.dueDate?.message}
-                                                   </Form.Control.Feedback>
-                                                </Form.Floating>
-                                             )}
-                                          />
-                                       </Col>
-
-                                       {/* Row 2: Payment Status & Mode (42px) */}
-                                       <Col lg="6">
-                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                             <Form.Select
-                                                name="paymentStatusId"
-                                                id="paymentStatusId"
-                                                isInvalid={!!errors.paymentStatusId}
-                                                {...register("paymentStatusId")}
-                                             >
-                                                <option value="">Select Status</option>
-                                                {paymentStatus.map((item) => (
-                                                   <option key={item.id} value={item.id}>{item.label}</option>
-                                                ))}
-                                             </Form.Select>
-                                             <Form.Label htmlFor="paymentStatusId">
-                                                Payment Status <span className="text-danger">*</span>
+                                 <Col lg="3" md="6" sm="6">
+                                    <Controller
+                                       name="invoiceDate"
+                                       control={control}
+                                       defaultValue={new Date()}
+                                       render={({ field, fieldState: { error } }) => (
+                                          <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
+                                             <Flatpickr
+                                                {...field}
+                                                id="invoiceDate"
+                                                value={field.value}
+                                                onChange={(selectedDates) => {
+                                                   const date = selectedDates[0] || null;
+                                                   field.onChange(date);
+                                                   const days = getValues("dueDays") ?? 0;
+                                                   if (date) {
+                                                      setValue(
+                                                         "dueDate",
+                                                         moment(date).add(days, "days").toDate(),
+                                                         { shouldDirty: true, shouldValidate: true }
+                                                      );
+                                                   }
+                                                }}
+                                                options={invoiceDateOptons}
+                                                className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
+                                                placeholder=" "
+                                             />
+                                             <Form.Label htmlFor="invoiceDate">
+                                                Invoice Date <span className="text-danger">*</span>
                                              </Form.Label>
-                                             <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
+                                             <FaRegCalendarAlt className="floating-date-icon" />
+                                             <Form.Control.Feedback type="invalid">
+                                                {errors.invoiceDate?.message}
+                                             </Form.Control.Feedback>
                                           </Form.Floating>
-                                       </Col>
+                                       )}
+                                    />
+                                 </Col>
 
-                                       <Col lg="6">
-                                          <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                             <Form.Select
-                                                name="paymentModeId"
-                                                id="paymentModeId"
-                                                isInvalid={!!errors.paymentModeId}
-                                                {...register("paymentModeId")}
-                                             >
-                                                <option value="">Select Mode</option>
-                                                {paymentMode.map((item) => (
-                                                   <option key={item.id} value={item.id}>{item.label}</option>
-                                                ))}
-                                             </Form.Select>
-                                             <Form.Label htmlFor="paymentModeId">
-                                                Payment Mode <span className="text-danger">*</span>
+                                 <Col lg="3" md="6" sm="6">
+                                    <Controller
+                                       name="dueDate"
+                                       control={control}
+                                       defaultValue={new Date()}
+                                       render={({ field, fieldState: { error } }) => (
+                                          <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-0 ${field.value ? 'has-value' : ''}`}>
+                                             <Flatpickr
+                                                {...field}
+                                                id="dueDate"
+                                                value={field.value}
+                                                onChange={(selectedDates) => {
+                                                   const date = selectedDates[0];
+                                                   field.onChange(date);
+                                                   if (invoiceDate && date) {
+                                                      const days = moment(date)
+                                                         .startOf("day")
+                                                         .diff(moment(invoiceDate).startOf("day"), "days");
+                                                      setValue("dueDays", Math.max(0, days), {
+                                                         shouldDirty: true,
+                                                         shouldValidate: true,
+                                                      });
+                                                   }
+                                                }}
+                                                options={dueDateOptons}
+                                                className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
+                                                placeholder=" "
+                                             />
+                                             <Form.Label htmlFor="dueDate">
+                                                Due Date <span className="text-danger">*</span>
                                              </Form.Label>
-                                             <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
+                                             <FaRegCalendarAlt className="floating-date-icon" />
+                                             <Form.Control.Feedback type="invalid">
+                                                {errors.dueDate?.message}
+                                             </Form.Control.Feedback>
                                           </Form.Floating>
-                                       </Col>
+                                       )}
+                                    />
+                                 </Col>
 
-                                       {/* Row 3: Due Terms & Quick Presets (Matches height with Document Dock on Left) */}
-                                       <Col lg="12">
-                                          <div className="due-terms-container">
+                                 {/* ROW 2: GST Toggle (2) + GSTIN (4) + Payment Status (3) + Payment Mode (3) = 12 Cols */}
+                                 <Col lg="2" md="4" sm="4" className="d-flex align-items-center">
+                                    <div
+                                       className={`gst-toggle-box w-100 ${hasGst ? 'active' : ''}`}
+                                       onClick={() => {
+                                          const nextVal = !hasGst;
+                                          setValue("hasGst", nextVal, { shouldValidate: true });
+                                       }}
+                                    >
+                                       <span className="gst-label-text">
+                                          GST Registered
+                                       </span>
+                                       <FormCheck
+                                          type="switch"
+                                          id="hasGst"
+                                          checked={!!hasGst}
+                                          className="mb-0"
+                                          isInvalid={!!errors.hasGst}
+                                          {...register("hasGst", {
+                                             onChange: (e) => {
+                                                setValue("hasGst", e.target.checked, { shouldValidate: true });
+                                             }
+                                          })}
+                                          onClick={(e) => e.stopPropagation()}
+                                       />
+                                    </div>
+                                 </Col>
+
+                                 <Col lg="4" md="8" sm="8">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                       <Form.Control
+                                          type="text"
+                                          id="gstNumber"
+                                          placeholder={hasGst ? "GSTIN No. (15 Characters)" : "GST Not Applicable (Toggle switch to enter)"}
+                                          disabled={!hasGst}
+                                          maxLength={15}
+                                          tabIndex={!hasGst ? -1 : 0}
+                                          className={`text-uppercase font-monospace ${!hasGst ? 'form-control-readonly-modern' : ''}`}
+                                          isInvalid={!!errors.gstNumber}
+                                          {...register("gstNumber", {
+                                             onChange: (e) => {
+                                                const upper = (e.target.value || "").toUpperCase();
+                                                setValue("gstNumber", upper, { shouldValidate: true, shouldDirty: true });
+                                                setValue("billingAddress.gstin", upper, { shouldValidate: false, shouldDirty: true });
+                                                if (upper.length >= 2) {
+                                                   const stateCode = upper.substring(0, 2);
+                                                   const dbState = findDbStateByGstCode(stateCode, billingStates);
+                                                   if (dbState?.id) {
+                                                      const dbStateId = Number(dbState.id);
+                                                      setValue("billingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                      if (sameAsBilling) {
+                                                         setValue("shippingAddress.stateId", dbStateId, { shouldValidate: true, shouldDirty: true });
+                                                         clearErrors("shippingAddress.stateId");
+                                                      }
+                                                   }
+                                                }
+                                             }
+                                          })}
+                                       />
+                                       <Form.Label htmlFor="gstNumber">
+                                          GSTIN No. {hasGst ? <span className="text-danger">*</span> : <span className="text-muted small fst-italic ms-1">(Not Applicable)</span>}
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.gstNumber?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+
+                                 <Col lg="3" md="6" sm="6">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                       <Form.Select
+                                          name="paymentStatusId"
+                                          id="paymentStatusId"
+                                          isInvalid={!!errors.paymentStatusId}
+                                          {...register("paymentStatusId")}
+                                       >
+                                          <option value="">Select Status</option>
+                                          {paymentStatus.map((item) => (
+                                             <option key={item.id} value={item.id}>{item.label}</option>
+                                          ))}
+                                       </Form.Select>
+                                       <Form.Label htmlFor="paymentStatusId">
+                                          Payment Status <span className="text-danger">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+
+                                 <Col lg="3" md="6" sm="6">
+                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
+                                       <Form.Select
+                                          name="paymentModeId"
+                                          id="paymentModeId"
+                                          isInvalid={!!errors.paymentModeId}
+                                          {...register("paymentModeId")}
+                                       >
+                                          <option value="">Select Mode</option>
+                                          {paymentMode.map((item) => (
+                                             <option key={item.id} value={item.id}>{item.label}</option>
+                                          ))}
+                                       </Form.Select>
+                                       <Form.Label htmlFor="paymentModeId">
+                                          Payment Mode <span className="text-danger">*</span>
+                                       </Form.Label>
+                                       <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
+                                    </Form.Floating>
+                                 </Col>
+
+                                 {/* ROW 3: Reference Documents (6) & Payment Credit Terms (6) - Equal Height & Bottom Margin */}
+                                 <Col lg="6" md="12" className="d-flex">
+                                    <div className="doc-pill-dock flex-grow-1 w-100 d-flex flex-column justify-content-between">
+                                       <div>
+                                          <div className="d-flex align-items-center justify-content-between mb-2">
+                                             <div className="d-flex align-items-center gap-2">
+                                                <div className="doc-icon-badge bg-primary text-white">
+                                                   <FaPaperclip size={11} />
+                                                </div>
+                                                <div>
+                                                   <span className="doc-dock-title">Attach Reference Documents</span>
+                                                   <span className="doc-dock-subtitle d-block">Link Challan, PO or E-Way Bill</span>
+                                                </div>
+                                             </div>
+                                             {(currentChallanIds.length > 0 || currentPoIds.length > 0 || currentEwayBillIds.length > 0) && (
+                                                <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                                                   {currentChallanIds.length + currentPoIds.length + currentEwayBillIds.length} Linked
+                                                </span>
+                                             )}
+                                          </div>
+
+                                          {/* 3 Equal Column Action Buttons */}
+                                          <div className="doc-actions-grid">
+                                             {/* Challan Pill */}
+                                             <div
+                                                className={`doc-pill-btn ${currentChallanIds.length > 0 ? 'active-challan' : ''}`}
+                                                onClick={() => openModule('challan')}
+                                                title="Click to select or manage Challans"
+                                             >
+                                                <div className="doc-btn-lead">
+                                                   <FaFileAlt size={12} className={currentChallanIds.length > 0 ? "text-primary flex-shrink-0" : "text-secondary flex-shrink-0"} />
+                                                   <span className="doc-btn-text">Challan</span>
+                                                </div>
+                                                {currentChallanIds.length > 0 ? (
+                                                   <span className="badge bg-primary text-white pill-badge">
+                                                      <span className="pill-count">{currentChallanIds.length}</span>
+                                                      <span className="pill-label"> Linked</span>
+                                                   </span>
+                                                ) : (
+                                                   <span className="badge bg-light text-muted border pill-badge">
+                                                      + Add
+                                                   </span>
+                                                )}
+                                             </div>
+
+                                             {/* Purchase Order Pill */}
+                                             <div
+                                                className={`doc-pill-btn ${currentPoIds.length > 0 ? 'active-po' : ''}`}
+                                                onClick={() => openModule('purchaseOrder')}
+                                                title="Click to select or manage Purchase Orders"
+                                             >
+                                                <div className="doc-btn-lead">
+                                                   <FaShoppingCart size={12} className={currentPoIds.length > 0 ? "text-success flex-shrink-0" : "text-secondary flex-shrink-0"} />
+                                                   <span className="doc-btn-text">
+                                                      <span className="label-full">Purchase Order</span>
+                                                      <span className="label-short">PO</span>
+                                                   </span>
+                                                </div>
+                                                {currentPoIds.length > 0 ? (
+                                                   <span className="badge bg-success text-white pill-badge">
+                                                      <span className="pill-count">{currentPoIds.length}</span>
+                                                      <span className="pill-label"> Linked</span>
+                                                   </span>
+                                                ) : (
+                                                   <span className="badge bg-light text-muted border pill-badge">
+                                                      + Add
+                                                   </span>
+                                                )}
+                                             </div>
+
+                                             {/* E-Way Bill Pill */}
+                                             <div
+                                                className={`doc-pill-btn ${currentEwayBillIds.length > 0 ? 'active-eway' : ''}`}
+                                                onClick={() => openModule('ewayBill')}
+                                                title="Click to select or manage E-Way Bills"
+                                             >
+                                                <div className="doc-btn-lead">
+                                                   <FaTruck size={12} className={currentEwayBillIds.length > 0 ? "text-danger flex-shrink-0" : "text-secondary flex-shrink-0"} />
+                                                   <span className="doc-btn-text">
+                                                      <span className="label-full">E-Way Bill</span>
+                                                      <span className="label-short">E-Way</span>
+                                                   </span>
+                                                </div>
+                                                {currentEwayBillIds.length > 0 ? (
+                                                   <span className="badge bg-danger text-white pill-badge">
+                                                      <span className="pill-count">{currentEwayBillIds.length}</span>
+                                                      <span className="pill-label"> Linked</span>
+                                                   </span>
+                                                ) : (
+                                                   <span className="badge bg-light text-muted border pill-badge">
+                                                      + Add
+                                                   </span>
+                                                )}
+                                             </div>
+                                          </div>
+                                       </div>
+
+                                       {/* Attached Documents Tag Tray */}
+                                       {(currentChallanIds.length > 0 || currentPoIds.length > 0 || currentEwayBillIds.length > 0) ? (
+                                          <div className="doc-tray-footer">
+                                             <span className="tray-label">Linked:</span>
+                                             <div className="doc-chips-scroll">
+                                                {currentChallanIds.map(id => (
+                                                   <span key={`ch-${id}`} className="badge bg-white text-primary border border-primary-subtle document-badge-chip">
+                                                      <FaFileAlt size={10} /> {getDocumentLabel ? getDocumentLabel('challan', id) : 'Challan'}
+                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('challan', id); }} />
+                                                   </span>
+                                                ))}
+                                                {currentPoIds.map(id => (
+                                                   <span key={`po-${id}`} className="badge bg-white text-success border border-success-subtle document-badge-chip">
+                                                      <FaShoppingCart size={10} /> {getDocumentLabel ? getDocumentLabel('purchaseOrder', id) : 'Purchase Order'}
+                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('purchaseOrder', id); }} />
+                                                   </span>
+                                                ))}
+                                                {currentEwayBillIds.map(id => (
+                                                   <span key={`ewb-${id}`} className="badge bg-white text-danger border border-danger-subtle document-badge-chip">
+                                                      <FaTruck size={10} className="text-danger" /> {getDocumentLabel ? getDocumentLabel('ewayBill', id) : 'E-Way Bill'}
+                                                      <FaTimes size={10} className="chip-close ms-1" onClick={(e) => { e.stopPropagation(); handleRemoveLinkedDoc('ewayBill', id); }} />
+                                                   </span>
+                                                ))}
+                                             </div>
+                                          </div>
+                                       ) : (
+                                          <div className="doc-tray-footer text-muted" style={{ fontSize: '0.73rem', fontStyle: 'italic' }}>
+                                             No reference documents attached to this invoice yet.
+                                          </div>
+                                       )}
+                                    </div>
+                                 </Col>
+
+                                 {/* Payment Credit Terms */}
+                                 <Col lg="6" md="12" className="d-flex">
+                                    <div className="due-terms-container flex-grow-1 w-100 d-flex flex-column justify-content-between">
+                                       <div>
+                                          <div className="d-flex align-items-center justify-content-between mb-2">
+                                             <div className="d-flex align-items-center gap-2">
+                                                <div className="doc-icon-badge text-white" style={{ background: '#4f46e5' }}>
+                                                   <FaCoins size={11} />
+                                                </div>
+                                                <div>
+                                                   <span className="doc-dock-title">Payment Credit Terms</span>
+                                                   <span className="doc-dock-subtitle d-block">Select days or quick preset schedule</span>
+                                                </div>
+                                             </div>
+                                             <span className={`badge px-2 py-1 ${Number(dueDays) === 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-success-subtle text-success border border-success-subtle'}`} style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                                                {Number(dueDays) === 0 ? 'Immediate Due' : `${dueDays} Days Credit`}
+                                             </span>
+                                          </div>
+
+                                          <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
                                              <div className="due-input-group">
-                                                <span className="terms-label">Payment Terms:</span>
+                                                <span className="terms-label">Days:</span>
                                                 <Form.Control
                                                    type="number"
                                                    id="dueDays"
@@ -857,30 +889,44 @@ const InvoiceForm = ({ mode }) => {
                                                       },
                                                    })}
                                                 />
-                                                <span className="days-unit">Days</span>
                                              </div>
 
-                                             {/* Presets */}
-                                             <div className="due-chips-wrap">
+                                             <div className="due-chips-wrap flex-grow-1">
                                                 <span className="chip-label">Quick:</span>
-                                                {DUE_PRESET_DAYS.map((days) => {
-                                                   const isActive = Number(dueDays) === days;
-                                                   return (
-                                                      <span
-                                                         key={days}
-                                                         className={`badge due-preset-badge ${isActive ? 'bg-primary text-white' : 'bg-white text-secondary border'}`}
-                                                         onClick={() => handleDuePresetClick(days)}
-                                                      >
-                                                         {days === 0 ? "Immediate" : `${days}d`}
-                                                      </span>
-                                                   );
-                                                })}
+                                                <div className="d-flex align-items-center gap-1 flex-wrap">
+                                                   {DUE_PRESET_DAYS.map((days) => {
+                                                      const isActive = Number(dueDays) === days;
+                                                      return (
+                                                         <span
+                                                            key={days}
+                                                            className={`badge due-preset-badge ${isActive ? 'active' : ''}`}
+                                                            onClick={() => handleDuePresetClick(days)}
+                                                            title={`Set due date to ${days === 0 ? 'same day' : `${days} days`}`}
+                                                         >
+                                                            {days === 0 ? "Immediate" : `${days}d`}
+                                                         </span>
+                                                      );
+                                                   })}
+                                                </div>
                                              </div>
                                           </div>
-                                       </Col>
-                                    </Row>
+                                       </div>
+
+                                       <div className="doc-tray-footer d-flex align-items-center justify-content-between">
+                                          <div className="d-flex align-items-center gap-2 text-muted" style={{ fontSize: '0.74rem' }}>
+                                             <FaRegCalendarAlt size={11} className="text-primary" />
+                                             <span>
+                                                {Number(dueDays) === 0 ? (
+                                                   <span>Payment due on invoice issue date: <strong className="text-dark">{invoiceDate ? moment(invoiceDate).format('DD MMM YYYY') : moment().format('DD MMM YYYY')}</strong></span>
+                                                ) : (
+                                                   <span>Calculated Due Date: <strong className="text-success">{dueDate ? moment(dueDate).format('DD MMM YYYY') : moment(invoiceDate || new Date()).add(dueDays, 'days').format('DD MMM YYYY')}</strong></span>
+                                                )}
+                                             </span>
+                                          </div>
+                                       </div>
+                                    </div>
                                  </Col>
-                              </div>
+                              </Row>
                            </div>
 
                            {/* SECTION 2: BILLING & SHIPPING ADDRESSES */}
