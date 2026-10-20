@@ -1,0 +1,249 @@
+// ============================================================
+// Matrix Row Specs Modal Styles (Template 2 - Per-Row Data Editor)
+// Theme: KS Engineering Works Corporate Crimson & Modern Slate
+// ============================================================
+
+.matrix-row-specs-modal,
+.modal.matrix-row-specs-modal,
+.modal-dialog.matrix-row-specs-modal {
+  &.modal-dialog,
+  .modal-dialog {
+    max-width: 860px !important;
+    margin: 1.75rem auto;
+  }
+
+  .modal-content {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2) !important;
+    overflow: hidden;
+  }
+
+  // Header
+  .modal-header.matrix-specs-header {
+    background: #ffffff !important;
+    border-bottom: 2px solid #fee2e2 !important;
+    padding: 14px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    .matrix-specs-icon-badge {
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 10px;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .modal-title-main {
+      font-size: 15.5px !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+      margin-bottom: 0 !important;
+    }
+  }
+
+  // Body
+  .modal-body.matrix-specs-body {
+    background: #f8fafc !important;
+    padding: 16px 20px !important;
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+
+  // Top Bar
+  .matrix-specs-topbar {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 9px 14px !important;
+    margin-bottom: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+
+    .topbar-badge {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      color: #475569 !important;
+      background: #f1f5f9 !important;
+      padding: 4px 10px !important;
+      border-radius: 6px !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .btn-autofill-action {
+      font-size: 11.5px !important;
+      font-weight: 600 !important;
+      color: #dc2626 !important;
+      background: #fef2f2 !important;
+      border: 1px solid #fecaca !important;
+      border-radius: 6px !important;
+      padding: 5px 12px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 5px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+
+      &:hover {
+        background: #fee2e2 !important;
+        color: #991b1b !important;
+      }
+    }
+
+    .btn-clear-action {
+      font-size: 11.5px !important;
+      font-weight: 600 !important;
+      color: #64748b !important;
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 6px !important;
+      padding: 5px 10px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+
+      &:hover {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+      }
+    }
+  }
+
+  // Info Note
+  .matrix-specs-info {
+    font-size: 11.5px;
+    color: #475569;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 3.5px solid #dc2626;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.45;
+
+    code {
+      background: #f1f5f9;
+      color: #dc2626;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10.5px;
+    }
+  }
+
+  // Field Cards Grid
+  .matrix-fields-container {
+    .matrix-field-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.15s ease;
+
+      &:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+      }
+
+      &.is-filled {
+        border-color: #bbf7d0;
+        background: #fafffb;
+
+        .field-card-header .col-header-text {
+          color: #15803d;
+        }
+      }
+
+      .field-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+
+        .col-icon {
+          font-size: 13px;
+          flex-shrink: 0;
+        }
+
+        .col-header-text {
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #1e293b;
+          letter-spacing: 0.02em;
+        }
+
+        .col-width-tag {
+          font-size: 10px;
+          font-weight: 600;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 1px 5px;
+          border-radius: 4px;
+          flex-shrink: 0;
+        }
+      }
+
+      .field-desc-text {
+        font-size: 10.5px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .matrix-textarea {
+        font-size: 11.5px;
+        color: #0f172a;
+        font-family: inherit;
+        border-color: #cbd5e1;
+        resize: vertical;
+        min-height: 52px;
+        line-height: 1.4;
+
+        &:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+          background: #ffffff;
+        }
+      }
+    }
+  }
+
+  // Footer
+  .modal-footer.matrix-specs-footer {
+    background: #ffffff !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 12px 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+
+    .footer-status-text {
+      font-size: 11.5px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+    }
+
+    .footer-action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
+}

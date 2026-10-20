@@ -19,8 +19,8 @@ body {
     padding-bottom: 0.6rem !important;
 }
 
-/* Delete Button Hover Effect */
-.delete-btn {
+/* Delete Button Hover Effect (Scoped to invoice list items) */
+.list-group-item .delete-btn {
     opacity: 0;
     border-radius: 50%;
     padding: 0.5rem;

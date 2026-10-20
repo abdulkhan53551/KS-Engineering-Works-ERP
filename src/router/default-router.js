@@ -59,6 +59,8 @@ import FirmForm from '../views/firms/FirmForm';
 import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
 import InvoiceForm from '../views/invoice/pages/InvoiceForm';
 import InvoiceList from '../views/invoice/pages/InvoiceList';
+import QuotationList from '../views/quotation/pages/QuotationList';
+import QuotationForm from '../views/quotation/pages/QuotationForm';
 import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
 import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
 import EwayBillList from '../views/eway-bill/pages/EwayBillList';
@@ -128,6 +130,12 @@ export const DefaultRouter = [
                     { path: 'masters/contact-roles', element: <ContactRoleList /> },
 
                     /* Sales */
+                    // Quotation Routes
+                    { path: 'sales/quotation', element: <QuotationList /> },
+                    { path: 'sales/quotation/create', element: <QuotationForm mode="create" /> },
+                    { path: 'sales/quotation/:id/edit', element: <QuotationForm mode="edit" /> },
+                    { path: 'sales/quotation/:id/duplicate', element: <QuotationForm mode="duplicate" /> },
+
                     // Invoice Routes
                     { path: 'sales/invoice', element: <InvoiceList /> },
                     { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
