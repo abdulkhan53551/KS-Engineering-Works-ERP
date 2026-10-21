@@ -73,7 +73,9 @@ const QuotationPdfModal = ({
         link.setAttribute('download', `Quotation_${quotationNo || 'doc'}_R${revisionNo}${suffix}.pdf`);
         document.body.appendChild(link);
         link.click();
-        link.parentNode.removeChild(link);
+        if (link && link.parentNode) {
+            link.parentNode.removeChild(link);
+        }
     };
 
     return (

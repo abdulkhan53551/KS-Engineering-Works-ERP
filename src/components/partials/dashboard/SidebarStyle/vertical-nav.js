@@ -550,6 +550,28 @@ const VerticalNav = memo((props) => {
                                         </Button>
                                     </Link>
                                 </Link>
+                                <Link className={`${location.pathname.includes('/sales/proforma-invoice') ? 'active' : ''} nav-link`} to="/sales/proforma-invoice">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Proforma Invoice</span>
+                                    <Link className="me-2" to={`/sales/proforma-invoice/create`}>
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
                                 <Link className={`${location.pathname.includes('/sales/invoice') ? 'active' : ''} nav-link`} to="/sales/invoice">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">

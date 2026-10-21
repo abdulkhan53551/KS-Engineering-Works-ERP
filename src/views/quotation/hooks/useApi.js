@@ -267,7 +267,9 @@ export const useDownloadQuotationPdf = () => {
             link.setAttribute("download", `Quotation_${quotationNo || 'doc'}.pdf`);
             document.body.appendChild(link);
             link.click();
-            link.parentNode.removeChild(link);
+            if (link && link.parentNode) {
+                link.parentNode.removeChild(link);
+            }
             window.URL.revokeObjectURL(url);
         },
         onError: (err) => {

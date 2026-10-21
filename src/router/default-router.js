@@ -61,6 +61,8 @@ import InvoiceForm from '../views/invoice/pages/InvoiceForm';
 import InvoiceList from '../views/invoice/pages/InvoiceList';
 import QuotationList from '../views/quotation/pages/QuotationList';
 import QuotationForm from '../views/quotation/pages/QuotationForm';
+import ProformaList from '../views/proforma-invoice/pages/ProformaList';
+import ProformaForm from '../views/proforma-invoice/pages/ProformaForm';
 import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
 import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
 import EwayBillList from '../views/eway-bill/pages/EwayBillList';
@@ -135,6 +137,12 @@ export const DefaultRouter = [
                     { path: 'sales/quotation/create', element: <QuotationForm mode="create" /> },
                     { path: 'sales/quotation/:id/edit', element: <QuotationForm mode="edit" /> },
                     { path: 'sales/quotation/:id/duplicate', element: <QuotationForm mode="duplicate" /> },
+
+                    // Proforma Invoice Routes
+                    { path: 'sales/proforma-invoice', element: <ProformaList /> },
+                    { path: 'sales/proforma-invoice/create', element: <ProformaForm mode="create" /> },
+                    { path: 'sales/proforma-invoice/:id/edit', element: <ProformaForm mode="edit" /> },
+                    { path: 'sales/proforma-invoice/:id/duplicate', element: <ProformaForm mode="duplicate" /> },
 
                     // Invoice Routes
                     { path: 'sales/invoice', element: <InvoiceList /> },

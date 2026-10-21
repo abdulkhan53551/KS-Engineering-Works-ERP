@@ -988,6 +988,10 @@ const QuotationList = () => {
                                                                             <FaCopy className="me-2 text-primary" size={12} /> Duplicate Offer
                                                                         </Dropdown.Item>
 
+                                                                        <Dropdown.Item onClick={() => navigateWithBranch(`/sales/proforma-invoice/create?quotationId=${q.id}`, 'Select Branch for Proforma Invoice')}>
+                                                                            <FaFileInvoiceDollar className="me-2 text-info" size={12} /> Convert to Proforma Invoice
+                                                                        </Dropdown.Item>
+
                                                                         {isApproved ? (
                                                                             <Dropdown.Item
                                                                                 onClick={() => {

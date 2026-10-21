@@ -1,0 +1,644 @@
+// ==========================================
+// Proforma Invoice Module SCSS Styles
+// Theme: Light Modern Corporate Red (#dc2626)
+// ==========================================
+
+.proforma-list-wrapper,
+.proforma-form-wrapper {
+  // Ensure native browser focus smoothly leaves clearance for sticky header
+  input, select, textarea, .form-control, .form-select {
+    scroll-margin-top: 100px !important;
+  }
+
+  // Ensure date input labels always float cleanly above native browser date controls
+  .custom-form-floating {
+    input[type="date"] ~ label {
+      transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
+      background-color: #ffffff !important;
+      opacity: 1 !important;
+      height: auto !important;
+      padding: 0 0.25rem !important;
+    }
+  }
+
+  // Modern Flatpickr floating date field enhancements
+  .custom-form-floating-sm.floating-date-field {
+    .form-control.flatpickrdate {
+      cursor: pointer;
+      background-color: #ffffff !important;
+      &:focus {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15) !important;
+      }
+    }
+
+    &.has-value label,
+    .form-control.flatpickrdate:focus ~ label {
+      color: #dc2626 !important;
+    }
+  }
+
+  .theme-crimson {
+    color: #dc2626 !important;
+  }
+
+  .bg-crimson {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+  }
+
+  .bg-crimson-light {
+    background-color: #fef2f2 !important;
+    border-color: #fee2e2 !important;
+  }
+
+  .border-crimson {
+    border-color: #dc2626 !important;
+  }
+
+  .btn-crimson {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease;
+
+    &:hover, &:focus {
+      background-color: #b91c1c !important;
+      border-color: #b91c1c !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25) !important;
+    }
+  }
+
+  .btn-outline-crimson {
+    background-color: transparent !important;
+    border-color: #dc2626 !important;
+    color: #dc2626 !important;
+    transition: all 0.2s ease;
+
+    &:hover, &:focus {
+      background-color: #dc2626 !important;
+      border-color: #dc2626 !important;
+      color: #ffffff !important;
+    }
+  }
+
+  .item-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+    line-height: 1.3;
+  }
+
+  // Section Cards
+  .form-section-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+
+    .form-section-header {
+      background: #ffffff;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 0.75rem 1.25rem;
+
+      .section-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    }
+
+    .form-section-body {
+      padding: 1.25rem;
+    }
+  }
+
+  // Floating Input Theme Accents (ERP Slate-Blue on Focus, NOT RED on focus)
+  .custom-form-floating-sm {
+    > .form-control:focus,
+    > .form-select:focus,
+    > textarea.form-control:focus {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 2.5px rgba(37, 99, 235, 0.15) !important;
+    }
+
+    > .form-control.is-invalid,
+    > .form-select.is-invalid,
+    > textarea.form-control.is-invalid {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.14) !important;
+      background-color: #fff5f5 !important;
+    }
+
+    > textarea.form-control {
+      line-height: 1.45;
+    }
+  }
+
+  // Readonly Floating Field Wrapper (e.g. Proforma No)
+  .readonly-floating-wrapper {
+    position: relative;
+
+    .readonly-watermark-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 0.8rem;
+      pointer-events: none;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .readonly-pill-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background-color: #e2e8f0;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      line-height: 1;
+
+      &.primary {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+      }
+    }
+  }
+
+  // GST Toggle Box
+  .gst-toggle-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.85rem;
+    height: 38px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+
+    .gst-label-text {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    &.active {
+      border-color: #fca5a5;
+      background: #fef2f2;
+
+      .gst-label-text {
+        color: #dc2626;
+      }
+    }
+  }
+
+  // KPI Metric Cards
+  .proforma-kpi-card {
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+    background: #ffffff;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  // Proforma Table Styling
+  .proforma-table {
+    th {
+      font-weight: 700;
+      color: #475569;
+      background-color: #f8fafc;
+      letter-spacing: 0.025em;
+    }
+
+    td {
+      padding: 0.65rem 0.75rem;
+      vertical-align: middle;
+    }
+
+    .proforma-item-row {
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: #f8fafc !important;
+      }
+    }
+  }
+
+  // Enhanced Totals & Advance Request Card
+  .totals-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      font-size: 0.85rem;
+      color: #475569;
+
+      &.highlight {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #0f172a;
+        border-top: 2px dashed #cbd5e1;
+        margin-top: 0.6rem;
+        padding-top: 0.75rem;
+      }
+    }
+
+    .advance-box {
+      margin-top: 1rem;
+      padding: 0.85rem;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #dc2626;
+
+      .preset-chip {
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover, &.active {
+          background: #dc2626;
+          border-color: #dc2626;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  // ==========================================
+  // Proforma Invoice List Enhancements
+  // ==========================================
+
+  // KPI Summary Cards (Crisp Executive Styling)
+  .proforma-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &.primary {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fee2e2;
+      }
+
+      &.success {
+        background-color: #ecfdf5;
+        color: #059669;
+        border: 1px solid #d1fae5;
+      }
+
+      &.info {
+        background-color: #f0f9ff;
+        color: #0284c7;
+        border: 1px solid #e0f2fe;
+      }
+
+      &.dark {
+        background-color: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+      }
+    }
+
+    .kpi-content {
+      overflow: hidden;
+
+      .kpi-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .kpi-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #0f172a;
+        margin-bottom: 2px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .kpi-subtext {
+        font-size: 0.69rem;
+        color: #94a3b8;
+        display: block;
+      }
+    }
+  }
+
+  // Filter Bar & Tabs
+  .proforma-tab-btn {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4.5px 11px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.15s ease;
+    cursor: pointer;
+
+    &:hover {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    &.active {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+      box-shadow: 0 1px 4px rgba(220, 38, 38, 0.25);
+    }
+
+    &.trash-tab.active {
+      background: #475569;
+      border-color: #475569;
+      color: #ffffff;
+    }
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+
+    &.status-dot-all { background-color: #64748b; }
+    &.status-dot-draft { background-color: #94a3b8; }
+    &.status-dot-sent { background-color: #3b82f6; }
+    &.status-dot-partially-paid { background-color: #f59e0b; }
+    &.status-dot-paid { background-color: #10b981; }
+    &.status-dot-converted { background-color: #8b5cf6; }
+    &.status-dot-cancelled { background-color: #ef4444; }
+  }
+
+  .table-responsive {
+    min-height: 250px;
+  }
+
+  // Enterprise Table Styling
+  .proforma-list-table {
+    margin-bottom: 0;
+
+    thead th {
+      background: #f8fafc !important;
+      color: #475569 !important;
+      font-weight: 700 !important;
+      font-size: 0.71rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-top: none !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      padding: 9px 10px !important;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      transition: background-color 0.15s ease;
+      position: relative;
+
+      &:hover,
+      &:focus-within {
+        background-color: #f8fafc !important;
+        z-index: 10;
+      }
+
+      td {
+        padding: 8px 10px !important;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.81rem;
+        color: #1e293b;
+      }
+    }
+
+    .proforma-number-link {
+      font-size: 0.84rem;
+      text-decoration: none;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: #991b1b !important;
+        text-decoration: underline;
+      }
+    }
+
+    .badge-order-ref {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      font-family: var(--bs-font-monospace, monospace);
+      display: inline-block;
+    }
+
+    .font-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .proforma-actions-group {
+      .btn-table-action {
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 5px;
+        color: #64748b;
+        transition: all 0.15s ease;
+        cursor: pointer;
+
+        &:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+
+        &.btn-action-pdf:hover {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #2563eb;
+        }
+
+        &.btn-action-edit:hover {
+          background: #fef2f2;
+          border-color: #fecaca;
+          color: #dc2626;
+        }
+
+        &.btn-action-restore:hover {
+          background: #ecfdf5;
+          border-color: #a7f3d0;
+          color: #059669;
+        }
+
+        &.btn-action-more,
+        &.dropdown-toggle {
+          font-size: 14px;
+          line-height: 1;
+          font-weight: bold;
+          &::after {
+            display: none !important;
+          }
+        }
+      }
+
+      .dropdown-menu {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.22), 0 4px 6px -2px rgba(15, 23, 42, 0.1) !important;
+        font-size: 0.8rem;
+        z-index: 1080 !important;
+
+        .dropdown-item {
+          padding: 7px 14px;
+          color: #1e293b !important;
+          font-weight: 500;
+          font-size: 0.8rem;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+          }
+
+          &.text-danger {
+            color: #dc2626 !important;
+            &:hover {
+              background-color: #fef2f2 !important;
+              color: #b91c1c !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Status Badges (Crisp, High-Density Pills)
+  .status-badge {
+    padding: 2px 7.5px;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: inline-block;
+    white-space: nowrap;
+
+    &.status-draft {
+      background-color: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+    }
+    &.status-sent {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+    &.status-partially-paid {
+      background-color: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    &.status-paid {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+    &.status-converted {
+      background-color: #faf5ff;
+      color: #7e22ce;
+      border: 1px solid #e9d5ff;
+    }
+    &.status-cancelled {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+  }
+}
+
+.modal-90w {
+  max-width: 92% !important;
+}
