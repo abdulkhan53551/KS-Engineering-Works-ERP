@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt, FaBookOpen, FaPen } from 'react-icons/fa';
+import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt, FaBookOpen, FaPen, FaBalanceScale } from 'react-icons/fa';
 import PartyStatusBadge from './PartyStatusBadge';
 import PartyDocumentSection from './sections/PartyDocumentSection';
 import { toast } from 'react-toastify';
@@ -206,6 +206,47 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
                                     )}
                                 </div>
                             </Col>
+                        </Row>
+                    </Card.Body>
+                </Card>
+
+                {/* Financial & Ledger Terms */}
+                <Card className="mb-3 border shadow-none">
+                    <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
+                        <FaBalanceScale className="text-primary" />
+                        <span className="fw-semibold text-dark small text-uppercase">Financial & Ledger Terms</span>
+                    </Card.Header>
+                    <Card.Body className="p-3">
+                        <Row className="g-2">
+                            <Col xs={6}>
+                                <div className="mb-2">
+                                    <span className="text-muted small d-block">Opening Balance</span>
+                                    <span className="fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                        ₹ {Number(party.openingBalance || party.opening_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <Badge bg={String(party.openingBalanceType || party.opening_balance_type || 'Dr').toUpperCase() === 'CR' ? 'soft-warning text-warning' : 'soft-primary text-primary'} className="ms-1.5 px-1.5 py-0.5">
+                                        {String(party.openingBalanceType || party.opening_balance_type || 'Dr').toUpperCase() === 'CR' ? 'Cr (Payable)' : 'Dr (Receivable)'}
+                                    </Badge>
+                                </div>
+                            </Col>
+                            <Col xs={6}>
+                                <div className="mb-2">
+                                    <span className="text-muted small d-block">Credit Period</span>
+                                    <span className="fw-semibold text-dark">
+                                        {party.creditPeriodDays ? `${party.creditPeriodDays} Days` : '0 Days'}
+                                    </span>
+                                </div>
+                            </Col>
+                            {party.openingBalanceDate || party.opening_balance_date ? (
+                                <Col xs={12}>
+                                    <div className="mt-1 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <span className="text-muted small">As of Date:</span>
+                                        <span className="small text-dark font-monospace">
+                                            {new Date(party.openingBalanceDate || party.opening_balance_date).toLocaleDateString('en-GB')}
+                                        </span>
+                                    </div>
+                                </Col>
+                            ) : null}
                         </Row>
                     </Card.Body>
                 </Card>

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Form, Button, Spinner, Tab, Nav, Badge } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/flatpickr.css';
 import { joiResolver } from '@hookform/resolvers/joi';
 import { createPartyValidationSchema } from '../../../validation/party.validation';
 import {
@@ -27,8 +29,11 @@ import {
     FaUserCheck,
     FaUniversity,
     FaFileAlt,
-    FaInfoCircle
+    FaInfoCircle,
+    FaBalanceScale,
+    FaRegCalendarAlt
 } from 'react-icons/fa';
+import moment from 'moment';
 import PageLoader from '../../../components/PageLoader';
 import { toast } from 'react-toastify';
 
@@ -79,6 +84,9 @@ const PartyForm = ({ mode = 'create' }) => {
             website: '',
             remarks: '',
             creditPeriodDays: 0,
+            openingBalance: 0,
+            openingBalanceType: 'Dr',
+            openingBalanceDate: new Date(),
             logoUrl: '',
             logoPublicId: '',
             status: 'ACTIVE'
@@ -107,6 +115,11 @@ const PartyForm = ({ mode = 'create' }) => {
                 website: party.website || '',
                 remarks: party.remarks || '',
                 creditPeriodDays: party.creditPeriodDays ?? 0,
+                openingBalance: party.openingBalance ?? party.opening_balance ?? 0,
+                openingBalanceType: party.openingBalanceType || party.opening_balance_type || 'Dr',
+                openingBalanceDate: party.openingBalanceDate || party.opening_balance_date
+                    ? new Date(party.openingBalanceDate || party.opening_balance_date)
+                    : new Date(),
                 logoUrl: party.logoUrl || party.logo || '',
                 logoPublicId: party.logoPublicId || '',
                 status: party.status || 'ACTIVE'
@@ -153,6 +166,13 @@ const PartyForm = ({ mode = 'create' }) => {
             website: formData.website ? formData.website.trim() : null,
             remarks: formData.remarks ? formData.remarks.trim() : null,
             creditPeriodDays: Number(formData.creditPeriodDays) || 0,
+            openingBalance: formData.openingBalance !== '' && formData.openingBalance !== null && !isNaN(Number(formData.openingBalance))
+                ? Number(formData.openingBalance)
+                : 0,
+            openingBalanceType: formData.openingBalanceType || 'Dr',
+            openingBalanceDate: formData.openingBalanceDate
+                ? moment(formData.openingBalanceDate).format('YYYY-MM-DD')
+                : null,
             logoUrl: formData.logoUrl || null,
             logoPublicId: formData.logoPublicId || null,
             status: formData.status || 'ACTIVE'
@@ -721,6 +741,116 @@ const PartyForm = ({ mode = 'create' }) => {
                     </Card.Body>
                 </Card>
 
+                {/* 4. Financial Terms & Opening Balance Card */}
+                <Card className="mb-4 shadow-sm border bg-white">
+                    <Card.Header className="bg-transparent py-3 px-4 border-bottom">
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="avatar-35 bg-soft-primary rounded d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '34px', height: '34px' }}>
+                                <FaBalanceScale className="text-primary" size={14} />
+                            </div>
+                            <div>
+                                <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                    4. Financial Terms & Opening Balance
+                                </h6>
+                                <span className="text-muted" style={{ fontSize: '0.74rem' }}>
+                                    Brought-forward opening balance, Dr/Cr classification, and effective ledger start date
+                                </span>
+                            </div>
+                        </div>
+                    </Card.Header>
+
+                    <Card.Body className="p-4 pt-3.5">
+                        <Row className="g-3">
+                            {/* Opening Balance Amount (₹) */}
+                            <Col lg={4} md={6}>
+                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                    <Form.Control
+                                        type="number"
+                                        id="openingBalance"
+                                        placeholder="Opening Balance (₹)"
+                                        step="0.01"
+                                        min={0}
+                                        style={{ fontSize: '0.84rem' }}
+                                        isInvalid={!!errors.openingBalance}
+                                        {...register('openingBalance')}
+                                    />
+                                    <Form.Label htmlFor="openingBalance" style={{ fontSize: '0.78rem' }}>
+                                        Opening Balance (₹)
+                                    </Form.Label>
+                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                        {errors.openingBalance?.message}
+                                    </Form.Control.Feedback>
+                                </Form.Floating>
+                            </Col>
+
+                            {/* Balance Type (Dr / Cr) */}
+                            <Col lg={4} md={6}>
+                                <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-2">
+                                    <Form.Select
+                                        id="openingBalanceType"
+                                        style={{ fontSize: '0.84rem' }}
+                                        isInvalid={!!errors.openingBalanceType}
+                                        {...register('openingBalanceType')}
+                                    >
+                                        <option value="Dr">Dr — Debit (Receivable)</option>
+                                        <option value="Cr">Cr — Credit (Payable)</option>
+                                    </Form.Select>
+                                    <Form.Label htmlFor="openingBalanceType" style={{ fontSize: '0.78rem' }}>
+                                        Balance Type (Dr / Cr)
+                                    </Form.Label>
+                                    <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                        {errors.openingBalanceType?.message}
+                                    </Form.Control.Feedback>
+                                </Form.Floating>
+                            </Col>
+
+                            {/* As of Date (Flatpickr - styled exactly like QuotationForm) */}
+                            <Col lg={4} md={12}>
+                                <Controller
+                                    name="openingBalanceDate"
+                                    control={control}
+                                    defaultValue={new Date()}
+                                    render={({ field, fieldState: { error } }) => (
+                                        <Form.Floating className={`custom-form-floating custom-form-floating-sm floating-date-field form-group mb-2 ${field.value ? 'has-value' : ''}`}>
+                                            <Flatpickr
+                                                {...field}
+                                                id="openingBalanceDate"
+                                                value={field.value}
+                                                onChange={(selectedDates) => {
+                                                    field.onChange(selectedDates[0] || null);
+                                                }}
+                                                options={{
+                                                    dateFormat: "d M Y",
+                                                    allowInput: false
+                                                }}
+                                                className={`form-control flatpickrdate ${error ? "is-invalid" : ""}`}
+                                                placeholder=" "
+                                            />
+                                            <Form.Label htmlFor="openingBalanceDate" className="text-dark" style={{ fontSize: '0.78rem' }}>
+                                                As of Date (Opening Date)
+                                            </Form.Label>
+                                            <FaRegCalendarAlt className="floating-date-icon" />
+                                            <Form.Control.Feedback type="invalid" style={{ fontSize: '0.75rem' }}>
+                                                {error?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Floating>
+                                    )}
+                                />
+                            </Col>
+
+                            {/* Ledger Notice Alert */}
+                            <Col xs={12}>
+                                <div className="p-2.5 rounded bg-soft-primary border border-primary-subtle d-flex align-items-center gap-2 text-primary" style={{ fontSize: '0.78rem' }}>
+                                    <FaInfoCircle size={14} className="flex-shrink-0" />
+                                    <span>
+                                        <strong>Party Ledger Starting Point:</strong> The party ledger will calculate all running statements from this Opening Balance onwards (instead of starting from ₹0.00).
+                                    </span>
+                                </div>
+                            </Col>
+                        </Row>
+                    </Card.Body>
+                </Card>
+
                 {/* Bottom Action Bar */}
                 <div className="d-flex align-items-center justify-content-end gap-2.5 mb-4 p-3 bg-white rounded border shadow-sm">
                     {!isEditMode && (
@@ -751,13 +881,13 @@ const PartyForm = ({ mode = 'create' }) => {
                 </div>
             </Form>
 
-            {/* 4. Sub-Sections (Addresses, Contacts, Bank Accounts, KYC & Documents) */}
+            {/* 5. Sub-Sections (Addresses, Contacts, Bank Accounts, KYC & Documents) */}
             <Card className="mb-4 shadow-sm border bg-white">
                 <Card.Header className="bg-transparent py-3 px-4 border-bottom">
                     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
                             <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
-                                4. Associated Party Details
+                                5. Associated Party Details
                             </h6>
                             <span className="text-muted" style={{ fontSize: '0.74rem' }}>
                                 Manage branch addresses, contact persons, bank accounts, and KYC/compliance documents
