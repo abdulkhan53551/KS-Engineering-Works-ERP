@@ -70,6 +70,7 @@ import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 import PartyList from '../views/party/pages/PartyList';
 import PartyForm from '../views/party/pages/PartyForm';
+import PartyLedgerPage from '../views/party/pages/PartyLedgerPage';
 import ContactRoleList from '../views/masters/contact-roles/pages/ContactRoleList';
 import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
 import ProductList from '../views/products/pages/ProductList';
@@ -121,6 +122,7 @@ export const DefaultRouter = [
                     { path: 'parties', element: <PartyList /> },
                     { path: 'parties/create', element: <PartyForm mode="create" /> },
                     { path: 'parties/:id/edit', element: <PartyForm mode="edit" /> },
+                    { path: 'parties/:id/ledger', element: <PartyLedgerPage /> },
                     { path: 'parties/party-roles', element: <PartyRoleList /> },
                     { path: 'organization/party-roles', element: <PartyRoleList /> },
 

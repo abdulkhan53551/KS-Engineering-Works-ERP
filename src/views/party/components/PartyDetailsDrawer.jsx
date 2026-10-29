@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt } from 'react-icons/fa';
+import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt, FaBookOpen, FaPen } from 'react-icons/fa';
 import PartyStatusBadge from './PartyStatusBadge';
 import PartyDocumentSection from './sections/PartyDocumentSection';
 import { toast } from 'react-toastify';
@@ -133,6 +134,22 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
             </Offcanvas.Header>
 
             <Offcanvas.Body className="p-3">
+                {/* Quick Action Navigation */}
+                <div className="d-flex gap-2 mb-3">
+                    <Link to={`/parties/${party.id}/ledger`} className="flex-grow-1 text-decoration-none" onClick={onHide}>
+                        <Button variant="primary" size="sm" className="w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm fw-semibold">
+                            <FaBookOpen size={12} />
+                            <span>View Account Ledger</span>
+                        </Button>
+                    </Link>
+                    <Link to={`/parties/${party.id}/edit`} className="text-decoration-none" onClick={onHide}>
+                        <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                            <FaPen size={11} />
+                            <span>Edit</span>
+                        </Button>
+                    </Link>
+                </div>
+
                 {/* 1. Identity / General Info */}
                 <Card className="mb-3 border shadow-none">
                     <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
