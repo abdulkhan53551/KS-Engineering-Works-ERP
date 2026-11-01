@@ -554,6 +554,7 @@ const PartyLedgerPdfDocument = ({ config = {} }) => {
     openingBalance = 0,
     openingBalanceType = 'Dr',
     summary = {},
+    agingSummary = null,
     rows = [],
   } = config;
 
@@ -693,6 +694,11 @@ const PartyLedgerPdfDocument = ({ config = {} }) => {
                             {`${formatRupeeAmount(summary?.netClosingBalance ?? 0)} `}
                             <Text style={styles.drBadge}>{summary?.closingBalanceType || 'Dr'}</Text>
                           </Text>
+                          {agingSummary?.overdueAmount > 0 && (
+                            <Text style={{ fontSize: 6.5, color: '#dc2626', fontWeight: 'bold', marginTop: 1 }}>
+                              {`Overdue: ${formatRupeeAmount(agingSummary.overdueAmount)}`}
+                            </Text>
+                          )}
                         </View>
                       </View>
                     </View>
@@ -900,6 +906,14 @@ const PartyLedgerPdfDocument = ({ config = {} }) => {
                       <Text style={styles.termsTxt}>
                         Please examine this statement immediately. Discrepancies, if any, must be reported within 7 business days from receipt, failing which this statement shall be deemed correct, verified, and accepted in full.
                       </Text>
+                      {agingSummary?.overdueAmount > 0 && (
+                        <View style={{ marginTop: 3.5, padding: 3.5, backgroundColor: '#fffbeb', borderRadius: 2, borderLeftWidth: 2, borderLeftColor: '#f59e0b' }}>
+                          <Text style={{ fontSize: 6.8, color: '#92400e', lineHeight: 1.25 }}>
+                            <Text style={{ fontWeight: 'bold' }}>PAYMENT REMINDER: </Text>
+                            {`As per our agreed credit terms of ${agingSummary.applicableCreditDays || 30} days, an overdue balance of ${formatRupeeAmount(agingSummary.overdueAmount)} is pending for settlement. We kindly request you to review and arrange the payment at your earliest convenience.`}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                   <View style={styles.signArea}>

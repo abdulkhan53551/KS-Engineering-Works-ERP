@@ -41,7 +41,7 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
     throw new Error('Invalid ledger data provided to export adapter.');
   }
 
-  const { party, period, openingBalance, openingBalanceType, transactions = [], summary = {} } = ledgerData;
+  const { party, period, openingBalance, openingBalanceType, transactions = [], summary = {}, agingSummary } = ledgerData;
 
   // Firm details resolved from Backend response first, then Redux session (No hardcoded fallbacks)
   const firmSource = ledgerData?.firm || activeFirm || {};
@@ -64,6 +64,18 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
     { label: 'Opening Balance', value: `₹${formatIndianCurrency(openingBalance)} ${openingBalanceType || 'Dr'}` },
     { label: 'Closing Balance', value: `₹${formatIndianCurrency(summary?.netClosingBalance)} ${summary?.closingBalanceType || 'Dr'}` },
   ];
+
+  if (agingSummary) {
+    if (agingSummary.applicableCreditDays > 0) {
+      metadata.push({ label: 'Credit Terms', value: `${agingSummary.applicableCreditDays} Days` });
+    }
+    if (agingSummary.overdueAmount > 0) {
+      metadata.push({ label: 'Immediate Overdue', value: `₹${formatIndianCurrency(agingSummary.overdueAmount)} (Past Credit Terms)` });
+    }
+    if (agingSummary.currentDueAmount > 0) {
+      metadata.push({ label: 'Within Terms Due', value: `₹${formatIndianCurrency(agingSummary.currentDueAmount)}` });
+    }
+  }
 
   // Table Columns (Option C Enterprise Format)
   const columns = [
@@ -105,6 +117,7 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
     const dVal = Number(tx.debit || 0);
     const cVal = Number(tx.credit || 0);
     const bVal = Number(tx.balance ?? 0);
+    const rowDesc = tx.particulars || '—';
 
     rows.push({
       index: idx + 2,
@@ -112,8 +125,8 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
       type: (tx.voucherType || 'Transaction').toUpperCase(),
       voucherType: tx.voucherType || 'Transaction',
       voucherNo: tx.voucherNo || '—',
-      description: tx.particulars || '—',
-      particulars: tx.particulars || '—',
+      description: rowDesc,
+      particulars: rowDesc,
       debit: dVal > 0 ? dVal : null,
       credit: cVal > 0 ? cVal : null,
       balance: `₹${formatIndianCurrency(bVal)} ${tx.balanceType || 'Dr'}`,
@@ -122,6 +135,10 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
       balanceType: tx.balanceType || (bVal >= 0 ? 'Dr' : 'Cr'),
       rawDebit: dVal,
       rawCredit: cVal,
+      dueDate: tx.dueDate ? formatDateDisplay(tx.dueDate) : null,
+      isSettled: tx.isSettled,
+      isOverdue: tx.isOverdue,
+      overdueDays: tx.overdueDays,
     });
   });
 
@@ -189,6 +206,7 @@ export const formatPartyLedgerToExportSchema = (ledgerData, activeFirm = {}) => 
     openingBalance,
     openingBalanceType,
     summary,
+    agingSummary,
     kpiGrid,
     company: {
       name: firmName,

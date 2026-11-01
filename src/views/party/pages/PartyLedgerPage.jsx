@@ -30,6 +30,8 @@ import {
   FaMapMarkerAlt,
   FaCalendarAlt,
   FaSyncAlt,
+  FaClock,
+  FaExclamationTriangle,
 } from 'react-icons/fa';
 import moment from 'moment';
 import { usePartyLedger } from '../hooks/usePartyApi';
@@ -247,6 +249,7 @@ const PartyLedgerPage = () => {
   const summary = ledgerData?.summary;
   const openingBalance = ledgerData?.openingBalance || 0;
   const openingBalanceType = ledgerData?.openingBalanceType || 'Dr';
+  const agingSummary = ledgerData?.agingSummary;
 
   return (
     <div className="party-ledger-container container-fluid px-3 py-3">
@@ -570,12 +573,91 @@ const PartyLedgerPage = () => {
             </div>
             <div className="text-muted small mt-1">
               {summary?.closingBalanceType === 'Dr'
-                ? 'Receivable from Party (लेणदार)'
-                : 'Payable to Party (देणदार)'}
+                ? 'Receivable from Party (Debit)'
+                : 'Payable to Party (Credit)'}
             </div>
           </div>
         </Col>
       </Row>
+
+      {/* 4.1 Credit Terms & Overdue Aging Analysis Strip */}
+      {agingSummary && (
+        <Card
+          className="mb-3 border shadow-sm overflow-hidden"
+          style={{
+            borderRadius: '10px',
+            borderLeft: `5px solid ${agingSummary.overdueAmount > 0 ? '#dc2626' : '#16a34a'} !important`,
+            background: agingSummary.overdueAmount > 0 ? '#fffaf9' : '#fafffa'
+          }}
+        >
+          <Card.Body className="py-2.5 px-3">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+              <div className="d-flex align-items-center gap-3">
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    backgroundColor: agingSummary.overdueAmount > 0 ? 'rgba(220, 38, 38, 0.12)' : 'rgba(22, 163, 74, 0.12)',
+                    color: agingSummary.overdueAmount > 0 ? '#dc2626' : '#16a34a'
+                  }}
+                >
+                  <FaClock size={16} />
+                </div>
+                <div>
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <span className="fw-bold text-dark" style={{ fontSize: '0.90rem' }}>
+                      Credit Terms: {agingSummary.applicableCreditDays > 0 ? `${agingSummary.applicableCreditDays} Days` : 'Immediate / Cash'}
+                    </span>
+                    {agingSummary.overdueAmount > 0 ? (
+                      <Badge bg="danger" className="px-2 py-1 text-uppercase fw-semibold" style={{ fontSize: '0.70rem' }}>
+                        Overdue ({agingSummary.overdueInvoiceCount} {agingSummary.overdueInvoiceCount === 1 ? 'Bill' : 'Bills'})
+                      </Badge>
+                    ) : (
+                      <Badge bg="success" className="px-2 py-1 text-uppercase fw-semibold" style={{ fontSize: '0.70rem' }}>
+                        Account Within Terms
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: '0.74rem' }}>
+                    Aging assessed as of {formatDate(agingSummary.asOfDate)} using FIFO debt settlement
+                  </div>
+                </div>
+              </div>
+
+              <div className="d-flex align-items-center gap-4 ms-auto">
+                <div className="text-end">
+                  <span className="text-muted small d-block" style={{ fontSize: '0.72rem' }}>Immediate Overdue</span>
+                  <span
+                    className="fw-bold font-monospace"
+                    style={{
+                      fontSize: '1.02rem',
+                      color: agingSummary.overdueAmount > 0 ? '#dc2626' : '#64748b'
+                    }}
+                  >
+                    {formatCurrency(agingSummary.overdueAmount || 0)}
+                  </span>
+                  {agingSummary.maxOverdueDays > 0 && (
+                    <span className="text-danger d-block fw-semibold" style={{ fontSize: '0.68rem' }}>
+                      (Max {agingSummary.maxOverdueDays} days past due)
+                    </span>
+                  )}
+                </div>
+
+                <div className="border-start ps-4 text-end">
+                  <span className="text-muted small d-block" style={{ fontSize: '0.72rem' }}>Within Credit Terms</span>
+                  <span className="fw-bold font-monospace text-success" style={{ fontSize: '1.02rem' }}>
+                    {formatCurrency(agingSummary.currentDueAmount || 0)}
+                  </span>
+                  <span className="text-muted d-block" style={{ fontSize: '0.68rem' }}>
+                    On schedule
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* 5. Error State */}
       {isError && (
@@ -704,7 +786,27 @@ const PartyLedgerPage = () => {
                     <td className="font-monospace fw-semibold text-dark">
                       {tx.voucherNo || '—'}
                     </td>
-                    <td className="text-dark">{tx.particulars}</td>
+                    <td className="text-dark">
+                      <div>{tx.particulars}</div>
+                      {tx.dueDate && (tx.voucherType === 'Invoice' || tx.voucherType === 'Vendor Bill' || tx.voucherType === 'Opening Balance') && (
+                        <div className="d-flex align-items-center gap-1.5 mt-1" style={{ fontSize: '0.74rem' }}>
+                          <span className="text-muted">Due: {formatDate(tx.dueDate)}</span>
+                          {tx.isSettled ? (
+                            <Badge bg="light" className="text-success border px-1.5 py-0.5 font-monospace fw-normal" style={{ fontSize: '0.68rem' }}>
+                              Paid
+                            </Badge>
+                          ) : tx.isOverdue ? (
+                            <Badge bg="danger" className="px-1.5 py-0.5 font-monospace fw-normal" style={{ fontSize: '0.68rem' }}>
+                              {tx.overdueDays}d Overdue
+                            </Badge>
+                          ) : tx.daysUntilDue !== null ? (
+                            <Badge bg="light" className="text-success border px-1.5 py-0.5 font-monospace fw-normal" style={{ fontSize: '0.68rem' }}>
+                              Due in {tx.daysUntilDue}d
+                            </Badge>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
                     <td className="text-end debit-amount">
                       {tx.debit > 0 ? formatCurrency(tx.debit) : '—'}
                     </td>
