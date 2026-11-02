@@ -8,6 +8,7 @@ import {
     getInvoice,
     getInvoiceById,
     getInvoicePagination,
+    getInvoiceSummary,
     getLastInvoice,
     getNextInvoiceNumber,
     getUnmappedEwayBillByInvoiceId,
@@ -54,6 +55,32 @@ export const useInvoicePagination = ({
                 pageStart,
                 pageEnd
             };
+        }
+    });
+};
+
+// Get invoice financial KPI summary (database-wide, all pages matching active filters)
+export const useInvoiceSummary = ({
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+} = {}) => {
+    return useQuery({
+        queryKey: ["invoiceSummary", search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoiceSummary({ search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        keepPreviousData: true,
+        staleTime: 30 * 1000,
+        select: (result) => result?.data ?? {
+            totalInvoiced: 0,
+            totalPaid: 0,
+            totalBalance: 0,
+            fullyPaidCount: 0,
+            partialCount: 0,
+            unpaidCount: 0,
+            totalCount: 0
         }
     });
 };

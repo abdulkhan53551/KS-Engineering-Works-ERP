@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -18,8 +18,15 @@ import {
     FaCheck,
     FaCalendarAlt,
     FaBan,
-    FaEye
+    FaEye,
+    FaFileInvoiceDollar,
+    FaCheckCircle,
+    FaClock,
+    FaLayerGroup,
+    FaEllipsisV,
+    FaPlus
 } from 'react-icons/fa';
+import './invoice-list-modern.scss';
 import PageLoader from '../../../components/PageLoader';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
 import InvoicePaymentHistoryModal from '../../payments/components/modals/InvoicePaymentHistoryModal';
@@ -31,6 +38,7 @@ import {
     useDownloadInvoice,
     useInvoice,
     useInvoicePagination,
+    useInvoiceSummary,
     useRestoreInvoice,
     useCancelInvoice
 } from '../hooks/useApi';
@@ -157,12 +165,35 @@ const InvoiceList = () => {
         hasEwayBill: ewayBillFilter
     });
 
-    const isFetching = isListFetching || isPaginationFetching;
+    // Dedicated Financial KPI Summary Query (Independent of page/pageSize, 100% reactive to all filters)
+    const {
+        data: kpiMetrics = {
+            totalInvoiced: 0,
+            totalPaid: 0,
+            totalBalance: 0,
+            fullyPaidCount: 0,
+            partialCount: 0,
+            unpaidCount: 0,
+            totalCount: 0
+        },
+        isFetching: isSummaryFetching,
+        refetch: refetchSummary
+    } = useInvoiceSummary({
+        search: debouncedSearch,
+        trash: isTrash,
+        paymentStatus: statusFilter,
+        startDate,
+        endDate,
+        hasEwayBill: ewayBillFilter
+    });
+
+    const isFetching = isListFetching || isPaginationFetching || isSummaryFetching;
     const isLoading = isListLoading || isPaginationLoading;
 
     const handleRefresh = () => {
         refetchList();
         refetchPagination();
+        refetchSummary();
     };
 
     // Column Sorting Custom Hook
@@ -208,25 +239,126 @@ const InvoiceList = () => {
             <PageLoader loading={isFetching && !isLoading} />
             <Row>
                 <Col sm="12">
-                    <Card>
-                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div className="header-title d-flex align-items-center gap-2">
-                                <h4 className="card-title mb-0">Invoice</h4>
-                                {!isLoading && totalItems > 0 && (
-                                    <Badge bg="soft-primary" className="text-primary fw-semibold px-2 py-1">
-                                        {totalItems} Total
-                                    </Badge>
-                                )}
+                    {/* Executive Financial KPI Cards */}
+                    {!isTrash && (
+                        <div className="invoice-kpi-grid">
+                            {/* Card 1: Total Invoiced */}
+                            <div className="invoice-kpi-card kpi-invoiced">
+                                <div className="kpi-content">
+                                    <div className="kpi-label">
+                                        <FaFileInvoiceDollar size={13} className="text-primary" />
+                                        <span>Total Invoiced</span>
+                                    </div>
+                                    <div className="kpi-value font-monospace">
+                                        ₹{kpiMetrics.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    <div className="kpi-subtext">
+                                        <span>{kpiMetrics.totalCount} Active {kpiMetrics.totalCount === 1 ? 'Invoice' : 'Invoices'}</span>
+                                    </div>
+                                </div>
+                                <div className="kpi-icon-pill icon-invoiced">
+                                    <FaFileInvoiceDollar size={18} />
+                                </div>
                             </div>
-                            <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
-                            <div>
+
+                            {/* Card 2: Total Received */}
+                            <div className="invoice-kpi-card kpi-collected">
+                                <div className="kpi-content">
+                                    <div className="kpi-label">
+                                        <FaCheckCircle size={13} className="text-success" />
+                                        <span>Total Received</span>
+                                    </div>
+                                    <div className="kpi-value font-monospace text-success">
+                                        ₹{kpiMetrics.totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    <div className="kpi-subtext">
+                                        <span className="text-success fw-semibold">
+                                            {kpiMetrics.totalInvoiced > 0 ? Math.round((kpiMetrics.totalPaid / kpiMetrics.totalInvoiced) * 100) : 0}%
+                                        </span>
+                                        <span>Collection Rate</span>
+                                    </div>
+                                </div>
+                                <div className="kpi-icon-pill icon-collected">
+                                    <FaCheckCircle size={18} />
+                                </div>
+                            </div>
+
+                            {/* Card 3: Outstanding Due */}
+                            <div className="invoice-kpi-card kpi-outstanding">
+                                <div className="kpi-content">
+                                    <div className="kpi-label">
+                                        <FaClock size={13} className="text-warning" />
+                                        <span>Outstanding Due</span>
+                                    </div>
+                                    <div className="kpi-value font-monospace text-warning">
+                                        ₹{kpiMetrics.totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    <div className="kpi-subtext">
+                                        <span>{kpiMetrics.partialCount + kpiMetrics.unpaidCount} Pending Settlement</span>
+                                    </div>
+                                </div>
+                                <div className="kpi-icon-pill icon-outstanding">
+                                    <FaClock size={18} />
+                                </div>
+                            </div>
+
+                            {/* Card 4: Volume & Mix */}
+                            <div className="invoice-kpi-card kpi-volume">
+                                <div className="kpi-content">
+                                    <div className="kpi-label">
+                                        <FaLayerGroup size={13} style={{ color: '#8b5cf6' }} />
+                                        <span>Invoice Volume</span>
+                                    </div>
+                                    <div className="kpi-value font-monospace">
+                                        {kpiMetrics.totalCount}
+                                    </div>
+                                    <div className="kpi-subtext">
+                                        <span>{kpiMetrics.fullyPaidCount} Paid · {kpiMetrics.partialCount} Partial · {kpiMetrics.unpaidCount} Due</span>
+                                    </div>
+                                </div>
+                                <div className="kpi-icon-pill icon-volume">
+                                    <FaLayerGroup size={18} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <Card className="shadow-sm border-0">
+                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4 bg-white border-bottom">
+                            <div className="header-title d-flex align-items-center gap-3">
+                                <div className="invoice-title-icon-pill">
+                                    <FaFileInvoiceDollar size={18} />
+                                </div>
+                                <div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <h4 className="card-title mb-0 fw-bold text-dark">Tax Invoices</h4>
+                                        {!isLoading && totalItems > 0 && (
+                                            <Badge bg="soft-primary" className="text-primary fw-semibold px-2.5 py-1 rounded-pill" style={{ fontSize: '0.74rem' }}>
+                                                {totalItems} Total
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <p className="text-muted small mb-0 mt-0.5" style={{ fontSize: '0.78rem' }}>
+                                        Sales invoices, GST tax breakdowns, collections & PDF records
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="d-flex align-items-center gap-2.5 flex-wrap">
+                                <TrashTabFilter
+                                    isTrash={isTrash}
+                                    onTabChange={handleTabChange}
+                                />
                                 {!isTrash && (
                                     <Button
                                         type="button"
                                         variant="primary"
+                                        className="d-flex align-items-center gap-1.5 px-3 py-2 shadow-sm fw-semibold"
+                                        style={{ borderRadius: '7px', fontSize: '0.82rem' }}
                                         onClick={() => navigateWithBranch('/sales/invoice/create', 'Select Branch for New Invoice')}
                                     >
-                                        + Add Invoice
+                                        <FaPlus size={11} />
+                                        <span>Add Invoice</span>
                                     </Button>
                                 )}
                             </div>
@@ -252,114 +384,74 @@ const InvoiceList = () => {
 
                         <Card.Body className="px-0">
                             {/* Professional Controls & Filter Toolbar */}
-                            <div className="px-4 pt-1 pb-3">
+                            <div className="px-4 py-3 bg-white border-bottom">
                                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-2.5">
-                                    {/* Left Side: Show Entries Selector */}
-                                    <div className="d-flex align-items-center text-muted small">
-                                        <span className="me-1.5 text-secondary">Show</span>
-                                        <Form.Select
-                                            size="sm"
-                                            className="form-select-sm border shadow-none"
-                                            style={{ width: '4.8rem', borderRadius: '6px' }}
-                                            value={pageSize}
-                                            onChange={(e) => {
-                                                setPageSize(Number(e.target.value));
-                                                setPage(1);
-                                                handleDeselectAll();
-                                            }}
-                                        >
-                                            <option value="10">10</option>
-                                            <option value="25">25</option>
-                                            <option value="50">50</option>
-                                            <option value="100">100</option>
-                                        </Form.Select>
-                                        <span className="ms-1.5 text-secondary">entries</span>
-                                    </div>
+                                    {/* Left Side: Modern Segmented Status Tabs */}
+                                    {!isTrash ? (
+                                        <div className="segmented-status-tabs">
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${!statusFilter ? 'active' : ''}`}
+                                                onClick={() => handleStatusChange('')}
+                                            >
+                                                All
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${statusFilter === 'PENDING' ? 'active' : ''}`}
+                                                onClick={() => handleStatusChange('PENDING')}
+                                            >
+                                                Unpaid
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${statusFilter === 'PARTIAL' ? 'active' : ''}`}
+                                                onClick={() => handleStatusChange('PARTIAL')}
+                                            >
+                                                Partial
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${statusFilter === 'PAID' ? 'active' : ''}`}
+                                                onClick={() => handleStatusChange('PAID')}
+                                            >
+                                                Paid
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="d-flex align-items-center gap-2 text-danger small fw-semibold">
+                                            <FaTrash size={12} />
+                                            <span>Recycle Bin (Deleted Records)</span>
+                                        </div>
+                                    )}
 
                                     {/* Right Side: Search & Filter Controls Group */}
                                     <div className="d-flex align-items-center flex-wrap gap-2">
                                         {/* Search Input */}
-                                        <InputGroup size="sm" style={{ width: '230px' }} className="shadow-none">
-                                            <InputGroup.Text className="bg-white border-end-0 text-muted ps-2.5 pe-1">
+                                        <InputGroup size="sm" style={{ width: '250px' }} className="shadow-none">
+                                            <InputGroup.Text className="bg-white border-end-0 text-muted ps-2.5 pe-1" style={{ borderTopLeftRadius: '7px', borderBottomLeftRadius: '7px', height: '33px' }}>
                                                 <FaSearch size={11} />
                                             </InputGroup.Text>
                                             <Form.Control
                                                 type="search"
-                                                placeholder="Search invoices..."
+                                                placeholder="Search invoice no, party..."
                                                 value={search}
                                                 onChange={handleSearch}
                                                 className="border-start-0 border-end-0 ps-1"
-                                                style={{ fontSize: '0.82rem' }}
+                                                style={{ fontSize: '0.82rem', height: '33px' }}
                                             />
                                             {search && (
                                                 <Button
                                                     variant="white"
-                                                    className="bg-white border border-start-0 border-end-0 text-muted px-2"
+                                                    className="bg-white border border-start-0 text-muted px-2"
                                                     onClick={clearSearch}
                                                     title="Clear search"
+                                                    style={{ height: '33px', borderTopRightRadius: '7px', borderBottomRightRadius: '7px' }}
                                                 >
                                                     <FaTimes size={10} />
                                                 </Button>
                                             )}
                                         </InputGroup>
-
-                                        {/* Payment Status Dropdown */}
-                                        <Dropdown>
-                                            <Dropdown.Toggle
-                                                size="sm"
-                                                variant="light"
-                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${statusFilter ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
-                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
-                                            >
-                                                <span className="text-truncate">
-                                                    {statusFilter ? `Status: ${statusFilter === 'PAID' ? 'Paid' : statusFilter === 'PARTIAL' ? 'Partially Paid' : 'Pending'}` : 'All Statuses'}
-                                                </span>
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '175px' }}>
-                                                <Dropdown.Item
-                                                    active={!statusFilter}
-                                                    onClick={() => handleStatusChange('')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span>All Statuses</span>
-                                                    {!statusFilter && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                                <Dropdown.Divider className="my-1" />
-                                                <Dropdown.Item
-                                                    active={statusFilter === 'PAID'}
-                                                    onClick={() => handleStatusChange('PAID')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span className="d-flex align-items-center gap-2">
-                                                        <span className="badge bg-success rounded-circle p-1"> </span>
-                                                        <span>Paid</span>
-                                                    </span>
-                                                    {statusFilter === 'PAID' && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                                <Dropdown.Item
-                                                    active={statusFilter === 'PARTIAL'}
-                                                    onClick={() => handleStatusChange('PARTIAL')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span className="d-flex align-items-center gap-2">
-                                                        <span className="badge bg-info rounded-circle p-1"> </span>
-                                                        <span>Partially Paid</span>
-                                                    </span>
-                                                    {statusFilter === 'PARTIAL' && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                                <Dropdown.Item
-                                                    active={statusFilter === 'PENDING'}
-                                                    onClick={() => handleStatusChange('PENDING')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span className="d-flex align-items-center gap-2">
-                                                        <span className="badge bg-warning rounded-circle p-1"> </span>
-                                                        <span>Pending</span>
-                                                    </span>
-                                                    {statusFilter === 'PENDING' && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
 
                                         {/* Date Range Dropdown with Presets & Custom Pickers */}
                                         <Dropdown autoClose="outside">
@@ -367,12 +459,12 @@ const InvoiceList = () => {
                                                 size="sm"
                                                 variant="light"
                                                 className={`border d-flex align-items-center gap-1.5 shadow-none ${datePreset || startDate || endDate ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
-                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
+                                                style={{ fontSize: '0.82rem', borderRadius: '7px', height: '33px' }}
                                             >
                                                 <FaCalendarAlt size={11} className={datePreset || startDate || endDate ? 'text-primary' : 'text-muted'} />
                                                 <span className="text-truncate">{getDateLabel()}</span>
                                             </Dropdown.Toggle>
-                                            <Dropdown.Menu className="shadow-lg border-0 p-3" style={{ minWidth: '295px' }}>
+                                            <Dropdown.Menu className="shadow-lg border-0 p-3" style={{ minWidth: '295px', zIndex: 1060 }}>
                                                 <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
                                                     Quick Presets
                                                 </div>
@@ -477,13 +569,13 @@ const InvoiceList = () => {
                                                 size="sm"
                                                 variant="light"
                                                 className={`border d-flex align-items-center gap-1.5 shadow-none ${ewayBillFilter ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
-                                                style={{ fontSize: '0.82rem', borderRadius: '6px' }}
+                                                style={{ fontSize: '0.82rem', borderRadius: '7px', height: '33px' }}
                                             >
                                                 <span className="text-truncate">
                                                     {ewayBillFilter === 'true' ? 'With E-Way' : ewayBillFilter === 'false' ? 'Without E-Way' : 'All E-Way'}
                                                 </span>
                                             </Dropdown.Toggle>
-                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '165px' }}>
+                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '165px', zIndex: 1060 }}>
                                                 <Dropdown.Item
                                                     active={!ewayBillFilter}
                                                     onClick={() => handleEwayBillChange('')}
@@ -512,17 +604,17 @@ const InvoiceList = () => {
                                         </Dropdown>
 
                                         {/* Refresh Button */}
-                                        <OverlayTrigger placement="top" overlay={<Tooltip>Refresh list</Tooltip>}>
-                                            <Button
-                                                variant="light"
-                                                size="sm"
-                                                className="border px-2.5 d-flex align-items-center text-muted bg-white shadow-none"
-                                                style={{ height: '31px', borderRadius: '6px' }}
+                                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-refresh-invoices">Refresh invoices</Tooltip>}>
+                                            <button
+                                                type="button"
+                                                className={`btn-filter-refresh ${isFetching ? 'is-refreshing' : ''}`}
                                                 onClick={handleRefresh}
                                                 disabled={isFetching}
+                                                aria-label="Refresh invoices"
+                                                title="Refresh invoices"
                                             >
-                                                <FaSyncAlt size={11} className={isFetching ? 'fa-spin text-primary' : 'text-secondary'} />
-                                            </Button>
+                                                <FaSyncAlt size={14} />
+                                            </button>
                                         </OverlayTrigger>
 
                                         {/* Reset Filters Button */}
@@ -532,7 +624,7 @@ const InvoiceList = () => {
                                                 size="sm"
                                                 onClick={handleResetFilters}
                                                 className="d-flex align-items-center gap-1.5 px-2.5 shadow-none"
-                                                style={{ height: '31px', borderRadius: '6px', fontSize: '0.8rem' }}
+                                                style={{ height: '33px', borderRadius: '7px', fontSize: '0.8rem' }}
                                                 title="Reset all filters"
                                             >
                                                 <FaUndo size={10} />
@@ -622,10 +714,10 @@ const InvoiceList = () => {
                             </div>
 
                             <div className="table-responsive">
-                                <Table id="invoice-list-table" className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive role="grid">
-                                    <thead className="light">
+                                <Table id="invoice-list-table" className="invoice-modern-table align-middle mb-0" hover responsive role="grid">
+                                    <thead>
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                                            <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.45rem 0.3rem' }}>
+                                            <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.65rem 0.4rem' }}>
                                                 <FormCheck
                                                     type="checkbox"
                                                     checked={isAllSelected}
@@ -636,29 +728,29 @@ const InvoiceList = () => {
                                                 />
                                             </th>
                                             <th
-                                                className="text-center cursor-pointer user-select-none py-2"
-                                                style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.3rem' }}
+                                                className="text-center cursor-pointer user-select-none"
+                                                style={{ width: '55px', minWidth: '55px', padding: '0.65rem 0.4rem' }}
                                                 onClick={() => handleSort('invoiceId')}
                                             >
                                                 #ID {renderSortIcon('invoiceId')}
                                             </th>
                                             <th
-                                                className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                className="cursor-pointer user-select-none"
+                                                style={{ minWidth: '135px', padding: '0.65rem 0.6rem' }}
                                                 onClick={() => handleSort('invoiceNo')}
                                             >
                                                 Invoice No {renderSortIcon('invoiceNo')}
                                             </th>
                                             <th
-                                                className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                className="cursor-pointer user-select-none"
+                                                style={{ minWidth: '115px', padding: '0.65rem 0.6rem' }}
                                                 onClick={() => handleSort('invoiceDate')}
                                             >
-                                                Invoice Date {renderSortIcon('invoiceDate')}
+                                                Date {renderSortIcon('invoiceDate')}
                                             </th>
                                             <th
-                                                className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '200px', padding: '0.45rem 0.5rem' }}
+                                                className="cursor-pointer user-select-none"
+                                                style={{ minWidth: '180px', padding: '0.65rem 0.6rem' }}
                                                 onClick={() => handleSort('customerName')}
                                             >
                                                 Customer Name {renderSortIcon('customerName')}
@@ -666,45 +758,45 @@ const InvoiceList = () => {
                                             {!isTrash && (
                                                 <>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        className="text-end pe-3 cursor-pointer user-select-none"
+                                                        style={{ minWidth: '120px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('taxableAmount')}
                                                     >
                                                         Total Taxable {renderSortIcon('taxableAmount')}
                                                     </th>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        className="text-end pe-3 cursor-pointer user-select-none"
+                                                        style={{ minWidth: '125px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('total')}
                                                     >
                                                         Total Amount {renderSortIcon('total')}
                                                     </th>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                        className="text-end pe-3 cursor-pointer user-select-none"
+                                                        style={{ minWidth: '130px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('balanceAmount')}
                                                     >
                                                         Balance Due {renderSortIcon('balanceAmount')}
                                                     </th>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        className="text-center cursor-pointer user-select-none"
+                                                        style={{ minWidth: '115px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('paymentStatusCode')}
                                                     >
-                                                        Payment Status {renderSortIcon('paymentStatusCode')}
+                                                        Status {renderSortIcon('paymentStatusCode')}
                                                     </th>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                        className="text-center cursor-pointer user-select-none"
+                                                        style={{ minWidth: '100px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('paymentModeCode')}
                                                     >
-                                                        Payment Mode {renderSortIcon('paymentModeCode')}
+                                                        Mode {renderSortIcon('paymentModeCode')}
                                                     </th>
                                                 </>
                                             )}
                                             <th
-                                                className="cursor-pointer user-select-none py-2"
-                                                style={{ minWidth: '120px', padding: '0.45rem 0.5rem' }}
+                                                className="cursor-pointer user-select-none"
+                                                style={{ minWidth: '110px', padding: '0.65rem 0.6rem' }}
                                                 onClick={() => handleSort('createdBy')}
                                             >
                                                 Created By {renderSortIcon('createdBy')}
@@ -712,15 +804,15 @@ const InvoiceList = () => {
                                             {isTrash ? (
                                                 <>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '150px', padding: '0.45rem 0.5rem' }}
+                                                        className="cursor-pointer user-select-none"
+                                                        style={{ minWidth: '140px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('deletedAt')}
                                                     >
                                                         Deleted Date {renderSortIcon('deletedAt')}
                                                     </th>
                                                     <th
-                                                        className="cursor-pointer user-select-none py-2"
-                                                        style={{ minWidth: '130px', padding: '0.45rem 0.5rem' }}
+                                                        className="cursor-pointer user-select-none"
+                                                        style={{ minWidth: '120px', padding: '0.65rem 0.6rem' }}
                                                         onClick={() => handleSort('deletedBy')}
                                                     >
                                                         Deleted By {renderSortIcon('deletedBy')}
@@ -728,37 +820,45 @@ const InvoiceList = () => {
                                                 </>
                                             ) : (
                                                 <th
-                                                    className="cursor-pointer user-select-none py-2"
-                                                    style={{ minWidth: '165px', padding: '0.45rem 0.5rem' }}
+                                                    className="cursor-pointer user-select-none"
+                                                    style={{ minWidth: '140px', padding: '0.65rem 0.6rem' }}
                                                     onClick={() => handleSort('updatedAt')}
                                                 >
                                                     Last Modified {renderSortIcon('updatedAt')}
                                                 </th>
                                             )}
-                                            <th className="text-center py-2" style={{ width: '120px', minWidth: '120px', padding: '0.45rem 0.5rem' }}>
+                                            <th className="text-center" style={{ width: '95px', minWidth: '95px', padding: '0.65rem 0.6rem' }}>
                                                 Action
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody style={{ fontSize: '0.86rem' }}>
+                                    <tbody style={{ fontSize: '0.85rem' }}>
                                         {sortedList.length > 0 ? (
                                             sortedList.map((item, idx) => {
                                                 const { total, paid, balance, isFullyPaid, hasBalance } = getFinancials(item);
                                                 return (
                                                     <tr key={item.invoiceId || idx} className={selectedIds.includes(item.invoiceId) ? 'table-active' : ''}>
-                                                        <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
+                                                        <td className="text-center" style={{ padding: '0.65rem 0.4rem' }}>
                                                             <FormCheck
                                                                 type="checkbox"
                                                                 checked={selectedIds.includes(item.invoiceId)}
                                                                 onChange={() => handleSelectRow(item.invoiceId)}
                                                             />
                                                         </td>
-                                                        <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.invoiceId}</td>
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <div className="d-flex align-items-center gap-1">
-                                                                <span className="text-primary font-monospace fw-bold">{item.invoiceNo}</span>
+                                                        <td className="text-center text-muted font-monospace small" style={{ padding: '0.65rem 0.4rem' }}>
+                                                            {item.invoiceId}
+                                                        </td>
+                                                        <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                            <div className="d-flex align-items-center gap-1.5 flex-wrap">
+                                                                <Link
+                                                                    to={`/sales/invoice/${item.invoiceId}/edit`}
+                                                                    className="invoice-no-link"
+                                                                    title="View / Edit Invoice"
+                                                                >
+                                                                    {item.invoiceNo}
+                                                                </Link>
                                                                 {item.firmBranchCode && (
-                                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                                    <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.62rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
                                                                         {item.firmBranchCode}
                                                                     </Badge>
                                                                 )}
@@ -769,7 +869,7 @@ const InvoiceList = () => {
                                                                             backgroundColor: '#fee2e2',
                                                                             color: '#b91c1c',
                                                                             border: '1px solid #fecaca',
-                                                                            fontSize: '0.64rem',
+                                                                            fontSize: '0.62rem',
                                                                             letterSpacing: '0.04em',
                                                                             padding: '2px 6px'
                                                                         }}
@@ -779,49 +879,50 @@ const InvoiceList = () => {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
+                                                        <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                            {item.invoiceDate ? moment(item.invoiceDate).format('DD MMM YYYY') : '-'}
+                                                        </td>
+                                                        <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                            <span className="fw-semibold text-dark text-truncate d-inline-block" style={{ maxWidth: '200px' }} title={item.customerName}>
+                                                                {item.customerName}
+                                                            </span>
+                                                        </td>
                                                         {!isTrash && (
                                                             <>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }} className="fw-semibold">₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <td className="text-end pe-3 font-monospace text-muted" style={{ padding: '0.65rem 0.6rem', fontSize: '0.84rem' }}>
+                                                                    ₹{Number(item.taxableAmount ?? item.totalTaxableAmount ?? item.subTotal ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </td>
+                                                                <td className="text-end pe-3 font-monospace fw-bold text-dark" style={{ padding: '0.65rem 0.6rem', fontSize: '0.86rem' }}>
+                                                                    ₹{Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                </td>
+                                                                <td className="text-end pe-3" style={{ padding: '0.65rem 0.6rem' }}>
                                                                     {isFullyPaid ? (
-                                                                        <Badge bg="soft-success" className="text-success font-monospace px-2 py-1">
-                                                                            ₹0.00
-                                                                        </Badge>
+                                                                        <span className="fintech-pill fintech-pill-paid">
+                                                                            <span className="status-dot"></span>
+                                                                            <span>₹0.00</span>
+                                                                        </span>
                                                                     ) : (
-                                                                        <div>
-                                                                            <span className="font-monospace fw-bold text-danger">
-                                                                                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                        <div className="d-flex flex-column align-items-end">
+                                                                            <span className="font-monospace fw-bold text-danger" style={{ fontSize: '0.86rem' }}>
+                                                                                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                             </span>
                                                                             {paid > 0 && (
-                                                                                <span className="text-muted d-block small" style={{ fontSize: '0.72rem' }}>
-                                                                                    Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                                                <span className="text-muted small font-monospace" style={{ fontSize: '0.70rem' }}>
+                                                                                    Paid: ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                     )}
                                                                 </td>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
                                                                     {item.status === 'Cancelled' ? (
-                                                                        <span
-                                                                            className="badge rounded-pill fw-semibold font-monospace"
-                                                                            style={{
-                                                                                backgroundColor: '#fee2e2',
-                                                                                color: '#b91c1c',
-                                                                                border: '1px solid #fecaca',
-                                                                                fontSize: '0.70rem',
-                                                                                letterSpacing: '0.04em',
-                                                                                padding: '3px 8px'
-                                                                            }}
-                                                                        >
-                                                                            CANCELLED
+                                                                        <span className="fintech-pill fintech-pill-cancelled">
+                                                                            <span className="status-dot"></span>
+                                                                            <span>Cancelled</span>
                                                                         </span>
                                                                     ) : (
                                                                         <span
-                                                                            className={`badge ${item.color || 'bg-secondary'}`}
-                                                                            style={{ cursor: 'pointer' }}
+                                                                            className={`fintech-pill fintech-pill-${(item.paymentStatusCode || 'pending').toLowerCase()} cursor-pointer`}
                                                                             title="Click to view payment history"
                                                                             onClick={() => setHistoryModalState({
                                                                                 show: true,
@@ -829,39 +930,50 @@ const InvoiceList = () => {
                                                                                 invoiceNo: item.invoiceNo
                                                                             })}
                                                                         >
-                                                                            {item.paymentStatusCode || '-'}
+                                                                            <span className="status-dot"></span>
+                                                                            <span>{item.paymentStatusCode || 'PENDING'}</span>
                                                                         </span>
                                                                     )}
                                                                 </td>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
+                                                                <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                    {item.paymentModeCode ? (
+                                                                        <span className="fintech-mode-pill">{item.paymentModeCode}</span>
+                                                                    ) : (
+                                                                        <span className="text-muted">—</span>
+                                                                    )}
+                                                                </td>
                                                             </>
                                                         )}
-                                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
+                                                        <td style={{ padding: '0.65rem 0.6rem', fontSize: '0.82rem' }} className="text-secondary">
+                                                            {item.createdBy || '—'}
+                                                        </td>
                                                         {isTrash ? (
                                                             <>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                                <td style={{ padding: '0.65rem 0.6rem' }}>
                                                                     <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
-                                                                        {item.deletedAt ? moment(item.deletedAt).format('DD/MM/YYYY, hh:mm A') : '—'}
+                                                                        {item.deletedAt ? moment(item.deletedAt).format('DD MMM YYYY, hh:mm A') : '—'}
                                                                     </span>
                                                                 </td>
-                                                                <td style={{ padding: '0.45rem 0.5rem' }}>{item.deletedBy || '—'}</td>
+                                                                <td style={{ padding: '0.65rem 0.6rem', fontSize: '0.82rem' }}>
+                                                                    {item.deletedBy || '—'}
+                                                                </td>
                                                             </>
                                                         ) : (
-                                                            <td style={{ padding: '0.45rem 0.5rem' }}>
+                                                            <td style={{ padding: '0.65rem 0.6rem' }}>
                                                                 <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
-                                                                    {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
+                                                                    {item.updatedAt ? moment(item.updatedAt).format('DD MMM YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD MMM YYYY, hh:mm A') : '—')}
                                                                 </span>
                                                             </td>
                                                         )}
-                                                        <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <div className="flex align-items-center list-user-action">
+                                                        <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
+                                                            <div className="d-flex align-items-center justify-content-center gap-1.5 action-btn-group">
                                                                 {!isTrash ? (
                                                                     <>
+                                                                        {/* Primary Action Button */}
                                                                         {item.status !== 'Cancelled' && hasBalance ? (
                                                                             <Button
-                                                                                variant="outline-success"
                                                                                 size="sm"
-                                                                                className="me-2"
+                                                                                className="btn-action-primary-pay d-flex align-items-center gap-1"
                                                                                 title="Record Payment"
                                                                                 onClick={() => setQuickPaymentInvoice({
                                                                                     ...item,
@@ -870,94 +982,131 @@ const InvoiceList = () => {
                                                                                     paidAmount: paid
                                                                                 })}
                                                                             >
-                                                                                <FaMoneyCheckAlt />
+                                                                                <FaMoneyCheckAlt size={12} />
+                                                                                <span>Pay</span>
                                                                             </Button>
-                                                                        ) : null}
-                                                                        <Button
-                                                                            variant="outline-secondary"
-                                                                            size="sm"
-                                                                            className="me-2"
-                                                                            title="Payment History"
-                                                                            onClick={() => setHistoryModalState({
-                                                                                show: true,
-                                                                                invoiceId: item.invoiceId,
-                                                                                invoiceNo: item.invoiceNo
-                                                                            })}
-                                                                        >
-                                                                            <FaHistory />
-                                                                        </Button>
-                                                                        <Button
-                                                                            variant="outline-primary"
-                                                                            size="sm"
-                                                                            className="me-2"
-                                                                            title="Download PDF"
-                                                                            disabled={downloadingInvoiceId === item.invoiceId}
-                                                                            onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
-                                                                        >
-                                                                            {downloadingInvoiceId === item.invoiceId ? (
-                                                                                <Spinner animation="border" size="sm" />
-                                                                            ) : (
-                                                                                <FaDownload />
-                                                                            )}
-                                                                        </Button>
-                                                                        {item.status === 'Cancelled' ? (
-                                                                            <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
-                                                                                <Button variant="outline-secondary" size='sm' title="View Cancelled Invoice">
-                                                                                    <FaEye />
-                                                                                </Button>
-                                                                            </Link>
                                                                         ) : (
-                                                                            <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
-                                                                                <Button variant="outline-success" size='sm' title="Edit">
-                                                                                    <FaPen />
-                                                                                </Button>
-                                                                            </Link>
-                                                                        )}
-                                                                        <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/duplicate`}>
-                                                                            <Button variant="outline-info" size='sm' title="Duplicate / Clone Invoice">
-                                                                                <FaCopy />
-                                                                            </Button>
-                                                                        </Link>
-                                                                        {item.status !== 'Cancelled' && (
                                                                             <Button
-                                                                                variant="outline-danger"
-                                                                                size='sm'
-                                                                                className="me-2"
-                                                                                title={paid > 0 ? `Cannot cancel: ₹${paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })} payment recorded` : "Cancel Invoice"}
-                                                                                onClick={() => setCancelModalInvoice({ ...item, total, paidAmount: paid })}
+                                                                                variant="light"
+                                                                                size="sm"
+                                                                                className="btn-action-primary-pdf d-flex align-items-center justify-content-center"
+                                                                                title="Download PDF"
+                                                                                disabled={downloadingInvoiceId === item.invoiceId}
+                                                                                onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
                                                                             >
-                                                                                <FaBan />
+                                                                                {downloadingInvoiceId === item.invoiceId ? (
+                                                                                    <Spinner animation="border" size="sm" style={{ width: '12px', height: '12px' }} />
+                                                                                ) : (
+                                                                                    <FaDownload size={11} className="text-secondary" />
+                                                                                )}
                                                                             </Button>
                                                                         )}
-                                                                        <Button
-                                                                            variant="outline-danger"
-                                                                            size='sm'
-                                                                            title="Move to Bin"
-                                                                            onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
-                                                                        >
-                                                                            <FaTrash />
-                                                                        </Button>
+
+                                                                        {/* Secondary Actions 3-Dots Dropdown */}
+                                                                        <Dropdown align="end">
+                                                                            <Dropdown.Toggle
+                                                                                as="button"
+                                                                                className="btn-action-more-dots"
+                                                                                title="More actions"
+                                                                                id={`invoice-actions-${item.invoiceId}`}
+                                                                            >
+                                                                                <FaEllipsisV size={13} />
+                                                                            </Dropdown.Toggle>
+
+                                                                            <Dropdown.Menu className="action-dropdown-menu shadow">
+                                                                                <Dropdown.Item
+                                                                                    className="d-flex align-items-center gap-2"
+                                                                                    onClick={() => setHistoryModalState({
+                                                                                        show: true,
+                                                                                        invoiceId: item.invoiceId,
+                                                                                        invoiceNo: item.invoiceNo
+                                                                                    })}
+                                                                                >
+                                                                                    <FaHistory size={12} className="text-muted" />
+                                                                                    <span>Payment History</span>
+                                                                                </Dropdown.Item>
+
+                                                                                <Dropdown.Item
+                                                                                    className="d-flex align-items-center gap-2"
+                                                                                    disabled={downloadingInvoiceId === item.invoiceId}
+                                                                                    onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
+                                                                                >
+                                                                                    <FaDownload size={12} className="text-muted" />
+                                                                                    <span>Download PDF</span>
+                                                                                </Dropdown.Item>
+
+                                                                                <Dropdown.Item
+                                                                                    as={Link}
+                                                                                    to={`/sales/invoice/${item.invoiceId}/edit`}
+                                                                                    className="d-flex align-items-center gap-2"
+                                                                                >
+                                                                                    {item.status === 'Cancelled' ? (
+                                                                                        <>
+                                                                                            <FaEye size={12} className="text-muted" />
+                                                                                            <span>View Details</span>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <FaPen size={12} className="text-muted" />
+                                                                                            <span>Edit Invoice</span>
+                                                                                        </>
+                                                                                    )}
+                                                                                </Dropdown.Item>
+
+                                                                                <Dropdown.Item
+                                                                                    as={Link}
+                                                                                    to={`/sales/invoice/${item.invoiceId}/duplicate`}
+                                                                                    className="d-flex align-items-center gap-2"
+                                                                                >
+                                                                                    <FaCopy size={12} className="text-muted" />
+                                                                                    <span>Duplicate / Clone</span>
+                                                                                </Dropdown.Item>
+
+                                                                                <Dropdown.Divider className="my-1" />
+
+                                                                                {item.status !== 'Cancelled' && (
+                                                                                    <Dropdown.Item
+                                                                                        className="d-flex align-items-center gap-2 text-danger"
+                                                                                        disabled={paid > 0}
+                                                                                        title={paid > 0 ? `Cannot cancel: ₹${paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })} payment recorded` : "Cancel Invoice"}
+                                                                                        onClick={() => setCancelModalInvoice({ ...item, total, paidAmount: paid })}
+                                                                                    >
+                                                                                        <FaBan size={12} />
+                                                                                        <span>Cancel Invoice</span>
+                                                                                    </Dropdown.Item>
+                                                                                )}
+
+                                                                                <Dropdown.Item
+                                                                                    className="d-flex align-items-center gap-2 text-danger"
+                                                                                    onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
+                                                                                >
+                                                                                    <FaTrash size={12} />
+                                                                                    <span>Move to Bin</span>
+                                                                                </Dropdown.Item>
+                                                                            </Dropdown.Menu>
+                                                                        </Dropdown>
                                                                     </>
                                                                 ) : (
-                                                                    <>
+                                                                    <div className="d-flex align-items-center gap-1.5">
                                                                         <Button
                                                                             variant="outline-success"
-                                                                            size='sm'
-                                                                            className="me-2"
+                                                                            size="sm"
+                                                                            className="btn-action-trash"
                                                                             title="Restore"
                                                                             onClick={() => confirmRestore(`Invoice "${item.invoiceNo}"`, () => restoreInvoice(item.invoiceId))}
                                                                         >
-                                                                            <FaUndo />
+                                                                            <FaUndo size={11} />
                                                                         </Button>
                                                                         <Button
                                                                             variant="outline-danger"
-                                                                            size='sm'
+                                                                            size="sm"
+                                                                            className="btn-action-trash"
                                                                             title="Delete Permanently"
                                                                             onClick={() => confirmPermanentDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: true }))}
                                                                         >
-                                                                            <FaExclamationTriangle />
+                                                                            <FaExclamationTriangle size={11} />
                                                                         </Button>
-                                                                    </>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -966,11 +1115,15 @@ const InvoiceList = () => {
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={isTrash ? 8 : 12} className="text-center py-4 text-muted">
-                                                    {isTrash
-                                                        ? (debouncedSearch ? `No deleted invoices matching "${debouncedSearch}"` : 'Recycle Bin is empty.')
-                                                        : (debouncedSearch ? `No invoices matching "${debouncedSearch}"` : 'No invoices found.')
-                                                    }
+                                                <td colSpan={isTrash ? 8 : 12} className="text-center py-5 text-muted">
+                                                    <div className="py-3">
+                                                        <p className="mb-0 fs-6">
+                                                            {isTrash
+                                                                ? (debouncedSearch ? `No deleted invoices matching "${debouncedSearch}"` : 'Recycle Bin is empty.')
+                                                                : (debouncedSearch ? `No invoices matching "${debouncedSearch}"` : 'No invoices found.')
+                                                            }
+                                                        </p>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )}
@@ -979,9 +1132,30 @@ const InvoiceList = () => {
                             </div>
 
                             {invoice.length > 0 && (
-                                <div className="d-flex justify-content-between align-items-center mt-3" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
-                                    <div className="text-muted small">
-                                        Showing {pageStart} to {pageEnd} of {totalItems} entries
+                                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 py-3 px-4 border-top">
+                                    <div className="d-flex align-items-center gap-3 text-muted small">
+                                        <span>
+                                            Showing <strong className="text-dark">{pageStart}</strong> to <strong className="text-dark">{pageEnd}</strong> of <strong className="text-dark">{totalItems}</strong> entries
+                                        </span>
+                                        <div className="d-flex align-items-center gap-1.5 ms-2 ps-3 border-start">
+                                            <span className="text-secondary" style={{ fontSize: '0.78rem' }}>Rows per page:</span>
+                                            <Form.Select
+                                                size="sm"
+                                                className="form-select-sm border shadow-none"
+                                                style={{ width: '4.5rem', borderRadius: '6px', fontSize: '0.8rem', padding: '0.2rem 1.5rem 0.2rem 0.5rem' }}
+                                                value={pageSize}
+                                                onChange={(e) => {
+                                                    setPageSize(Number(e.target.value));
+                                                    setPage(1);
+                                                    handleDeselectAll();
+                                                }}
+                                            >
+                                                <option value="10">10</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </Form.Select>
+                                        </div>
                                     </div>
                                     <PaginationBar
                                         page={page}
