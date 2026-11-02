@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Row, Col, Form, Card, FormCheck, Button, Badge } from 'react-bootstrap';
+import { Row, Col, Form, Card, FormCheck, Button, Badge, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import useHandleSubmit from '../hooks/useHandleSubmit';
 import SubmitButton from '../../../components/SubmitButton';
+import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
 import {
    FaRegCalendarAlt,
    FaTimes,
@@ -13,6 +14,7 @@ import {
    FaShoppingCart,
    FaTruck,
    FaMoneyBillWave,
+   FaMoneyCheckAlt,
    FaArrowLeft,
    FaPlus,
    FaUndo,
@@ -119,6 +121,9 @@ const InvoiceForm = ({ mode }) => {
    const isEditMode = !!(mode === 'edit');
 
    const isDuplicateMode = !!(mode === 'duplicate');
+
+   const [recordPaymentOnSave, setRecordPaymentOnSave] = useState(false);
+   const [createdInvoiceForPayment, setCreatedInvoiceForPayment] = useState(null);
 
    const handleBack = () => {
       if (window.history.state && typeof window.history.state.idx === 'number' && window.history.state.idx > 0) {
@@ -251,7 +256,31 @@ const InvoiceForm = ({ mode }) => {
    };
 
    // 5. Form Lifecycle, Calculation & Submit
-   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({ invoiceId, isEditMode });
+   const handleMutationSuccess = (res) => {
+      const createdId = res?.data?.id || invoiceId;
+      const createdNo = res?.data?.invoiceNo || invoice?.invoiceNo;
+
+      if (!isEditMode && recordPaymentOnSave) {
+         setCreatedInvoiceForPayment({
+            id: createdId,
+            invoiceNo: createdNo,
+            partyId: getValues('partyId') || selectedParty?.id,
+            customerName: getValues('customerName') || selectedParty?.legal_name || 'Customer',
+            total: Number(watchedTotal || 0),
+            balanceAmount: Number(watchedTotal || 0)
+         });
+      } else {
+         if (!isEditMode) {
+            navigate(`/sales/invoice/${createdId}/edit`, { replace: true });
+         }
+      }
+   };
+
+   const { onSubmit, onError, createInvoiceIsPending, updateInvoiceIsPending } = useHandleSubmit({
+      invoiceId,
+      isEditMode,
+      onSuccess: handleMutationSuccess
+   });
    useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
    const { lastEditedFieldRef, isInterState, placeOfSupplyCode } = useInvoiceCalculation({
       control,
@@ -638,7 +667,7 @@ const InvoiceForm = ({ mode }) => {
                                     </div>
                                  </Col>
 
-                                 <Col lg="4" md="8" sm="8">
+                                 <Col lg={isEditMode ? "10" : "4"} md="8" sm="8">
                                     <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
                                        <Form.Control
                                           type="text"
@@ -676,45 +705,38 @@ const InvoiceForm = ({ mode }) => {
                                     </Form.Floating>
                                  </Col>
 
-                                 <Col lg="3" md="6" sm="6">
-                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                       <Form.Select
-                                          name="paymentStatusId"
-                                          id="paymentStatusId"
-                                          isInvalid={!!errors.paymentStatusId}
-                                          {...register("paymentStatusId")}
+                                 {/* ROW 2 - Payment Settlement Switch Card (Visible ONLY on Create Mode) */}
+                                 {!isEditMode && (
+                                    <Col lg="6" md="12" sm="12" className="d-flex align-items-center">
+                                       <div
+                                          className={`gst-toggle-box w-100 justify-content-between p-2.5 ${recordPaymentOnSave ? "active" : ""}`}
+                                          style={{ height: "48px", cursor: "pointer" }}
+                                          onClick={() => setRecordPaymentOnSave(!recordPaymentOnSave)}
                                        >
-                                          <option value="">Select Status</option>
-                                          {paymentStatus.map((item) => (
-                                             <option key={item.id} value={item.id}>{item.label}</option>
-                                          ))}
-                                       </Form.Select>
-                                       <Form.Label htmlFor="paymentStatusId">
-                                          Payment Status <span className="text-danger">*</span>
-                                       </Form.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.paymentStatusId?.message}</Form.Control.Feedback>
-                                    </Form.Floating>
-                                 </Col>
-
-                                 <Col lg="3" md="6" sm="6">
-                                    <Form.Floating className="custom-form-floating custom-form-floating-sm form-group mb-0">
-                                       <Form.Select
-                                          name="paymentModeId"
-                                          id="paymentModeId"
-                                          isInvalid={!!errors.paymentModeId}
-                                          {...register("paymentModeId")}
-                                       >
-                                          <option value="">Select Mode</option>
-                                          {paymentMode.map((item) => (
-                                             <option key={item.id} value={item.id}>{item.label}</option>
-                                          ))}
-                                       </Form.Select>
-                                       <Form.Label htmlFor="paymentModeId">
-                                          Payment Mode <span className="text-danger">*</span>
-                                       </Form.Label>
-                                       <Form.Control.Feedback type="invalid">{errors.paymentModeId?.message}</Form.Control.Feedback>
-                                    </Form.Floating>
-                                 </Col>
+                                          <div className="d-flex align-items-center gap-2">
+                                             <div className={`p-1.5 rounded-circle d-flex align-items-center justify-content-center ${recordPaymentOnSave ? "bg-primary text-white" : "bg-light text-muted border"}`} style={{ width: "28px", height: "28px" }}>
+                                                <FaMoneyCheckAlt size={13} />
+                                             </div>
+                                             <div>
+                                                <span className="gst-label-text fw-semibold d-block" style={{ fontSize: "0.82rem", lineHeight: "1.2" }}>
+                                                   Record Immediate Payment
+                                                </span>
+                                                <span className="text-muted" style={{ fontSize: "0.68rem" }}>
+                                                   {recordPaymentOnSave ? "Receipt modal opens on save" : "Standard Credit Bill (Unpaid)"}
+                                                </span>
+                                             </div>
+                                          </div>
+                                          <FormCheck
+                                             type="switch"
+                                             id="recordPaymentOnSaveSwitch"
+                                             checked={!!recordPaymentOnSave}
+                                             className="mb-0"
+                                             onChange={(e) => setRecordPaymentOnSave(e.target.checked)}
+                                             onClick={(e) => e.stopPropagation()}
+                                          />
+                                       </div>
+                                    </Col>
+                                 )}
 
                                  {/* ROW 3: Reference Documents (6) & Payment Credit Terms (6) - Equal Height & Bottom Margin */}
                                  <Col lg="6" md="12" className="d-flex">
@@ -1577,6 +1599,8 @@ const InvoiceForm = ({ mode }) => {
                                  isLoading={createInvoiceIsPending || updateInvoiceIsPending}
                                  isEditMode={isEditMode}
                                  disabled={isTotalBelowPaid || (isEditMode && invoice?.status === 'Cancelled')}
+                                 label={!isEditMode && recordPaymentOnSave ? "Create Invoice & Record Payment 💳" : undefined}
+                                 loadingLabel={!isEditMode && recordPaymentOnSave ? "Creating & Opening Receipt..." : undefined}
                               />
                            </div>
                         </Card.Body>
@@ -1597,6 +1621,19 @@ const InvoiceForm = ({ mode }) => {
                   moduleData={moduleData}
                   updateModuleData={updateModuleData}
                   onSubmit={submitModule}
+               />
+            )}
+
+            {/* Quick Payment Settlement Modal */}
+            {createdInvoiceForPayment && (
+               <QuickPaymentModal
+                  show={!!createdInvoiceForPayment}
+                  invoice={createdInvoiceForPayment}
+                  onHide={() => {
+                     const targetId = createdInvoiceForPayment.id;
+                     setCreatedInvoiceForPayment(null);
+                     navigate(`/sales/invoice/${targetId}/edit`, { replace: true });
+                  }}
                />
             )}
          </FormProvider>

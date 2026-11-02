@@ -2,9 +2,9 @@ import moment from "moment";
 import { useCreateInvoice, useUpdateInvoice } from "./useApi";
 
 const useHandleSubmit = (props) => {
-    const { invoiceId, isEditMode } = props;
-    const { mutate: createInvoice, isPending: createInvoiceIsPending } = useCreateInvoice();
-    const { mutate: updateInvoice, isPending: updateInvoiceIsPending } = useUpdateInvoice(invoiceId);
+    const { invoiceId, isEditMode, onSuccess } = props;
+    const { mutate: createInvoice, isPending: createInvoiceIsPending } = useCreateInvoice({ onSuccess });
+    const { mutate: updateInvoice, isPending: updateInvoiceIsPending } = useUpdateInvoice(invoiceId, { onSuccess });
 
     const onSubmit = (data) => {
         delete data.roundOffManual;
