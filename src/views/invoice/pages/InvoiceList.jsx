@@ -26,8 +26,9 @@ import {
     FaEllipsisV,
     FaPlus
 } from 'react-icons/fa';
+import Flatpickr from 'react-flatpickr';
+import 'flatpickr/dist/flatpickr.css';
 import './invoice-list-modern.scss';
-import PageLoader from '../../../components/PageLoader';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
 import InvoicePaymentHistoryModal from '../../payments/components/modals/InvoicePaymentHistoryModal';
 import CancelInvoiceModal from '../components/CancelInvoiceModal';
@@ -176,6 +177,7 @@ const InvoiceList = () => {
             unpaidCount: 0,
             totalCount: 0
         },
+        isLoading: isSummaryLoading,
         isFetching: isSummaryFetching,
         refetch: refetchSummary
     } = useInvoiceSummary({
@@ -236,7 +238,6 @@ const InvoiceList = () => {
 
     return (
         <>
-            <PageLoader loading={isFetching && !isLoading} />
             <Row>
                 <Col sm="12">
                     {/* Executive Financial KPI Cards */}
@@ -249,12 +250,21 @@ const InvoiceList = () => {
                                         <FaFileInvoiceDollar size={13} className="text-primary" />
                                         <span>Total Invoiced</span>
                                     </div>
-                                    <div className="kpi-value font-monospace">
-                                        ₹{kpiMetrics.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                    <div className="kpi-subtext">
-                                        <span>{kpiMetrics.totalCount} Active {kpiMetrics.totalCount === 1 ? 'Invoice' : 'Invoices'}</span>
-                                    </div>
+                                    {isSummaryLoading ? (
+                                        <>
+                                            <div className="sk-kpi-value d-block" />
+                                            <div className="sk-kpi-sub d-block" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="kpi-value font-monospace">
+                                                ₹{kpiMetrics.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="kpi-subtext">
+                                                <span>{kpiMetrics.totalCount} Active {kpiMetrics.totalCount === 1 ? 'Invoice' : 'Invoices'}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="kpi-icon-pill icon-invoiced">
                                     <FaFileInvoiceDollar size={18} />
@@ -268,15 +278,24 @@ const InvoiceList = () => {
                                         <FaCheckCircle size={13} className="text-success" />
                                         <span>Total Received</span>
                                     </div>
-                                    <div className="kpi-value font-monospace text-success">
-                                        ₹{kpiMetrics.totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                    <div className="kpi-subtext">
-                                        <span className="text-success fw-semibold">
-                                            {kpiMetrics.totalInvoiced > 0 ? Math.round((kpiMetrics.totalPaid / kpiMetrics.totalInvoiced) * 100) : 0}%
-                                        </span>
-                                        <span>Collection Rate</span>
-                                    </div>
+                                    {isSummaryLoading ? (
+                                        <>
+                                            <div className="sk-kpi-value d-block" />
+                                            <div className="sk-kpi-sub d-block" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="kpi-value font-monospace text-success">
+                                                ₹{kpiMetrics.totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="kpi-subtext">
+                                                <span className="text-success fw-semibold">
+                                                    {kpiMetrics.totalInvoiced > 0 ? Math.round((kpiMetrics.totalPaid / kpiMetrics.totalInvoiced) * 100) : 0}%
+                                                </span>
+                                                <span>Collection Rate</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="kpi-icon-pill icon-collected">
                                     <FaCheckCircle size={18} />
@@ -290,12 +309,21 @@ const InvoiceList = () => {
                                         <FaClock size={13} className="text-warning" />
                                         <span>Outstanding Due</span>
                                     </div>
-                                    <div className="kpi-value font-monospace text-warning">
-                                        ₹{kpiMetrics.totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                    <div className="kpi-subtext">
-                                        <span>{kpiMetrics.partialCount + kpiMetrics.unpaidCount} Pending Settlement</span>
-                                    </div>
+                                    {isSummaryLoading ? (
+                                        <>
+                                            <div className="sk-kpi-value d-block" />
+                                            <div className="sk-kpi-sub d-block" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="kpi-value font-monospace text-warning">
+                                                ₹{kpiMetrics.totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className="kpi-subtext">
+                                                <span>{kpiMetrics.partialCount + kpiMetrics.unpaidCount} Pending Settlement</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="kpi-icon-pill icon-outstanding">
                                     <FaClock size={18} />
@@ -309,12 +337,21 @@ const InvoiceList = () => {
                                         <FaLayerGroup size={13} style={{ color: '#8b5cf6' }} />
                                         <span>Invoice Volume</span>
                                     </div>
-                                    <div className="kpi-value font-monospace">
-                                        {kpiMetrics.totalCount}
-                                    </div>
-                                    <div className="kpi-subtext">
-                                        <span>{kpiMetrics.fullyPaidCount} Paid · {kpiMetrics.partialCount} Partial · {kpiMetrics.unpaidCount} Due</span>
-                                    </div>
+                                    {isSummaryLoading ? (
+                                        <>
+                                            <div className="sk-kpi-value d-block" />
+                                            <div className="sk-kpi-sub d-block" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="kpi-value font-monospace">
+                                                {kpiMetrics.totalCount}
+                                            </div>
+                                            <div className="kpi-subtext">
+                                                <span>{kpiMetrics.fullyPaidCount} Paid · {kpiMetrics.partialCount} Partial · {kpiMetrics.unpaidCount} Due</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="kpi-icon-pill icon-volume">
                                     <FaLayerGroup size={18} />
@@ -454,7 +491,7 @@ const InvoiceList = () => {
                                         </InputGroup>
 
                                         {/* Date Range Dropdown with Presets & Custom Pickers */}
-                                        <Dropdown autoClose="outside">
+                                        <Dropdown align="end" autoClose="outside">
                                             <Dropdown.Toggle
                                                 size="sm"
                                                 variant="light"
@@ -464,7 +501,7 @@ const InvoiceList = () => {
                                                 <FaCalendarAlt size={11} className={datePreset || startDate || endDate ? 'text-primary' : 'text-muted'} />
                                                 <span className="text-truncate">{getDateLabel()}</span>
                                             </Dropdown.Toggle>
-                                            <Dropdown.Menu className="shadow-lg border-0 p-3" style={{ minWidth: '295px', zIndex: 1060 }}>
+                                            <Dropdown.Menu align="end" className="shadow-lg border-0 p-3" style={{ width: '340px', zIndex: 1060 }}>
                                                 <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
                                                     Quick Presets
                                                 </div>
@@ -509,31 +546,83 @@ const InvoiceList = () => {
 
                                                 <Dropdown.Divider className="my-2" />
 
-                                                <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
-                                                    Custom Range
+                                                <div className="custom-date-range-box rounded-3">
+                                                    <div className="d-flex align-items-center justify-content-between mb-2">
+                                                        <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
+                                                            Custom Range
+                                                        </span>
+                                                        {(tempStartDate || tempEndDate) && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+                                                                style={{ fontSize: '0.70rem' }}
+                                                                onClick={() => {
+                                                                    setTempStartDate('');
+                                                                    setTempEndDate('');
+                                                                }}
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <Row className="g-2">
+                                                        <Col xs={6} className="from-date-col">
+                                                            <Form.Label className="text-muted small mb-1 d-flex align-items-center gap-1" style={{ fontSize: '0.70rem', fontWeight: 600 }}>
+                                                                <FaCalendarAlt size={9} className="text-primary" />
+                                                                <span>From Date</span>
+                                                            </Form.Label>
+                                                            <div className="modern-date-field">
+                                                                <Flatpickr
+                                                                    value={tempStartDate ? moment(tempStartDate).toDate() : null}
+                                                                    onChange={(dates) => {
+                                                                        const formatted = dates[0] ? moment(dates[0]).format('YYYY-MM-DD') : '';
+                                                                        setTempStartDate(formatted);
+                                                                    }}
+                                                                    options={{
+                                                                        dateFormat: 'Y-m-d',
+                                                                        altInput: true,
+                                                                        altFormat: 'd/m/Y',
+                                                                        altInputClass: 'form-control form-control-sm modern-date-input',
+                                                                        allowInput: false,
+                                                                        disableMobile: true,
+                                                                        static: true
+                                                                    }}
+                                                                    className="form-control form-control-sm modern-date-input"
+                                                                    placeholder="Select date"
+                                                                />
+                                                                <FaCalendarAlt className="modern-date-icon" size={11} />
+                                                            </div>
+                                                        </Col>
+                                                        <Col xs={6} className="to-date-col">
+                                                            <Form.Label className="text-muted small mb-1 d-flex align-items-center gap-1" style={{ fontSize: '0.70rem', fontWeight: 600 }}>
+                                                                <FaCalendarAlt size={9} className="text-primary" />
+                                                                <span>To Date</span>
+                                                            </Form.Label>
+                                                            <div className="modern-date-field">
+                                                                <Flatpickr
+                                                                    value={tempEndDate ? moment(tempEndDate).toDate() : null}
+                                                                    onChange={(dates) => {
+                                                                        const formatted = dates[0] ? moment(dates[0]).format('YYYY-MM-DD') : '';
+                                                                        setTempEndDate(formatted);
+                                                                    }}
+                                                                    options={{
+                                                                        dateFormat: 'Y-m-d',
+                                                                        altInput: true,
+                                                                        altFormat: 'd/m/Y',
+                                                                        altInputClass: 'form-control form-control-sm modern-date-input',
+                                                                        allowInput: false,
+                                                                        disableMobile: true,
+                                                                        static: true,
+                                                                        minDate: tempStartDate ? moment(tempStartDate).toDate() : undefined
+                                                                    }}
+                                                                    className="form-control form-control-sm modern-date-input"
+                                                                    placeholder="Select date"
+                                                                />
+                                                                <FaCalendarAlt className="modern-date-icon" size={11} />
+                                                            </div>
+                                                        </Col>
+                                                    </Row>
                                                 </div>
-                                                <Row className="g-2 mb-2">
-                                                    <Col xs={6}>
-                                                        <Form.Label className="text-muted small mb-1" style={{ fontSize: '0.72rem' }}>From</Form.Label>
-                                                        <Form.Control
-                                                            type="date"
-                                                            size="sm"
-                                                            value={tempStartDate}
-                                                            onChange={(e) => setTempStartDate(e.target.value)}
-                                                            style={{ fontSize: '0.78rem' }}
-                                                        />
-                                                    </Col>
-                                                    <Col xs={6}>
-                                                        <Form.Label className="text-muted small mb-1" style={{ fontSize: '0.72rem' }}>To</Form.Label>
-                                                        <Form.Control
-                                                            type="date"
-                                                            size="sm"
-                                                            value={tempEndDate}
-                                                            onChange={(e) => setTempEndDate(e.target.value)}
-                                                            style={{ fontSize: '0.78rem' }}
-                                                        />
-                                                    </Col>
-                                                </Row>
                                                 <div className="d-flex justify-content-between align-items-center pt-2">
                                                     {(startDate || endDate || datePreset) ? (
                                                         <Button
@@ -713,7 +802,12 @@ const InvoiceList = () => {
                                 )}
                             </div>
 
-                            <div className="table-responsive">
+                            <div className={`invoice-table-wrapper table-responsive ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}>
+                                {isFetching && !isLoading && (
+                                    <div className="table-progress-bar">
+                                        <div className="table-progress-line" />
+                                    </div>
+                                )}
                                 <Table id="invoice-list-table" className="invoice-modern-table align-middle mb-0" hover responsive role="grid">
                                     <thead>
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -833,7 +927,72 @@ const InvoiceList = () => {
                                         </tr>
                                     </thead>
                                     <tbody style={{ fontSize: '0.85rem' }}>
-                                        {sortedList.length > 0 ? (
+                                        {isLoading || (isFetching && invoice.length === 0) ? (
+                                            Array.from({ length: 6 }).map((_, sIdx) => (
+                                                <tr key={`sk-row-${sIdx}`}>
+                                                    <td className="text-center" style={{ padding: '0.65rem 0.4rem' }}>
+                                                        <div className="sk-checkbox" />
+                                                    </td>
+                                                    <td className="text-center" style={{ padding: '0.65rem 0.4rem' }}>
+                                                        <div className="sk-id" />
+                                                    </td>
+                                                    <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                        <div className="d-flex align-items-center gap-1.5">
+                                                            <div className="sk-inv-no" />
+                                                            <div className="sk-branch-tag" />
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                        <div className="sk-date" />
+                                                    </td>
+                                                    <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                        <div className="sk-customer" />
+                                                    </td>
+                                                    {!isTrash && (
+                                                        <>
+                                                            <td className="text-end pe-3" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-amount" />
+                                                            </td>
+                                                            <td className="text-end pe-3" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-amount-lg" />
+                                                            </td>
+                                                            <td className="text-end pe-3" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-amount" />
+                                                            </td>
+                                                            <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-pill" />
+                                                            </td>
+                                                            <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-pill-sm" />
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                        <div className="sk-user" />
+                                                    </td>
+                                                    {isTrash ? (
+                                                        <>
+                                                            <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-date" style={{ width: '85px' }} />
+                                                            </td>
+                                                            <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                                <div className="sk-user" />
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <td style={{ padding: '0.65rem 0.6rem' }}>
+                                                            <div className="sk-date" style={{ width: '95px' }} />
+                                                        </td>
+                                                    )}
+                                                    <td className="text-center" style={{ padding: '0.65rem 0.6rem' }}>
+                                                        <div className="d-flex align-items-center justify-content-center gap-1.5">
+                                                            <div className="sk-btn-pay" />
+                                                            <div className="sk-btn-more" />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : sortedList.length > 0 ? (
                                             sortedList.map((item, idx) => {
                                                 const { total, paid, balance, isFullyPaid, hasBalance } = getFinancials(item);
                                                 return (

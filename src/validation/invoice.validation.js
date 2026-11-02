@@ -144,8 +144,7 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
     roundOffManual: Joi.boolean().optional(),
     other: Joi.number().precision(2).allow(null, 0),
 
-    paymentStatusId: Joi.number().integer().min(1).allow(null, '').optional(),
-    paymentModeId: Joi.number().integer().min(1).allow(null, '').optional()
+    paymentStatusId: Joi.number().integer().min(1).allow(null, '').optional()
 })
     .custom(validateCreateOrUpdateCustom)
     .messages({ 'any.invalid': '{{#customMessage}}' })

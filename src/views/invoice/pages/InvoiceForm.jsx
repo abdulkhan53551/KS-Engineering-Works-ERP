@@ -30,7 +30,7 @@ import { Ban } from 'lucide-react';
 import useFormInit from '../hooks/useFormInit';
 import { invoiceValidationSchema } from '../../../validation/invoice.validation';
 import { useInvoiceById } from '../hooks/useApi';
-import { useCountryState, useGstSlab, usePaymentMode, usePaymentStatus, useProductUnit, useStateCity } from '../../dashboard/hooks/api.hooks';
+import { useCountryState, useGstSlab, usePaymentStatus, useProductUnit, useStateCity } from '../../dashboard/hooks/api.hooks';
 import InvoiceItemsTable from '../components/InvoiceItemsTable';
 import useInvoiceCalculation from '../hooks/useInvoiceCalculation';
 import { ModuleSelectorModal } from '../components/ModuleSelectorModal';
@@ -111,8 +111,7 @@ const defaultFormValue = {
    roundOff: 0,
    roundOffManual: false,
    other: 0,
-   paymentStatusId: "",
-   paymentModeId: ""
+   paymentStatusId: ""
 };
 
 const InvoiceForm = ({ mode }) => {
@@ -207,7 +206,6 @@ const InvoiceForm = ({ mode }) => {
    const { data: shippingStates = [] } = useCountryState();
    const { data: shippingCities = [], isFetching: isFetchingShippingCities } = useStateCity(selectedShippingState);
    const { data: paymentStatus = [] } = usePaymentStatus();
-   const { data: paymentMode = [] } = usePaymentMode();
 
    // 1. Party Selection & Address Live Synchronization (with Multi-Branch & GST code derivation)
    const {
