@@ -7,6 +7,7 @@ import { joiResolver } from '@hookform/resolvers/joi';
 import { resetPasswordSchema } from '../../../validation/auth.validation';
 import { useValidateResetToken, useResetPassword } from '../../auth/hooks/api.hooks';
 import { FaEye, FaEyeSlash, FaCheckCircle, FaExclamationCircle, FaLock, FaShieldAlt } from 'react-icons/fa';
+import { encryptAuthCredentials } from '../../../utilities/crypto/rsaCrypto';
 
 // img
 import auth2 from '../../../assets/images/auth/02.png';
@@ -66,9 +67,10 @@ const ResetPassword = () => {
       return passwordValue === confirmPasswordValue;
    }, [passwordValue, confirmPasswordValue]);
 
-   const onSubmit = (data) => {
+   const onSubmit = async (data) => {
+      const payload = await encryptAuthCredentials({ token, password: data.password });
       doResetPassword(
-         { token, password: data.password },
+         payload,
          {
             onSuccess: () => {
                setIsResetDone(true);
