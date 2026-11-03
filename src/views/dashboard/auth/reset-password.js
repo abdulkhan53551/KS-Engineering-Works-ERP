@@ -49,10 +49,10 @@ const ResetPassword = () => {
    const passwordStrength = useMemo(() => {
       if (!passwordValue) return { score: 0, label: '', variant: 'secondary' };
       let score = 0;
-      if (passwordValue.length >= 6) score += 25;
       if (passwordValue.length >= 8) score += 25;
       if (/[A-Z]/.test(passwordValue) && /[a-z]/.test(passwordValue)) score += 25;
-      if (/\d/.test(passwordValue) || /[^A-Za-z0-9]/.test(passwordValue)) score += 25;
+      if (/\d/.test(passwordValue)) score += 25;
+      if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(passwordValue)) score += 25;
 
       if (score <= 25) return { score: 25, label: 'Weak', variant: 'danger' };
       if (score <= 50) return { score: 50, label: 'Fair', variant: 'warning' };
