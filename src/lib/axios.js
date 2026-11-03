@@ -28,32 +28,6 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
 
-        // Attach tenant headers (x-firm-id and x-branch-id)
-        const firmState = state.firmReducer;
-        let activeFirmId = firmState?.activeFirm?.id;
-        let activeBranchId = firmState?.activeBranch?.id;
-
-        // Fallback to localStorage if store rehydrating
-        if (!activeFirmId && typeof window !== "undefined") {
-            try {
-                const savedFirm = JSON.parse(localStorage.getItem(localStorageKey.ACTIVE_FIRM_KEY) || 'null');
-                activeFirmId = savedFirm?.id;
-            } catch {}
-        }
-        if (!activeBranchId && typeof window !== "undefined") {
-            try {
-                const savedBranch = JSON.parse(localStorage.getItem(localStorageKey.ACTIVE_BRANCH_KEY) || 'null');
-                activeBranchId = savedBranch?.id;
-            } catch {}
-        }
-
-        config.headers['x-firm-id'] = activeFirmId || 'all';
-        if (activeBranchId) {
-            config.headers['x-branch-id'] = activeBranchId;
-        } else {
-            config.headers['x-branch-id'] = 'all';
-        }
-
         return config;
     },
     (error) => Promise.reject(error)
@@ -102,10 +76,18 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
+                // Pass current active tenant context so rotated access token maintains the active firm & branch
+                const currentFirmState = store.getState().firmReducer;
+                const activeFirmId = currentFirmState?.activeFirm?.id;
+                const activeBranchId = currentFirmState?.activeBranch?.id;
+
                 // Refresh token cookie is sent automatically with withCredentials: true
                 const res = await axios.post(
                     `${process.env.REACT_APP_API_BASE_URL}/auth/refresh-token`,
-                    {},
+                    {
+                        firmId: (activeFirmId && activeFirmId !== 'all') ? activeFirmId : null,
+                        branchId: (activeBranchId && activeBranchId !== 'all') ? activeBranchId : null
+                    },
                     { withCredentials: true }
                 );
 

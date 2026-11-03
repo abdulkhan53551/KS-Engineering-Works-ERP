@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess, logout, setInitialized } from "../store/auth.slice";
-import { setUserFirms, clearFirmState } from "../store/firm.slice";
+import { setUserFirms, setActiveFirm, setActiveBranch, clearFirmState } from "../store/firm.slice";
 import api from "../lib/axios";
 import { localStorageKey } from "../utilities/constant/constants";
 
@@ -26,6 +26,25 @@ export const AuthSyncProvider = ({ children }) => {
                     const activeToken = localStorage.getItem(localStorageKey.ACCESS_TOKEN_KEY) || storedToken;
                     dispatch(loginSuccess({ user, accessToken: activeToken }));
                     if (firms && firms.length > 0) {
+                        const isSuperAdmin = (user.role || user.roleSlug || '').toLowerCase() === 'super-admin' || Boolean(user.isSuperAdmin);
+
+                        if (isSuperAdmin && !user.firmId) {
+                            dispatch(setActiveFirm({
+                                id: 'all',
+                                firmName: 'All Firms (Consolidated Group)',
+                                code: 'ALL',
+                                branches: []
+                            }));
+                            dispatch(setActiveBranch(null));
+                        } else if (user.firmId) {
+                            const matchedFirm = firms.find(f => f.id === user.firmId);
+                            if (matchedFirm) {
+                                dispatch(setActiveFirm(matchedFirm));
+                                const matchedBranch = user.branchId ? (matchedFirm.branches?.find(b => b.id === user.branchId) || null) : null;
+                                dispatch(setActiveBranch(matchedBranch));
+                            }
+                        }
+
                         dispatch(setUserFirms(firms));
                     }
                 } else if (isMounted) {
