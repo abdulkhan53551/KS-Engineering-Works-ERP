@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Row, Col, Form, Card, FormCheck, Button, Badge, Spinner } from 'react-bootstrap';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Flatpickr from "react-flatpickr";
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { joiResolver } from '@hookform/resolvers/joi';
 import useHandleSubmit from '../hooks/useHandleSubmit';
 import SubmitButton from '../../../components/SubmitButton';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
+import { useGetInvoiceChallanById } from '../../invoice-challan/hooks/useApi';
 import {
    FaRegCalendarAlt,
    FaTimes,
@@ -116,10 +117,14 @@ const defaultFormValue = {
 
 const InvoiceForm = ({ mode }) => {
    const { id: invoiceId } = useParams();
+   const [searchParams] = useSearchParams();
+   const fromChallanId = searchParams.get('fromChallanId');
    const navigate = useNavigate();
    const isEditMode = !!(mode === 'edit');
 
    const isDuplicateMode = !!(mode === 'duplicate');
+
+   const { data: sourceChallan } = useGetInvoiceChallanById(fromChallanId ? Number(fromChallanId) : 0);
 
    const [recordPaymentOnSave, setRecordPaymentOnSave] = useState(false);
    const [createdInvoiceForPayment, setCreatedInvoiceForPayment] = useState(null);
@@ -280,6 +285,57 @@ const InvoiceForm = ({ mode }) => {
       onSuccess: handleMutationSuccess
    });
    useFormInit({ invoice, mode, setValue, reset, control, defaultFormValue });
+
+   // Conversion from existing Delivery Challan
+   useEffect(() => {
+      if (!isEditMode && fromChallanId && sourceChallan && Object.keys(sourceChallan).length > 0) {
+         setValue('challanIds', [Number(fromChallanId)], { shouldDirty: true, shouldValidate: true });
+         setValue('hasChallan', true, { shouldDirty: true, shouldValidate: true });
+
+         if (sourceChallan.partyId || sourceChallan.party_id) {
+            setValue('partyId', Number(sourceChallan.partyId || sourceChallan.party_id), { shouldDirty: true, shouldValidate: true });
+         }
+         if (sourceChallan.customerName || sourceChallan.customer_name) {
+            setValue('customerName', sourceChallan.customerName || sourceChallan.customer_name, { shouldDirty: true, shouldValidate: true });
+         }
+
+         if (Array.isArray(sourceChallan.items) && sourceChallan.items.length > 0) {
+            const currentItems = getValues('items') || [];
+            const isDefaultSingleRow = currentItems.length === 1 && !currentItems[0].itemName && !currentItems[0].rate;
+            if (isDefaultSingleRow) {
+               const convertedItems = sourceChallan.items.map(it => {
+                  const qty = Number(it.qty) || 1;
+                  const rate = Number(it.rate) || 0;
+                  const taxable = Number((qty * rate).toFixed(2));
+                  const taxRate = 18;
+                  const taxAmount = Number(((taxable * taxRate) / 100).toFixed(2));
+                  const total = Number((taxable + taxAmount).toFixed(2));
+
+                  return {
+                     productId: it.productId || it.product_id || null,
+                     itemName: it.itemName || it.item_name || '',
+                     description: it.description || '',
+                     hsnSacCode: it.hsnSacCode || it.hsn_sac_code || '',
+                     qty,
+                     itemUnitId: 1,
+                     rate,
+                     discountPercent: 0,
+                     discountAmount: 0,
+                     subTotal: taxable,
+                     taxableAmount: taxable,
+                     gstSlabId: 3,
+                     taxRate,
+                     cgst: Number((taxAmount / 2).toFixed(2)),
+                     sgst: Number((taxAmount / 2).toFixed(2)),
+                     igst: 0,
+                     total
+                  };
+               });
+               setValue('items', convertedItems, { shouldDirty: true, shouldValidate: true });
+            }
+         }
+      }
+   }, [fromChallanId, sourceChallan, isEditMode, setValue, getValues]);
    const { lastEditedFieldRef, isInterState, placeOfSupplyCode } = useInvoiceCalculation({
       control,
       setValue,
@@ -395,6 +451,19 @@ const InvoiceForm = ({ mode }) => {
                         </Card.Header>
 
                         <Card.Body className="p-4">
+                           {/* Delivery Challan Conversion Notice */}
+                           {!isEditMode && fromChallanId && (
+                              <div className="alert alert-info py-2.5 px-3 mb-4 d-flex align-items-center justify-content-between rounded-3 border border-info-subtle shadow-xs">
+                                 <div className="d-flex align-items-center gap-2">
+                                    <FaFileAlt className="text-primary" size={16} />
+                                    <span className="small">
+                                       Converting Delivery Challan <strong>#{sourceChallan?.challanNo || fromChallanId}</strong> into a Sales Invoice. Customer, line items, and challan links have been loaded.
+                                    </span>
+                                 </div>
+                                 <Badge bg="primary" className="px-2.5 py-1">Challan Linked</Badge>
+                              </div>
+                           )}
+
                            {/* Invariant Alert: Payment Protection */}
                            {isEditMode && invoicePaidAmount > 0 && (
                               <div className={`alert ${isTotalBelowPaid ? 'alert-danger' : 'alert-soft-warning'} d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border`} role="alert">

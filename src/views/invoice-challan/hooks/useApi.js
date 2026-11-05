@@ -1,9 +1,11 @@
+import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     bulkDeleteInvoiceChallans,
     bulkRestoreInvoiceChallans,
     createInvoiceChallan,
     deleteInvoiceChallan,
+    downloadDeliveryChallanPdf,
     getInvoiceChallan,
     getInvoiceChallanById,
     getInvoiceChallanPagination,
@@ -231,4 +233,62 @@ export const useBulkRestoreInvoiceChallans = () => {
             toast.error(message);
         }
     });
+};
+
+// Download Delivery Challan PDF hook
+export const useDownloadDeliveryChallanPdf = () => {
+    const [downloadingChallanId, setDownloadingChallanId] = useState(null);
+
+    const mutation = useMutation({
+        mutationKey: ["downloadDeliveryChallanPdf"],
+        mutationFn: downloadDeliveryChallanPdf,
+
+        onMutate: (payload) => {
+            const id = (typeof payload === 'object' && payload !== null) ? (payload.challanId || payload.id) : payload;
+            setDownloadingChallanId(id);
+        },
+
+        onSuccess: (response, payload) => {
+            const challanId = (typeof payload === 'object' && payload !== null) ? (payload.challanId || payload.id) : payload;
+            const fallbackNo = (typeof payload === 'object' && payload !== null) ? payload.challanNo : null;
+            const disposition = response.headers["content-disposition"];
+
+            let fileName = fallbackNo ? `Delivery-Challan-${fallbackNo}.pdf` : `Delivery-Challan-${challanId}.pdf`;
+
+            if (disposition) {
+                const match = disposition.match(/filename="?([^"]+)"?/);
+                if (match?.[1]) {
+                    fileName = match[1];
+                }
+            }
+
+            const blobUrl = window.URL.createObjectURL(response.data);
+
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            toast.success("Delivery Challan downloaded successfully.");
+        },
+
+        onError: (error) => {
+            const message = error?.response?.data?.message || error?.message || "Failed to download delivery challan.";
+            toast.error(message);
+        },
+
+        onSettled: () => {
+            setDownloadingChallanId(null);
+        }
+    });
+
+    return {
+        ...mutation,
+        downloadingChallanId
+    };
 };
