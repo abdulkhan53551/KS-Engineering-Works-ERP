@@ -7,6 +7,7 @@ import {
     getPurchaseOrder,
     getPurchaseOrderById,
     getPurchaseOrderPagination,
+    getPurchaseOrderSummary,
     restorePurchaseOrder,
     updatePurchaseOrder
 } from "../api";
@@ -38,22 +39,41 @@ export const selectPurchaseOrderById = (result) => {
 };
 
 // Get purchase order pagination
-export const usePurchaseOrderPagination = ({ page, pageSize, search, trash = false }) => {
+export const usePurchaseOrderPagination = ({ page, pageSize, search, status = '', trash = false, startDate = '', endDate = '' }) => {
     return useQuery({
-        queryKey: ["purchaseOrderPagination", page, pageSize, search, trash],
-        queryFn: () => getPurchaseOrderPagination({ page, pageSize, search, trash }),
+        queryKey: ["purchaseOrderPagination", page, pageSize, search, status, trash, startDate, endDate],
+        queryFn: () => getPurchaseOrderPagination({ page, pageSize, search, status, trash, startDate, endDate }),
         placeholderData: (prev) => prev,
         select: selectPurchaseOrderPagination
     });
 };
 
 // Get purchase order
-export const usePurchaseOrder = ({ page, pageSize, search, trash = false }) => {
+export const usePurchaseOrder = ({ page, pageSize, search, status = '', trash = false, startDate = '', endDate = '' }) => {
     return useQuery({
-        queryKey: ["purchaseOrderList", page, pageSize, search, trash],
-        queryFn: () => getPurchaseOrder({ page, pageSize, search, trash }),
+        queryKey: ["purchaseOrderList", page, pageSize, search, status, trash, startDate, endDate],
+        queryFn: () => getPurchaseOrder({ page, pageSize, search, status, trash, startDate, endDate }),
         placeholderData: (prev) => prev,
         select: selectPurchaseOrderList
+    });
+};
+
+// Get purchase order executive financial summary
+export const usePurchaseOrderSummary = ({ search = '', status = '', trash = false, startDate = '', endDate = '' } = {}) => {
+    return useQuery({
+        queryKey: ["purchaseOrderSummary", search, status, trash, startDate, endDate],
+        queryFn: () => getPurchaseOrderSummary({ search, status, trash, startDate, endDate }),
+        placeholderData: (prev) => prev,
+        staleTime: 30 * 1000,
+        select: (result) => result?.data ?? {
+            totalCount: 0,
+            totalOrderValue: 0,
+            totalBilledValue: 0,
+            totalPendingValue: 0,
+            openCount: 0,
+            partialCount: 0,
+            completedCount: 0
+        }
     });
 };
 
@@ -81,6 +101,7 @@ export const useCreatPurchaseOrder = () => {
                 toast.success(res.message || "Purchase order created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderPagination'] });
+                queryClient.invalidateQueries({ queryKey: ['purchaseOrderSummary'] });
                 queryClient.invalidateQueries({ queryKey: ['unmappedPurchaseOrder'] });
                 navigate(`/purchase/purchase-order/${id}/edit`, { replace: true });
             }
@@ -100,6 +121,7 @@ export const useUpdatePurchaseOrder = (id) => {
                 toast.success(res.message || "Purchase order updated successfully.");
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderPagination'] });
+                queryClient.invalidateQueries({ queryKey: ['purchaseOrderSummary'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderById'] });
             }
         }
@@ -134,6 +156,7 @@ export const useDeletePurchaseOrder = () => {
                 // Refresh the list
                 queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
                 queryClient.invalidateQueries({ queryKey: ["purchaseOrderPagination"] });
+                queryClient.invalidateQueries({ queryKey: ["purchaseOrderSummary"] });
                 queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
             }
         },
@@ -165,6 +188,7 @@ export const useRestorePurchaseOrder = () => {
 
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderPagination"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderSummary"] });
         },
         onError: (error) => {
             dispatch(clearLoading());
@@ -193,6 +217,7 @@ export const useBulkDeletePurchaseOrders = () => {
 
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderPagination"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderSummary"] });
         },
         onError: (error) => {
             dispatch(clearLoading());
@@ -221,6 +246,7 @@ export const useBulkRestorePurchaseOrders = () => {
 
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
             queryClient.invalidateQueries({ queryKey: ["purchaseOrderPagination"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderSummary"] });
         },
         onError: (error) => {
             dispatch(clearLoading());
