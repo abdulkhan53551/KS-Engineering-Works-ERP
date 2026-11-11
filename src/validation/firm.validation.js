@@ -111,4 +111,4 @@ export const createFirmValidationSchema = Joi.object({
         "string.empty": "Please select an account type.",
         "any.required": "Account type is required."
     }),
-}).unknown(true);
+});

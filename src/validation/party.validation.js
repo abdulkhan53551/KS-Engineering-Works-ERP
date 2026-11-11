@@ -68,6 +68,17 @@ export const createPartyValidationSchema = Joi.object({
             "string.uri": "Please enter a valid website URL (e.g. https://abc.com)."
         }),
     remarks: Joi.string().max(1000).allow(null, ""),
+    creditPeriodDays: Joi.number()
+        .integer()
+        .min(0)
+        .max(365)
+        .allow(null, "")
+        .default(0)
+        .messages({
+            "number.base": "Credit period must be a valid number of days.",
+            "number.min": "Credit period cannot be negative.",
+            "number.max": "Credit period cannot exceed 365 days."
+        }),
     logoUrl: Joi.string().allow(null, "").optional(),
     logoPublicId: Joi.string().allow(null, "").optional(),
     status: Joi.string().valid("ACTIVE", "INACTIVE").default("ACTIVE")

@@ -1,0 +1,703 @@
+/**
+ * RolesPermissionStudio.css
+ * Enterprise-grade, sharp, compact typography & sleek micro-interactions
+ * for Roles & Permissions Studio.
+ */
+
+/* 1. Root Container & Typography Optimization */
+.roles-permission-studio {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    color: #1e293b;
+}
+
+/* Page Header Card with Solid White Background */
+.roles-permission-studio .header-banner-section {
+    position: relative;
+    z-index: 10;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+    padding: 1rem 1.25rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+.roles-permission-studio .header-banner-section .studio-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: #0f172a !important;
+    text-shadow: none !important;
+    line-height: 1.25;
+}
+
+.roles-permission-studio .header-banner-section .studio-subtitle {
+    font-size: 0.8125rem;
+    color: #64748b !important;
+    opacity: 1 !important;
+    line-height: 1.4;
+    text-shadow: none !important;
+}
+
+.roles-permission-studio .header-banner-section .btn-create-role {
+    position: relative;
+    z-index: 11;
+    background-color: #3a57e8 !important;
+    color: #ffffff !important;
+    border: 1px solid #3a57e8 !important;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(58, 87, 232, 0.2);
+    letter-spacing: 0.01em;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.roles-permission-studio .header-banner-section .btn-create-role:hover {
+    background-color: #2545d8 !important;
+    border-color: #2545d8 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(58, 87, 232, 0.32);
+}
+
+.roles-permission-studio .header-banner-section .btn-create-role:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(58, 87, 232, 0.2);
+}
+
+/* 2. Left Sidebar: Sticky Role Selector */
+.roles-permission-studio .sticky-roles-sidebar {
+    position: sticky;
+    top: 85px;
+    max-height: calc(100vh - 105px);
+    display: flex;
+    flex-direction: column;
+}
+
+.roles-permission-studio .sidebar-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
+
+.roles-permission-studio .search-input-wrapper {
+    position: relative;
+}
+
+.roles-permission-studio .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.roles-permission-studio .search-clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    padding: 0;
+    cursor: pointer;
+}
+
+.roles-permission-studio .search-clear-btn:hover {
+    color: #475569;
+}
+
+.roles-permission-studio .role-search-input {
+    font-size: 0.78rem;
+    padding: 0.38rem 1.8rem 0.38rem 1.9rem;
+    border-radius: 7px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    transition: all 0.15s ease;
+}
+
+.roles-permission-studio .role-search-input:focus {
+    background-color: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.roles-permission-studio .roles-list-container {
+    overflow-y: auto;
+    max-height: calc(100vh - 220px);
+    padding: 6px;
+}
+
+/* Custom sleek scrollbar */
+.roles-permission-studio .roles-list-container::-webkit-scrollbar,
+.roles-permission-studio .table-responsive::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+.roles-permission-studio .roles-list-container::-webkit-scrollbar-thumb,
+.roles-permission-studio .table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* Role Item Card */
+.roles-permission-studio .role-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.roles-permission-studio .role-nav-item:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+/* Selected Role State: Sharp, high-contrast, non-blinding */
+.roles-permission-studio .role-nav-item.is-selected {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    border-left: 3.5px solid #2563eb;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05);
+}
+
+.roles-permission-studio .role-name-text {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.roles-permission-studio .role-nav-item.is-selected .role-name-text {
+    color: #1d4ed8;
+}
+
+.roles-permission-studio .role-meta-text {
+    font-size: 0.71rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+.roles-permission-studio .role-nav-item.is-selected .role-meta-text {
+    color: #3b82f6;
+}
+
+.roles-permission-studio .badge-system-role {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.roles-permission-studio .role-nav-item.is-selected .badge-system-role {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
+
+/* 3. Selected Role Hero Banner */
+.roles-permission-studio .role-hero-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+    margin-bottom: 16px;
+    padding: 16px 20px;
+}
+
+.roles-permission-studio .role-hero-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.015em;
+}
+
+.roles-permission-studio .role-hero-desc {
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    max-width: 650px;
+}
+
+.roles-permission-studio .role-slug-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* Permission Coverage Meter */
+.roles-permission-studio .coverage-meter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.roles-permission-studio .coverage-meter-bar {
+    flex-grow: 1;
+    max-width: 200px;
+    height: 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.roles-permission-studio .coverage-meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.roles-permission-studio .coverage-meter-label {
+    font-size: 0.71rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Preset Segmented Buttons */
+.roles-permission-studio .preset-btn-group {
+    display: inline-flex;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.roles-permission-studio .preset-btn {
+    border: none;
+    background: transparent;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 5px;
+    color: #475569;
+    transition: all 0.12s ease;
+    cursor: pointer;
+}
+
+.roles-permission-studio .preset-btn:hover {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.roles-permission-studio .preset-btn.is-danger:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* 4. Matrix Search & Filter Bar */
+.roles-permission-studio .matrix-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.roles-permission-studio .matrix-search-input {
+    font-size: 0.76rem;
+    padding: 0.35rem 1rem 0.35rem 1.8rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    width: 240px;
+    transition: all 0.15s ease;
+}
+
+.roles-permission-studio .matrix-search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* 5. Category Cards */
+.roles-permission-studio .category-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+.roles-permission-studio .category-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.roles-permission-studio .category-icon-box {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.roles-permission-studio .category-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.roles-permission-studio .category-module-count {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+/* Category Quick Actions */
+.roles-permission-studio .category-quick-switch {
+    display: inline-flex;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 1px;
+    gap: 1px;
+}
+
+.roles-permission-studio .cat-switch-btn {
+    border: none;
+    background: transparent;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.roles-permission-studio .cat-switch-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.roles-permission-studio .category-collapse-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.roles-permission-studio .category-collapse-btn:hover {
+    color: #475569;
+}
+
+.roles-permission-studio .category-collapse-btn.is-collapsed {
+    transform: rotate(-90deg);
+}
+
+/* 6. Permission Matrix Table */
+.roles-permission-studio .matrix-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.roles-permission-studio .matrix-table thead th {
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #fcfcfd;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 7px 16px;
+}
+
+.roles-permission-studio .matrix-table tbody tr {
+    transition: background-color 0.12s ease;
+}
+
+.roles-permission-studio .matrix-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.roles-permission-studio .matrix-table tbody td {
+    padding: 9px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.roles-permission-studio .matrix-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.roles-permission-studio .module-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.roles-permission-studio .module-desc {
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+/* 7. Action Toggle Pills */
+.roles-permission-studio .action-pill {
+    font-size: 0.71rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    line-height: 1;
+}
+
+.roles-permission-studio .action-pill:hover:not(:disabled) {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    color: #1e293b;
+    transform: translateY(-1px);
+}
+
+.roles-permission-studio .action-pill:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.roles-permission-studio .action-pill:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+/* Checked Action Variants */
+.roles-permission-studio .action-pill.is-checked.variant-read {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1e40af;
+    font-weight: 600;
+}
+
+.roles-permission-studio .action-pill.is-checked.variant-create {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+    color: #065f46;
+    font-weight: 600;
+}
+
+.roles-permission-studio .action-pill.is-checked.variant-update {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+    font-weight: 600;
+}
+
+.roles-permission-studio .action-pill.is-checked.variant-delete {
+    background: #fff1f2;
+    border-color: #fca5a5;
+    color: #9f1239;
+    font-weight: 600;
+}
+
+.roles-permission-studio .action-pill.is-checked.variant-approve {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+    color: #5b21b6;
+    font-weight: 600;
+}
+
+.roles-permission-studio .action-pill.is-checked.variant-print {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
+    font-weight: 600;
+}
+
+.roles-permission-studio .pill-indicator {
+    font-size: 0.65rem;
+    line-height: 1;
+}
+
+/* 8. Module Quick Toggle (Full / View / None) */
+.roles-permission-studio .module-segmented-switch {
+    display: inline-flex;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 2px;
+    gap: 1px;
+}
+
+.roles-permission-studio .seg-btn {
+    border: none;
+    background: transparent;
+    font-size: 0.67rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roles-permission-studio .seg-btn:hover:not(.is-active) {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.roles-permission-studio .seg-btn.is-active.btn-full {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.25);
+}
+
+.roles-permission-studio .seg-btn.is-active.btn-view {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.25);
+}
+
+.roles-permission-studio .seg-btn.is-active.btn-none {
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.25);
+}
+
+/* 9. Floating Sticky Bottom Bar */
+.roles-permission-studio .floating-dock-bar {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 820px;
+    z-index: 1030;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 10px 18px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: dockSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dockSlideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.roles-permission-studio .dock-chip {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: #f59e0b;
+    color: #78350f;
+}
+
+.roles-permission-studio .dock-title {
+    font-size: 0.8125rem;
+    color: #f8fafc;
+    font-weight: 500;
+}
+
+.roles-permission-studio .dock-subtext {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+.roles-permission-studio .btn-dock-discard {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.roles-permission-studio .btn-dock-discard:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.roles-permission-studio .btn-dock-save {
+    background: #3b82f6;
+    border: 1px solid #2563eb;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 16px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
+.roles-permission-studio .btn-dock-save:hover {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+}

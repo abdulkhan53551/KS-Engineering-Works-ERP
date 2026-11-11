@@ -1,83 +1,83 @@
 import { useState, useCallback, useMemo } from 'react';
 import useDebounce from './useDebounce';
 
+const EMPTY_ARRAY = [];
+
 /**
- * Custom hook to manage common list state:
- * - Pagination (page, pageSize, handlePageChange)
- * - Search with debouncing (search, debouncedSearch, handleSearch, clearSearch)
- * - Active / Trash tab state (isTrash, handleTabChange)
- * - Row multi-selection (selectedIds, handleSelectAll, handleSelectRow, handleDeselectAll, isAllSelected, isIndeterminate)
- *
- * @param {Object} options
- * @param {Array} options.items - Current items displayed in the list/table
- * @param {string|Function} [options.idKey='id'] - Key name or extractor function to get item ID
- * @param {number} [options.initialPage=1] - Starting page number
- * @param {number} [options.initialPageSize=10] - Default items per page
- * @param {string} [options.initialSearch=''] - Initial search query
- * @param {boolean} [options.initialTrash=false] - Initial trash tab state
- * @param {number} [options.debounceDelay=400] - Debounce delay in ms
+ * Custom hook to manage list pagination, search, and active/trash tab state.
+ * Completely independent of the items array to prevent unneeded re-render cascades.
  */
-export const useListManager = ({
-    items = [],
-    idKey = 'id',
+export const useListPagination = ({
     initialPage = 1,
     initialPageSize = 10,
     initialSearch = '',
     initialTrash = false,
     debounceDelay = 400
 } = {}) => {
-    // 1. Pagination State
     const [page, setPage] = useState(initialPage);
     const [pageSize, setPageSize] = useState(initialPageSize);
-
-    // 2. Search State & Debouncing
     const [search, setSearch] = useState(initialSearch);
     const debouncedSearch = useDebounce(search, debounceDelay);
-
-    // 3. Active / Trash Tab State
     const [isTrash, setIsTrash] = useState(initialTrash);
 
-    // 4. Multi-Selection State
-    const [selectedIds, setSelectedIds] = useState([]);
-
-    // Helper to extract item ID
-    const getItemId = useCallback((item) => {
-        if (typeof idKey === 'function') return idKey(item);
-        return item?.[idKey];
-    }, [idKey]);
-
-    // Handlers
     const handleTabChange = useCallback((trashState) => {
         setIsTrash(trashState);
         setPage(1);
-        setSelectedIds([]);
     }, []);
 
     const handleSearch = useCallback((e) => {
         const val = e && typeof e === 'object' && 'target' in e ? e.target.value : (e || '');
         setSearch(val);
         setPage(1);
-        setSelectedIds([]);
     }, []);
 
     const clearSearch = useCallback(() => {
         setSearch('');
         setPage(1);
-        setSelectedIds([]);
     }, []);
 
     const handlePageChange = useCallback((newPage) => {
         setPage(newPage);
-        setSelectedIds([]);
     }, []);
 
     const handlePageSizeChange = useCallback((newSize) => {
         setPageSize(Number(newSize));
         setPage(1);
-        setSelectedIds([]);
     }, []);
 
-    // Multi-selection handlers
+    return {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search,
+        setSearch,
+        debouncedSearch,
+        handleSearch,
+        clearSearch,
+        isTrash,
+        setIsTrash,
+        handleTabChange,
+        handlePageChange,
+        handlePageSizeChange
+    };
+};
+
+/**
+ * Custom hook to manage row selection state.
+ * Directly operates on the loaded items array.
+ */
+export const useRowSelection = ({
+    items = EMPTY_ARRAY,
+    idKey = 'id'
+} = {}) => {
+    const [selectedIds, setSelectedIds] = useState(EMPTY_ARRAY);
+
+    const getItemId = useCallback((item) => {
+        if (typeof idKey === 'function') return idKey(item);
+        return item?.[idKey];
+    }, [idKey]);
+
     const currentItemIds = useMemo(() => {
         return (items || []).map(getItemId).filter(Boolean);
     }, [items, getItemId]);
@@ -87,7 +87,7 @@ export const useListManager = ({
         if (isChecked) {
             setSelectedIds(currentItemIds);
         } else {
-            setSelectedIds([]);
+            setSelectedIds(EMPTY_ARRAY);
         }
     }, [currentItemIds]);
 
@@ -98,10 +98,9 @@ export const useListManager = ({
     }, []);
 
     const handleDeselectAll = useCallback(() => {
-        setSelectedIds([]);
+        setSelectedIds(EMPTY_ARRAY);
     }, []);
 
-    // Selection metrics
     const isAllSelected = useMemo(() => {
         if (!currentItemIds.length) return false;
         return currentItemIds.every((id) => selectedIds.includes(id));
@@ -114,27 +113,6 @@ export const useListManager = ({
     }, [currentItemIds, selectedIds]);
 
     return {
-        // Pagination
-        page,
-        setPage,
-        pageSize,
-        setPageSize,
-        handlePageChange,
-        handlePageSizeChange,
-
-        // Search
-        search,
-        setSearch,
-        debouncedSearch,
-        handleSearch,
-        clearSearch,
-
-        // Trash Tab
-        isTrash,
-        setIsTrash,
-        handleTabChange,
-
-        // Multi-selection
         selectedIds,
         setSelectedIds,
         handleSelectAll,
@@ -143,6 +121,76 @@ export const useListManager = ({
         isAllSelected,
         isIndeterminate,
         selectedCount: selectedIds.length
+    };
+};
+
+/**
+ * Combined list manager hook (backward-compatible).
+ */
+export const useListManager = ({
+    items = EMPTY_ARRAY,
+    idKey = 'id',
+    initialPage = 1,
+    initialPageSize = 10,
+    initialSearch = '',
+    initialTrash = false,
+    debounceDelay = 400
+} = {}) => {
+    const pagination = useListPagination({
+        initialPage,
+        initialPageSize,
+        initialSearch,
+        initialTrash,
+        debounceDelay
+    });
+
+    const selection = useRowSelection({
+        items,
+        idKey
+    });
+
+    const { handleDeselectAll } = selection;
+    const {
+        handleTabChange: pagHandleTabChange,
+        handleSearch: pagHandleSearch,
+        clearSearch: pagClearSearch,
+        handlePageChange: pagHandlePageChange,
+        handlePageSizeChange: pagHandlePageSizeChange
+    } = pagination;
+
+    const handleTabChange = useCallback((trashState) => {
+        pagHandleTabChange(trashState);
+        handleDeselectAll();
+    }, [pagHandleTabChange, handleDeselectAll]);
+
+    const handleSearch = useCallback((e) => {
+        pagHandleSearch(e);
+        handleDeselectAll();
+    }, [pagHandleSearch, handleDeselectAll]);
+
+    const clearSearch = useCallback(() => {
+        pagClearSearch();
+        handleDeselectAll();
+    }, [pagClearSearch, handleDeselectAll]);
+
+    const handlePageChange = useCallback((newPage) => {
+        pagHandlePageChange(newPage);
+        handleDeselectAll();
+    }, [pagHandlePageChange, handleDeselectAll]);
+
+    const handlePageSizeChange = useCallback((newSize) => {
+        pagHandlePageSizeChange(newSize);
+        handleDeselectAll();
+    }, [pagHandlePageSizeChange, handleDeselectAll]);
+
+    return {
+        ...pagination,
+        ...selection,
+        handleTabChange,
+        handleSearch,
+        clearSearch,
+        handlePageChange,
+        handlePageSizeChange
     };
 };
 

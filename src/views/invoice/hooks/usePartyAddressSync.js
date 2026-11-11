@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWatch } from "react-hook-form";
+import moment from "moment";
 import { findDbStateByGstCode } from "../../../utilities/gstStateHelper";
 
 /**
@@ -284,6 +285,17 @@ export const usePartyAddressSync = ({
         setValue("customerName", chosenName, { shouldValidate: true, shouldDirty: true });
         setValue("partyId", Number(party.id), { shouldValidate: true, shouldDirty: true });
 
+        // Auto-calculate Due Days and Due Date based on party's configured credit period
+        const creditDays = Math.max(0, parseInt(party.creditPeriodDays, 10) || 0);
+
+        setValue("dueDays", creditDays, { shouldValidate: true, shouldDirty: true });
+        const currentInvoiceDate = getValues("invoiceDate") || new Date();
+        setValue(
+            "dueDate",
+            moment(currentInvoiceDate).add(creditDays, "days").toDate(),
+            { shouldValidate: true, shouldDirty: true }
+        );
+
         setSelectedParty(party);
 
         const branches = Array.isArray(party.branches) ? party.branches : [];
@@ -361,6 +373,7 @@ export const usePartyAddressSync = ({
         }
     }, [
         setValue,
+        getValues,
         billingStates,
         sameAsBilling,
         applyBranchToBilling,

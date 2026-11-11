@@ -1,537 +1,672 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { Row, Col, Image, Table, Button, Form, Tab, Modal, Offcanvas, InputGroup, FormControl, Spinner } from 'react-bootstrap'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import Card from '../../components/Card'
-import { FaUser, FaPen, FaTrash, FaSort, FaSortAlphaDownAlt, FaSortAlphaUpAlt } from 'react-icons/fa';
-import PaginationControl from '../../components/Pagination';
-import { FaSearchengin } from 'react-icons/fa';
-
-// img
-// import shap1 from '../../../assets/images/shapes/01.png'
-import shap1 from '../../assets/images/shapes/01.png'
-import shap2 from '../../assets/images/shapes/02.png'
-import shap3 from '../../assets/images/shapes/03.png'
-import shap4 from '../../assets/images/shapes/04.png'
-import shap5 from '../../assets/images/shapes/05.png'
-import shap6 from '../../assets/images/shapes/06.png'
-import { ROUTES } from '../../utilities/constant/route-constant';
-import useKsSearchParam from '../../hooks/useSearchParam';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { Row, Col, Table, Button, Form, Spinner, Badge, Tooltip, OverlayTrigger, Modal } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import Card from '../../components/Card';
+import {
+    FaPlus,
+    FaPen,
+    FaTrash,
+    FaBuilding,
+    FaEye,
+    FaMapMarkerAlt,
+    FaSearch,
+    FaTimes,
+    FaFileInvoice,
+    FaGlobeAmericas,
+    FaSort,
+    FaSortAlphaUpAlt,
+    FaSortAlphaDownAlt,
+    FaSortNumericUpAlt,
+    FaSortNumericDownAlt,
+    FaUndo,
+    FaTrashRestore
+} from 'react-icons/fa';
 import PageLoader from '../../components/PageLoader';
-import { useDeleteFirm, useGetFirms, useGetFirmsPagination } from './hooks/api.hooks';
+import { useDeleteFirm, useRestoreFirm, useGetFirms, useGetFirmsPagination } from './hooks/api.hooks';
 import PaginationBar from '../../components/PaginationBar';
-import moment from 'moment';
-
-// const customerList = [
-//    {
-//       id: 1,
-//       img: `${shap1}`,
-//       name: 'Anna Sthesia',
-//       phone: '(760) 756 7568',
-//       email: 'annasthesia@gmail.com',
-//       country: 'USA',
-//       status: 'Active',
-//       company: 'Acme Corporation',
-//       joindate: '2019/12/01',
-//       color: 'bg-primary'
-//    },
-//    {
-//       id: 2,
-//       img: `${shap2}`,
-//       name: 'Brock Lee',
-//       phone: '+62 5689 458 658',
-//       email: 'brocklee@gmail.com',
-//       country: 'Indonesia',
-//       status: 'Active',
-//       company: 'Soylent Corp',
-//       joindate: '2019/12/01',
-//       color: 'bg-primary'
-//    },
-//    {
-//       id: 3,
-//       img: `${shap3}`,
-//       name: 'Dan Druff',
-//       phone: '+55 6523 456 856',
-//       email: 'dandruff@gmail.com',
-//       country: 'Brazil',
-//       status: 'Pending',
-//       company: 'Acme Corporation',
-//       joindate: '2019/12/01',
-//       color: 'bg-warning'
-//    },
-//    {
-//       id: 4,
-//       img: `${shap4}`,
-//       name: 'Hans Olo',
-//       phone: '+91 2586 253 125',
-//       email: 'hansolo@gmail.com',
-//       country: 'India',
-//       status: 'Inactive',
-//       company: 'Vehement Capital',
-//       joindate: '2019/12/01',
-//       color: 'bg-danger'
-//    },
-//    {
-//       id: 5,
-//       img: `${shap5}`,
-//       name: 'Lynn Guini',
-//       phone: '+27 2563 456 589',
-//       email: 'lynnguini@gmail.com',
-//       country: 'Africa',
-//       status: 'Active',
-//       company: 'Massive Dynamic',
-//       joindate: '2019/12/01',
-//       color: 'bg-primary'
-//    },
-//    {
-//       id: 6,
-//       img: `${shap6}`,
-//       name: 'Eric Shun',
-//       phone: '+55 25685 256 589',
-//       email: 'ericshun@gmail.com',
-//       country: 'Brazil',
-//       status: 'Pending',
-//       company: 'Globex Corporation',
-//       joindate: '2019/12/01',
-//       color: 'bg-warning'
-//    },
-//    {
-//       id: 6,
-//       img: `${shap3}`,
-//       name: 'aaronottix',
-//       phone: '(760) 756 7568',
-//       email: 'budwiser@ymail.com',
-//       country: 'USA',
-//       status: 'Hold',
-//       company: 'Acme Corporation',
-//       joindate: '2019/12/01',
-//       color: 'bg-info'
-//    },
-//    {
-//       id: 7,
-//       img: `${shap5}`,
-//       name: 'Marge Arita',
-//       phone: '+27 5625 456 589',
-//       email: 'margearita@gmail.com',
-//       country: 'Africa',
-//       status: 'Complite',
-//       company: 'Vehement Capital',
-//       joindate: '2019/12/01',
-//       color: 'bg-success'
-//    },
-//    {
-//       id: 8,
-//       img: `${shap2}`,
-//       name: 'Bill Dabear',
-//       phone: '+55 2563 456 589',
-//       email: 'billdabear@gmail.com',
-//       country: 'Brazil',
-//       status: 'Active',
-//       company: 'Massive Dynamic',
-//       joindate: '2019/12/01',
-//       color: 'bg-primary'
-//    }
-// ]
-
-const pageSize = 10;
+import FirmBranchModal from './components/FirmBranchModal';
+import FirmDetailsModal from './components/FirmDetailsModal';
+import TrashTabFilter from '../../components/trash/TrashTabFilter';
+import useListManager from '../../hooks/useListManager';
+import useTrashActions from '../../hooks/useTrashActions';
+import './FirmList.css';
 
 const FirmList = () => {
-   const [page, setPage] = useState(1)
-   const [tableData, setTableData] = useState([])
-   const [filterData, setFilterData] = useState([])
-   const [deleteModal, setDeleteModal] = useState({ id: 0, name: '', show: false });
-   const [searchParam, setSearchParam] = useSearchParams()
-   //    const start = (meta.page - 1) * meta.pageSize + 1;
-   // const end = Math.min(meta.page * meta.pageSize, meta.total);
+    // 1. Trash Actions Hook
+    const {
+        confirmSoftDelete,
+        confirmRestore,
+        confirmPermanentDelete
+    } = useTrashActions({ entityName: 'Firm', pluralEntityName: 'Firms' });
 
-   const { data: firms = [], isFetching: isFetchingFirms } = useGetFirms({ page, pageSize });
-   const { data: pagination = {}, isFetching: isFetchingPagination } = useGetFirmsPagination({ page, pageSize });
-   const { mutate: deleteFirm, isPending: deleteFirmIsPending, isSuccess: isDeletedSuccessfully } = useDeleteFirm();
-   const { pageStart, pageEnd, total: totalItems } = pagination;
+    // 2. Modals state
+    const [detailsModal, setDetailsModal] = useState({ show: false, firm: null });
+    const [branchModal, setBranchModal] = useState({ show: false, firm: null });
 
-   // useEffect(() => {
-   //    setTableData(customerList)
-   //    setFilterData(customerList)
-   // }, [])
+    // 3. Sorting State
+    const [sortConfig, setSortConfig] = useState({ key: 'firmId', direction: 'desc' });
 
-   useEffect(() => {
-      if (isDeletedSuccessfully) {
-         handleDeleteModalOnClose()
-      }
-   }, [isDeletedSuccessfully])
+    // 4. List Manager Hook
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        search: searchTerm,
+        debouncedSearch,
+        handleSearch,
+        clearSearch,
+        isTrash,
+        handleTabChange,
+        handlePageChange,
+        handlePageSizeChange
+    } = useListManager({
+        items: [],
+        idKey: 'firmId',
+        initialPageSize: 10
+    });
 
-   const [sortOrder, setSortOrder] = useState({
-      column: '',
-      order: 'asc',
-   });
+    // 5. Queries & Mutations
+    const { data: firms = [], isFetching: isFetchingFirms } = useGetFirms({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        isTrash
+    });
 
-   const handleSort = (column) => {
-      const order = sortOrder.column === column && sortOrder.order === 'asc' ? 'desc' : 'asc';
-      setSortOrder({ column, order });
-      // You can implement sorting logic here based on column and order
-   };
+    const { data: pagination = {}, isFetching: isFetchingPagination } = useGetFirmsPagination({
+        page,
+        pageSize,
+        search: debouncedSearch,
+        isTrash
+    });
 
-   const renderSortIcon = (column) => {
-      if (sortOrder.column === column) {
-         return sortOrder.order === 'asc' ? <FaSortAlphaUpAlt /> : <FaSortAlphaDownAlt />;
-      }
-      return <FaSort style={{ opacity: 0.2 }} />;
-   };
+    const { mutate: deleteFirmMutation, isPending: deleteFirmIsPending } = useDeleteFirm();
+    const { mutate: restoreFirmMutation, isPending: restoreFirmIsPending } = useRestoreFirm();
 
-   const onSearch = (e) => {
-      const { name, value: searchTerm } = e.target;
-      const keysToRemove = ['id', 'color'];
+    const { pageStart = 1, pageEnd = firms.length, total: totalItems = firms.length } = pagination;
 
-      // Function to filter data based on search term across all fields
-      const filteredData = tableData?.filter((item) =>
-         Object.values(
-            // Remove keys/property from object
-            Object.fromEntries(
-               Object.entries(item).filter(([key]) => !keysToRemove.includes(key))
-            )
-            // Search OR Match data
-         ).some((value) =>
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-         )
-      ) ?? [];
+    // Sorting Handlers
+    const handleSort = (columnKey) => {
+        setSortConfig((prev) => {
+            if (prev.key === columnKey) {
+                return {
+                    key: columnKey,
+                    direction: prev.direction === 'asc' ? 'desc' : 'asc'
+                };
+            }
+            return { key: columnKey, direction: 'asc' };
+        });
+    };
 
-      setFilterData(filteredData)
-   }
+    const renderSortIcon = (columnKey, isNumeric = false) => {
+        if (sortConfig.key !== columnKey) {
+            return <FaSort className="text-muted ms-1 opacity-50" size={11} />;
+        }
+        if (isNumeric) {
+            return sortConfig.direction === 'asc' ? (
+                <FaSortNumericUpAlt className="text-primary ms-1" size={12} />
+            ) : (
+                <FaSortNumericDownAlt className="text-primary ms-1" size={12} />
+            );
+        }
+        return sortConfig.direction === 'asc' ? (
+            <FaSortAlphaUpAlt className="text-primary ms-1" size={12} />
+        ) : (
+            <FaSortAlphaDownAlt className="text-primary ms-1" size={12} />
+        );
+    };
 
-   // Handle on page change
-   const handleOnPageChange = useCallback(setPage, [page])
+    // Client-side search filtering across multiple firm fields
+    const filteredFirms = useMemo(() => {
+        if (!searchTerm.trim()) return firms;
+        const term = searchTerm.toLowerCase().trim();
+        return firms.filter((item) => {
+            const firmName = (item.firmName || item.firm_name || '').toLowerCase();
+            const tradeName = (item.tradeName || item.trade_name || '').toLowerCase();
+            const gstin = (item.gstin || '').toLowerCase();
+            const city = (item.city || '').toLowerCase();
+            const state = (item.state || '').toLowerCase();
+            const phone = (item.phoneNumber || item.phone_number || '').toLowerCase();
+            const bankName = (item.bankName || item.bank_name || '').toLowerCase();
 
-   const handleDeleteModalOnClose = useCallback(() => setDeleteModal(prev => ({ ...prev, id: 0, name: '', show: false })), [deleteModal]);
-   const handleDeleteModalOnShow = (id, title) => setDeleteModal(prev => ({ ...prev, id: id, name: title, show: true }));
-   const handleDeleteModalOnConfirm = useCallback((id = 0) => {
-      if (id > 0. && !deleteFirmIsPending) {
-         // Do stuff delete confirmation received
-         deleteFirm(id);
-         // handleDeleteModalOnClose()
-         // setFilterData(prev => prev.filter(item => item.id != id))
-      }
+            return (
+                firmName.includes(term) ||
+                tradeName.includes(term) ||
+                gstin.includes(term) ||
+                city.includes(term) ||
+                state.includes(term) ||
+                phone.includes(term) ||
+                bankName.includes(term)
+            );
+        });
+    }, [firms, searchTerm]);
 
-   }, [])
+    // Sorted items
+    const sortedFirms = useMemo(() => {
+        if (!sortConfig.key) return filteredFirms;
+        return [...filteredFirms].sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
 
-   return (
-      <>
-         <div>
-            <Row>
-               <Col sm="12">
-                  <Card>
-                     <Card.Header className="d-flex justify-content-between">
-                        <div className="header-title d-flex">
-                           <h4 className="card-title">Firm List</h4>
-                           <AdvanceSearch
-                              name={'Enable body scrolling'}
-                              scroll={true}
-                              backdrop={false}
-                              restoreFocus={false}
-                           />
+            if (sortConfig.key === 'firmId') {
+                aVal = Number(a.firmId || a.firm_id || a.id || 0);
+                bVal = Number(b.firmId || b.firm_id || b.id || 0);
+                return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+
+            if (sortConfig.key === 'firmName') {
+                aVal = (a.firmName || a.firm_name || '').toLowerCase();
+                bVal = (b.firmName || b.firm_name || '').toLowerCase();
+            } else if (sortConfig.key === 'gstin') {
+                aVal = (a.gstin || '').toLowerCase();
+                bVal = (b.gstin || '').toLowerCase();
+            } else if (sortConfig.key === 'city') {
+                aVal = (a.city || '').toLowerCase();
+                bVal = (b.city || '').toLowerCase();
+            } else {
+                aVal = (aVal || '').toString().toLowerCase();
+                bVal = (bVal || '').toString().toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredFirms, sortConfig]);
+
+    // Executive KPIs
+    const totalRegisteredFirms = pagination.total || firms.length;
+    const gstRegisteredCount = useMemo(() => firms.filter(f => Boolean(f.gstin)).length, [firms]);
+    const uniqueStatesCount = useMemo(() => new Set(firms.map(f => f.state).filter(Boolean)).size, [firms]);
+
+    // Action Handlers
+    const handleSoftDelete = (firm) => {
+        const id = firm.firmId || firm.firm_id || firm.id;
+        const name = firm.firmName || firm.firm_name || `Firm #${id}`;
+        confirmSoftDelete(name, () => {
+            deleteFirmMutation(id);
+        });
+    };
+
+    const handleRestore = (firm) => {
+        const id = firm.firmId || firm.firm_id || firm.id;
+        const name = firm.firmName || firm.firm_name || `Firm #${id}`;
+        confirmRestore(name, () => {
+            restoreFirmMutation(id);
+        });
+    };
+
+    const handlePermanentDelete = (firm) => {
+        const id = firm.firmId || firm.firm_id || firm.id;
+        const name = firm.firmName || firm.firm_name || `Firm #${id}`;
+        confirmPermanentDelete(name, () => {
+            deleteFirmMutation({ id, isPermanentDelete: true });
+        });
+    };
+
+    // Firm Initials helper for avatar fallback
+    const getInitials = (name = '') => {
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join('')
+            .toUpperCase() || 'FM';
+    };
+
+    return (
+        <div className="firm-module-root mb-4">
+            {/* 1. Executive KPI Summary Cards */}
+            <Row className="g-3 mb-4">
+                <Col sm={6} lg={4}>
+                    <div className="firm-kpi-card d-flex align-items-center gap-3">
+                        <div className="firm-kpi-icon-box firm-kpi-icon-primary">
+                            <FaBuilding />
                         </div>
-                     </Card.Header>
-                     <Card.Body className="px-0">
-                        <PageLoader loading={false} />
-                        <Col className='d-flex justify-content-between align-items-center' style={{ height: '3rem', marginLeft: '1rem', marginRight: '1rem' }}>
-                           <div className="col-md-4 d-flex align-items-center">
-                              <Form.Label>Show</Form.Label>
-                              <Form.Select className="form-select-sm" style={{ marginLeft: '0.5rem', marginRight: '0.5rem', width: '5.8rem' }} aria-label=".form-select-sm example">
-                                 <option defaultValue="10">10</option>
-                                 <option defaultValue="25">25</option>
-                                 <option defaultValue="50">50</option>
-                                 <option defaultValue="100">100</option>
-                              </Form.Select>
-                              <Form.Label>entries</Form.Label>
-                           </div>
-                           <Form.Floating className="custom-form-floating form-floating-sm mb-3">
-                              <Form.Control type="text" className="" id="floatingInput1" autoComplete="username email" placeholder="name@example.com" onChange={onSearch} />
-                              <Form.Label htmlFor="floatingInput">Search</Form.Label>
-                           </Form.Floating>
-
-                           {/* <InputGroup className="search-input" style={{width:  '20rem', backgroundColor: 'red'}}>
-                              <InputGroup.Text id="search-input">
-                                 <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="11.7669" cy="11.7666" r="8.98856" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></circle>
-                                    <path d="M18.0186 18.4851L21.5426 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                                 </svg>
-                              </InputGroup.Text>
-                              <FormControl type="search" placeholder="Search..." aria-label="Search" aria-describedby="search-input" />
-                           </InputGroup> */}
-                        </Col>
-                        <div className="table-responsive">
-                           <Table className='table-sortable ms-1 me-1 align-middle mb-0' striped bordered hover responsive>
-                              <thead className="light">
-                                 <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                                    <th className="text-center" style={{ width: '55px', minWidth: '55px', padding: '0.45rem 0.5rem' }}>#ID</th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Logo')}>
-                                       Logo {renderSortIcon('Logo')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Firm')}>
-                                       Firm {renderSortIcon('Firm')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Trade')}>
-                                       Trade {renderSortIcon('Trade')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Type')}>
-                                       Type {renderSortIcon('Type')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('GSTIN')}>
-                                       GSTIN {renderSortIcon('GSTIN')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Phone')}>
-                                       Phone {renderSortIcon('Phone')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('City')}>
-                                       City {renderSortIcon('City')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('State')}>
-                                       State {renderSortIcon('State')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Added By')}>
-                                       Added By {renderSortIcon('Added By')}
-                                    </th>
-                                    <th style={{ padding: '0.45rem 0.5rem' }} onClick={() => handleSort('Last Modified')}>
-                                       Last Modified {renderSortIcon('Last Modified')}
-                                    </th>
-                                    <th className="text-center" style={{ minWidth: '100px', padding: '0.45rem 0.5rem' }}>Action</th>
-                                 </tr>
-                              </thead>
-                              <tbody style={{ fontSize: '0.86rem' }}>
-                                 {
-                                    firms.map((item, idx) => (
-                                       <tr key={idx} id='example-collapse-text'>
-                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>{item.firmId}</td>
-                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                             {/* <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.img} alt="profile" /> */}
-                                             <Image className="bg-soft-primary rounded img-fluid avatar-40" src={item.logoUrl} alt="profile" />
-                                          </td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.firmName}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.tradeName}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.firmType}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.gstin}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.phoneNumber}</td>
-                                          {/* <td><span className={`badge ${item.color}`}>{item.status}</span></td> */}
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.city}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.state}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>{item.createdBy}</td>
-                                          <td style={{ padding: '0.45rem 0.5rem' }}>
-                                             <span className="text-muted small font-monospace" style={{ fontSize: '0.78rem' }}>
-                                                {item.updatedAt ? moment(item.updatedAt).format('DD/MM/YYYY, hh:mm A') : (item.createdAt ? moment(item.createdAt).format('DD/MM/YYYY, hh:mm A') : '—')}
-                                             </span>
-                                          </td>
-                                          <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                             <div className="flex align-items-center list-user-action">
-                                                <Link className="me-2" to={`/firms/${item.firmId}/edit`}>
-                                                   <Button variant="outline-success" size='sm'>
-                                                      <FaPen />
-                                                   </Button>
-                                                </Link>
-                                                <Button
-                                                   variant="outline-danger"
-                                                   size='sm'
-                                                   onClick={() => handleDeleteModalOnShow(item.firmId, item.firmName)}
-                                                   aria-controls="example-collapse-text"
-                                                   aria-expanded={item.firmId}
-                                                >
-                                                   <FaTrash />
-                                                </Button>
-                                             </div>
-                                          </td>
-                                       </tr>
-                                    ))}
-                              </tbody>
-                           </Table>
+                        <div>
+                            <div className="firm-kpi-label">{isTrash ? 'Trashed Firms' : 'Registered Firms'}</div>
+                            <div className="firm-kpi-value">{totalRegisteredFirms}</div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginLeft: '1rem', marginRight: '1rem' }}>
-                           <div style={{}}>
-                              Showing {pageStart} to {pageEnd} of {totalItems} entries
-                           </div>
-                           {/* <PaginationControl
-                              page={page}
-                              between={3}
-                              total={pagination.total}
-                              limit={pagination.pageSize}
-                              changePage={handleOnPageChange}
-                              ellipsis={1}
-                              next={pagination.hasNextPage}
-                              last={pagination.hasPrevPage}
-                           /> */}
-                           <PaginationBar
-                              page={page}
-                              pageSize={pagination.pageSize}
-                              total={pagination.total}
-                              totalPages={pagination.totalPages}
-                              onPageChange={handleOnPageChange}
-                           />
+                    </div>
+                </Col>
+                <Col sm={6} lg={4}>
+                    <div className="firm-kpi-card d-flex align-items-center gap-3">
+                        <div className="firm-kpi-icon-box firm-kpi-icon-success">
+                            <FaFileInvoice />
                         </div>
-                     </Card.Body>
-                  </Card>
-               </Col>
+                        <div>
+                            <div className="firm-kpi-label">GST Registered</div>
+                            <div className="firm-kpi-value">{gstRegisteredCount}</div>
+                        </div>
+                    </div>
+                </Col>
+                <Col sm={6} lg={4}>
+                    <div className="firm-kpi-card d-flex align-items-center gap-3">
+                        <div className="firm-kpi-icon-box firm-kpi-icon-info">
+                            <FaGlobeAmericas />
+                        </div>
+                        <div>
+                            <div className="firm-kpi-label">States Covered</div>
+                            <div className="firm-kpi-value">{uniqueStatesCount}</div>
+                        </div>
+                    </div>
+                </Col>
             </Row>
-         </div>
-         <KSModal
-            id={deleteModal.id}
-            show={deleteModal.show}
-            isConfirmLoading={deleteFirmIsPending}
-            onConfirm={handleDeleteModalOnConfirm}
-            onClose={handleDeleteModalOnClose}
-            headerTitle={'Are you sure want to delete ?'}
-            bodyTitle={deleteModal.name}
-         />
-      </>
-   )
 
-}
+            {/* 2. Main Firm List Table Card */}
+            <Row>
+                <Col sm="12">
+                    <Card className="firm-table-card shadow-sm border-0">
+                        {/* Card Header with Title, Tabs, and Add Button */}
+                        <Card.Header className="d-flex justify-content-between align-items-center py-3 px-4 border-bottom bg-white flex-wrap gap-2">
+                            <div>
+                                <h4 className="card-title mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+                                    <FaBuilding className="text-primary" size={20} />
+                                    Firm Management
+                                </h4>
+                                <span className="text-muted small">
+                                    Manage multi-entity organizations, GST registrations, bank details, and branch networks
+                                </span>
+                            </div>
 
-export default FirmList;
+                            <div className="d-flex align-items-center gap-3 flex-wrap">
+                                {/* Recycle Bin / Active Records Filter */}
+                                <TrashTabFilter
+                                    isTrash={isTrash}
+                                    onTabChange={handleTabChange}
+                                    activeLabel="Active Firms"
+                                    trashLabel="Recycle Bin"
+                                />
 
-const KSModal = memo((props) => {
-   const {
-      id = 0,
-      show = false,
-      isConfirmLoading = false,
-      onConfirm = Function(),
-      onClose = Function(),
-      headerTitle = 'Are you sure want to delete ?',
-      bodyTitle = 'Woohoo, you are reading this text in a modal!'
-   } = props
+                                {!isTrash && (
+                                    <Link to="/firms/create">
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            className="d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm"
+                                        >
+                                            <FaPlus size={12} />
+                                            Add Firm
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
+                        </Card.Header>
 
-   const handleConfirm = () => onConfirm(id);
-   const handleClose = () => onClose(false);
+                        <Card.Body className="p-0">
+                            <PageLoader loading={isFetchingFirms && firms.length === 0} />
 
-   return (
-      <>
-         <Modal show={show} onHide={handleClose}>
-            <Modal.Header closeButton>
-               <Modal.Title>{headerTitle}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>{bodyTitle}</Modal.Body>
-            <Modal.Footer>
-               <Button variant="primary" onClick={handleClose}>
-                  Cancel
-               </Button>
-               <Button variant="danger" onClick={handleConfirm} disabled={isConfirmLoading}>
-                  {isConfirmLoading && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
-                  {isConfirmLoading ? 'Deleting..' : 'Delete'}
-               </Button>
-            </Modal.Footer>
-         </Modal>
-      </>
-   );
-})
+                            {/* Controls: Page Size & Real-time Search */}
+                            <div className="d-flex justify-content-between align-items-center p-3 px-4 border-bottom bg-light flex-wrap gap-2">
+                                <div className="d-flex align-items-center gap-2">
+                                    <span className="small text-muted fw-semibold">Show</span>
+                                    <Form.Select
+                                        size="sm"
+                                        value={pageSize}
+                                        onChange={handlePageSizeChange}
+                                        style={{ width: '75px' }}
+                                    >
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </Form.Select>
+                                    <span className="small text-muted fw-semibold">entries</span>
+                                </div>
 
-const AdvanceSearch = memo(({ name, ...props }) => {
-   const initForm = {
-      searchTerm: '',
-      category: '',
-      location: ''
-   }
+                                <div className="position-relative" style={{ width: '260px' }}>
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="Search firms, GSTIN, city..."
+                                        value={searchTerm}
+                                        onChange={handleSearch}
+                                        style={{ paddingLeft: '30px', paddingRight: searchTerm ? '30px' : '10px' }}
+                                    />
+                                    <FaSearch
+                                        size={12}
+                                        className="text-muted position-absolute"
+                                        style={{ left: '10px', top: '10px' }}
+                                    />
+                                    {searchTerm && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 position-absolute text-muted"
+                                            style={{ right: '10px', top: '7px', textDecoration: 'none' }}
+                                            onClick={clearSearch}
+                                            title="Clear search"
+                                        >
+                                            <FaTimes size={12} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
 
-   const navigate = useNavigate();
-   const { urlSearchParams } = useKsSearchParam()
-   const [searchParam, setSearchParam] = useSearchParams()
-   const [show, setShow] = useState(false);
-   const [formData, setFormData] = useState({ ...initForm, ...urlSearchParams });
+                            {/* Zebra Striped Table with Interactive Column Sorting */}
+                            <div className="table-responsive">
+                                <Table className="firm-table mb-0 align-middle" striped hover>
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                className="ps-4 sortable-th"
+                                                style={{ width: '70px' }}
+                                                onClick={() => handleSort('firmId')}
+                                                title="Sort by ID"
+                                            >
+                                                #ID {renderSortIcon('firmId', true)}
+                                            </th>
+                                            <th
+                                                className="sortable-th"
+                                                style={{ minWidth: '220px' }}
+                                                onClick={() => handleSort('firmName')}
+                                                title="Sort by Firm Name"
+                                            >
+                                                Firm Entity {renderSortIcon('firmName')}
+                                            </th>
+                                            <th
+                                                className="sortable-th"
+                                                style={{ width: '130px' }}
+                                                onClick={() => handleSort('firmType')}
+                                                title="Sort by Entity Type"
+                                            >
+                                                Firm Type {renderSortIcon('firmType')}
+                                            </th>
+                                            <th
+                                                className="sortable-th"
+                                                style={{ minWidth: '160px' }}
+                                                onClick={() => handleSort('gstin')}
+                                                title="Sort by GSTIN"
+                                            >
+                                                GSTIN & Tax {renderSortIcon('gstin')}
+                                            </th>
+                                            <th
+                                                className="sortable-th"
+                                                style={{ minWidth: '150px' }}
+                                                onClick={() => handleSort('city')}
+                                                title="Sort by Location"
+                                            >
+                                                Contact & Location {renderSortIcon('city')}
+                                            </th>
+                                            <th style={{ width: '140px' }}>Branches</th>
+                                            <th style={{ minWidth: '160px' }}>Primary Bank</th>
+                                            <th className="text-center pe-4" style={{ width: '140px' }}>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style={{ fontSize: '0.86rem' }}>
+                                        {sortedFirms.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="8" className="text-center py-5 text-muted">
+                                                    {searchTerm ? (
+                                                        <div>
+                                                            <FaSearch size={24} className="text-muted opacity-50 mb-2" />
+                                                            <div className="fw-semibold">No firms matching "{searchTerm}"</div>
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                onClick={clearSearch}
+                                                                className="mt-1"
+                                                            >
+                                                                Clear Search
+                                                            </Button>
+                                                        </div>
+                                                    ) : isTrash ? (
+                                                        <div>
+                                                            <FaTrashRestore size={32} className="text-muted opacity-50 mb-2" />
+                                                            <div className="fw-semibold">Recycle Bin is Empty</div>
+                                                            <div className="small mt-1 text-muted">
+                                                                No soft-deleted firm records found.
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <FaBuilding size={32} className="text-muted opacity-50 mb-2" />
+                                                            <div className="fw-semibold">No registered firms found</div>
+                                                            <div className="small mt-1">
+                                                                Click "+ Add Firm" above to create your first firm entity.
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            sortedFirms.map((item) => {
+                                                const fId = item.firmId || item.firm_id || item.id;
+                                                const fName = item.firmName || item.firm_name || 'Firm';
+                                                const tName = item.tradeName || item.trade_name;
+                                                const initials = getInitials(fName);
 
-   const handleClose = () => setShow(false);
-   const toggleShow = () => setShow((s) => !s);
-   const onReset = () => setFormData(initForm)
-   const onClear = () => {
-      setFormData(initForm)
-      setSearchParam({})
-      setShow(false)
-   }
+                                                return (
+                                                    <tr key={fId}>
+                                                        {/* #ID */}
+                                                        <td className="ps-4 font-monospace text-muted small">
+                                                            #{fId}
+                                                        </td>
 
-   const handleOnSearch = (event) => {
-      console.log('======= handle submit => ',);
-      event.preventDefault();
-      const form = event.currentTarget;
+                                                        {/* Firm Entity & Logo */}
+                                                        <td>
+                                                            <div className="d-flex align-items-center gap-2.5">
+                                                                <div className="firm-avatar-wrapper">
+                                                                    {item.logoUrl ? (
+                                                                        <img
+                                                                            src={item.logoUrl}
+                                                                            alt={fName}
+                                                                            className="firm-avatar-img"
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display = 'none';
+                                                                                e.currentTarget.parentElement.innerHTML = `<span class="firm-avatar-initials">${initials}</span>`;
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <span className="firm-avatar-initials">{initials}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="fw-bold text-dark">{fName}</div>
+                                                                    {tName && tName !== fName && (
+                                                                        <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                                                                            Trade: {tName}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
 
-      // File type input does not contain any error
-      if (form.checkValidity()) {
-         const searchData = Object.fromEntries(
-            Object.entries(formData).filter(([_, value]) => value != null && value !== '')
-         )
+                                                        {/* Firm Type */}
+                                                        <td>
+                                                            <Badge bg="light" text="dark" className="border fw-semibold" style={{ fontSize: '0.74rem' }}>
+                                                                {item.firmType || item.firm_type || '—'}
+                                                            </Badge>
+                                                        </td>
 
-         setSearchParam(searchData)
+                                                        {/* GSTIN */}
+                                                        <td>
+                                                            {item.gstin ? (
+                                                                <span className="gstin-pill">
+                                                                    {item.gstin}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="gstin-pill unregistered">
+                                                                    Unregistered
+                                                                </span>
+                                                            )}
+                                                        </td>
 
-         // setFormData(prev => emptyObject(prev))
+                                                        {/* Contact & Location */}
+                                                        <td>
+                                                            <div className="d-flex flex-column" style={{ fontSize: '0.8rem' }}>
+                                                                {item.phoneNumber || item.phone_number ? (
+                                                                    <span className="text-dark">📞 {item.phoneNumber || item.phone_number}</span>
+                                                                ) : null}
+                                                                <span className="text-muted">
+                                                                    📍 {item.city && item.state ? `${item.city}, ${item.state}` : (item.city || item.state || '—')}
+                                                                </span>
+                                                            </div>
+                                                        </td>
 
-         // setTimeout(() => {
-         //    navigate(`/${ROUTES.CUSTOMER.CUSTOMER_EDIT}/4`)
-         // }, 1000);
-      } else {
-         event.stopPropagation();
-      }
-   };
+                                                        {/* Branches View-Only Launcher */}
+                                                        <td>
+                                                            <button
+                                                                type="button"
+                                                                className="branch-pill-badge"
+                                                                onClick={() => setBranchModal({ show: true, firm: item })}
+                                                                title="Click to view branch directory for this firm"
+                                                            >
+                                                                <FaEye size={11} />
+                                                                <span>View Branches</span>
+                                                            </button>
+                                                        </td>
 
-   const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormData({ ...formData, [name]: value.trim() ? value : '' });
-   };
+                                                        {/* Primary Bank */}
+                                                        <td>
+                                                            <div className="d-flex flex-column" style={{ fontSize: '0.78rem' }}>
+                                                                {item.bankName || item.bank_name ? (
+                                                                    <span className="fw-semibold text-dark text-truncate" style={{ maxWidth: '150px' }}>
+                                                                        🏦 {item.bankName || item.bank_name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-muted">—</span>
+                                                                )}
+                                                                {(item.accountNumber || item.account_number) && (
+                                                                    <span className="text-muted font-monospace" style={{ fontSize: '0.72rem' }}>
+                                                                        A/C: ••••{String(item.accountNumber || item.account_number).slice(-4)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
 
-   return (
-      <>
-         <Button variant="soft-gray" className=" ms-2 pointer-cursor" onClick={toggleShow}>
-            <FaSearchengin size={30} color='black' />
-         </Button>
-         <Offcanvas show={show} onHide={handleClose} placement="end" className="search-offcanvas" {...props}>
-            <Offcanvas.Header closeButton>
-               <Offcanvas.Title>Search Panel</Offcanvas.Title>
-               <Button onClick={onClear} variant='danger' size='sm'>Clear</Button>
-               <Button onClick={onReset} variant='secondary' size='sm'>Reset</Button>
-            </Offcanvas.Header>
-            <Offcanvas.Body>
-               <Form noValidate onSubmit={handleOnSearch}>
-                  <Row className="mb-3">
-                     <Col md={12}>
-                        <Form.Group>
-                           <Form.Label>Search</Form.Label>
-                           <Form.Control type="text" placeholder="Enter search term" name='searchTerm' value={formData.searchTerm} onChange={handleChange} />
-                        </Form.Group>
-                     </Col>
-                  </Row>
-                  <Row className="mb-3">
-                     <Col md={6}>
-                        <Form.Group>
-                           <Form.Label>Category</Form.Label>
-                           <Form.Control as="select" name='category' value={formData.category} onChange={handleChange}>
-                              <option>All Categories</option>
-                              <option>Books</option>
-                              <option>Electronics</option>
-                              <option>Fashion</option>
-                              <option>Home & Kitchen</option>
-                           </Form.Control>
-                        </Form.Group>
-                     </Col>
-                     <Col md={6}>
-                        <Form.Group>
-                           <Form.Label>Location</Form.Label>
-                           <Form.Control type="text" placeholder="Enter location" name='location' value={formData.location} onChange={handleChange} />
-                        </Form.Group>
-                     </Col>
-                  </Row>
-                  <Button variant="primary" type="submit" className="w-100">
-                     Search
-                  </Button>
-               </Form>
-            </Offcanvas.Body>
-         </Offcanvas>
-      </>
-   );
-})
+                                                        {/* Actions Column */}
+                                                        <td className="text-center pe-4">
+                                                            {isTrash ? (
+                                                                <div className="d-flex align-items-center justify-content-center gap-1.5">
+                                                                    {/* Restore Firm */}
+                                                                    <OverlayTrigger
+                                                                        placement="top"
+                                                                        overlay={<Tooltip>Restore Firm to Active</Tooltip>}
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="firm-action-btn"
+                                                                            disabled={restoreFirmIsPending}
+                                                                            onClick={() => handleRestore(item)}
+                                                                        >
+                                                                            <FaUndo size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
 
-function emptyObject(obj) {
-   let newObj = {};
-   for (let prop in obj) {
-      if (obj.hasOwnProperty(prop)) {
-         if (Array.isArray(obj[prop])) {
-            newObj[prop] = []; // Empty array
-         } else if (typeof obj[prop] === 'object') {
-            newObj[prop] = emptyObject(obj[prop]); // Recursively empty nested objects
-         } else {
-            newObj[prop] = ''; // Empty string (you can replace it with any other empty value)
-         }
-      }
-   }
-   return newObj;
-}
+                                                                    {/* Permanent Delete */}
+                                                                    <OverlayTrigger
+                                                                        placement="top"
+                                                                        overlay={<Tooltip>Permanently Delete Firm</Tooltip>}
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="firm-action-btn"
+                                                                            disabled={deleteFirmIsPending}
+                                                                            onClick={() => handlePermanentDelete(item)}
+                                                                        >
+                                                                            <FaTrash size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="d-flex align-items-center justify-content-center gap-1">
+                                                                    {/* Quick View Details */}
+                                                                    <OverlayTrigger
+                                                                        placement="top"
+                                                                        overlay={<Tooltip>Quick View Firm Details</Tooltip>}
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline-info"
+                                                                            size="sm"
+                                                                            className="firm-action-btn"
+                                                                            onClick={() => setDetailsModal({ show: true, firm: item })}
+                                                                        >
+                                                                            <FaEye size={12} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+
+                                                                    {/* Edit Firm */}
+                                                                    <OverlayTrigger
+                                                                        placement="top"
+                                                                        overlay={<Tooltip>Edit Firm Profile</Tooltip>}
+                                                                    >
+                                                                        <Link to={`/firms/${fId}/edit`}>
+                                                                            <Button
+                                                                                variant="outline-success"
+                                                                                size="sm"
+                                                                                className="firm-action-btn"
+                                                                            >
+                                                                                <FaPen size={11} />
+                                                                            </Button>
+                                                                        </Link>
+                                                                    </OverlayTrigger>
+
+                                                                    {/* Soft Delete Firm (Move to Bin) */}
+                                                                    <OverlayTrigger
+                                                                        placement="top"
+                                                                        overlay={<Tooltip>Move to Recycle Bin</Tooltip>}
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="firm-action-btn"
+                                                                            disabled={deleteFirmIsPending}
+                                                                            onClick={() => handleSoftDelete(item)}
+                                                                        >
+                                                                            <FaTrash size={11} />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </Table>
+                            </div>
+
+                            {/* Pagination Footer */}
+                            <div className="p-3 px-4 border-top">
+                                <PaginationBar
+                                    page={page}
+                                    pageSize={pageSize}
+                                    totalItems={totalItems}
+                                    pageStart={pageStart}
+                                    pageEnd={pageEnd}
+                                    onPageChange={handlePageChange}
+                                    onPageSizeChange={handlePageSizeChange}
+                                />
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Modal 1: Quick Branch Directory Modal (View-Only) */}
+            {branchModal.show && (
+                <FirmBranchModal
+                    show={branchModal.show}
+                    firm={branchModal.firm}
+                    onClose={() => setBranchModal({ show: false, firm: null })}
+                />
+            )}
+
+            {/* Modal 2: Quick Firm Details Dossier Modal */}
+            {detailsModal.show && (
+                <FirmDetailsModal
+                    show={detailsModal.show}
+                    firm={detailsModal.firm}
+                    onClose={() => setDetailsModal({ show: false, firm: null })}
+                />
+            )}
+        </div>
+    );
+};
+
+export default memo(FirmList);

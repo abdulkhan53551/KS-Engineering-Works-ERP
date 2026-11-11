@@ -1,4 +1,4 @@
-import React, { memo, useState, useMemo, useEffect } from 'react';
+import React, { memo, useState, useMemo, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
@@ -27,10 +27,14 @@ import PaginationBar from '../../../components/PaginationBar';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
 import moment from 'moment';
-import useListManager from '../../../hooks/useListManager';
+import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+import useBranchAction from '../../../hooks/useBranchAction';
 
 const PurchaseOrderList = () => {
+   // Branch check for multi-branch awareness
+   const { navigateWithBranch, BranchModal } = useBranchAction();
+
    // Trash Action Helpers
    const {
       confirmSoftDelete,
@@ -50,10 +54,7 @@ const PurchaseOrderList = () => {
    // Sorting state
    const [sortConfig, setSortConfig] = useState({ key: '', direction: 'asc' });
 
-   // Data fetching
-   const [tempItems, setTempItems] = useState([]);
-
-   // List Manager Hook
+   // Pagination & Search Manager Hook
    const {
       page,
       setPage,
@@ -62,20 +63,12 @@ const PurchaseOrderList = () => {
       search,
       debouncedSearch,
       isTrash,
-      selectedIds,
       handleSearch,
       clearSearch,
       handlePageChange,
-      handleTabChange,
-      handleSelectAll,
-      handleSelectRow,
-      handleDeselectAll,
-      isAllSelected,
-      isIndeterminate,
-      selectedCount
-   } = useListManager({
-      items: tempItems,
-      idKey: 'poId',
+      handlePageSizeChange,
+      handleTabChange: handlePaginationTabChange
+   } = useListPagination({
       initialPageSize: 10
    });
 
@@ -154,10 +147,24 @@ const PurchaseOrderList = () => {
       return items;
    }, [purchaseOrder, sortConfig]);
 
-   // Sync items with list manager
-   useEffect(() => {
-      setTempItems(sortedList);
-   }, [sortedList]);
+   // Row Selection Hook directly operates on sortedList
+   const {
+      selectedIds,
+      handleSelectAll,
+      handleSelectRow,
+      handleDeselectAll,
+      isAllSelected,
+      isIndeterminate,
+      selectedCount
+   } = useRowSelection({
+      items: sortedList,
+      idKey: 'poId'
+   });
+
+   const handleTabChange = useCallback((trashState) => {
+      handlePaginationTabChange(trashState);
+      handleDeselectAll();
+   }, [handlePaginationTabChange, handleDeselectAll]);
 
    const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -179,11 +186,13 @@ const PurchaseOrderList = () => {
                      <TrashTabFilter isTrash={isTrash} onTabChange={handleTabChange} />
                      <div>
                         {!isTrash && (
-                           <Link to="/purchase/purchase-order/create">
-                              <Button type="button" variant="primary">
-                                 Add Purchase Order
-                              </Button>
-                           </Link>
+                           <Button
+                              type="button"
+                              variant="primary"
+                              onClick={() => navigateWithBranch('/purchase/purchase-order/create', 'Select Branch for Purchase Order')}
+                           >
+                              + Add Purchase Order
+                           </Button>
                         )}
                      </div>
                   </Card.Header>
@@ -371,7 +380,16 @@ const PurchaseOrderList = () => {
                                        <td className="text-center text-muted fw-medium" style={{ padding: '0.45rem 0.3rem' }}>{item.poId}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}>{item.poDate ? moment(item.poDate).format('DD/MM/YYYY') : '-'}</td>
                                        <td style={{ padding: '0.45rem 0.5rem' }}><span className="fw-semibold text-dark">{item.customerName}</span></td>
-                                       <td style={{ padding: '0.45rem 0.5rem' }}><span className="text-primary font-monospace fw-bold">{item.poNo}</span></td>
+                                       <td style={{ padding: '0.45rem 0.5rem' }}>
+                                          <div className="d-flex align-items-center gap-1">
+                                             <span className="text-primary font-monospace fw-bold">{item.poNo}</span>
+                                             {item.firmBranchCode && (
+                                                <Badge bg="soft-secondary" className="text-secondary border small px-1.5 py-0.5" style={{ fontSize: '0.65rem' }} title={`Branch: ${item.firmBranchName || item.firmBranchCode}`}>
+                                                   {item.firmBranchCode}
+                                                </Badge>
+                                             )}
+                                          </div>
+                                       </td>
                                        {!isTrash && (
                                           <td style={{ padding: '0.45rem 0.5rem' }}><span className={`badge ${item.color}`}>{item.invoiceStatus}</span></td>
                                        )}
@@ -467,6 +485,9 @@ const PurchaseOrderList = () => {
                </Card>
             </Col>
          </Row>
+
+         {/* Branch Selection Modal for Consolidated Mode */}
+         <BranchModal />
       </>
    );
 };

@@ -256,6 +256,11 @@ const InvoiceForm = ({ mode }) => {
       return numberToIndianRupeesWords(watchedTotal || 0);
    }, [watchedTotal]);
 
+   // Payment Protection Invariant Checks
+   const invoicePaidAmount = Number(invoice?.paidAmount ?? invoice?.paid_amount ?? 0);
+   const invoiceBalanceAmount = Number(invoice?.balanceAmount ?? invoice?.balance_amount ?? 0);
+   const isTotalBelowPaid = isEditMode && invoicePaidAmount > 0 && Number(watchedTotal || 0) < invoicePaidAmount;
+
    return (
       <div>
          <FormProvider {...formMethods}>
@@ -324,6 +329,31 @@ const InvoiceForm = ({ mode }) => {
                         </Card.Header>
 
                         <Card.Body className="p-4">
+                           {/* Invariant Alert: Payment Protection */}
+                           {isEditMode && invoicePaidAmount > 0 && (
+                              <div className={`alert ${isTotalBelowPaid ? 'alert-danger' : 'alert-soft-warning'} d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border`} role="alert">
+                                 <div className="d-flex align-items-center gap-2">
+                                    <FaMoneyBillWave className={isTotalBelowPaid ? 'text-danger flex-shrink-0' : 'text-warning flex-shrink-0'} size={20} />
+                                    <div>
+                                       <strong>Payment Protection Active:</strong> Payments of{' '}
+                                       <span className="font-monospace fw-bold text-dark">₹{invoicePaidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span> have been recorded on this invoice.
+                                       {isTotalBelowPaid ? (
+                                          <span className="text-danger d-block fw-bold mt-1">
+                                             Current Total (₹{Number(watchedTotal || 0).toFixed(2)}) cannot be lower than the recorded payment (₹{invoicePaidAmount.toFixed(2)}). Please adjust items before updating.
+                                          </span>
+                                       ) : (
+                                          <span className="text-muted d-block small">
+                                             Invoice total cannot be reduced below the amount already received.
+                                          </span>
+                                       )}
+                                    </div>
+                                 </div>
+                                 <Badge bg={isTotalBelowPaid ? 'danger' : 'warning'} className={`${isTotalBelowPaid ? 'text-white' : 'text-dark'} font-monospace px-2.5 py-1.5 fs-7 text-nowrap`}>
+                                    Paid: ₹{invoicePaidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} | Due: ₹{invoiceBalanceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                 </Badge>
+                              </div>
+                           )}
+
                            {/* SECTION 1: INVOICE MAIN DETAILS */}
                            <div className="row g-3">
                               {/* Left: Invoice No, Customer, GST, Linked Docs */}
@@ -1301,6 +1331,7 @@ const InvoiceForm = ({ mode }) => {
                               <SubmitButton
                                  isLoading={createInvoiceIsPending || updateInvoiceIsPending}
                                  isEditMode={isEditMode}
+                                 disabled={isTotalBelowPaid}
                               />
                            </div>
                         </Card.Body>

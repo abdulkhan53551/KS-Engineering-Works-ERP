@@ -1,0 +1,639 @@
+import api from "../../lib/axios";
+import { requestMethod } from "../../utilities/api/constants";
+import { asyncHandler } from "../../utilities/asyncHandler";
+
+/* =========================================================================
+   EMPLOYEES APIS
+   ========================================================================= */
+
+export const fetchEmployees = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    if (params.search) query.append("search", params.search);
+    if (params.status) query.append("status", params.status);
+    if (params.employmentType) query.append("employmentType", params.employmentType);
+    if (params.salaryType) query.append("salaryType", params.salaryType);
+    if (params.department) query.append("department", params.department);
+    if (params.designation) query.append("designation", params.designation);
+    if (params.branchId) query.append("branchId", params.branchId);
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.trash !== undefined) query.append("trash", params.trash);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/employees?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchEmployeesMeta = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.branchId) query.append("branchId", params.branchId);
+
+    const res = await api.request({
+        url: `/employees/meta?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchEmployeeById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/employees/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchNextEmployeeCode = asyncHandler(async (firmId) => {
+    const query = new URLSearchParams();
+    if (firmId && firmId !== 'all') query.append("firmId", firmId);
+
+    const res = await api.request({
+        url: `/employees/next-code?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createEmployee = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/employees`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateEmployee = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/employees/${id}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const deleteEmployee = asyncHandler(async ({ id, permanent = false }) => {
+    const res = await api.request({
+        url: `/employees/${id}?permanent=${Boolean(permanent)}`,
+        method: requestMethod.DELETE
+    });
+    return res.data;
+});
+
+export const restoreEmployee = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/employees/${id}/restore`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+export const fetchEmployeesDropdown = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.branchId) query.append("branchId", params.branchId);
+
+    const res = await api.request({
+        url: `/employees/dropdown?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+/* =========================================================================
+   SHIFTS APIS
+   ========================================================================= */
+
+export const fetchShifts = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/shifts?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchShiftById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/shifts/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createShift = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/shifts`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateShift = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/shifts/${id}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const deleteShift = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/shifts/${id}`,
+        method: requestMethod.DELETE
+    });
+    return res.data;
+});
+
+export const assignShift = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/shifts/assign`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const fetchShiftAssignments = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.shiftId) query.append("shiftId", params.shiftId);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.search) query.append("search", params.search);
+
+    const res = await api.request({
+        url: `/shifts/assignments?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+/* =========================================================================
+   ATTENDANCE APIS
+   ========================================================================= */
+
+export const fetchAttendance = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.branchId) query.append("branchId", params.branchId);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.startDate) query.append("startDate", params.startDate);
+    if (params.endDate) query.append("endDate", params.endDate);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.status) query.append("status", params.status);
+
+    const res = await api.request({
+        url: `/attendance?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const markAttendance = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/attendance/mark`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const bulkMarkAttendance = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/attendance/bulk-mark`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const markDateStatus = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/attendance/mark-date-status`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const fetchAttendanceSummary = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.branchId) query.append("branchId", params.branchId);
+
+    const res = await api.request({
+        url: `/attendance/summary?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const exportAttendanceMuster = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.branchId) query.append("branchId", params.branchId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.includeOt !== undefined) query.append("includeOt", params.includeOt);
+    if (params.format) query.append("format", params.format);
+
+    const isPdf = params.format === 'pdf';
+    const res = await api.request({
+        url: `/attendance/muster/export?${query.toString()}`,
+        method: requestMethod.GET,
+        responseType: 'blob'
+    });
+
+    const contentType = isPdf
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const ext = isPdf ? 'pdf' : 'xlsx';
+
+    const blob = new Blob([res.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `AttendanceMuster-${params.month}-${params.year}.${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true };
+});
+
+/* =========================================================================
+   LEAVES APIS
+   ========================================================================= */
+
+export const fetchLeaves = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.status) query.append("status", params.status);
+    if (params.leaveType) query.append("leaveType", params.leaveType);
+    if (params.startDate) query.append("startDate", params.startDate);
+    if (params.endDate) query.append("endDate", params.endDate);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/leaves?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchLeaveById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/leaves/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const applyLeave = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/leaves/apply`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const reviewLeave = asyncHandler(async ({ id, status, rejectionReason }) => {
+    const res = await api.request({
+        url: `/leaves/${id}/review`,
+        method: requestMethod.PATCH,
+        data: { status, rejectionReason }
+    });
+    return res.data;
+});
+
+export const cancelLeave = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/leaves/${id}/cancel`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+/* =========================================================================
+   PAYROLL, SALARY TEMPLATES & SETTINGS APIS
+   ========================================================================= */
+
+export const fetchPayrollSettings = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+
+    const headers = {};
+    if (params.firmId && params.firmId !== 'all') {
+        headers['x-firm-id'] = params.firmId;
+    }
+
+    const res = await api.request({
+        url: `/payroll/settings?${query.toString()}`,
+        method: requestMethod.GET,
+        headers
+    });
+    return res.data;
+});
+
+export const updatePayrollSettings = asyncHandler(async (data) => {
+    const headers = {};
+    if (data?.firmId && data.firmId !== 'all') {
+        headers['x-firm-id'] = data.firmId;
+    }
+
+    const res = await api.request({
+        url: `/payroll/settings`,
+        method: requestMethod.PUT,
+        data,
+        headers
+    });
+    return res.data;
+});
+
+export const fetchSalaryTemplates = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+
+    const res = await api.request({
+        url: `/payroll/templates?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchSalaryTemplateById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/payroll/templates/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createSalaryTemplate = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/payroll/templates`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateSalaryTemplate = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/payroll/templates/${id}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const deleteSalaryTemplate = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/payroll/templates/${id}`,
+        method: requestMethod.DELETE
+    });
+    return res.data;
+});
+
+export const fetchSalarySlips = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.status) query.append("status", params.status);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/payroll/slips?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchSalarySlipById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/payroll/slips/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const downloadSalarySlipPdf = asyncHandler(async (id, filename = '') => {
+    try {
+        const res = await api.request({
+            url: `/payroll/slips/${id}/pdf`,
+            method: requestMethod.GET,
+            responseType: 'blob'
+        });
+
+        const blob = new Blob([res.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename || `SalarySlip-${id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        return { success: true };
+    } catch (error) {
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            try {
+                error.response.data = JSON.parse(text);
+            } catch (e) {
+                error.message = text;
+            }
+        }
+        throw error;
+    }
+});
+
+export const generatePayroll = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/payroll/generate`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const approveSalarySlip = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/payroll/slips/${id}/approve`,
+        method: requestMethod.PATCH
+    });
+    return res.data;
+});
+
+export const bulkPaySlips = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/payroll/bulk-pay`,
+        method: requestMethod.PATCH,
+        data
+    });
+    return res.data;
+});
+
+export const fetchPayrollReport = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+
+    const res = await api.request({
+        url: `/payroll/report?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const exportSalaryMuster = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.firmId) query.append("firmId", params.firmId);
+    if (params.month) query.append("month", params.month);
+    if (params.year) query.append("year", params.year);
+    if (params.type) query.append("type", params.type);
+    if (params.format) query.append("format", params.format);
+
+    const isPdf = params.format === 'pdf';
+    const res = await api.request({
+        url: `/payroll/muster/export?${query.toString()}`,
+        method: requestMethod.GET,
+        responseType: 'blob'
+    });
+
+    const contentType = isPdf
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const ext = isPdf ? 'pdf' : 'xlsx';
+    const prefix = params.type === 'bank' ? 'BankTransfer-NEFT' : 'SalaryWageMuster';
+
+    const blob = new Blob([res.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${prefix}-${params.month}-${params.year}.${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true };
+});
+
+/* =========================================================================
+   EMPLOYEE ADVANCES & LOANS APIS
+   ========================================================================= */
+
+export const fetchAdvances = asyncHandler(async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    if (params.firmId && params.firmId !== 'all') query.append("firmId", params.firmId);
+    if (params.employeeId) query.append("employeeId", params.employeeId);
+    if (params.status) query.append("status", params.status);
+    if (params.search) query.append("search", params.search);
+    if (params.sortBy) query.append("sortBy", params.sortBy);
+    if (params.sortOrder) query.append("sortOrder", params.sortOrder);
+
+    const res = await api.request({
+        url: `/advances?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchAdvanceById = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/advances/${id}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const fetchEmployeeAdvanceSummary = asyncHandler(async (employeeId, firmId = null) => {
+    const query = new URLSearchParams();
+    if (firmId && firmId !== 'all') query.append("firmId", firmId);
+
+    const res = await api.request({
+        url: `/advances/employee/${employeeId}?${query.toString()}`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createAdvance = asyncHandler(async (data) => {
+    const res = await api.request({
+        url: `/advances`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateAdvance = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/advances/${id}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const togglePauseAdvance = asyncHandler(async ({ id, isPaused }) => {
+    const res = await api.request({
+        url: `/advances/${id}/pause`,
+        method: requestMethod.PATCH,
+        data: { isPaused }
+    });
+    return res.data;
+});
+
+export const recordAdvanceRepayment = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/advances/${id}/repayments`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateSalarySlipAdvanceDeduction = asyncHandler(async ({ id, advanceDeduction }) => {
+    const res = await api.request({
+        url: `/payroll/slips/${id}/advance-deduction`,
+        method: requestMethod.PATCH,
+        data: { advanceDeduction }
+    });
+    return res.data;
+});
+

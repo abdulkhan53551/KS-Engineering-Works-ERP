@@ -1,9 +1,9 @@
 import { toast } from "react-toastify";
-import { useCreatFirm, useUpdateFirm } from "./api.hooks";
+import { useCreateFirm, useUpdateFirm } from "./api.hooks";
 
 const useHandleSubmit = (props) => {
     const { firmId, isEditMode, metaIds } = props;
-    const { mutate: createFirmApi, isPending: createFirmIsPending } = useCreatFirm();
+    const { mutate: createFirmApi, isPending: createFirmIsPending } = useCreateFirm();
     const { mutate: updateFirmApi, isPending: updateFirmIsPending } = useUpdateFirm(firmId);
 
     const onSubmit = (data) => {
