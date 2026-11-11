@@ -1,9 +1,11 @@
 import React, { useState, useContext, memo, Fragment } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Accordion, useAccordionButton, AccordionContext, Button } from 'react-bootstrap'
+import { useSelector } from 'react-redux'
 import { FaPen } from 'react-icons/fa';
 import { CgAddR } from "react-icons/cg";
 import { MdAddBox } from "react-icons/md";
+import { usePermission } from '../../../../hooks/usePermission';
 
 function CustomToggle({ children, eventKey, onClick }) {
 
@@ -27,6 +29,16 @@ const VerticalNav = memo((props) => {
     const [active, setActive] = useState('')
     //location
     let location = useLocation();
+    const { user, isSuperAdmin, role, can } = usePermission();
+    const isAdmin = isSuperAdmin || role === 'administrator' || role === 'admin';
+    const canViewEmployees = isSuperAdmin || can('employees', 'read');
+    const canViewAttendance = isSuperAdmin || can('attendance', 'read');
+    const canViewShifts = isSuperAdmin || can('shifts', 'read');
+    const canViewLeaves = isSuperAdmin || can('leaves', 'read');
+    const canViewPayroll = isSuperAdmin || can('payroll', 'read');
+    const canViewSalaryTemplates = isSuperAdmin || can('salary-templates', 'read') || can('payroll', 'read');
+    const canViewPayrollSettings = isSuperAdmin || can('payroll-settings', 'read') || can('payroll', 'read');
+    const canViewAnyEmployeeSection = canViewEmployees || canViewAttendance || canViewShifts || canViewLeaves || canViewPayroll || canViewSalaryTemplates || canViewPayrollSettings;
     return (
         <Fragment>
             <Accordion as="ul" className="navbar-nav iq-main-menu">
@@ -456,17 +468,44 @@ const VerticalNav = memo((props) => {
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
-                <li className="nav-item">
-                    <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
-                        <i className="icon">
-                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
-                                <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
-                            </svg>
-                        </i>
-                        <span className="item-name">Admin</span>
-                    </Link>
-                </li>
+                {(isSuperAdmin || can('users', 'read')) && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/dashboard/admin/admin' ? 'active' : ''} nav-link`} to="/dashboard/admin/admin">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M7.7688 8.71387H16.2312C18.5886 8.71387 20.5 10.5831 20.5 12.8885V17.8254C20.5 20.1308 18.5886 22 16.2312 22H7.7688C5.41136 22 3.5 20.1308 3.5 17.8254V12.8885C3.5 10.5831 5.41136 8.71387 7.7688 8.71387ZM11.9949 17.3295C12.4928 17.3295 12.8891 16.9419 12.8891 16.455V14.2489C12.8891 13.772 12.4928 13.3844 11.9949 13.3844C11.5072 13.3844 11.1109 13.772 11.1109 14.2489V16.455C11.1109 16.9419 11.5072 17.3295 11.9949 17.3295Z" fill="currentColor"></path>
+                                    <path opacity="0.4" d="M17.523 7.39595V8.86667C17.1673 8.7673 16.7913 8.71761 16.4052 8.71761H15.7447V7.39595C15.7447 5.37868 14.0681 3.73903 12.0053 3.73903C9.94257 3.73903 8.26594 5.36874 8.25578 7.37608V8.71761H7.60545C7.20916 8.71761 6.83319 8.7673 6.47754 8.87661V7.39595C6.4877 4.41476 8.95692 2 11.985 2C15.0537 2 17.523 4.41476 17.523 7.39595Z" fill="currentColor"></path>
+                                </svg>
+                            </i>
+                            <span className="item-name">Admin</span>
+                        </Link>
+                    </li>
+                )}
+                {isSuperAdmin && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/admin/approvals' ? 'active' : ''} nav-link`} to="/admin/approvals">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor" />
+                                </svg>
+                            </i>
+                            <span className="item-name">Approvals</span>
+                        </Link>
+                    </li>
+                )}
+                {(isSuperAdmin || can('users', 'read')) && (
+                    <li className="nav-item">
+                        <Link className={`${location.pathname === '/admin/roles-permissions' || location.pathname === '/dashboard/admin/roles-permissions' ? 'active' : ''} nav-link`} to="/dashboard/admin/roles-permissions">
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path opacity="0.4" d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" />
+                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 7C9.79 7 8 8.79 8 11C8 13.21 9.79 15 12 15C14.21 15 16 13.21 16 11C16 8.79 14.21 7 12 7ZM10 11C10 9.9 10.9 9 12 9C13.1 9 14 9.9 14 11C14 12.1 13.1 13 12 13C10.9 13 10 12.1 10 11ZM12 17C9.33 17 4 18.34 4 21V22H20V21C20 18.34 14.67 17 12 17Z" fill="currentColor" />
+                                </svg>
+                            </i>
+                            <span className="item-name">Roles & Permissions</span>
+                        </Link>
+                    </li>
+                )}
                 <Accordion.Item as="li" eventKey="sidebar-sales" bsPrefix={`nav-item ${active === 'sales' ? 'active' : ''} `} onClick={() => setActive('sales')}>
                     <CustomToggle eventKey="sidebar-sales" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">
@@ -604,9 +643,244 @@ const VerticalNav = memo((props) => {
                                     </Link>
                                 </Link>
                             </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/purchase/vendor-bills') ? 'active' : ''} nav-link`} to="/purchase/vendor-bills">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Vendor Bills</span>
+                                    <Link className="me-2" to="/purchase/vendor-bills/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
                         </ul>
                     </Accordion.Collapse>
                 </Accordion.Item>
+                <Accordion.Item as="li" eventKey="sidebar-payments" bsPrefix={`nav-item ${active === 'payments' ? 'active' : ''} `} onClick={() => setActive('payments')}>
+                    <CustomToggle eventKey="sidebar-payments" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                        <i className="icon">
+                            <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path opacity="0.4" d="M19.4616 4H4.53852C3.13626 4 2 5.14585 2 6.55996V17.44C2 18.8532 3.13626 20 4.53852 20H19.4616C20.8639 20 22 18.8532 22 17.44V6.55996C22 5.14585 20.8639 4 19.4616 4Z" fill="currentColor"></path>
+                                <path d="M2 9.5H22V12.5H2V9.5Z" fill="currentColor"></path>
+                                <circle cx="6.5" cy="16" r="1.5" fill="currentColor"></circle>
+                            </svg>
+                        </i>
+                        <span className="item-name">Payments</span>
+                        <i className="right-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </i>
+                    </CustomToggle>
+                    <Accordion.Collapse eventKey="sidebar-payments">
+                        <ul className="sub-nav">
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/payments') ? 'active' : ''} nav-link`} to="/payments/receipts">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Customer Receipts</span>
+                                    <Link className="me-2" to="/payments/receipts/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                            <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/payments/vendor-payments') ? 'active' : ''} nav-link`} to="/payments/vendor-payments">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Vendor Payments</span>
+                                    <Link className="me-2" to="/payments/vendor-payments/create">
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                            </li>
+                        </ul>
+                    </Accordion.Collapse>
+                </Accordion.Item>
+                {canViewAnyEmployeeSection && (
+                    <Accordion.Item as="li" eventKey="sidebar-employees" bsPrefix={`nav-item ${active === 'employee' || location.pathname.includes('/employee') ? 'active' : ''} `} onClick={() => setActive('employee')}>
+                        <CustomToggle eventKey="sidebar-employees" onClick={(activeKey) => setActiveMenu(activeKey)}>
+                            <i className="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 14.54C8.55 14.54 5.64 15.1 5.64 17.28C5.64 19.46 8.57 20 12 20C15.45 20 18.36 19.44 18.36 17.26C18.36 15.08 15.43 14.54 12 14.54Z" fill="currentColor"></path>
+                                    <path opacity="0.4" d="M12 12.47C14.34 12.47 16.21 10.59 16.21 8.24C16.21 5.89 14.34 4.01 12 4.01C9.66 4.01 7.79 5.89 7.79 8.24C7.79 10.59 9.66 12.47 12 12.47Z" fill="currentColor"></path>
+                                    <path opacity="0.4" d="M21.0881 9.21923C21.6925 6.84176 19.9205 4.70654 17.664 4.70654C17.4187 4.70654 17.1841 4.73356 16.9549 4.77949C16.8904 4.802 16.8725 4.82902 16.8519 4.86324C16.8671 4.90917 16.8895 4.93889C17.5673 5.89528 17.9568 7.0597 17.9568 8.30967C17.9568 9.50741 17.5996 10.6241 16.9728 11.5508C17.2369 11.8227 17.3981 11.8371 17.5629 11.8416C19.2059 11.8849 20.6807 10.8213 21.0881 9.21923Z" fill="currentColor"></path>
+                                    <path d="M22.8094 14.817C22.5086 14.1722 21.7824 13.73 20.6783 13.513C20.1572 13.3851 18.747 13.205 17.4352 13.2293C18.0378 13.6039 20.3811 14.916 20.0865 17.6834C20.8655 17.8059 22.3492 17.4853 22.8094 16.4866C23.0637 15.9589 23.0637 15.3456 22.8094 14.817Z" fill="currentColor"></path>
+                                </svg>
+                            </i>
+                            <span className="item-name">Employees & HR</span>
+                            <i className="right-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </i>
+                        </CustomToggle>
+                        <Accordion.Collapse eventKey="sidebar-employees">
+                            <ul className="sub-nav">
+                                {canViewEmployees && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname === '/dashboard/employee' || location.pathname === '/employee' ? 'active' : ''} nav-link`} to="/dashboard/employee">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Employee Directory</span>
+                                            {(isSuperAdmin || can('employees', 'create')) && (
+                                                <Link className="me-2" to="/dashboard/employee/create">
+                                                    <Button
+                                                        className="d-flex align-items-center justify-content-center p-1 rounded"
+                                                        style={{ transition: 'all 0.2s ease' }}
+                                                    >
+                                                        <MdAddBox size={20} color="white" className="transition-colors" />
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewAttendance && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/attendance') && !location.pathname.includes('/attendance-summary') ? 'active' : ''} nav-link`} to="/dashboard/employee/attendance">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Attendance Sheet</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewAttendance && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/attendance-summary') ? 'active' : ''} nav-link`} to="/dashboard/employee/attendance-summary">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Attendance Summary</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewShifts && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/shifts') ? 'active' : ''} nav-link`} to="/dashboard/employee/shifts">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Shifts & Rosters</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewLeaves && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/leaves') ? 'active' : ''} nav-link`} to="/dashboard/employee/leaves">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Leave Requests</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewPayroll && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname === '/dashboard/employee/payroll' || location.pathname === '/employee/payroll' ? 'active' : ''} nav-link`} to="/dashboard/employee/payroll">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Payroll & Slips</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewPayroll && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/advances') ? 'active' : ''} nav-link`} to="/dashboard/employee/advances">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Advances & Loans</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewSalaryTemplates && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/salary-templates') ? 'active' : ''} nav-link`} to="/dashboard/employee/salary-templates">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Salary Templates</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {canViewPayrollSettings && (
+                                    <li className="nav-item">
+                                        <Link className={`${location.pathname.includes('/employee/payroll-settings') ? 'active' : ''} nav-link`} to="/dashboard/employee/payroll-settings">
+                                            <i className="icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                    <g><circle cx="12" cy="12" r="8" fill="currentColor"></circle></g>
+                                                </svg>
+                                            </i>
+                                            <span className="item-name">Payroll Settings</span>
+                                        </Link>
+                                    </li>
+                                )}
+                            </ul>
+                        </Accordion.Collapse>
+                    </Accordion.Item>
+                )}
                 <Accordion.Item as="li" eventKey="sidebar-organization" bsPrefix={`nav-item ${active === 'organization' ? 'active' : ''} `} onClick={() => setActive('organization')}>
                     <CustomToggle eventKey="sidebar-organization" onClick={(activeKey) => setActiveMenu(activeKey)}>
                         <i className="icon">

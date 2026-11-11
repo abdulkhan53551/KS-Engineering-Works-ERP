@@ -1,0 +1,125 @@
+/**
+ * EntitySwitcher.css
+ * Polished, high-contrast entity switcher dropdown styles.
+ * Prevents text turning white on hover.
+ */
+
+.entity-switcher-container {
+    user-select: none;
+}
+
+/* Firm Toggle Button */
+.entity-switcher-btn.firm-toggle {
+    background-color: #f8fafc !important;
+    color: #1e40af !important;
+    border: 1px solid #cbd5e1 !important;
+    font-size: 0.835rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+    padding: 0.35rem 0.85rem !important;
+    transition: all 0.15s ease-in-out !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.entity-switcher-btn.firm-toggle:hover,
+.entity-switcher-btn.firm-toggle:focus,
+.entity-switcher-btn.firm-toggle:active,
+.firm-dropdown.show .entity-switcher-btn.firm-toggle {
+    background-color: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #93c5fd !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Branch Toggle Button */
+.entity-switcher-btn.branch-toggle {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+    font-size: 0.835rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+    padding: 0.35rem 0.85rem !important;
+    transition: all 0.15s ease-in-out !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.entity-switcher-btn.branch-toggle:hover,
+.entity-switcher-btn.branch-toggle:focus,
+.entity-switcher-btn.branch-toggle:active,
+.branch-dropdown.show .entity-switcher-btn.branch-toggle {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Dropdown Menu Styles */
+.entity-dropdown-menu {
+    border-radius: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
+    padding: 0.5rem 0 !important;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.entity-dropdown-header {
+    font-size: 0.685rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    padding: 0.35rem 1rem 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.entity-search-input {
+    font-size: 0.8125rem !important;
+    padding: 0.35rem 0.65rem 0.35rem 1.85rem !important;
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #f8fafc !important;
+}
+
+.entity-search-input:focus {
+    background-color: #ffffff !important;
+    border-color: #3a57e8 !important;
+    box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.12) !important;
+}
+
+.entity-dropdown-item {
+    font-size: 0.835rem;
+    padding: 0.55rem 1rem !important;
+    transition: background-color 0.1s ease;
+    color: #1e293b !important;
+}
+
+.entity-dropdown-item:hover,
+.entity-dropdown-item:focus {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.entity-dropdown-item:hover div,
+.entity-dropdown-item:hover span {
+    color: #0f172a !important;
+}
+
+.entity-dropdown-item:hover small {
+    color: #64748b !important;
+}
+
+.entity-dropdown-item.active {
+    background-color: #3a57e8 !important;
+    color: #ffffff !important;
+}
+
+.entity-dropdown-item.active div,
+.entity-dropdown-item.active span {
+    color: #ffffff !important;
+}
+
+.entity-dropdown-item.active small {
+    color: rgba(255, 255, 255, 0.75) !important;
+}

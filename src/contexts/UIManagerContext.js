@@ -1,5 +1,5 @@
 // contexts/UIManagerContext.js
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import ConfirmModal from "../components/modal/ConfirmModal";
 import { useSelector } from "react-redux";
 
@@ -30,8 +30,14 @@ export const UIManagerProvider = ({ children }) => {
         }, duration);
     }, []);
 
+    const contextValue = useMemo(() => ({
+        showModal,
+        closeModal,
+        showToast
+    }), [showModal, closeModal, showToast]);
+
     return (
-        <UIManagerContext.Provider value={{ showModal, closeModal, showToast }}>
+        <UIManagerContext.Provider value={contextValue}>
             {children}
 
             {/* Render Modal based on type */}

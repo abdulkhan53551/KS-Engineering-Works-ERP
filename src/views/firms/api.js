@@ -12,23 +12,23 @@ export const getFirmType = asyncHandler(async () => {
     return res.data;
 })
 
-// Get firms
-export const getFirmsPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '' }) => {
+// Get firms pagination
+export const getFirmsPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', isTrash = false }) => {
     const res = await api.request({
         url: '/firm/firm-pagination',
         method: requestMethod.GET,
-        params: { page, pageSize, search }
+        params: { page, pageSize, search, isTrash }
     });
 
     return res.data;
 })
 
 // Get firms
-export const getFirms = asyncHandler(async ({ page = 1, pageSize = 10, search = '' }) => {
+export const getFirms = asyncHandler(async ({ page = 1, pageSize = 10, search = '', isTrash = false }) => {
     const res = await api.request({
         url: '/firm',
         method: requestMethod.GET,
-        params: { page, pageSize, search }
+        params: { page, pageSize, search, isTrash }
     });
 
     return res.data;
@@ -66,11 +66,22 @@ export const updateFirm = asyncHandler(async (id, request) => {
     return res.data;
 })
 
+export const deleteFirm = asyncHandler(async (arg) => {
+    const id = typeof arg === 'object' ? arg.id : arg;
+    const isPermanentDelete = typeof arg === 'object' ? Boolean(arg.isPermanentDelete) : false;
 
-export const deleteFirm = asyncHandler(async (id) => {
     const res = await api.request({
         url: `/firm/${id}`,
-        method: requestMethod.DELETE
+        method: requestMethod.DELETE,
+        params: { isPermanentDelete }
+    });
+    return res.data;
+});
+
+export const restoreFirm = asyncHandler(async (id) => {
+    const res = await api.request({
+        url: `/firm/${id}/restore`,
+        method: requestMethod.PATCH
     });
     return res.data;
 });
@@ -96,5 +107,40 @@ export const deleteFirmLogo = asyncHandler(async (id) => {
         method: requestMethod.DELETE,
     });
 
+    return res.data;
+});
+
+// Firm Branches API
+export const getFirmBranches = asyncHandler(async (firmId) => {
+    const res = await api.request({
+        url: `/firm/${firmId}/branches`,
+        method: requestMethod.GET
+    });
+    return res.data;
+});
+
+export const createFirmBranch = asyncHandler(async ({ firmId, data }) => {
+    const res = await api.request({
+        url: `/firm/${firmId}/branches`,
+        method: requestMethod.POST,
+        data
+    });
+    return res.data;
+});
+
+export const updateFirmBranch = asyncHandler(async ({ firmId, branchId, data }) => {
+    const res = await api.request({
+        url: `/firm/${firmId}/branches/${branchId}`,
+        method: requestMethod.PUT,
+        data
+    });
+    return res.data;
+});
+
+export const deleteFirmBranch = asyncHandler(async ({ firmId, branchId }) => {
+    const res = await api.request({
+        url: `/firm/${firmId}/branches/${branchId}`,
+        method: requestMethod.DELETE
+    });
     return res.data;
 });

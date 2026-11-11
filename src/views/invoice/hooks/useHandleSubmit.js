@@ -20,6 +20,7 @@ const useHandleSubmit = (props) => {
 
         const formPayload = {
             ...data,
+            firmBranchId: data.firmBranchId || undefined,
             hasChallan: challanIds.length > 0,
             hasPo: poIds.length > 0,
             hasEwayBill: ewayBillIds.length > 0,

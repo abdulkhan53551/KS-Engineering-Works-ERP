@@ -2,7 +2,7 @@ import { useEffect, memo, Fragment, useContext } from "react";
 import { useLocation, Outlet } from "react-router-dom";
 
 //react-shepherd
-import {  ShepherdTourContext } from "react-shepherd";
+import { ShepherdTourContext } from "react-shepherd";
 
 //react-bootstrap
 import { Button } from "react-bootstrap";
@@ -52,7 +52,7 @@ const Default = memo((props) => {
   // let location = useLocation();
   // const pageLayout = useSelector(SettingSelector.page_layout);
   const appName = useSelector(SettingSelector.app_name);
-  useEffect(() => {});
+  useEffect(() => { });
 
   // const closeTour = () => {
   //   sessionStorage.setItem("tour", "true");

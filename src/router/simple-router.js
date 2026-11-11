@@ -4,15 +4,14 @@ import React from 'react'
 // auth
 import ConfirmMail from '../views/dashboard/auth/confirm-mail'
 import LockScreen from '../views/dashboard/auth/lock-screen'
-import Recoverpw from '../views/dashboard/auth/recoverpw'
-// import SignIn from '../views/dashboard/auth/sign-in'
+import SignIn from '../views/auth/sign-in'
 import SignUp from '../views/dashboard/auth/sign-up'
-// errors
+import Recoverpw from '../views/dashboard/auth/recoverpw'
+import ResetPassword from '../views/dashboard/auth/reset-password'
+import Error403 from '../views/auth/components/error403'
 import Error404 from '../views/auth/components/error404'
 import Error500 from '../views/auth/components/error500'
 import Maintenance from '../views/auth/components/maintenance'
-import SignIn from '../views/auth/sign-in'
-import Error403 from '../views/auth/components/error403'
 
 // const SimpleRouter = () => {
 //     return (
@@ -73,8 +72,32 @@ export const SimpleRouter = [
         element: <SignIn />
     },
     {
-        path: '/sign-up',
+        path: 'auth/sign-in',
+        element: <SignIn />
+    },
+    {
+        path: 'sign-up',
         element: <SignUp />
+    },
+    {
+        path: 'auth/sign-up',
+        element: <SignUp />
+    },
+    {
+        path: 'auth/recoverpw',
+        element: <Recoverpw />
+    },
+    {
+        path: 'recoverpw',
+        element: <Recoverpw />
+    },
+    {
+        path: 'auth/reset-password',
+        element: <ResetPassword />
+    },
+    {
+        path: 'reset-password',
+        element: <ResetPassword />
     },
     {
         path: 'auth/confirm-mail',
@@ -83,10 +106,6 @@ export const SimpleRouter = [
     {
         path: 'auth/lock-screen',
         element: <LockScreen />
-    },
-    {
-        path: 'auth/recoverpw',
-        element: <Recoverpw />
     },
     {
         path: '/server-error',
