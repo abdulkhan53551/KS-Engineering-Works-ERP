@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown } from 'react-bootstrap';
+import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown, Overlay } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
 import {
@@ -53,6 +53,7 @@ import { useListPagination, useRowSelection, usePageClamping } from '../../../ho
 import useInvoiceFilters from '../hooks/useInvoiceFilters';
 import useTrashActions from '../../../hooks/useTrashActions';
 import useBranchAction from '../../../hooks/useBranchAction';
+import TableActionMenu, { useTableActionMenu } from '../../../components/common/TableActionMenu';
 
 const InvoiceList = () => {
     // Trash Action Helpers
@@ -132,6 +133,15 @@ const InvoiceList = () => {
         clearSearch,
         onFilterChange: () => handleDeselectAll?.()
     });
+
+    // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
+    const {
+        activeMenu: activeActionMenu,
+        toggleMenu,
+        closeMenu,
+        isOpen: isActionMenuOpen,
+        tableWrapperProps
+    } = useTableActionMenu([page, pageSize, debouncedSearch, statusFilter, isTrash]);
 
     // Fetch data with all filters
     const {
@@ -802,13 +812,16 @@ const InvoiceList = () => {
                                 )}
                             </div>
 
-                            <div className={`invoice-table-wrapper table-responsive ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}>
+                            <div
+                                className={`invoice-table-wrapper table-responsive ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}
+                                {...tableWrapperProps}
+                            >
                                 {isFetching && !isLoading && (
                                     <div className="table-progress-bar">
                                         <div className="table-progress-line" />
                                     </div>
                                 )}
-                                <Table id="invoice-list-table" className="invoice-modern-table align-middle mb-0" hover responsive role="grid">
+                                <Table id="invoice-list-table" className="invoice-modern-table align-middle mb-0" hover role="grid">
                                     <thead>
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                                             <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.65rem 0.4rem' }}>
@@ -1161,89 +1174,12 @@ const InvoiceList = () => {
                                                                             </Button>
                                                                         )}
 
-                                                                        {/* Secondary Actions 3-Dots Dropdown */}
-                                                                        <Dropdown align="end">
-                                                                            <Dropdown.Toggle
-                                                                                as="button"
-                                                                                className="btn-action-more-dots"
-                                                                                title="More actions"
-                                                                                id={`invoice-actions-${item.invoiceId}`}
-                                                                            >
-                                                                                <FaEllipsisV size={13} />
-                                                                            </Dropdown.Toggle>
-
-                                                                            <Dropdown.Menu className="action-dropdown-menu shadow">
-                                                                                <Dropdown.Item
-                                                                                    className="d-flex align-items-center gap-2"
-                                                                                    onClick={() => setHistoryModalState({
-                                                                                        show: true,
-                                                                                        invoiceId: item.invoiceId,
-                                                                                        invoiceNo: item.invoiceNo
-                                                                                    })}
-                                                                                >
-                                                                                    <FaHistory size={12} className="text-muted" />
-                                                                                    <span>Payment History</span>
-                                                                                </Dropdown.Item>
-
-                                                                                <Dropdown.Item
-                                                                                    className="d-flex align-items-center gap-2"
-                                                                                    disabled={downloadingInvoiceId === item.invoiceId}
-                                                                                    onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
-                                                                                >
-                                                                                    <FaDownload size={12} className="text-muted" />
-                                                                                    <span>Download PDF</span>
-                                                                                </Dropdown.Item>
-
-                                                                                <Dropdown.Item
-                                                                                    as={Link}
-                                                                                    to={`/sales/invoice/${item.invoiceId}/edit`}
-                                                                                    className="d-flex align-items-center gap-2"
-                                                                                >
-                                                                                    {item.status === 'Cancelled' ? (
-                                                                                        <>
-                                                                                            <FaEye size={12} className="text-muted" />
-                                                                                            <span>View Details</span>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            <FaPen size={12} className="text-muted" />
-                                                                                            <span>Edit Invoice</span>
-                                                                                        </>
-                                                                                    )}
-                                                                                </Dropdown.Item>
-
-                                                                                <Dropdown.Item
-                                                                                    as={Link}
-                                                                                    to={`/sales/invoice/${item.invoiceId}/duplicate`}
-                                                                                    className="d-flex align-items-center gap-2"
-                                                                                >
-                                                                                    <FaCopy size={12} className="text-muted" />
-                                                                                    <span>Duplicate / Clone</span>
-                                                                                </Dropdown.Item>
-
-                                                                                <Dropdown.Divider className="my-1" />
-
-                                                                                {item.status !== 'Cancelled' && (
-                                                                                    <Dropdown.Item
-                                                                                        className="d-flex align-items-center gap-2 text-danger"
-                                                                                        disabled={paid > 0}
-                                                                                        title={paid > 0 ? `Cannot cancel: ₹${paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })} payment recorded` : "Cancel Invoice"}
-                                                                                        onClick={() => setCancelModalInvoice({ ...item, total, paidAmount: paid })}
-                                                                                    >
-                                                                                        <FaBan size={12} />
-                                                                                        <span>Cancel Invoice</span>
-                                                                                    </Dropdown.Item>
-                                                                                )}
-
-                                                                                <Dropdown.Item
-                                                                                    className="d-flex align-items-center gap-2 text-danger"
-                                                                                    onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
-                                                                                >
-                                                                                    <FaTrash size={12} />
-                                                                                    <span>Move to Bin</span>
-                                                                                </Dropdown.Item>
-                                                                            </Dropdown.Menu>
-                                                                        </Dropdown>
+                                                                        {/* Secondary Actions 3-Dots Button */}
+                                                                        <TableActionMenu.Trigger
+                                                                            isActive={isActionMenuOpen(item.invoiceId)}
+                                                                            id={`invoice-actions-${item.invoiceId}`}
+                                                                            onClick={(e) => toggleMenu(item.invoiceId, item, e.currentTarget)}
+                                                                        />
                                                                     </>
                                                                 ) : (
                                                                     <div className="d-flex align-items-center gap-1.5">
@@ -1329,6 +1265,90 @@ const InvoiceList = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Single Row Action Dropdown Menu Portal */}
+            <TableActionMenu.Overlay
+                activeMenu={activeActionMenu}
+                onClose={closeMenu}
+            >
+                {(item) => {
+                    const { paid, total } = getFinancials(item);
+
+                    return (
+                        <>
+                            <Dropdown.Item
+                                className="d-flex align-items-center gap-2"
+                                onClick={() => setHistoryModalState({
+                                    show: true,
+                                    invoiceId: item.invoiceId,
+                                    invoiceNo: item.invoiceNo
+                                })}
+                            >
+                                <FaHistory size={12} className="text-muted" />
+                                <span>Payment History</span>
+                            </Dropdown.Item>
+
+                            <Dropdown.Item
+                                className="d-flex align-items-center gap-2"
+                                disabled={downloadingInvoiceId === item.invoiceId}
+                                onClick={() => downloadInvoice({ invoiceId: item.invoiceId, invoiceNo: item.invoiceNo })}
+                            >
+                                <FaDownload size={12} className="text-muted" />
+                                <span>Download PDF</span>
+                            </Dropdown.Item>
+
+                            <Dropdown.Item
+                                as={Link}
+                                to={`/sales/invoice/${item.invoiceId}/edit`}
+                                className="d-flex align-items-center gap-2"
+                            >
+                                {item.status === 'Cancelled' ? (
+                                    <>
+                                        <FaEye size={12} className="text-muted" />
+                                        <span>View Details</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaPen size={12} className="text-muted" />
+                                        <span>Edit Invoice</span>
+                                    </>
+                                )}
+                            </Dropdown.Item>
+
+                            <Dropdown.Item
+                                as={Link}
+                                to={`/sales/invoice/${item.invoiceId}/duplicate`}
+                                className="d-flex align-items-center gap-2"
+                            >
+                                <FaCopy size={12} className="text-muted" />
+                                <span>Duplicate / Clone</span>
+                            </Dropdown.Item>
+
+                            <Dropdown.Divider className="my-1" />
+
+                            {item.status !== 'Cancelled' && (
+                                <Dropdown.Item
+                                    className="d-flex align-items-center gap-2 text-danger"
+                                    disabled={paid > 0}
+                                    title={paid > 0 ? `Cannot cancel: ₹${paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })} payment recorded` : "Cancel Invoice"}
+                                    onClick={() => setCancelModalInvoice({ ...item, total, paidAmount: paid })}
+                                >
+                                    <FaBan size={12} />
+                                    <span>Cancel Invoice</span>
+                                </Dropdown.Item>
+                            )}
+
+                            <Dropdown.Item
+                                className="d-flex align-items-center gap-2 text-danger"
+                                onClick={() => confirmSoftDelete(`Invoice "${item.invoiceNo}"`, () => deleteInvoice({ id: item.invoiceId, isPermanentDelete: false }))}
+                            >
+                                <FaTrash size={12} />
+                                <span>Move to Bin</span>
+                            </Dropdown.Item>
+                        </>
+                    );
+                }}
+            </TableActionMenu.Overlay>
 
             {/* Quick Payment Settlement Modal */}
             {quickPaymentInvoice && (

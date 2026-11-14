@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Spinner, Dropdown } from 'react-bootstrap';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Spinner, Dropdown, Overlay } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../../../components/Card';
 import {
@@ -36,6 +36,7 @@ import moment from 'moment';
 import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 import useBranchAction from '../../../hooks/useBranchAction';
+import TableActionMenu, { useTableActionMenu } from '../../../components/common/TableActionMenu';
 
 // Import modern invoice styling system for unified enterprise UI
 import '../../invoice/pages/invoice-list-modern.scss';
@@ -86,6 +87,15 @@ const InvoiceChallan = () => {
    } = useListPagination({
       initialPageSize: 10
    });
+
+   // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
+   const {
+      activeMenu: activeActionMenu,
+      toggleMenu,
+      closeMenu,
+      isOpen: isActionMenuOpen,
+      tableWrapperProps
+   } = useTableActionMenu([page, pageSize, debouncedSearch, statusFilter, isTrash]);
 
    // Fetch data
    const {
@@ -372,13 +382,16 @@ const InvoiceChallan = () => {
                      </div>
 
                      {/* Table Content */}
-                     <div className={`table-responsive invoice-table-wrapper position-relative ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}>
+                     <div
+                        className={`table-responsive invoice-table-wrapper position-relative ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}
+                        {...tableWrapperProps}
+                     >
                         {isFetching && !isLoading && (
                            <div className="table-progress-bar">
                               <div className="table-progress-line" />
                            </div>
                         )}
-                        <Table id="challan-list-table" className="invoice-modern-table table-sortable align-middle mb-0" hover responsive role="grid">
+                        <Table id="challan-list-table" className="invoice-modern-table table-sortable align-middle mb-0" hover role="grid">
                            <thead className="table-light">
                               <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                                  <th className="text-center" style={{ width: '40px', minWidth: '40px', padding: '0.65rem 0.4rem' }}>
@@ -632,58 +645,12 @@ const InvoiceChallan = () => {
                                                       )}
                                                    </Button>
 
-                                                   {/* Secondary Actions 3-Dots Dropdown */}
-                                                   <Dropdown align="end">
-                                                      <Dropdown.Toggle
-                                                         as="button"
-                                                         className="btn-action-more-dots"
-                                                         title="More actions"
-                                                         id={`challan-actions-${item.challanId}`}
-                                                      >
-                                                         <FaEllipsisV size={13} />
-                                                      </Dropdown.Toggle>
-
-                                                      <Dropdown.Menu className="action-dropdown-menu shadow">
-                                                         {/* Convert to Invoice (if unbilled) */}
-                                                         {!isBilled && (
-                                                            <Dropdown.Item
-                                                               className="d-flex align-items-center gap-2 text-primary fw-semibold"
-                                                               onClick={() => navigateWithBranch(`/sales/invoice/create?fromChallanId=${item.challanId}`, 'Select Branch for Invoice')}
-                                                            >
-                                                               <FaFileInvoice size={12} className="text-primary" />
-                                                               <span>Convert to Sales Invoice</span>
-                                                            </Dropdown.Item>
-                                                         )}
-
-                                                         <Dropdown.Item
-                                                            as={Link}
-                                                            to={`/sales/challans/${item.challanId}/edit`}
-                                                            className="d-flex align-items-center gap-2"
-                                                         >
-                                                            <FaPen size={12} className="text-muted" />
-                                                            <span>Edit Challan</span>
-                                                         </Dropdown.Item>
-
-                                                         <Dropdown.Item
-                                                            className="d-flex align-items-center gap-2"
-                                                            disabled={downloadingChallanId === item.challanId}
-                                                            onClick={() => downloadDeliveryChallanPdf({ challanId: item.challanId, challanNo: item.challanNo })}
-                                                         >
-                                                            <FaDownload size={12} className="text-muted" />
-                                                            <span>Download PDF</span>
-                                                         </Dropdown.Item>
-
-                                                         <Dropdown.Divider className="my-1" />
-
-                                                         <Dropdown.Item
-                                                            className="d-flex align-items-center gap-2 text-danger"
-                                                            onClick={() => confirmSoftDelete(`Challan "${item.challanNo}"`, () => deleteInvoiceChallan({ id: item.challanId, isPermanentDelete: false }))}
-                                                         >
-                                                            <FaTrash size={12} />
-                                                            <span>Move to Trash</span>
-                                                         </Dropdown.Item>
-                                                      </Dropdown.Menu>
-                                                   </Dropdown>
+                                                   {/* Secondary Actions 3-Dots Button */}
+                                                   <TableActionMenu.Trigger
+                                                      isActive={isActionMenuOpen(item.challanId)}
+                                                      id={`challan-actions-${item.challanId}`}
+                                                      onClick={(e) => toggleMenu(item.challanId, item, e.currentTarget)}
+                                                   />
                                                 </div>
                                              ) : (
                                                 <div className="action-btn-group">
@@ -743,6 +710,59 @@ const InvoiceChallan = () => {
                </Card>
             </Col>
          </Row>
+
+         {/* Single Table-Level Action Menu Overlay (Portal to body: prevents clipping, stacking & extra whitespace) */}
+         <TableActionMenu.Overlay
+            activeMenu={activeActionMenu}
+            onClose={closeMenu}
+         >
+            {(item) => {
+               const isBilled = item.status === 'Billed';
+
+               return (
+                  <>
+                     {/* Convert to Invoice (if unbilled) */}
+                     {!isBilled && (
+                        <Dropdown.Item
+                           className="d-flex align-items-center gap-2 text-primary fw-semibold"
+                           onClick={() => navigateWithBranch(`/sales/invoice/create?fromChallanId=${item.challanId}`, 'Select Branch for Invoice')}
+                        >
+                           <FaFileInvoice size={12} className="text-primary" />
+                           <span>Convert to Sales Invoice</span>
+                        </Dropdown.Item>
+                     )}
+
+                     <Dropdown.Item
+                        as={Link}
+                        to={`/sales/challans/${item.challanId}/edit`}
+                        className="d-flex align-items-center gap-2"
+                     >
+                        <FaPen size={12} className="text-muted" />
+                        <span>Edit Challan</span>
+                     </Dropdown.Item>
+
+                     <Dropdown.Item
+                        className="d-flex align-items-center gap-2"
+                        disabled={downloadingChallanId === item.challanId}
+                        onClick={() => downloadDeliveryChallanPdf({ challanId: item.challanId, challanNo: item.challanNo })}
+                     >
+                        <FaDownload size={12} className="text-muted" />
+                        <span>Download PDF</span>
+                     </Dropdown.Item>
+
+                     <Dropdown.Divider className="my-1" />
+
+                     <Dropdown.Item
+                        className="d-flex align-items-center gap-2 text-danger"
+                        onClick={() => confirmSoftDelete(`Challan "${item.challanNo}"`, () => deleteInvoiceChallan({ id: item.challanId, isPermanentDelete: false }))}
+                     >
+                        <FaTrash size={12} />
+                        <span>Move to Trash</span>
+                     </Dropdown.Item>
+                  </>
+               );
+            }}
+         </TableActionMenu.Overlay>
 
          {/* Branch Selection Modal for Consolidated Mode */}
          <BranchModal />
