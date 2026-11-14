@@ -399,3 +399,61 @@ export const determineIsInterState = (supplierGstCode, recipientGstCode) => {
     if (!supplierGstCode || !recipientGstCode) return false;
     return String(supplierGstCode).trim() !== String(recipientGstCode).trim();
 };
+
+/**
+ * Converts a string to Title Case (e.g., "ODISHA" -> "Odisha", "TAMIL NADU" -> "Tamil Nadu")
+ */
+export const toTitleCaseState = (str) => {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+/**
+ * Format Place of Supply string with Title Case state and standard State Code:
+ * Example: formatPlaceOfSupplyDisplay("ODISHA", "21") -> "Odisha (State Code: 21)"
+ */
+export const formatPlaceOfSupplyDisplay = (stateName, stateCode) => {
+    if (!stateName && !stateCode) return 'Maharashtra (State Code: 27)';
+    let name = stateName;
+    if (stateCode && GST_STATE_DATA[stateCode]?.name) {
+        name = GST_STATE_DATA[stateCode].name;
+    }
+    const titleCased = toTitleCaseState(name);
+    return stateCode ? `${titleCased} (State Code: ${stateCode})` : titleCased;
+};
+
+/**
+ * Normalizes any Place of Supply string to "State (State Code: XX)" with Title Case
+ * E.g. "ODISHA (21)" -> "Odisha (State Code: 21)"
+ * E.g. "MAHARASHTRA (27)" -> "Maharashtra (State Code: 27)"
+ */
+export const normalizePlaceOfSupplyDisplay = (pos) => {
+    if (!pos) return 'Maharashtra (State Code: 27)';
+    const match = pos.match(/^([^(]+)(?:\((?:State Code:\s*)?(\d+)\))?/i);
+    if (match) {
+        const rawState = match[1].trim();
+        const code = match[2];
+        const stateName = code && GST_STATE_DATA[code]?.name ? GST_STATE_DATA[code].name : toTitleCaseState(rawState);
+        return code ? `${stateName} (State Code: ${code})` : stateName;
+    }
+    return toTitleCaseState(pos);
+};
+
+/**
+ * Pre-sorted list of standard GST States for dropdown select
+ * Format: { code: '21', name: 'Odisha', label: 'Odisha (State Code: 21)', value: 'Odisha (State Code: 21)' }
+ */
+export const GST_STATE_OPTIONS = Object.entries(GST_STATE_DATA)
+    .map(([code, item]) => ({
+        code,
+        name: item.name,
+        label: `${item.name} (State Code: ${code})`,
+        value: `${item.name} (State Code: ${code})`
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+
