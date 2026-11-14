@@ -45,7 +45,7 @@ const PartyAutocompleteInput = ({
 
     // Sync external value changes
     useEffect(() => {
-        setSearchTerm(value || '');
+        setSearchTerm(typeof value === 'string' ? value : (value?.toString() || ''));
     }, [value]);
 
     // Handle outside click to close dropdown - only active when dropdown is open
@@ -121,7 +121,7 @@ const PartyAutocompleteInput = ({
 
     const handleSelectParty = async (party) => {
         if (!party || !party.id) return;
-        const displayName = party.displayName || party.legalName || '';
+        const displayName = party.displayName || party.legalName || party.display_name || party.legal_name || '';
         setSearchTerm(displayName);
         setIsOpen(false);
         setIsFetchingDetails(true);
@@ -279,17 +279,17 @@ const PartyAutocompleteInput = ({
                                         </div>
                                         <div className="overflow-hidden">
                                             <div className="party-item-legal-name text-truncate">
-                                                {item.legalName || item.displayName}
+                                                {item.legalName || item.legal_name || item.displayName || item.display_name}
                                             </div>
-                                            {item.displayName && item.displayName !== item.legalName && (
+                                            {(item.displayName || item.display_name) && (item.displayName || item.display_name) !== (item.legalName || item.legal_name) && (
                                                 <div className="party-item-display-name text-truncate">
-                                                    Trade: {item.displayName}
+                                                    Trade: {item.displayName || item.display_name}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    {item.partyCode && (
-                                        <span className="party-item-code">{item.partyCode}</span>
+                                    {(item.partyCode || item.party_code) && (
+                                        <span className="party-item-code">{item.partyCode || item.party_code}</span>
                                     )}
                                 </div>
                             );

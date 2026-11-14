@@ -168,9 +168,13 @@ export const bulkRestoreInvoices = asyncHandler(async ({ ids = [] }) => {
 });
 
 // Get unmapped invoice challan by invoice id
-export const getUnmappedInvoiceChallanByInvoiceId = asyncHandler(async (id) => {
+export const getUnmappedInvoiceChallanByInvoiceId = asyncHandler(async (id, partyId = null) => {
+    let url = `/invoice-challan/invoice/${id}?includeUnmappedChallans=true`;
+    if (partyId) {
+        url += `&partyId=${partyId}`;
+    }
     const res = await api.request({
-        url: `/invoice-challan/invoice/${id}?includeUnmappedChallans=true`,
+        url,
         method: requestMethod.GET
     });
 

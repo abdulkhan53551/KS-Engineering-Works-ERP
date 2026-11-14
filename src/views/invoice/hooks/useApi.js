@@ -425,14 +425,18 @@ export const useBulkRestoreInvoices = () => {
     });
 };
 
-// Get unmapped invoice challan by invoice id
-export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, options = {}) => {
+// Get unmapped invoice challan by invoice id (scoped optionally by party)
+export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, partyId = null, options = {}) => {
+    // If 2nd parameter is options object (backward compatibility)
+    const actualPartyId = (typeof partyId === 'object' && partyId !== null) ? null : partyId;
+    const actualOptions = (typeof partyId === 'object' && partyId !== null) ? partyId : options;
+
     return useQuery({
-        queryKey: ["unmappedInvoiceChallan", id],
-        queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
+        queryKey: ["unmappedInvoiceChallan", id, actualPartyId],
+        queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id, actualPartyId),
         staleTime: 5 * 60 * 1000,
         refetchOnMount: true,
-        ...options,
+        ...actualOptions,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
@@ -441,6 +445,8 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, options = {}) => {
                 isInvoiced: item.isInvoiced,
                 invoiceId: item.invoiceId,
                 customerName: item.customerName,
+                vehicleNo: item.vehicleNo,
+                totalQuantity: item.totalQuantity,
             })) ?? [];
 
             return structuredData;

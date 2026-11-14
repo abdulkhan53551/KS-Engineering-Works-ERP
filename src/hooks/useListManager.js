@@ -204,14 +204,16 @@ export const useListPagination = ({
  */
 export const useRowSelection = ({
     items = EMPTY_ARRAY,
-    idKey = 'id'
+    idKey = 'id',
+    idField
 } = {}) => {
+    const activeIdKey = idField || idKey;
     const [selectedIds, setSelectedIds] = useState(EMPTY_ARRAY);
 
     const getItemId = useCallback((item) => {
-        if (typeof idKey === 'function') return idKey(item);
-        return item?.[idKey];
-    }, [idKey]);
+        if (typeof activeIdKey === 'function') return activeIdKey(item);
+        return item?.[activeIdKey];
+    }, [activeIdKey]);
 
     const currentItemIds = useMemo(() => {
         return (items || []).map(getItemId).filter(Boolean);
@@ -253,6 +255,7 @@ export const useRowSelection = ({
         handleSelectAll,
         handleSelectRow,
         handleDeselectAll,
+        clearSelection: handleDeselectAll,
         isAllSelected,
         isIndeterminate,
         selectedCount: selectedIds.length
