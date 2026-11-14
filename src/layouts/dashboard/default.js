@@ -52,6 +52,8 @@ const Default = memo((props) => {
   // let location = useLocation();
   // const pageLayout = useSelector(SettingSelector.page_layout);
   const appName = useSelector(SettingSelector.app_name);
+  const { activeFirm, activeBranch } = useSelector((state) => state.firmReducer || {});
+  const tenantKey = `${activeFirm?.id || 'all'}_${activeBranch?.id || 'all'}`;
   useEffect(() => { });
 
   // const closeTour = () => {
@@ -167,7 +169,7 @@ const Default = memo((props) => {
         </div>
         <div className="py-0 conatiner-fluid content-inner mt-n5">
           {/* <DefaultRouter /> */}
-          <Outlet />
+          <Outlet key={tenantKey} />
         </div>
         {/* <div className="btn-download ">
           <Button

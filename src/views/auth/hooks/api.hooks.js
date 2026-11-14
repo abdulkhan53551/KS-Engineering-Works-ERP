@@ -71,23 +71,31 @@ export const useLogout = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
+    const cleanupLocalSession = () => {
+        // Clear React Query cache completely
+        queryClient.removeQueries();
+        queryClient.clear();
+
+        dispatch(logoutRedux());
+        dispatch(clearFirmState());
+        localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
+        localStorage.removeItem(localStorageKey.REFRESH_TOKEN_KEY);
+
+        // Redirect to sign-in page
+        navigate("/sign-in", { replace: true });
+    };
+
     return useMutation({
         mutationKey: ["logout"],
         mutationFn: logout,
         onSuccess: (res) => {
-            if (res.success) {
-                // Clear React Query cache completely
-                queryClient.removeQueries(); // removes all queries
-                queryClient.clear();         // optional, clears mutations too
-
-                dispatch(logoutRedux());
-                dispatch(clearFirmState());
-                localStorage.removeItem(localStorageKey.ACCESS_TOKEN_KEY);
-
-                // Redirect to dashboard
-                navigate("/sign-in", { replace: true });
-                toast.success(res.message || "Logout successful");
-            }
+            cleanupLocalSession();
+            toast.success(res?.message || "Logout successful");
+        },
+        onError: () => {
+            // Graceful fallback: clean up local session even if network/cookie fails
+            cleanupLocalSession();
+            toast.info("Logged out successfully");
         }
     });
 }

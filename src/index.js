@@ -4,7 +4,7 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 
 //router
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 //store
 import { Provider } from "react-redux";
 //reducer
@@ -21,7 +21,8 @@ export const router = createBrowserRouter([
   {
     element: <App />, // App is now layout
     children: [
-      { path: "/", element: <Index /> },
+      { path: "/", element: <Navigate to="/dashboard" replace /> },
+      { path: "/uikit-demo", element: <Index /> },
       ...DefaultRouter,
       ...IndexRouters,
       ...SimpleRouter,

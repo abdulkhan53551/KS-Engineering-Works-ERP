@@ -3,10 +3,23 @@ import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
 // Get invoice pagination
-export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getInvoicePagination = asyncHandler(async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
 
     const res = await api.request({
         url: '/invoice/pagination',
@@ -18,10 +31,23 @@ export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 1
 });
 
 // Get invoice list
-export const getInvoice = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getInvoice = asyncHandler(async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
 
     const res = await api.request({
         url: '/invoice',

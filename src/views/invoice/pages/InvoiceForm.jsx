@@ -117,6 +117,16 @@ const InvoiceForm = ({ mode }) => {
    const isEditMode = !!(mode === 'edit');
    const isDuplicateMode = !!(mode === 'duplicate');
 
+   const handleBack = () => {
+      if (window.history.state && typeof window.history.state.idx === 'number' && window.history.state.idx > 0) {
+         navigate(-1);
+      } else if (window.history.length > 1) {
+         navigate(-1);
+      } else {
+         navigate('/sales/invoice');
+      }
+   };
+
    const formMethods = useForm({
       resolver: joiResolver(invoiceValidationSchema(isEditMode)),
       shouldUnregister: false,
@@ -275,7 +285,7 @@ const InvoiceForm = ({ mode }) => {
                                  size="sm"
                                  className="btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center me-2"
                                  style={{ width: '32px', height: '32px' }}
-                                 onClick={() => navigate('/sales/invoice')}
+                                 onClick={handleBack}
                                  title="Back to Invoices"
                               >
                                  <FaArrowLeft size={13} />
@@ -366,10 +376,16 @@ const InvoiceForm = ({ mode }) => {
                                              id="invoiceNo"
                                              placeholder="Invoice No"
                                              isInvalid={!!errors.invoiceNo}
+                                             readOnly
+                                             className="bg-light"
+                                             style={{ cursor: 'not-allowed' }}
+                                             tabIndex={-1}
                                              {...register("invoiceNo")}
                                           />
                                           <Form.Label htmlFor="invoiceNo">
                                              Invoice No <span className="text-danger">*</span>
+                                             {!isEditMode && <Badge bg="primary-subtle" text="primary" className="ms-1 py-0.5 px-1.5 fw-normal small border border-primary-subtle">Auto-Generated</Badge>}
+                                             {isEditMode && <span className="text-muted small ms-1">(Locked)</span>}
                                           </Form.Label>
                                           <Form.Control.Feedback type="invalid">{errors.invoiceNo?.message}</Form.Control.Feedback>
                                        </Form.Floating>
@@ -1323,7 +1339,7 @@ const InvoiceForm = ({ mode }) => {
                               <Button
                                  variant="outline-secondary"
                                  className="px-4 py-2 fw-medium"
-                                 onClick={() => navigate('/sales/invoice')}
+                                 onClick={handleBack}
                               >
                                  Cancel
                               </Button>

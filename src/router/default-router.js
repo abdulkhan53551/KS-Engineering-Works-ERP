@@ -99,15 +99,11 @@ import AdvanceList from '../views/employee/advances/pages/AdvanceList';
 
 export const DefaultRouter = [
     {
-        path: '/',
-        element: <Default />,
+        element: <ProtectedRoute />,
         children: [
-            // {
-            //     path: 'dashboard',
-            //     element: <Index />
-            // },
             {
-                element: <ProtectedRoute />,
+                path: '/',
+                element: <Default />,
                 children: [
                     { path: 'dashboard', element: <Index /> },
 
@@ -201,10 +197,8 @@ export const DefaultRouter = [
                     { path: 'dashboard/employee/salary-templates', element: <ProtectedRoute module="salary-templates" action="read"><SalaryTemplates /></ProtectedRoute> },
                     { path: 'dashboard/employee/salary-slip/:id', element: <ProtectedRoute module="payroll" action="read"><SalarySlipView /></ProtectedRoute> },
                     { path: 'dashboard/employee/advances', element: <ProtectedRoute module="payroll" action="read"><AdvanceList /></ProtectedRoute> },
-                ]
-            },
-            {
-                path: 'dashboard/special-pages/billing',
+                    {
+                        path: 'dashboard/special-pages/billing',
                 element: <Billing />
             },
             {
@@ -329,6 +323,8 @@ export const DefaultRouter = [
                 element: <AddRow />
             }
         ]
+    }
+]
     },
     {
         element: <ProtectedRoute allowedRoles={["super-admin"]} />,
