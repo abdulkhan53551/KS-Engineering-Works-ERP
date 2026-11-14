@@ -2,25 +2,32 @@ import React from 'react';
 
 /**
  * PartyStatusBadge component
- * Displays a professional ERP badge styled identically to Invoice List's payment status badge.
+ * Displays a sleek fintech status pill identically to Invoice List.
  */
 const PartyStatusBadge = ({ status }) => {
     const rawStatus = (status || '').toUpperCase();
 
-    let badgeClass = 'bg-secondary';
+    let pillClass = 'fintech-pill-cancelled';
+    let label = status || 'Unknown';
+
     if (rawStatus === 'ACTIVE') {
-        badgeClass = 'bg-success';
+        pillClass = 'fintech-pill-paid';
+        label = 'Active';
     } else if (rawStatus === 'INACTIVE') {
-        badgeClass = 'bg-danger';
+        pillClass = 'fintech-pill-failed';
+        label = 'Inactive';
     } else if (rawStatus === 'PENDING') {
-        badgeClass = 'bg-warning text-dark';
+        pillClass = 'fintech-pill-pending';
+        label = 'Pending';
     } else if (rawStatus === 'SUSPENDED') {
-        badgeClass = 'bg-dark';
+        pillClass = 'fintech-pill-cancelled';
+        label = 'Suspended';
     }
 
     return (
-        <span className={`badge ${badgeClass}`}>
-            {status || 'UNKNOWN'}
+        <span className={`fintech-pill ${pillClass}`}>
+            <span className="status-dot" />
+            <span>{label}</span>
         </span>
     );
 };
