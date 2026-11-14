@@ -30,6 +30,32 @@ export const getInvoicePagination = asyncHandler(async ({
     return res.data;
 });
 
+// Get invoice financial KPI summary
+export const getInvoiceSummary = asyncHandler(async ({
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+} = {}) => {
+    const params = {};
+    if (search) params.search = search;
+    if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
+
+    const res = await api.request({
+        url: '/invoice/summary',
+        method: requestMethod.GET,
+        params
+    });
+
+    return res.data;
+});
+
 // Get invoice list
 export const getInvoice = asyncHandler(async ({
     page = 1,

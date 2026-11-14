@@ -79,6 +79,24 @@ export const createPartyValidationSchema = Joi.object({
             "number.min": "Credit period cannot be negative.",
             "number.max": "Credit period cannot exceed 365 days."
         }),
+    openingBalance: Joi.number()
+        .precision(2)
+        .min(0)
+        .allow(null, "")
+        .default(0)
+        .messages({
+            "number.base": "Opening balance must be a valid number.",
+            "number.min": "Opening balance cannot be negative."
+        }),
+    openingBalanceType: Joi.string()
+        .valid("Dr", "Cr", "DR", "CR")
+        .default("Dr"),
+    openingBalanceDate: Joi.date()
+        .allow(null, "")
+        .optional()
+        .messages({
+            "date.base": "Please select a valid Opening Date."
+        }),
     logoUrl: Joi.string().allow(null, "").optional(),
     logoPublicId: Joi.string().allow(null, "").optional(),
     status: Joi.string().valid("ACTIVE", "INACTIVE").default("ACTIVE")

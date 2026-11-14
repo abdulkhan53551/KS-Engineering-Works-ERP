@@ -8,6 +8,7 @@ import {
     getInvoice,
     getInvoiceById,
     getInvoicePagination,
+    getInvoiceSummary,
     getLastInvoice,
     getNextInvoiceNumber,
     getUnmappedEwayBillByInvoiceId,
@@ -54,6 +55,32 @@ export const useInvoicePagination = ({
                 pageStart,
                 pageEnd
             };
+        }
+    });
+};
+
+// Get invoice financial KPI summary (database-wide, all pages matching active filters)
+export const useInvoiceSummary = ({
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+} = {}) => {
+    return useQuery({
+        queryKey: ["invoiceSummary", search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoiceSummary({ search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        keepPreviousData: true,
+        staleTime: 30 * 1000,
+        select: (result) => result?.data ?? {
+            totalInvoiced: 0,
+            totalPaid: 0,
+            totalBalance: 0,
+            fullyPaidCount: 0,
+            partialCount: 0,
+            unpaidCount: 0,
+            totalCount: 0
         }
     });
 };
@@ -175,14 +202,14 @@ export const useInvoiceById = (id = 0) => {
 };
 
 // Create invoice
-export const useCreateInvoice = () => {
+export const useCreateInvoice = (options = {}) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationKey: ["createInvoice"],
         mutationFn: createInvoice,
-        onSuccess: (res) => {
+        onSuccess: (res, variables) => {
             if (res.success) {
                 const id = res.data?.id;
                 toast.success(res.message || "Invoice created successfully.");
@@ -191,24 +218,32 @@ export const useCreateInvoice = () => {
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
-                navigate(`/sales/invoice/${id}/edit`, { replace: true });
+
+                if (typeof options.onSuccess === 'function') {
+                    options.onSuccess(res, variables);
+                } else {
+                    navigate(`/sales/invoice/${id}/edit`, { replace: true });
+                }
             }
         },
         onError: (err) => {
             const message = err?.response?.data?.message || err?.message || "Failed to create invoice.";
             toast.error(message);
+            if (typeof options.onError === 'function') {
+                options.onError(err);
+            }
         }
     });
 };
 
 // Update invoice
-export const useUpdateInvoice = (id) => {
+export const useUpdateInvoice = (id, options = {}) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationKey: ["updateInvoice"],
+        mutationKey: ["updateInvoice", id],
         mutationFn: (data) => updateInvoice(id, data),
-        onSuccess: (res) => {
+        onSuccess: (res, variables) => {
             if (res.success) {
                 toast.success(res.message || "Invoice updated successfully.");
                 queryClient.invalidateQueries({ queryKey: ['invoiceList'] });
@@ -220,11 +255,18 @@ export const useUpdateInvoice = (id) => {
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
+
+                if (typeof options.onSuccess === 'function') {
+                    options.onSuccess(res, variables);
+                }
             }
         },
         onError: (err) => {
             const message = err?.response?.data?.message || err?.message || "Failed to update invoice.";
             toast.error(message);
+            if (typeof options.onError === 'function') {
+                options.onError(err);
+            }
         }
     });
 };

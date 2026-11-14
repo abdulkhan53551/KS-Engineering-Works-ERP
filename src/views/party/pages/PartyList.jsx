@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle, FaSyncAlt } from 'react-icons/fa';
+import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle, FaSyncAlt, FaBookOpen } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import PaginationBar from '../../../components/PaginationBar';
 import {
@@ -856,6 +856,17 @@ const PartyList = () => {
                                                                         >
                                                                             <FaEye size={11} />
                                                                         </Button>
+
+                                                                        {/* Account Ledger Button */}
+                                                                        <Link to={`/parties/${party.id}/ledger`} title="View Account Ledger">
+                                                                            <Button
+                                                                                variant="outline-primary"
+                                                                                size="sm"
+                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
+                                                                            >
+                                                                                <FaBookOpen size={10} />
+                                                                            </Button>
+                                                                        </Link>
 
                                                                         {/* Edit Button */}
                                                                         <Link to={`/parties/${party.id}/edit`} title="Edit Party">

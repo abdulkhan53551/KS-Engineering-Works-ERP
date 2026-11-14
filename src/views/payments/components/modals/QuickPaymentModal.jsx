@@ -169,14 +169,10 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                 const currentTds = parseFloat(watchTds) || 0;
                 const currentWriteOff = parseFloat(watchWriteOff) || 0;
                 const maxAllowedCash = Math.max(0, Math.round((balDue - currentTds - currentWriteOff) * 100) / 100);
-
-                // Hard block: do not allow entering more digits than the allowed value
-                if (num > maxAllowedCash + 0.0001) {
-                    return;
-                }
+                const alloc = Math.min(num, maxAllowedCash);
 
                 setValue('totalAmount', clean, { shouldValidate: false, shouldDirty: true });
-                setValue('allocatedAmount', clean, { shouldValidate: false });
+                setValue('allocatedAmount', String(alloc), { shouldValidate: false });
                 clearErrors('totalAmount');
                 clearErrors('allocatedAmount');
                 return;
@@ -234,7 +230,12 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
         // Handles empty string or lone decimal point "."
         setValue(fieldName, clean, { shouldValidate: false, shouldDirty: true });
         if (fieldName === 'totalAmount') {
-            setValue('allocatedAmount', clean, { shouldValidate: false });
+            const num = parseFloat(clean) || 0;
+            const currentTds = parseFloat(watchTds) || 0;
+            const currentWriteOff = parseFloat(watchWriteOff) || 0;
+            const maxAllowedCash = Math.max(0, Math.round((balDue - currentTds - currentWriteOff) * 100) / 100);
+            const alloc = Math.min(num, maxAllowedCash);
+            setValue('allocatedAmount', String(alloc), { shouldValidate: false });
         }
         clearErrors(fieldName);
         if (fieldName === 'writeOffAmount' && (!clean || parseFloat(clean) === 0)) {
@@ -250,18 +251,21 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
     }, [watchTotalAmount]);
 
     const handleFormSubmit = (formData) => {
-        const allocCash = Number(formData.allocatedAmount || formData.totalAmount || 0);
+        const totalAmountNum = Number(formData.totalAmount || 0);
         const tds = Number(formData.tdsAmount || 0);
         const writeOff = Number(formData.writeOffAmount || 0);
         const finalPartyId = Number(formData.partyId || resolvedPartyId);
+
+        const maxAllowedCash = Math.max(0, Math.round((balanceDue - tds - writeOff) * 100) / 100);
+        const allocCash = Math.min(totalAmountNum, maxAllowedCash);
 
         if (!finalPartyId || finalPartyId <= 0) {
             toast.error('Customer party is required to record a payment.');
             return;
         }
 
-        if (allocCash <= 0) {
-            toast.error('Received cash amount must be greater than zero.');
+        if (totalAmountNum <= 0 && tds <= 0 && writeOff <= 0) {
+            toast.error('Received payment amount must be greater than zero.');
             return;
         }
 
@@ -273,7 +277,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
         const payload = {
             paymentDate: moment(formData.paymentDate).format('YYYY-MM-DD'),
             partyId: finalPartyId,
-            totalAmount: Number(formData.totalAmount),
+            totalAmount: totalAmountNum,
             paymentModeId: Number(formData.paymentModeId),
             referenceNo: formData.referenceNo ? formData.referenceNo.trim() : undefined,
             referenceDate: formData.referenceDate ? moment(formData.referenceDate).format('YYYY-MM-DD') : undefined,
@@ -309,12 +313,15 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
 
     if (!invoice) return null;
 
-    const allocCashNum = Number(watchAllocCash || watchTotalAmount || 0);
+    const totalCashInput = Number(watchTotalAmount || 0);
     const tdsNum = Number(watchTds || 0);
     const writeOffNum = Number(watchWriteOff || 0);
+    const maxAllowedCash = Math.max(0, Math.round((balanceDue - tdsNum - writeOffNum) * 100) / 100);
+    const allocCashNum = Math.min(totalCashInput, maxAllowedCash);
+    const excessAmount = Math.max(0, Math.round((totalCashInput - allocCashNum) * 100) / 100);
     const totalSettled = allocCashNum + tdsNum + writeOffNum;
-    const remainingBalance = Math.max(0, balanceDue - totalSettled);
-    const isOverSettled = totalSettled > balanceDue + 0.009;
+    const remainingBalance = Math.max(0, Math.round((balanceDue - totalSettled) * 100) / 100);
+    const isDeductionOverSettled = (tdsNum + writeOffNum) > balanceDue + 0.009;
 
     // Quick Action Presets
     const handleFillFull = () => {
@@ -468,12 +475,23 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                         )}
                     </div>
 
-                    {/* Over-settled Alert */}
-                    {isOverSettled && (
-                        <Alert variant="danger" className="py-1.5 px-2.5 mb-2 small d-flex align-items-center gap-2 rounded-2 border-danger-subtle">
-                            <FaExclamationTriangle className="text-danger flex-shrink-0 me-1" size={13} />
-                            <div>
-                                Settled amount (₹{totalSettled.toFixed(2)}) exceeds balance due (₹{balanceDue.toFixed(2)}). Excess: <strong>₹{(totalSettled - balanceDue).toFixed(2)}</strong>.
+                    {/* Customer Advance Triggered Alert */}
+                    {excessAmount > 0 && (
+                        <Alert variant="success" className="py-2 px-2.5 mb-2 small d-flex align-items-center justify-content-between rounded-2 border-success-subtle bg-success-subtle">
+                            <div className="d-flex align-items-center gap-2">
+                                <FaCheckCircle className="text-success flex-shrink-0" size={14} />
+                                <div>
+                                    <strong className="text-success d-block" style={{ fontSize: '0.80rem' }}>Customer Advance Recorded</strong>
+                                    <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                        ₹{allocCashNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })} will settle this invoice in full.
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="text-end font-monospace">
+                                <span className="text-muted small d-block" style={{ fontSize: '0.68rem' }}>Unallocated Advance</span>
+                                <span className="fw-bold text-success" style={{ fontSize: '0.88rem' }}>
+                                    + ₹{excessAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                         </Alert>
                     )}
@@ -720,8 +738,13 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                     <div className="d-none d-sm-block text-muted" style={{ fontSize: '0.78rem' }}>
                         <span>Voucher Total: </span>
                         <strong className="text-dark font-monospace" style={{ fontSize: '0.88rem' }}>
-                            ₹{allocCashNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            ₹{totalCashInput.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </strong>
+                        {excessAmount > 0 && (
+                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" style={{ fontSize: '0.70rem' }}>
+                                +₹{excessAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Advance
+                            </span>
+                        )}
                     </div>
                     <div className="d-flex align-items-center gap-2 ms-auto">
                         <Button
@@ -738,7 +761,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                             variant="primary"
                             size="sm"
                             type="submit"
-                            disabled={isPending || isOverSettled || allocCashNum <= 0 || !resolvedPartyId}
+                            disabled={isPending || isDeductionOverSettled || totalCashInput <= 0 || !resolvedPartyId}
                             className="btn-modal-submit"
                         >
                             {isPending ? (
@@ -749,7 +772,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                             ) : (
                                 <>
                                     <FaSave size={12} className="me-1" />
-                                    <span>Record Payment • ₹{allocCashNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                    <span>Record Payment • ₹{totalCashInput > 0 ? totalCashInput.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}</span>
                                 </>
                             )}
                         </Button>
