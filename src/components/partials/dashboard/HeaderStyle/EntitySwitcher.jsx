@@ -6,7 +6,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { FaBuilding, FaMapMarkerAlt, FaSearch, FaCheck, FaTimes, FaCog } from 'react-icons/fa';
 import { setActiveFirm, setActiveBranch } from '../../../../store/firm.slice';
-import { updateActiveRole } from '../../../../store/auth.slice';
+import { updateActiveRole, setAccessToken } from '../../../../store/auth.slice';
+import { localStorageKey } from '../../../../utilities/constant/constants';
 import api from '../../../../lib/axios';
 import './EntitySwitcher.css';
 
@@ -77,13 +78,22 @@ const EntitySwitcher = () => {
             }
         });
 
-        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
-        api.get('/auth/me').then((res) => {
-            const updatedUser = res.data?.data?.user;
-            if (updatedUser) {
-                dispatch(updateActiveRole(updatedUser));
+        // Switch cryptographic token context on backend (re-issues signed accessToken)
+        api.post('/auth/switch-context', {
+            firmId: firm.id === 'all' ? 'all' : firm.id,
+            branchId: defaultBranch?.id || null
+        }).then((res) => {
+            const switchData = res.data?.data;
+            if (switchData?.accessToken) {
+                dispatch(setAccessToken(switchData.accessToken));
+                localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, switchData.accessToken);
             }
-        }).catch(() => {});
+            if (switchData?.user) {
+                dispatch(updateActiveRole(switchData.user));
+            }
+        }).catch((err) => {
+            console.error('Error switching firm context:', err);
+        });
 
         setFirmSearch('');
 
@@ -140,13 +150,31 @@ const EntitySwitcher = () => {
             }
         });
 
-        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
-        api.get('/auth/me').then((res) => {
-            const updatedUser = res.data?.data?.user;
-            if (updatedUser) {
-                dispatch(updateActiveRole(updatedUser));
-            }
-        }).catch(() => {});
+        // Switch cryptographic token context on backend (re-issues signed accessToken)
+        if (activeFirm?.id && activeFirm.id !== 'all') {
+            api.post('/auth/switch-context', {
+                firmId: activeFirm.id,
+                branchId: newBranchId
+            }).then((res) => {
+                const switchData = res.data?.data;
+                if (switchData?.accessToken) {
+                    dispatch(setAccessToken(switchData.accessToken));
+                    localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, switchData.accessToken);
+                }
+                if (switchData?.user) {
+                    dispatch(updateActiveRole(switchData.user));
+                }
+            }).catch((err) => {
+                console.error('Error switching branch context:', err);
+            });
+        } else {
+            api.get('/auth/me').then((res) => {
+                const updatedUser = res.data?.data?.user;
+                if (updatedUser) {
+                    dispatch(updateActiveRole(updatedUser));
+                }
+            }).catch(() => {});
+        }
 
         setBranchSearch('');
 

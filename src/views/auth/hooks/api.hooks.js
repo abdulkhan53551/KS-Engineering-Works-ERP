@@ -45,16 +45,29 @@ export const useLogin = () => {
 
                 // Populate available firms & active context
                 if (res.data.firms && res.data.firms.length > 0) {
-                    dispatch(setUserFirms(res.data.firms));
+                    const isSuperAdmin = (res.data.user?.role || res.data.user?.roleSlug || '').toLowerCase() === 'super-admin' || Boolean(res.data.user?.isSuperAdmin);
 
-                    const defaultFirm = res.data.firms.find(f => f.id === res.data.defaultContext?.firmId) || res.data.firms[0];
-                    if (defaultFirm) {
-                        dispatch(setActiveFirm(defaultFirm));
-                        const defaultBranch = defaultFirm.branches?.find(b => b.id === res.data.defaultContext?.branchId) ||
-                            defaultFirm.branches?.find(b => b.isHeadOffice) ||
-                            defaultFirm.branches?.[0] || null;
-                        dispatch(setActiveBranch(defaultBranch));
+                    if (isSuperAdmin && !res.data.defaultContext?.firmId) {
+                        // Super Admin starts in Consolidated All Firms mode (firmId: null in JWT)
+                        dispatch(setActiveFirm({
+                            id: 'all',
+                            firmName: 'All Firms (Consolidated Group)',
+                            code: 'ALL',
+                            branches: []
+                        }));
+                        dispatch(setActiveBranch(null));
+                    } else {
+                        const defaultFirm = res.data.firms.find(f => f.id === res.data.defaultContext?.firmId) || res.data.firms[0];
+                        if (defaultFirm) {
+                            dispatch(setActiveFirm(defaultFirm));
+                            const defaultBranch = defaultFirm.branches?.find(b => b.id === res.data.defaultContext?.branchId) ||
+                                defaultFirm.branches?.find(b => b.isHeadOffice) ||
+                                defaultFirm.branches?.[0] || null;
+                            dispatch(setActiveBranch(defaultBranch));
+                        }
                     }
+
+                    dispatch(setUserFirms(res.data.firms));
                 }
 
                 // Redirect to dashboard
