@@ -59,6 +59,10 @@ import FirmForm from '../views/firms/FirmForm';
 import InvoiceChallan from '../views/invoice-challan/pages/InvoiceChallanForm';
 import InvoiceForm from '../views/invoice/pages/InvoiceForm';
 import InvoiceList from '../views/invoice/pages/InvoiceList';
+import QuotationList from '../views/quotation/pages/QuotationList';
+import QuotationForm from '../views/quotation/pages/QuotationForm';
+import ProformaList from '../views/proforma-invoice/pages/ProformaList';
+import ProformaForm from '../views/proforma-invoice/pages/ProformaForm';
 import InvoiceChallanList from '../views/invoice-challan/pages/InvoiceChallanList';
 import EwayBillForm from '../views/eway-bill/pages/EwayBillForm';
 import EwayBillList from '../views/eway-bill/pages/EwayBillList';
@@ -66,6 +70,7 @@ import PurchaseOrderForm from '../views/purchase-order/pages/PurchaseOrderForm';
 import PurchaseOrderList from '../views/purchase-order/pages/PurchaseOrderList';
 import PartyList from '../views/party/pages/PartyList';
 import PartyForm from '../views/party/pages/PartyForm';
+import PartyLedgerPage from '../views/party/pages/PartyLedgerPage';
 import ContactRoleList from '../views/masters/contact-roles/pages/ContactRoleList';
 import PartyRoleList from '../views/masters/party-roles/pages/PartyRoleList';
 import ProductList from '../views/products/pages/ProductList';
@@ -99,15 +104,11 @@ import AdvanceList from '../views/employee/advances/pages/AdvanceList';
 
 export const DefaultRouter = [
     {
-        path: '/',
-        element: <Default />,
+        element: <ProtectedRoute />,
         children: [
-            // {
-            //     path: 'dashboard',
-            //     element: <Index />
-            // },
             {
-                element: <ProtectedRoute />,
+                path: '/',
+                element: <Default />,
                 children: [
                     { path: 'dashboard', element: <Index /> },
 
@@ -121,6 +122,7 @@ export const DefaultRouter = [
                     { path: 'parties', element: <PartyList /> },
                     { path: 'parties/create', element: <PartyForm mode="create" /> },
                     { path: 'parties/:id/edit', element: <PartyForm mode="edit" /> },
+                    { path: 'parties/:id/ledger', element: <PartyLedgerPage /> },
                     { path: 'parties/party-roles', element: <PartyRoleList /> },
                     { path: 'organization/party-roles', element: <PartyRoleList /> },
 
@@ -132,6 +134,18 @@ export const DefaultRouter = [
                     { path: 'masters/contact-roles', element: <ContactRoleList /> },
 
                     /* Sales */
+                    // Quotation Routes
+                    { path: 'sales/quotation', element: <QuotationList /> },
+                    { path: 'sales/quotation/create', element: <QuotationForm mode="create" /> },
+                    { path: 'sales/quotation/:id/edit', element: <QuotationForm mode="edit" /> },
+                    { path: 'sales/quotation/:id/duplicate', element: <QuotationForm mode="duplicate" /> },
+
+                    // Proforma Invoice Routes
+                    { path: 'sales/proforma-invoice', element: <ProformaList /> },
+                    { path: 'sales/proforma-invoice/create', element: <ProformaForm mode="create" /> },
+                    { path: 'sales/proforma-invoice/:id/edit', element: <ProformaForm mode="edit" /> },
+                    { path: 'sales/proforma-invoice/:id/duplicate', element: <ProformaForm mode="duplicate" /> },
+
                     // Invoice Routes
                     { path: 'sales/invoice', element: <InvoiceList /> },
                     { path: 'sales/invoice/create', element: <InvoiceForm mode="create" /> },
@@ -201,10 +215,8 @@ export const DefaultRouter = [
                     { path: 'dashboard/employee/salary-templates', element: <ProtectedRoute module="salary-templates" action="read"><SalaryTemplates /></ProtectedRoute> },
                     { path: 'dashboard/employee/salary-slip/:id', element: <ProtectedRoute module="payroll" action="read"><SalarySlipView /></ProtectedRoute> },
                     { path: 'dashboard/employee/advances', element: <ProtectedRoute module="payroll" action="read"><AdvanceList /></ProtectedRoute> },
-                ]
-            },
-            {
-                path: 'dashboard/special-pages/billing',
+                    {
+                        path: 'dashboard/special-pages/billing',
                 element: <Billing />
             },
             {
@@ -329,6 +341,8 @@ export const DefaultRouter = [
                 element: <AddRow />
             }
         ]
+    }
+]
     },
     {
         element: <ProtectedRoute allowedRoles={["super-admin"]} />,

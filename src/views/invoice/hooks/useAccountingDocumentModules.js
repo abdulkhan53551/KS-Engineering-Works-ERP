@@ -32,6 +32,7 @@ export default function useAccountingDocumentModules({ invoiceId, setValue, cont
     const currentChallanIds = useWatch({ control, name: 'challanIds' }) || [];
     const currentPoIds = useWatch({ control, name: 'poIds' }) || [];
     const currentEwayBillIds = useWatch({ control, name: 'ewayBillIds' }) || [];
+    const selectedPartyId = useWatch({ control, name: 'partyId' });
 
     const activeSelectedIds = useMemo(() => {
         switch (activeModule) {
@@ -58,9 +59,15 @@ export default function useAccountingDocumentModules({ invoiceId, setValue, cont
         }
     };
 
-    const fetchChallanQuery = useUnmappedInvoiceChallanByInvoiceId(invoiceId);
-    const fetchPOQuery = useUnmappedPurchaseOrderByInvoiceId(invoiceId);
-    const fetchEWBQuery = useUnmappedEwayBillByInvoiceId(invoiceId);
+    const fetchChallanQuery = useUnmappedInvoiceChallanByInvoiceId(invoiceId, selectedPartyId, {
+        enabled: activeModule === 'challan'
+    });
+    const fetchPOQuery = useUnmappedPurchaseOrderByInvoiceId(invoiceId, {
+        enabled: activeModule === 'purchaseOrder'
+    });
+    const fetchEWBQuery = useUnmappedEwayBillByInvoiceId(invoiceId, {
+        enabled: activeModule === 'ewayBill'
+    });
 
     const deleteChallanQuery = useDeleteInvoiceChallan();
     const deletePOQuery = useDeletePurchaseOrder();

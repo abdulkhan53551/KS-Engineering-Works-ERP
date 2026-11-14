@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt } from 'react-icons/fa';
+import { Offcanvas, Row, Col, Card, Badge, OverlayTrigger, Tooltip, Button } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { FaBuilding, FaIdCard, FaPhoneAlt, FaEnvelope, FaGlobe, FaStickyNote, FaCopy, FaCheck, FaExternalLinkAlt, FaClock, FaFileAlt, FaBookOpen, FaPen, FaBalanceScale } from 'react-icons/fa';
 import PartyStatusBadge from './PartyStatusBadge';
 import PartyDocumentSection from './sections/PartyDocumentSection';
-import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
+
+/**
+ * Extract 2-letter initials for lightweight CSS avatar
+ */
+const getPartyInitials = (party) => {
+    const name = party?.displayName || party?.legalName || party?.partyCode || 'P';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+};
 
 /**
  * Helper to copy text to clipboard with toast notification
@@ -69,16 +81,44 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
         >
             <Offcanvas.Header closeButton className="border-bottom bg-light py-3">
                 <div className="d-flex align-items-center gap-3">
-                    <img
-                        className="bg-soft-primary rounded img-fluid avatar-40 p-1"
-                        src={party.logoUrl || party.logo || defaultLogo}
-                        alt="Party Logo"
-                        onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = defaultLogo;
+                    <div
+                        className="rounded d-inline-flex align-items-center justify-content-center overflow-hidden bg-soft-primary"
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            border: '1px solid rgba(58, 87, 232, 0.2)',
+                            flexShrink: 0
                         }}
-                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-                    />
+                    >
+                        {party.logoUrl || party.logo ? (
+                            <img
+                                src={party.logoUrl || party.logo}
+                                alt="Party Logo"
+                                loading="lazy"
+                                decoding="async"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                    }
+                                }}
+                            />
+                        ) : null}
+                        <span
+                            className="fw-bold text-primary"
+                            style={{
+                                display: (party.logoUrl || party.logo) ? 'none' : 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.9rem',
+                                letterSpacing: '0.02em',
+                                lineHeight: 1
+                            }}
+                        >
+                            {getPartyInitials(party)}
+                        </span>
+                    </div>
                     <div>
                         <div className="d-flex align-items-center gap-2 mb-1">
                             <Badge bg="primary" className="font-monospace px-2 py-1" style={{ fontSize: '0.78rem' }}>
@@ -94,6 +134,22 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
             </Offcanvas.Header>
 
             <Offcanvas.Body className="p-3">
+                {/* Quick Action Navigation */}
+                <div className="d-flex gap-2 mb-3">
+                    <Link to={`/parties/${party.id}/ledger`} className="flex-grow-1 text-decoration-none" onClick={onHide}>
+                        <Button variant="primary" size="sm" className="w-100 d-flex align-items-center justify-content-center gap-2 shadow-sm fw-semibold">
+                            <FaBookOpen size={12} />
+                            <span>View Account Ledger</span>
+                        </Button>
+                    </Link>
+                    <Link to={`/parties/${party.id}/edit`} className="text-decoration-none" onClick={onHide}>
+                        <Button variant="outline-secondary" size="sm" className="d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                            <FaPen size={11} />
+                            <span>Edit</span>
+                        </Button>
+                    </Link>
+                </div>
+
                 {/* 1. Identity / General Info */}
                 <Card className="mb-3 border shadow-none">
                     <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
@@ -150,6 +206,47 @@ const PartyDetailsDrawer = ({ show, onHide, party }) => {
                                     )}
                                 </div>
                             </Col>
+                        </Row>
+                    </Card.Body>
+                </Card>
+
+                {/* Financial & Ledger Terms */}
+                <Card className="mb-3 border shadow-none">
+                    <Card.Header className="bg-transparent py-2 border-bottom d-flex align-items-center gap-2">
+                        <FaBalanceScale className="text-primary" />
+                        <span className="fw-semibold text-dark small text-uppercase">Financial & Ledger Terms</span>
+                    </Card.Header>
+                    <Card.Body className="p-3">
+                        <Row className="g-2">
+                            <Col xs={6}>
+                                <div className="mb-2">
+                                    <span className="text-muted small d-block">Opening Balance</span>
+                                    <span className="fw-bold text-dark" style={{ fontSize: '0.92rem' }}>
+                                        ₹ {Number(party.openingBalance || party.opening_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <Badge bg={String(party.openingBalanceType || party.opening_balance_type || 'Dr').toUpperCase() === 'CR' ? 'soft-warning text-warning' : 'soft-primary text-primary'} className="ms-1.5 px-1.5 py-0.5">
+                                        {String(party.openingBalanceType || party.opening_balance_type || 'Dr').toUpperCase() === 'CR' ? 'Cr (Payable)' : 'Dr (Receivable)'}
+                                    </Badge>
+                                </div>
+                            </Col>
+                            <Col xs={6}>
+                                <div className="mb-2">
+                                    <span className="text-muted small d-block">Credit Period</span>
+                                    <span className="fw-semibold text-dark">
+                                        {party.creditPeriodDays ? `${party.creditPeriodDays} Days` : '0 Days'}
+                                    </span>
+                                </div>
+                            </Col>
+                            {party.openingBalanceDate || party.opening_balance_date ? (
+                                <Col xs={12}>
+                                    <div className="mt-1 pt-2 border-top d-flex justify-content-between align-items-center">
+                                        <span className="text-muted small">As of Date:</span>
+                                        <span className="small text-dark font-monospace">
+                                            {new Date(party.openingBalanceDate || party.opening_balance_date).toLocaleDateString('en-GB')}
+                                        </span>
+                                    </div>
+                                </Col>
+                            ) : null}
                         </Row>
                     </Card.Body>
                 </Card>

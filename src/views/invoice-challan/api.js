@@ -102,3 +102,26 @@ export const bulkRestoreInvoiceChallans = asyncHandler(async ({ ids = [] }) => {
     });
     return res.data;
 });
+
+// Download / View Delivery Challan PDF
+export const downloadDeliveryChallanPdf = asyncHandler(async (id) => {
+    const challanId = (typeof id === 'object' && id !== null) ? (id.challanId || id.id) : id;
+    try {
+        const res = await api.request({
+            url: `/invoice-challan/${challanId}/pdf`,
+            method: requestMethod.GET,
+            responseType: "blob",
+        });
+
+        return {
+            data: res.data,
+            headers: res.headers,
+        };
+    } catch (error) {
+        if (error.response?.data instanceof Blob) {
+            const text = await error.response.data.text();
+            error.response.data = JSON.parse(text);
+        }
+        throw error;
+    }
+});
