@@ -66,8 +66,22 @@ const useInvoiceCalculation = (props) => {
     // --------------------------------------------------
     // 1) DISTRIBUTE DISCOUNT TO ITEMS & CALCULATE TAXES
     // --------------------------------------------------
+    // Signature of calculation inputs to prevent loop when calculated fields are set back to form
+    const calculationSignature = useMemo(() => {
+        if (!items || items.length === 0) return "";
+        return items
+            .map(it => `${it.qty || 0}:${it.rate || 0}:${it.gstSlabId || ""}`)
+            .join("|") + `|${invoiceDiscount || 0}|${isInterState}`;
+    }, [items, invoiceDiscount, isInterState]);
+
+    const cachedItemsWithDiscountRef = useRef([]);
+    const prevCalculationSignatureRef = useRef("");
+
     const itemsWithDiscount = useMemo(() => {
-        if (!items || items.length === 0) return [];
+        if (!items || items.length === 0) {
+            cachedItemsWithDiscountRef.current = [];
+            return [];
+        }
 
         // ⛔ Skip calculation for description / hsn typing
         if (
@@ -78,12 +92,25 @@ const useInvoiceCalculation = (props) => {
             return items;
         }
 
+        // If calculation inputs haven't changed, return cached mapped items to prevent re-render cascade
+        if (
+            prevCalculationSignatureRef.current === calculationSignature &&
+            cachedItemsWithDiscountRef.current.length === items.length
+        ) {
+            return cachedItemsWithDiscountRef.current;
+        }
+
+        prevCalculationSignatureRef.current = calculationSignature;
+
         const totalSubTotal = items.reduce(
             (sum, it) => sum + (Number(it.qty || 0) * Number(it.rate || 0)),
             0
         );
 
-        if (totalSubTotal === 0) return items;
+        if (totalSubTotal === 0) {
+            cachedItemsWithDiscountRef.current = items;
+            return items;
+        }
 
         let distributedSum = 0;
 
@@ -138,8 +165,9 @@ const useInvoiceCalculation = (props) => {
             };
         });
 
+        cachedItemsWithDiscountRef.current = updatedItems;
         return updatedItems;
-    }, [items, invoiceDiscount, isInterState, getGstRate]);
+    }, [items, invoiceDiscount, isInterState, getGstRate, calculationSignature]);
 
     // --------------------------------------------------
     // 2) INVOICE SUMMARY
@@ -193,17 +221,21 @@ const useInvoiceCalculation = (props) => {
             return;
         }
 
-        // update items with new calculation
+        const isDiff = (a, b) => Number(a || 0).toFixed(2) !== Number(b || 0).toFixed(2);
+
+        // update items with new calculation only if any scalar values actually differ
         invoiceSummary.items?.forEach((item, index) => {
             const current = getValues(`items.${index}`);
             if (!current) return;
 
             if (
-                current.total !== item.total ||
-                current.taxableAmount !== item.taxableAmount ||
-                current.cgst !== item.cgst ||
-                current.sgst !== item.sgst ||
-                current.igst !== item.igst
+                isDiff(current.total, item.total) ||
+                isDiff(current.taxableAmount, item.taxableAmount) ||
+                isDiff(current.cgst, item.cgst) ||
+                isDiff(current.sgst, item.sgst) ||
+                isDiff(current.igst, item.igst) ||
+                isDiff(current.subTotal, item.subTotal) ||
+                isDiff(current.discountAmount, item.discountAmount)
             ) {
                 setValue(
                     `items.${index}`,
@@ -228,7 +260,7 @@ const useInvoiceCalculation = (props) => {
 
         const updateIfChanged = (name, newValue) => {
             const current = getValues(name);
-            if (current != newValue) {
+            if (isDiff(current, newValue)) {
                 setValue(name, newValue, { shouldDirty: true });
             }
         };

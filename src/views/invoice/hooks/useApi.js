@@ -14,6 +14,7 @@ import {
     getUnmappedInvoiceChallanByInvoiceId,
     getUnmappedPurchaseOrderByInvoiceId,
     restoreInvoice,
+    cancelInvoice,
     updateInvoice
 } from "../api";
 import { toast } from "react-toastify";
@@ -38,6 +39,7 @@ export const useInvoicePagination = ({
         queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
         queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
             const total = pagination.total ?? 0;
@@ -71,6 +73,7 @@ export const useInvoice = ({
         queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
         queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const paymentStatusColor = {
                 PENDING: 'bg-warning',
@@ -287,6 +290,41 @@ export const useRestoreInvoice = () => {
     });
 };
 
+// Cancel invoice
+export const useCancelInvoice = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["cancelInvoice"],
+        mutationFn: (payload) => cancelInvoice(payload),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Invoice cancelled successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedInvoiceChallan"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedPurchaseOrder"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedEwayBill"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            closeModal();
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to cancel invoice.";
+            toast.error(message);
+        }
+    });
+};
+
 // Bulk delete invoices (Soft delete or Permanent delete)
 export const useBulkDeleteInvoices = () => {
     const queryClient = useQueryClient();
@@ -346,11 +384,13 @@ export const useBulkRestoreInvoices = () => {
 };
 
 // Get unmapped invoice challan by invoice id
-export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
+export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedInvoiceChallan", id],
         queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
@@ -367,11 +407,13 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped purchase order by invoice id
-export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
+export const useUnmappedPurchaseOrderByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.poId,
@@ -388,11 +430,13 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped eway bill by invoice id
-export const useUnmappedEwayBillByInvoiceId = (id = 0) => {
+export const useUnmappedEwayBillByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.ewayBillId,

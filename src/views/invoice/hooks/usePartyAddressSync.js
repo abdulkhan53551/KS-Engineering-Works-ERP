@@ -131,52 +131,56 @@ export const usePartyAddressSync = ({
         handleShippingModeChange(checked ? 'SAME_AS_BILLING' : 'CUSTOM_SITE');
     }, [handleShippingModeChange]);
 
-    // Live sync from billing to shipping ONLY when in SAME_AS_BILLING mode
+    // Live sync from billing to shipping ONLY when in SAME_AS_BILLING mode (debounced by 150ms to eliminate typing lag)
     useEffect(() => {
         if (!sameAsBilling) return;
         // In edit/duplicate mode, do not run live-sync until shipping mode has been hydrated
         if (isEditMode && !hasHydratedShippingModeRef.current) return;
 
-        const currentShipping = getValues("shippingAddress") || {};
-        const bAddr = billingAddress1 || "";
-        const bPhone = billingPhone || "";
-        const bEmail = billingEmail || "";
-        const bState = selectedBillingState ? Number(selectedBillingState) : null;
-        const bCity = billingCityId ? Number(billingCityId) : null;
-        const bPin = billingPincode ? String(billingPincode) : "";
-        const bBranch = billingBranchName || "";
-        const bGstin = billingGstin || "";
+        const timer = setTimeout(() => {
+            const currentShipping = getValues("shippingAddress") || {};
+            const bAddr = billingAddress1 || "";
+            const bPhone = billingPhone || "";
+            const bEmail = billingEmail || "";
+            const bState = selectedBillingState ? Number(selectedBillingState) : null;
+            const bCity = billingCityId ? Number(billingCityId) : null;
+            const bPin = billingPincode ? String(billingPincode) : "";
+            const bBranch = billingBranchName || "";
+            const bGstin = billingGstin || "";
 
-        if (currentShipping.branchName !== bBranch) {
-            setValue("shippingAddress.branchName", bBranch, { shouldValidate: false, shouldDirty: true });
-        }
-        if (currentShipping.gstin !== bGstin) {
-            setValue("shippingAddress.gstin", bGstin, { shouldValidate: false, shouldDirty: true });
-        }
-        if (currentShipping.addressLine1 !== bAddr) {
-            setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: true, shouldDirty: true });
-            if (bAddr && clearErrors) clearErrors("shippingAddress.addressLine1");
-        }
-        if (currentShipping.phoneNumber !== bPhone) {
-            setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
-            if (bPhone && clearErrors) clearErrors("shippingAddress.phoneNumber");
-        }
-        if (currentShipping.email !== bEmail) {
-            setValue("shippingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
-            if (bEmail && clearErrors) clearErrors("shippingAddress.email");
-        }
-        if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
-            setValue("shippingAddress.stateId", bState, { shouldValidate: true, shouldDirty: true });
-            if (bState && clearErrors) clearErrors("shippingAddress.stateId");
-        }
-        if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
-            setValue("shippingAddress.cityId", bCity, { shouldValidate: true, shouldDirty: true });
-            if (bCity && clearErrors) clearErrors("shippingAddress.cityId");
-        }
-        if (String(currentShipping.pincode || "") !== bPin) {
-            setValue("shippingAddress.pincode", bPin, { shouldValidate: true, shouldDirty: true });
-            if (bPin && clearErrors) clearErrors("shippingAddress.pincode");
-        }
+            if (currentShipping.branchName !== bBranch) {
+                setValue("shippingAddress.branchName", bBranch, { shouldValidate: false, shouldDirty: true });
+            }
+            if (currentShipping.gstin !== bGstin) {
+                setValue("shippingAddress.gstin", bGstin, { shouldValidate: false, shouldDirty: true });
+            }
+            if (currentShipping.addressLine1 !== bAddr) {
+                setValue("shippingAddress.addressLine1", bAddr, { shouldValidate: true, shouldDirty: true });
+                if (bAddr && clearErrors) clearErrors("shippingAddress.addressLine1");
+            }
+            if (currentShipping.phoneNumber !== bPhone) {
+                setValue("shippingAddress.phoneNumber", bPhone, { shouldValidate: true, shouldDirty: true });
+                if (bPhone && clearErrors) clearErrors("shippingAddress.phoneNumber");
+            }
+            if (currentShipping.email !== bEmail) {
+                setValue("shippingAddress.email", bEmail, { shouldValidate: true, shouldDirty: true });
+                if (bEmail && clearErrors) clearErrors("shippingAddress.email");
+            }
+            if (Number(currentShipping.stateId || 0) !== Number(bState || 0)) {
+                setValue("shippingAddress.stateId", bState, { shouldValidate: true, shouldDirty: true });
+                if (bState && clearErrors) clearErrors("shippingAddress.stateId");
+            }
+            if (Number(currentShipping.cityId || 0) !== Number(bCity || 0)) {
+                setValue("shippingAddress.cityId", bCity, { shouldValidate: true, shouldDirty: true });
+                if (bCity && clearErrors) clearErrors("shippingAddress.cityId");
+            }
+            if (String(currentShipping.pincode || "") !== bPin) {
+                setValue("shippingAddress.pincode", bPin, { shouldValidate: true, shouldDirty: true });
+                if (bPin && clearErrors) clearErrors("shippingAddress.pincode");
+            }
+        }, 150);
+
+        return () => clearTimeout(timer);
     }, [
         sameAsBilling,
         isEditMode,

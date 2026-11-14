@@ -77,8 +77,21 @@ const ProductAutocompleteInput = ({
         }
     }, [isOpen, updateDropdownPosition]);
 
-    // Handle click outside to close dropdown
+    const isMountedRef = useRef(true);
     useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+
+    // Handle click outside to close dropdown - only active when dropdown is actually open
+    useEffect(() => {
+        if (!isOpen) return;
+
         const handleClickOutside = (event) => {
             if (
                 containerRef.current &&
@@ -91,7 +104,7 @@ const ProductAutocompleteInput = ({
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isOpen]);
 
     // Perform debounced multi-attribute search
     const performSearch = (query) => {
@@ -110,15 +123,19 @@ const ProductAutocompleteInput = ({
         debounceTimerRef.current = setTimeout(async () => {
             try {
                 const res = await searchProducts({ q: query.trim(), itemType, limit: 12 });
+                if (!isMountedRef.current) return;
                 const list = res?.data ?? res ?? [];
                 setSuggestions(Array.isArray(list) ? list : []);
                 setIsOpen(true);
                 setActiveIndex(-1);
             } catch (err) {
+                if (!isMountedRef.current) return;
                 console.error('Error searching products:', err);
                 setSuggestions([]);
             } finally {
-                setIsLoading(false);
+                if (isMountedRef.current) {
+                    setIsLoading(false);
+                }
             }
         }, 250);
     };

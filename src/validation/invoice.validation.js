@@ -4,7 +4,7 @@ import Decimal from 'decimal.js';
 
 // Schema: Create a new invoice
 export const invoiceValidationSchema = (isEditMode) => Joi.object({
-    invoiceNo: Joi.string().max(255).required(),
+    invoiceNo: Joi.string().max(255).allow(null, '').optional(),
     invoiceDate: Joi.date().required(),
 
     dueDays: Joi.number().integer().min(0).required(),

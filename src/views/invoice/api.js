@@ -109,6 +109,18 @@ export const restoreInvoice = asyncHandler(async (id) => {
     return res.data;
 });
 
+// Cancel invoice
+export const cancelInvoice = asyncHandler(async (payload) => {
+    const id = (typeof payload === 'object' && payload !== null) ? (payload.id || payload.invoiceId) : payload;
+    const cancelReason = (typeof payload === 'object' && payload !== null) ? (payload.cancelReason || '') : '';
+    const res = await api.request({
+        url: `/invoice/${id}/cancel`,
+        method: requestMethod.PATCH,
+        data: { cancelReason }
+    });
+    return res.data;
+});
+
 // Bulk delete invoices (Soft delete or Permanent delete)
 export const bulkDeleteInvoices = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
     const res = await api.request({

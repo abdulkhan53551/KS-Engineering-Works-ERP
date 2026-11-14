@@ -32,13 +32,26 @@ const PartyAutocompleteInput = ({
     const containerRef = useRef(null);
     const debounceTimerRef = useRef(null);
 
+    const isMountedRef = useRef(true);
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+
     // Sync external value changes
     useEffect(() => {
         setSearchTerm(value || '');
     }, [value]);
 
-    // Handle outside click to close dropdown
+    // Handle outside click to close dropdown - only active when dropdown is open
     useEffect(() => {
+        if (!isOpen) return;
+
         const handleClickOutside = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 setIsOpen(false);
@@ -46,7 +59,7 @@ const PartyAutocompleteInput = ({
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isOpen]);
 
     // Perform debounced search
     const performSearch = (query) => {
@@ -66,15 +79,19 @@ const PartyAutocompleteInput = ({
         debounceTimerRef.current = setTimeout(async () => {
             try {
                 const res = await searchParties(trimmed);
+                if (!isMountedRef.current) return;
                 const list = res?.data ?? res ?? [];
                 setSuggestions(Array.isArray(list) ? list : []);
                 setIsOpen(true);
                 setActiveIndex(-1);
             } catch (err) {
+                if (!isMountedRef.current) return;
                 console.error('Error searching parties:', err);
                 setSuggestions([]);
             } finally {
-                setIsLoading(false);
+                if (isMountedRef.current) {
+                    setIsLoading(false);
+                }
             }
         }, 250);
     };
@@ -122,7 +139,9 @@ const PartyAutocompleteInput = ({
                 onSelectParty(party);
             }
         } finally {
-            setIsFetchingDetails(false);
+            if (isMountedRef.current) {
+                setIsFetchingDetails(false);
+            }
         }
     };
 

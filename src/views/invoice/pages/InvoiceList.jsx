@@ -16,11 +16,14 @@ import {
     FaHistory,
     FaFilter,
     FaCheck,
-    FaCalendarAlt
+    FaCalendarAlt,
+    FaBan,
+    FaEye
 } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
 import InvoicePaymentHistoryModal from '../../payments/components/modals/InvoicePaymentHistoryModal';
+import CancelInvoiceModal from '../components/CancelInvoiceModal';
 import {
     useBulkDeleteInvoices,
     useBulkRestoreInvoices,
@@ -28,7 +31,8 @@ import {
     useDownloadInvoice,
     useInvoice,
     useInvoicePagination,
-    useRestoreInvoice
+    useRestoreInvoice,
+    useCancelInvoice
 } from '../hooks/useApi';
 import useInvoiceSort from '../hooks/useInvoiceSort';
 import useInvoiceFinancials from '../hooks/useInvoiceFinancials';
@@ -58,9 +62,19 @@ const InvoiceList = () => {
     // API Mutations
     const { mutate: deleteInvoice } = useDeleteInvoice();
     const { mutate: restoreInvoice } = useRestoreInvoice();
+    const { mutate: cancelInvoiceMutation, isPending: cancelIsPending } = useCancelInvoice();
     const { mutate: bulkDeleteInvoices } = useBulkDeleteInvoices();
     const { mutate: bulkRestoreInvoices } = useBulkRestoreInvoices();
     const { mutate: downloadInvoice, downloadingInvoiceId } = useDownloadInvoice();
+
+    // Cancellation Modal State
+    const [cancelModalInvoice, setCancelModalInvoice] = useState(null);
+
+    const handleConfirmCancel = (id, cancelReason = '') => {
+        cancelInvoiceMutation({ id, cancelReason }, {
+            onSuccess: () => setCancelModalInvoice(null)
+        });
+    };
 
     // Payment Modals State
     const [quickPaymentInvoice, setQuickPaymentInvoice] = useState(null);
@@ -748,6 +762,21 @@ const InvoiceList = () => {
                                                                         {item.firmBranchCode}
                                                                     </Badge>
                                                                 )}
+                                                                {item.status === 'Cancelled' && (
+                                                                    <span
+                                                                        className="badge rounded-pill fw-semibold font-monospace"
+                                                                        style={{
+                                                                            backgroundColor: '#fee2e2',
+                                                                            color: '#b91c1c',
+                                                                            border: '1px solid #fecaca',
+                                                                            fontSize: '0.64rem',
+                                                                            letterSpacing: '0.04em',
+                                                                            padding: '2px 6px'
+                                                                        }}
+                                                                    >
+                                                                        CANCELLED
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </td>
                                                         <td style={{ padding: '0.45rem 0.5rem' }}>{item.invoiceDate ? moment(item.invoiceDate).format('DD/MM/YYYY') : '-'}</td>
@@ -775,18 +804,34 @@ const InvoiceList = () => {
                                                                     )}
                                                                 </td>
                                                                 <td style={{ padding: '0.45rem 0.5rem' }}>
-                                                                    <span
-                                                                        className={`badge ${item.color || 'bg-secondary'}`}
-                                                                        style={{ cursor: 'pointer' }}
-                                                                        title="Click to view payment history"
-                                                                        onClick={() => setHistoryModalState({
-                                                                            show: true,
-                                                                            invoiceId: item.invoiceId,
-                                                                            invoiceNo: item.invoiceNo
-                                                                        })}
-                                                                    >
-                                                                        {item.paymentStatusCode || '-'}
-                                                                    </span>
+                                                                    {item.status === 'Cancelled' ? (
+                                                                        <span
+                                                                            className="badge rounded-pill fw-semibold font-monospace"
+                                                                            style={{
+                                                                                backgroundColor: '#fee2e2',
+                                                                                color: '#b91c1c',
+                                                                                border: '1px solid #fecaca',
+                                                                                fontSize: '0.70rem',
+                                                                                letterSpacing: '0.04em',
+                                                                                padding: '3px 8px'
+                                                                            }}
+                                                                        >
+                                                                            CANCELLED
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span
+                                                                            className={`badge ${item.color || 'bg-secondary'}`}
+                                                                            style={{ cursor: 'pointer' }}
+                                                                            title="Click to view payment history"
+                                                                            onClick={() => setHistoryModalState({
+                                                                                show: true,
+                                                                                invoiceId: item.invoiceId,
+                                                                                invoiceNo: item.invoiceNo
+                                                                            })}
+                                                                        >
+                                                                            {item.paymentStatusCode || '-'}
+                                                                        </span>
+                                                                    )}
                                                                 </td>
                                                                 <td style={{ padding: '0.45rem 0.5rem' }}>{item.paymentModeCode || '-'}</td>
                                                             </>
@@ -812,7 +857,7 @@ const InvoiceList = () => {
                                                             <div className="flex align-items-center list-user-action">
                                                                 {!isTrash ? (
                                                                     <>
-                                                                        {hasBalance ? (
+                                                                        {item.status !== 'Cancelled' && hasBalance ? (
                                                                             <Button
                                                                                 variant="outline-success"
                                                                                 size="sm"
@@ -855,16 +900,35 @@ const InvoiceList = () => {
                                                                                 <FaDownload />
                                                                             )}
                                                                         </Button>
-                                                                        <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
-                                                                            <Button variant="outline-success" size='sm' title="Edit">
-                                                                                <FaPen />
-                                                                            </Button>
-                                                                        </Link>
+                                                                        {item.status === 'Cancelled' ? (
+                                                                            <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
+                                                                                <Button variant="outline-secondary" size='sm' title="View Cancelled Invoice">
+                                                                                    <FaEye />
+                                                                                </Button>
+                                                                            </Link>
+                                                                        ) : (
+                                                                            <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/edit`}>
+                                                                                <Button variant="outline-success" size='sm' title="Edit">
+                                                                                    <FaPen />
+                                                                                </Button>
+                                                                            </Link>
+                                                                        )}
                                                                         <Link className="me-2" to={`/sales/invoice/${item.invoiceId}/duplicate`}>
                                                                             <Button variant="outline-info" size='sm' title="Duplicate / Clone Invoice">
                                                                                 <FaCopy />
                                                                             </Button>
                                                                         </Link>
+                                                                        {item.status !== 'Cancelled' && (
+                                                                            <Button
+                                                                                variant="outline-danger"
+                                                                                size='sm'
+                                                                                className="me-2"
+                                                                                title={paid > 0 ? `Cannot cancel: ₹${paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })} payment recorded` : "Cancel Invoice"}
+                                                                                onClick={() => setCancelModalInvoice({ ...item, total, paidAmount: paid })}
+                                                                            >
+                                                                                <FaBan />
+                                                                            </Button>
+                                                                        )}
                                                                         <Button
                                                                             variant="outline-danger"
                                                                             size='sm'
@@ -952,6 +1016,19 @@ const InvoiceList = () => {
                 invoiceId={historyModalState.invoiceId}
                 invoiceNo={historyModalState.invoiceNo}
                 onHide={() => setHistoryModalState({ show: false, invoiceId: null, invoiceNo: '' })}
+            />
+
+            {/* Cancel Invoice Confirmation Modal */}
+            <CancelInvoiceModal
+                show={!!cancelModalInvoice}
+                onHide={() => setCancelModalInvoice(null)}
+                invoice={cancelModalInvoice}
+                onConfirm={handleConfirmCancel}
+                isLoading={cancelIsPending}
+                onOpenPaymentHistory={(invoiceId, invoiceNo) => {
+                    setCancelModalInvoice(null);
+                    setHistoryModalState({ show: true, invoiceId, invoiceNo });
+                }}
             />
 
             {/* Branch Selection Modal for Consolidated Mode */}
