@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Table, Button, Form, Row, Col, Badge, Spinner, Dropdown, OverlayTrigger, Tooltip, InputGroup } from 'react-bootstrap';
+import { Table, Button, Form, Row, Col, Badge, Spinner, Dropdown, OverlayTrigger, Tooltip, InputGroup, Overlay } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import moment from 'moment';
@@ -33,6 +33,7 @@ import {
 } from '../hooks/useApi';
 
 import QuotationPdfModal from '../components/QuotationPdfModal';
+import TableActionMenu, { useTableActionMenu } from '../../../components/common/TableActionMenu';
 
 const QuotationList = () => {
     const navigate = useNavigate();
@@ -113,6 +114,15 @@ const QuotationList = () => {
 
     // Selected Rows for Bulk Actions
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
+    const {
+        activeMenu: activeActionMenu,
+        toggleMenu,
+        closeMenu,
+        isOpen: isActionMenuOpen,
+        tableWrapperProps
+    } = useTableActionMenu([page, pageSize, debouncedSearch, statusFilter, approvalStatusFilter, isTrash, firmId, branchId]);
 
     // PDF Preview Modal
     const [previewQuotation, setPreviewQuotation] = useState(null);
@@ -706,7 +716,10 @@ const QuotationList = () => {
 
                 {/* Table Content */}
                 <Card.Body className="p-0">
-                    <div className="table-responsive">
+                    <div
+                        className="table-responsive"
+                        {...tableWrapperProps}
+                    >
                         <Table hover className="align-middle quotation-list-table mb-0" style={{ fontSize: '13px' }}>
                             <thead>
                                 <tr>
@@ -979,49 +992,14 @@ const QuotationList = () => {
                                                                     </Link>
                                                                 </OverlayTrigger>
 
-                                                                <Dropdown align="end">
-                                                                    <Dropdown.Toggle variant="light" size="sm" className="btn-action-more" id={`action-dropdown-${q.id}`}>
-                                                                        ⋮
-                                                                    </Dropdown.Toggle>
-                                                                    <Dropdown.Menu className="shadow-sm border-0 py-1" style={{ minWidth: '185px' }}>
-                                                                        <Dropdown.Item onClick={() => navigateWithBranch(`/sales/quotation/${q.id}/duplicate`, 'Select Branch for Duplicate Offer')}>
-                                                                            <FaCopy className="me-2 text-primary" size={12} /> Duplicate Offer
-                                                                        </Dropdown.Item>
-
-                                                                        <Dropdown.Item onClick={() => navigateWithBranch(`/sales/proforma-invoice/create?quotationId=${q.id}`, 'Select Branch for Proforma Invoice')}>
-                                                                            <FaFileInvoiceDollar className="me-2 text-info" size={12} /> Convert to Proforma Invoice
-                                                                        </Dropdown.Item>
-
-                                                                        {isApproved ? (
-                                                                            <Dropdown.Item
-                                                                                onClick={() => {
-                                                                                    if (window.confirm(`Create formal revision REV-${String(qRevNo + 1).padStart(2, '0')} for Quotation #${qNo}?`)) {
-                                                                                        revisionMutation.mutate({ id: q.id });
-                                                                                    }
-                                                                                }}
-                                                                            >
-                                                                                <FaHistory className="me-2 text-danger" size={12} /> Create Revision (REV-{String(qRevNo + 1).padStart(2, '0')})
-                                                                            </Dropdown.Item>
-                                                                        ) : (
-                                                                            <Dropdown.Item onClick={() => approveMutation.mutate({ id: q.id, approvalStatus: 'APPROVED' })}>
-                                                                                <FaCheck className="me-2 text-success" size={12} /> Admin Approve
-                                                                            </Dropdown.Item>
-                                                                        )}
-
-                                                                        <Dropdown.Divider />
-
-                                                                        <Dropdown.Item
-                                                                            className="text-danger"
-                                                                            onClick={() => {
-                                                                                if (window.confirm('Move quotation to trash?')) {
-                                                                                    deleteMutation.mutate(q.id);
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <FaTrash className="me-2" size={12} /> Move to Trash
-                                                                        </Dropdown.Item>
-                                                                    </Dropdown.Menu>
-                                                                </Dropdown>
+                                                                <TableActionMenu.Trigger
+                                                                    isActive={isActionMenuOpen(q.id)}
+                                                                    id={`action-dropdown-${q.id}`}
+                                                                    className="btn btn-light btn-sm btn-action-more"
+                                                                    onClick={(e) => toggleMenu(q.id, q, e.currentTarget, { isApproved, qNo, qRevNo })}
+                                                                >
+                                                                    ⋮
+                                                                </TableActionMenu.Trigger>
                                                             </>
                                                         ) : (
                                                             <OverlayTrigger placement="top" overlay={<Tooltip>Restore from Recycle Bin</Tooltip>}>
@@ -1065,6 +1043,59 @@ const QuotationList = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Single Table-Level Action Menu Overlay (Portal to body: prevents clipping, stacking & extra whitespace) */}
+            <TableActionMenu.Overlay
+                activeMenu={activeActionMenu}
+                onClose={closeMenu}
+                minWidth={180}
+                style={{
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    padding: '6px 0',
+                }}
+            >
+                {(q, { isApproved, qNo, qRevNo }) => (
+                    <>
+                        <Dropdown.Item onClick={() => navigateWithBranch(`/sales/quotation/${q.id}/duplicate`, 'Select Branch for Duplicate Offer')}>
+                            <FaCopy className="me-2 text-primary" size={12} /> Duplicate Offer
+                        </Dropdown.Item>
+
+                        <Dropdown.Item onClick={() => navigateWithBranch(`/sales/proforma-invoice/create?quotationId=${q.id}`, 'Select Branch for Proforma Invoice')}>
+                            <FaFileInvoiceDollar className="me-2 text-info" size={12} /> Convert to Proforma Invoice
+                        </Dropdown.Item>
+
+                        {isApproved ? (
+                            <Dropdown.Item
+                                onClick={() => {
+                                    if (window.confirm(`Create formal revision REV-${String(qRevNo + 1).padStart(2, '0')} for Quotation #${qNo}?`)) {
+                                        revisionMutation.mutate({ id: q.id });
+                                    }
+                                }}
+                            >
+                                <FaHistory className="me-2 text-danger" size={12} /> Create Revision (REV-{String(qRevNo + 1).padStart(2, '0')})
+                            </Dropdown.Item>
+                        ) : (
+                            <Dropdown.Item onClick={() => approveMutation.mutate({ id: q.id, approvalStatus: 'APPROVED' })}>
+                                <FaCheck className="me-2 text-success" size={12} /> Admin Approve
+                            </Dropdown.Item>
+                        )}
+
+                        <Dropdown.Divider />
+
+                        <Dropdown.Item
+                            className="text-danger"
+                            onClick={() => {
+                                if (window.confirm('Move quotation to trash?')) {
+                                    deleteMutation.mutate(q.id);
+                                }
+                            }}
+                        >
+                            <FaTrash className="me-2" size={12} /> Move to Trash
+                        </Dropdown.Item>
+                    </>
+                )}
+            </TableActionMenu.Overlay>
 
             {/* Embedded Live PDF Modal */}
             <QuotationPdfModal

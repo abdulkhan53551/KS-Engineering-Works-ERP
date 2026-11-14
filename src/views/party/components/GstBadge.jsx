@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Badge } from 'react-bootstrap';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 /**
  * GstBadge component
  * Displays GST compliance status along with copy-to-clipboard for GSTIN.
+ * High-performance: Uses native browser tooltip (title) to avoid Popper/Overlay re-renders on row hover.
  */
 const GstBadge = ({ gstRegistered, gstin }) => {
     const [copied, setCopied] = useState(false);
@@ -22,23 +23,17 @@ const GstBadge = ({ gstRegistered, gstin }) => {
 
     if (!gstRegistered) {
         return (
-            <Badge
-                className="bg-soft-warning text-warning fw-normal px-2 py-1"
-                style={{ fontSize: '0.75rem', borderRadius: '0.5rem' }}
-            >
+            <span className="fintech-mode-pill" style={{ color: '#d97706', background: '#fffbeb', borderColor: '#fde68a' }}>
                 Unregistered
-            </Badge>
+            </span>
         );
     }
 
     if (!gstin) {
         return (
-            <Badge
-                className="bg-soft-secondary text-secondary fw-normal px-2 py-1"
-                style={{ fontSize: '0.75rem', borderRadius: '0.5rem' }}
-            >
-                Registered (No GSTIN)
-            </Badge>
+            <span className="fintech-mode-pill text-muted">
+                No GSTIN
+            </span>
         );
     }
 
@@ -50,23 +45,19 @@ const GstBadge = ({ gstRegistered, gstin }) => {
             >
                 {gstin}
             </span>
-            <OverlayTrigger
-                placement="top"
-                overlay={<Tooltip>{copied ? 'Copied!' : 'Copy GSTIN'}</Tooltip>}
+            <button
+                type="button"
+                onClick={handleCopy}
+                title={copied ? 'Copied!' : 'Copy GSTIN'}
+                className="btn btn-xs btn-link p-0 text-muted hover-primary ms-1"
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
             >
-                <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="btn btn-xs btn-link p-0 text-muted hover-primary ms-1"
-                    style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-                >
-                    {copied ? (
-                        <FaCheck size={11} className="text-success" />
-                    ) : (
-                        <FaCopy size={11} />
-                    )}
-                </button>
-            </OverlayTrigger>
+                {copied ? (
+                    <FaCheck size={11} className="text-success" />
+                ) : (
+                    <FaCopy size={11} />
+                )}
+            </button>
         </div>
     );
 };

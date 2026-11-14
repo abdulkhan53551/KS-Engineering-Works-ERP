@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown, Spinner } from 'react-bootstrap';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Row, Col, Table, Button, Form, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown, Spinner, Overlay } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
 import {
@@ -41,6 +41,7 @@ import moment from 'moment';
 import { useListPagination, useRowSelection, usePageClamping } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
 import useBranchAction from '../../../hooks/useBranchAction';
+import TableActionMenu, { useTableActionMenu } from '../../../components/common/TableActionMenu';
 
 // Import modern invoice styling system for 100% unified enterprise UI
 import '../../invoice/pages/invoice-list-modern.scss';
@@ -104,6 +105,15 @@ const PurchaseOrderList = () => {
         clearSearch,
         onFilterChange: () => handleDeselectAll?.()
     });
+
+    // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
+    const {
+        activeMenu: activeActionMenu,
+        toggleMenu,
+        closeMenu,
+        isOpen: isActionMenuOpen,
+        tableWrapperProps
+    } = useTableActionMenu([page, pageSize, debouncedSearch, statusFilter, isTrash]);
 
     // Fetch Paginated List Data
     const {
@@ -760,7 +770,10 @@ const PurchaseOrderList = () => {
                             </div>
 
                             {/* Table Area with Progress Bar */}
-                            <div className={`invoice-table-wrapper table-responsive ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}>
+                            <div
+                                className={`invoice-table-wrapper table-responsive ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}
+                                {...tableWrapperProps}
+                            >
                                 {isFetching && !isLoading && (
                                     <div className="table-progress-bar">
                                         <div className="table-progress-line" />
@@ -1194,48 +1207,12 @@ const PurchaseOrderList = () => {
                                                                         </Button>
                                                                     )}
 
-                                                                    {/* Secondary Actions 3-Dots Dropdown */}
-                                                                    <Dropdown align="end">
-                                                                        <Dropdown.Toggle
-                                                                            as="button"
-                                                                            className="btn-action-more-dots"
-                                                                            title="More actions"
-                                                                            id={`po-actions-${item.poId}`}
-                                                                        >
-                                                                            <FaEllipsisV size={13} />
-                                                                        </Dropdown.Toggle>
-
-                                                                        <Dropdown.Menu className="action-dropdown-menu shadow">
-                                                                            {!isCompleted && (
-                                                                                <Dropdown.Item
-                                                                                    className="d-flex align-items-center gap-2 text-primary fw-semibold"
-                                                                                    onClick={() => navigateWithBranch(`/sales/invoice/create?fromPoId=${item.poId}`, 'Select Branch for Invoice')}
-                                                                                >
-                                                                                    <FaFileInvoice size={12} className="text-primary" />
-                                                                                    <span>Convert to Sales Invoice</span>
-                                                                                </Dropdown.Item>
-                                                                            )}
-
-                                                                            <Dropdown.Item
-                                                                                as={Link}
-                                                                                to={`/purchase/purchase-order/${item.poId}/edit`}
-                                                                                className="d-flex align-items-center gap-2"
-                                                                            >
-                                                                                <FaPen size={12} className="text-muted" />
-                                                                                <span>Edit Purchase Order</span>
-                                                                            </Dropdown.Item>
-
-                                                                            <Dropdown.Divider className="my-1" />
-
-                                                                            <Dropdown.Item
-                                                                                className="d-flex align-items-center gap-2 text-danger"
-                                                                                onClick={() => confirmSoftDelete(`Purchase Order "${item.poNo}"`, () => deletePurchaseOrder({ id: item.poId, isPermanentDelete: false }))}
-                                                                            >
-                                                                                <FaTrash size={12} className="text-danger" />
-                                                                                <span>Move to Recycle Bin</span>
-                                                                            </Dropdown.Item>
-                                                                        </Dropdown.Menu>
-                                                                    </Dropdown>
+                                                                    {/* Secondary Actions 3-Dots Button */}
+                                                                    <TableActionMenu.Trigger
+                                                                        isActive={isActionMenuOpen(item.poId)}
+                                                                        id={`po-actions-${item.poId}`}
+                                                                        onClick={(e) => toggleMenu(item.poId, item, e.currentTarget)}
+                                                                    />
                                                                 </div>
                                                             )}
                                                         </td>
@@ -1264,6 +1241,52 @@ const PurchaseOrderList = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Single Row Action Dropdown Menu Portal */}
+            <TableActionMenu.Overlay
+                activeMenu={activeActionMenu}
+                onClose={closeMenu}
+            >
+                {(item) => {
+                    const isCompleted = item.status === 'Completed';
+
+                    return (
+                        <>
+                            {!isCompleted && (
+                                <Dropdown.Item
+                                    className="d-flex align-items-center gap-2 text-primary fw-semibold"
+                                    onClick={() => navigateWithBranch(`/sales/invoice/create?fromPoId=${item.poId}`, 'Select Branch for Invoice')}
+                                >
+                                    <FaFileInvoice size={12} className="text-primary" />
+                                    <span>Convert to Sales Invoice</span>
+                                </Dropdown.Item>
+                            )}
+
+                            <Dropdown.Item
+                                as={Link}
+                                to={`/purchase/purchase-order/${item.poId}/edit`}
+                                className="d-flex align-items-center gap-2"
+                            >
+                                <FaPen size={12} className="text-muted" />
+                                <span>Edit Purchase Order</span>
+                            </Dropdown.Item>
+
+                            <Dropdown.Divider className="my-1" />
+
+                            <Dropdown.Item
+                                className="d-flex align-items-center gap-2 text-danger"
+                                onClick={() => confirmSoftDelete(`Purchase Order "${item.poNo}"`, () => deletePurchaseOrder({ id: item.poId, isPermanentDelete: false }))}
+                            >
+                                <FaTrash size={12} className="text-danger" />
+                                <span>Move to Recycle Bin</span>
+                            </Dropdown.Item>
+                        </>
+                    );
+                }}
+            </TableActionMenu.Overlay>
+
+            {/* Branch Selection Modal */}
+            <BranchModal />
         </>
     );
 };
