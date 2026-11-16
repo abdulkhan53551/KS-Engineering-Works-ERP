@@ -47,7 +47,6 @@ import RtlSupport from '../views/dashboard/special-pages/RtlSupport'
 
 //admin
 import Admin from '../views/dashboard/admin/admin';
-import AdminApprovals from '../views/admin/approvals/AdminApprovals';
 import Default from '../layouts/dashboard/default';
 
 // Testing
@@ -343,19 +342,6 @@ export const DefaultRouter = [
         ]
     }
 ]
-    },
-    {
-        element: <ProtectedRoute allowedRoles={["super-admin"]} />,
-        children: [
-            {
-                path: '/',
-                element: <Default />,
-                children: [
-                    { path: 'admin/approvals', element: <AdminApprovals /> },
-                    { path: 'dashboard/admin/approvals', element: <AdminApprovals /> }
-                ]
-            }
-        ]
     }
 ]
 // const DefaultRouter = () => {
