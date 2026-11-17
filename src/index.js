@@ -10,8 +10,6 @@ import { Provider } from "react-redux";
 //reducer
 import { store } from "./store";
 
-import Index from "./views/index";
-import { IndexRouters } from "./router";
 import { SimpleRouter } from "./router/simple-router";
 import { DefaultRouter } from "./router/default-router";
 import { QueryProvider } from "./providers/QueryProvider";
@@ -22,9 +20,7 @@ export const router = createBrowserRouter([
     element: <App />, // App is now layout
     children: [
       { path: "/", element: <Navigate to="/dashboard" replace /> },
-      { path: "/uikit-demo", element: <Index /> },
       ...DefaultRouter,
-      ...IndexRouters,
       ...SimpleRouter,
     ],
   },
