@@ -481,18 +481,6 @@ const VerticalNav = memo((props) => {
                         </Link>
                     </li>
                 )}
-                {isSuperAdmin && (
-                    <li className="nav-item">
-                        <Link className={`${location.pathname === '/admin/approvals' ? 'active' : ''} nav-link`} to="/admin/approvals">
-                            <i className="icon">
-                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor" />
-                                </svg>
-                            </i>
-                            <span className="item-name">Approvals</span>
-                        </Link>
-                    </li>
-                )}
                 {(isSuperAdmin || can('users', 'read')) && (
                     <li className="nav-item">
                         <Link className={`${location.pathname === '/admin/roles-permissions' || location.pathname === '/dashboard/admin/roles-permissions' ? 'active' : ''} nav-link`} to="/dashboard/admin/roles-permissions">

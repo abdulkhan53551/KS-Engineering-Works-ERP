@@ -205,7 +205,8 @@ export const useListPagination = ({
 export const useRowSelection = ({
     items = EMPTY_ARRAY,
     idKey = 'id',
-    idField
+    idField,
+    isSelectable
 } = {}) => {
     const activeIdKey = idField || idKey;
     const [selectedIds, setSelectedIds] = useState(EMPTY_ARRAY);
@@ -215,9 +216,16 @@ export const useRowSelection = ({
         return item?.[activeIdKey];
     }, [activeIdKey]);
 
+    const selectableItems = useMemo(() => {
+        if (typeof isSelectable === 'function') {
+            return (items || []).filter(isSelectable);
+        }
+        return items || [];
+    }, [items, isSelectable]);
+
     const currentItemIds = useMemo(() => {
-        return (items || []).map(getItemId).filter(Boolean);
-    }, [items, getItemId]);
+        return selectableItems.map(getItemId).filter(Boolean);
+    }, [selectableItems, getItemId]);
 
     const handleSelectAll = useCallback((e) => {
         const isChecked = e && typeof e === 'object' && 'target' in e ? e.target.checked : Boolean(e);
@@ -229,10 +237,14 @@ export const useRowSelection = ({
     }, [currentItemIds]);
 
     const handleSelectRow = useCallback((id) => {
+        if (typeof isSelectable === 'function') {
+            const item = (items || []).find((it) => getItemId(it) === id);
+            if (item && !isSelectable(item)) return;
+        }
         setSelectedIds((prev) =>
             prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
         );
-    }, []);
+    }, [items, getItemId, isSelectable]);
 
     const handleDeselectAll = useCallback(() => {
         setSelectedIds(EMPTY_ARRAY);
@@ -258,7 +270,8 @@ export const useRowSelection = ({
         clearSelection: handleDeselectAll,
         isAllSelected,
         isIndeterminate,
-        selectedCount: selectedIds.length
+        selectedCount: selectedIds.length,
+        selectableCount: currentItemIds.length
     };
 };
 
@@ -268,6 +281,8 @@ export const useRowSelection = ({
 export const useListManager = ({
     items = EMPTY_ARRAY,
     idKey = 'id',
+    idField,
+    isSelectable,
     initialPage = 1,
     initialPageSize = 10,
     initialSearch = '',
@@ -284,7 +299,9 @@ export const useListManager = ({
 
     const selection = useRowSelection({
         items,
-        idKey
+        idKey,
+        idField,
+        isSelectable
     });
 
     const { handleDeselectAll } = selection;
