@@ -69,7 +69,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
         reValidateMode: 'onChange',
         defaultValues: {
             paymentDate: moment().format('YYYY-MM-DD'),
-            partyId: resolvedPartyId > 0 ? resolvedPartyId : '',
+            partyId: resolvedPartyId > 0 ? resolvedPartyId : null,
             totalAmount: balanceDue > 0 ? String(balanceDue) : '',
             allocatedAmount: balanceDue > 0 ? String(balanceDue) : '',
             tdsAmount: '',
@@ -106,7 +106,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
 
             reset({
                 paymentDate: moment().format('YYYY-MM-DD'),
-                partyId: pId > 0 ? pId : '',
+                partyId: pId > 0 ? pId : null,
                 totalAmount: initialAmount,
                 allocatedAmount: initialAmount,
                 tdsAmount: '',
@@ -254,25 +254,10 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
         const totalAmountNum = Number(formData.totalAmount || 0);
         const tds = Number(formData.tdsAmount || 0);
         const writeOff = Number(formData.writeOffAmount || 0);
-        const finalPartyId = Number(formData.partyId || resolvedPartyId);
+        const finalPartyId = Number(formData.partyId || resolvedPartyId || 0) || null;
 
         const maxAllowedCash = Math.max(0, Math.round((balanceDue - tds - writeOff) * 100) / 100);
         const allocCash = Math.min(totalAmountNum, maxAllowedCash);
-
-        if (!finalPartyId || finalPartyId <= 0) {
-            toast.error('Customer party is required to record a payment.');
-            return;
-        }
-
-        if (totalAmountNum <= 0 && tds <= 0 && writeOff <= 0) {
-            toast.error('Received payment amount must be greater than zero.');
-            return;
-        }
-
-        if (writeOff > 0 && (!formData.writeOffReason || !formData.writeOffReason.trim())) {
-            toast.error('Reason is required when write-off discount is applied.');
-            return;
-        }
 
         const payload = {
             paymentDate: moment(formData.paymentDate).format('YYYY-MM-DD'),
@@ -289,7 +274,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                     allocatedAmount: allocCash,
                     tdsAmount: tds,
                     writeOffAmount: writeOff,
-                    writeOffReason: writeOff > 0 ? formData.writeOffReason.trim() : undefined
+                    writeOffReason: writeOff > 0 ? (formData.writeOffReason?.trim() || undefined) : undefined
                 }
             ]
         };
@@ -322,6 +307,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
     const totalSettled = allocCashNum + tdsNum + writeOffNum;
     const remainingBalance = Math.max(0, Math.round((balanceDue - totalSettled) * 100) / 100);
     const isDeductionOverSettled = (tdsNum + writeOffNum) > balanceDue + 0.009;
+    const isUnlinkedOverPay = !resolvedPartyId && excessAmount > 0;
 
     // Quick Action Presets
     const handleFillFull = () => {
@@ -349,50 +335,54 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
     return (
         <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" scrollable className="quick-payment-modal">
             {/* Modal Header */}
-            <Modal.Header closeButton className="d-flex align-items-center justify-content-between">
-                <div className="d-flex align-items-center">
-                    <div className="receipt-icon-badge shadow-sm me-3">
-                        <FaMoneyCheckAlt size={18} />
-                    </div>
-                    <div>
-                        <div className="d-flex align-items-center gap-2 flex-wrap">
-                            <Modal.Title className="h6 mb-0 fw-bold text-dark" style={{ letterSpacing: '-0.01em', fontSize: '1.08rem' }}>
-                                Record Payment
-                            </Modal.Title>
-                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-0.5 ms-1" style={{ fontSize: '0.72rem' }}>
-                                #{invNo}
+            <Modal.Header closeButton className="d-flex align-items-center">
+                <div className="receipt-icon-badge shadow-sm me-3 flex-shrink-0">
+                    <FaMoneyCheckAlt size={18} />
+                </div>
+                <div className="flex-grow-1 min-w-0 me-3">
+                    {/* Title Row: Stays unbroken on a single horizontal line */}
+                    <div className="d-flex align-items-center gap-2 flex-nowrap">
+                        <Modal.Title className="h6 mb-0 fw-bold text-dark flex-shrink-0" style={{ letterSpacing: '-0.01em', fontSize: '1.08rem' }}>
+                            Record Payment
+                        </Modal.Title>
+                        <span className="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-0.5 flex-shrink-0" style={{ fontSize: '0.72rem' }}>
+                            #{invNo}
+                        </span>
+                        {nextReceiptNo && (
+                            <span className="badge bg-light text-muted border font-monospace px-2 py-0.5 flex-shrink-0" style={{ fontSize: '0.72rem' }}>
+                                Receipt: {nextReceiptNo}
                             </span>
-                            {nextReceiptNo && (
-                                <span className="badge bg-light text-muted border font-monospace px-2 py-0.5" style={{ fontSize: '0.72rem' }}>
-                                    Receipt: {nextReceiptNo}
-                                </span>
-                            )}
-                        </div>
-                        {/* Customer Section with clear margin space between logo & label */}
-                        <div className="customer-info-row d-flex align-items-center mt-1.5 flex-wrap">
-                            <span className="customer-logo-pill d-inline-flex align-items-center justify-content-center">
+                        )}
+                    </div>
+
+                    {/* Subtitle Row: Customer info on the left, Walk-in pill aligned on the right */}
+                    <div className="customer-info-row d-flex align-items-center justify-content-between mt-1.5 flex-nowrap">
+                        <div className="d-flex align-items-center text-truncate me-2">
+                            <span className="customer-logo-pill d-inline-flex align-items-center justify-content-center flex-shrink-0">
                                 <FaBuilding className="text-primary" size={11} />
                             </span>
-                            <span className="customer-title-label text-muted fw-semibold">Customer:</span>
-                            <strong className="customer-display-name text-dark fw-bold">{customerName}</strong>
+                            <span className="customer-title-label text-muted fw-semibold flex-shrink-0">Customer:</span>
+                            <strong className="customer-display-name text-dark fw-bold text-truncate">{customerName}</strong>
                         </div>
+                        {!resolvedPartyId && (
+                            <span
+                                className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 fw-semibold d-inline-flex align-items-center gap-1 font-monospace flex-shrink-0"
+                                style={{ fontSize: '0.68rem', borderRadius: '4px' }}
+                                title="Walk-in Customer: Payment will settle directly on this invoice"
+                            >
+                                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#6c757d' }}></span>
+                                <span>Walk-in / Direct Settle</span>
+                            </span>
+                        )}
                     </div>
                 </div>
             </Modal.Header>
 
             <Form onSubmit={handleSubmit(handleFormSubmit, handleFormError)}>
-                <input type="hidden" {...register('partyId', { valueAsNumber: true })} value={resolvedPartyId || ''} />
+                <input type="hidden" {...register('partyId')} value={resolvedPartyId > 0 ? resolvedPartyId : ''} />
                 <input type="hidden" {...register('allocatedAmount')} value={watchAllocCash || watchTotalAmount || ''} />
 
                 <Modal.Body className="py-2.5 px-3">
-                    {!resolvedPartyId && (
-                        <Alert variant="warning" className="py-1.5 px-2 mb-2 small d-flex align-items-center gap-2 rounded-2 border-warning-subtle">
-                            <FaExclamationTriangle className="text-warning flex-shrink-0" size={13} />
-                            <div>
-                                This invoice is not linked to a customer in the database. Please edit the invoice to link a customer before recording payments.
-                            </div>
-                        </Alert>
-                    )}
                     {/* Invoice Balances Summary Ribbon */}
                     <div className="invoice-summary-ribbon mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div className="summary-col">
@@ -475,8 +465,8 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                         )}
                     </div>
 
-                    {/* Customer Advance Triggered Alert */}
-                    {excessAmount > 0 && (
+                    {/* Customer Advance Triggered Alert (Only for registered customer ledgers) */}
+                    {resolvedPartyId > 0 && excessAmount > 0 && (
                         <Alert variant="success" className="py-2 px-2.5 mb-2 small d-flex align-items-center justify-content-between rounded-2 border-success-subtle bg-success-subtle">
                             <div className="d-flex align-items-center gap-2">
                                 <FaCheckCircle className="text-success flex-shrink-0" size={14} />
@@ -491,6 +481,19 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                                 <span className="text-muted small d-block" style={{ fontSize: '0.68rem' }}>Unallocated Advance</span>
                                 <span className="fw-bold text-success" style={{ fontSize: '0.88rem' }}>
                                     + ₹{excessAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </Alert>
+                    )}
+
+                    {/* Unlinked Overpayment Error Alert */}
+                    {isUnlinkedOverPay && (
+                        <Alert variant="danger" className="py-2 px-2.5 mb-2 small d-flex align-items-center gap-2 rounded-2 border-danger-subtle bg-danger-subtle">
+                            <FaExclamationTriangle className="text-danger flex-shrink-0" size={14} />
+                            <div>
+                                <strong className="text-danger d-block" style={{ fontSize: '0.80rem' }}>Payment exceeds invoice balance</strong>
+                                <span className="text-muted" style={{ fontSize: '0.72rem' }}>
+                                    For walk-in/unregistered customers, payment cannot exceed the remaining balance (₹{maxAllowedCash.toLocaleString('en-IN', { minimumFractionDigits: 2 })}). Excess advances require a registered customer.
                                 </span>
                             </div>
                         </Alert>
@@ -740,7 +743,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                         <strong className="text-dark font-monospace" style={{ fontSize: '0.88rem' }}>
                             ₹{totalCashInput.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </strong>
-                        {excessAmount > 0 && (
+                        {resolvedPartyId > 0 && excessAmount > 0 && (
                             <span className="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" style={{ fontSize: '0.70rem' }}>
                                 +₹{excessAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Advance
                             </span>
@@ -761,7 +764,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                             variant="primary"
                             size="sm"
                             type="submit"
-                            disabled={isPending || isDeductionOverSettled || totalCashInput <= 0 || !resolvedPartyId}
+                            disabled={isPending || isDeductionOverSettled || totalCashInput <= 0 || isUnlinkedOverPay}
                             className="btn-modal-submit"
                         >
                             {isPending ? (

@@ -35,10 +35,7 @@ export const createPaymentValidationSchema = Joi.object({
         "date.base": "Please select a valid payment date.",
         "any.required": "Payment date is required."
     }),
-    partyId: Joi.number().integer().positive().required().messages({
-        "number.base": "Please select a valid customer.",
-        "any.required": "Customer is required."
-    }),
+    partyId: Joi.number().integer().positive().allow(null, '').optional(),
     totalAmount: Joi.number().positive().precision(2).required().messages({
         "number.base": "Total received amount must be a number.",
         "number.positive": "Total received amount must be greater than zero.",
@@ -52,5 +49,14 @@ export const createPaymentValidationSchema = Joi.object({
     referenceDate: Joi.date().iso().allow("", null).optional(),
     bankName: Joi.string().trim().max(150).allow("", null).optional(),
     notes: Joi.string().trim().max(1000).allow("", null).optional(),
+    writeOffAmount: Joi.number().min(0).precision(2).allow("", null).optional(),
+    writeOffReason: Joi.when("writeOffAmount", {
+        is: Joi.number().greater(0),
+        then: Joi.string().trim().min(3).max(255).required().messages({
+            "string.empty": "Reason is required when write-off discount is applied.",
+            "any.required": "Reason is required when write-off discount is applied."
+        }),
+        otherwise: Joi.string().allow("", null).optional()
+    }),
     allocations: Joi.array().items(paymentAllocationRowSchema).default([]).optional()
 }).unknown(true);

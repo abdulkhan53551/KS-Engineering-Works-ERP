@@ -81,6 +81,7 @@ const PaymentReceiptList = () => {
 
     // Apply Advance modal state
     const [applyAdvanceReceipt, setApplyAdvanceReceipt] = useState(null);
+    const [downloadingPdfId, setDownloadingPdfId] = useState(null);
 
     // Payment Modes master
     const { data: paymentModes = [] } = usePaymentMode();
@@ -180,11 +181,15 @@ const PaymentReceiptList = () => {
 
     // Handle PDF Download
     const handleDownloadPdf = async (id, paymentNo) => {
+        if (downloadingPdfId) return;
         try {
+            setDownloadingPdfId(id);
             await downloadPaymentPdf(id, paymentNo);
             toast.success(`Receipt ${paymentNo} downloaded successfully.`);
         } catch (err) {
             toast.error(err?.message || 'Failed to download receipt PDF.');
+        } finally {
+            setDownloadingPdfId(null);
         }
     };
 
@@ -665,12 +670,17 @@ const PaymentReceiptList = () => {
                                                                 <Button
                                                                     variant="outline-primary"
                                                                     size="sm"
+                                                                    disabled={downloadingPdfId === item.id}
                                                                     className="d-inline-flex align-items-center justify-content-center"
                                                                     style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
                                                                     onClick={() => handleDownloadPdf(item.id, paymentNo)}
                                                                     title="Download PDF"
                                                                 >
-                                                                    <FaFileDownload size={12} />
+                                                                    {downloadingPdfId === item.id ? (
+                                                                        <Spinner as="span" animation="border" size="sm" style={{ width: '0.75rem', height: '0.75rem' }} />
+                                                                    ) : (
+                                                                        <FaFileDownload size={12} />
+                                                                    )}
                                                                 </Button>
                                                             </OverlayTrigger>
 

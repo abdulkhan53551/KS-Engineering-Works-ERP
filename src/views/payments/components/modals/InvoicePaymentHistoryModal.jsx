@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, Button, Table, Badge, Spinner, Alert } from 'react-bootstrap';
 import { FaHistory, FaFileDownload, FaInfoCircle, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useInvoicePaymentHistory } from '../../hooks/usePaymentApi';
@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
  */
 const InvoicePaymentHistoryModal = ({ show, onHide, invoiceId, invoiceNo = '' }) => {
     const { data: historyData = {}, isLoading } = useInvoicePaymentHistory(show ? invoiceId : null);
+    const [downloadingId, setDownloadingId] = useState(null);
 
     const history = historyData.history || [];
     const totalAmount = Number(historyData.total || 0);
@@ -19,11 +20,15 @@ const InvoicePaymentHistoryModal = ({ show, onHide, invoiceId, invoiceNo = '' })
     const balanceAmount = Number(historyData.balanceAmount || 0);
 
     const handleDownload = async (paymentId, paymentNo) => {
+        if (downloadingId) return;
         try {
+            setDownloadingId(paymentId);
             await downloadPaymentPdf(paymentId, paymentNo);
             toast.success(`Receipt ${paymentNo} downloaded.`);
         } catch (err) {
             toast.error(err?.message || 'Failed to download receipt PDF.');
+        } finally {
+            setDownloadingId(null);
         }
     };
 
@@ -127,13 +132,23 @@ const InvoicePaymentHistoryModal = ({ show, onHide, invoiceId, invoiceNo = '' })
                                                 <Button
                                                     variant="outline-primary"
                                                     size="sm"
+                                                    disabled={downloadingId === item.paymentId}
                                                     onClick={() => handleDownload(item.paymentId, item.paymentNo)}
                                                     className="p-1 px-2 d-inline-flex align-items-center gap-1"
-                                                    style={{ fontSize: '0.74rem' }}
+                                                    style={{ fontSize: '0.74rem', minWidth: '60px', justifyContent: 'center' }}
                                                     title="Download PDF"
                                                 >
-                                                    <FaFileDownload size={11} />
-                                                    <span>PDF</span>
+                                                    {downloadingId === item.paymentId ? (
+                                                        <>
+                                                            <Spinner as="span" animation="border" size="sm" style={{ width: '0.72rem', height: '0.72rem' }} />
+                                                            <span>PDF...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaFileDownload size={11} />
+                                                            <span>PDF</span>
+                                                        </>
+                                                    )}
                                                 </Button>
                                             )}
                                         </td>

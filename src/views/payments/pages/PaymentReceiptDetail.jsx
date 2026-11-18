@@ -65,13 +65,18 @@ const PaymentReceiptDetail = () => {
     const unallocatedAmount = Number(payment.unallocatedAmount || payment.unallocated_amount || 0);
     const isCancelled = (payment.status || '').toUpperCase() === 'CANCELLED';
     const allocations = payment.allocations || [];
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownload = async () => {
+        if (isDownloading) return;
         try {
+            setIsDownloading(true);
             await downloadPaymentPdf(payment.id, paymentNo);
             toast.success(`Receipt ${paymentNo} downloaded.`);
         } catch (err) {
             toast.error(err?.message || 'Failed to download receipt PDF.');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -137,12 +142,22 @@ const PaymentReceiptDetail = () => {
                             <Button
                                 variant="outline-primary"
                                 size="sm"
+                                disabled={isDownloading}
                                 onClick={handleDownload}
                                 className="d-flex align-items-center shadow-sm"
                                 style={{ fontSize: '0.84rem', fontWeight: 500 }}
                             >
-                                <FaFileDownload size={12} style={{ marginRight: '0.45rem' }} />
-                                <span>Download PDF Voucher</span>
+                                {isDownloading ? (
+                                    <>
+                                        <Spinner as="span" animation="border" size="sm" className="me-1.5" style={{ width: '0.75rem', height: '0.75rem' }} />
+                                        <span>Downloading PDF...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaFileDownload size={12} style={{ marginRight: '0.45rem' }} />
+                                        <span>Download PDF Voucher</span>
+                                    </>
+                                )}
                             </Button>
 
                             {!isCancelled && (

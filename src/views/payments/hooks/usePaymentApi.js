@@ -164,7 +164,9 @@ export const useCreatePayment = () => {
             queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
             queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
             queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceSummary"] });
             queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePaymentHistory"] });
             queryClient.invalidateQueries({ queryKey: ["nextReceiptNumber"] });
         },
         onError: (err) => {
@@ -201,7 +203,9 @@ export const useCancelPayment = () => {
             queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
             queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
             queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceSummary"] });
             queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePaymentHistory"] });
         },
         onError: (err) => {
             dispatch(clearLoading());
@@ -564,6 +568,10 @@ export const useApplyCustomerAdvance = () => {
             queryClient.invalidateQueries({ queryKey: ["payment"] });
             queryClient.invalidateQueries({ queryKey: ["unpaidInvoices"] });
             queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePaymentHistory"] });
             queryClient.invalidateQueries({ queryKey: ["customerAdvances"] });
         },
         onError: (err) => {
