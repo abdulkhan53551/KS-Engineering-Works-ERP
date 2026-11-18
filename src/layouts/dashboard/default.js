@@ -10,9 +10,6 @@ import { Button } from "react-bootstrap";
 // header
 import Header from "../../components/partials/dashboard/HeaderStyle/header";
 
-//subheader
-import SubHeader from "../../components/partials/dashboard/HeaderStyle/sub-header";
-
 //sidebar
 import Sidebar from "../../components/partials/dashboard/SidebarStyle/sidebar";
 
@@ -165,9 +162,8 @@ const Default = memo((props) => {
       <main className="main-content">
         <div className="position-relative">
           <Header />
-          <SubHeader />
         </div>
-        <div className="py-0 conatiner-fluid content-inner mt-n5">
+        <div className="container-fluid content-inner py-3 px-3">
           {/* <DefaultRouter /> */}
           <Outlet key={tenantKey} />
         </div>

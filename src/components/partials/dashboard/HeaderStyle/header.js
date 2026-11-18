@@ -61,8 +61,8 @@ const Header = memo((props) => {
     }
     return (
         <Fragment>
-            <Navbar expand="lg" variant="light" className={`nav iq-navbar ${headerNavbar} ${navbarHide.join(" ")}`}>
-                <Container fluid className="navbar-inner">
+            <Navbar expand="lg" variant="light" className={`nav iq-navbar ${headerNavbar} ${navbarHide.join(" ")}`} style={{ borderBottom: '1px solid #e9ecef' }}>
+                <Container fluid className="navbar-inner px-3">
                     <Link to="/dashboard" className="navbar-brand">
                         <Logo color={true} />
                         <h4 className="logo-title">Hope UI</h4>
