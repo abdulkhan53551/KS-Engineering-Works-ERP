@@ -50,6 +50,7 @@ const Default = memo((props) => {
   // const pageLayout = useSelector(SettingSelector.page_layout);
   const appName = useSelector(SettingSelector.app_name);
   const { activeFirm, activeBranch } = useSelector((state) => state.firmReducer || {});
+  const brandTitle = activeFirm?.trade_name || activeFirm?.firm_name || (appName && appName !== 'Hope UI' ? appName : 'K.S. Engineering');
   const tenantKey = `${activeFirm?.id || 'all'}_${activeBranch?.id || 'all'}`;
   useEffect(() => { });
 
@@ -157,7 +158,7 @@ const Default = memo((props) => {
   return (
     <Fragment>
       <Loader />
-      <Sidebar app_name={appName} />
+      <Sidebar app_name={brandTitle} />
       <Tour />
       <main className="main-content">
         <div className="position-relative">

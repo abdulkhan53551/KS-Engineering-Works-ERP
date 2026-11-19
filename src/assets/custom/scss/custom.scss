@@ -478,3 +478,569 @@ input.no-spinners {
         height: 0 !important;
     }
 }
+
+/* =========================================================================
+   REFINED SIDEBAR TYPOGRAPHY & HORIZONTAL SPACING MANAGEMENT
+   ========================================================================= */
+
+/* 1. Global Font Stack for Crisp Modern Typography */
+.sidebar,
+.sidebar-default,
+.iq-main-menu {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 2. Sidebar Container Spacing, Width & Smooth Transition */
+.sidebar,
+aside.sidebar-base {
+    width: 260px !important;
+    max-width: 260px !important;
+    min-width: 260px !important;
+    border-right: 1px solid #e9ecef !important;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02) !important;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: visible !important; /* Allow toggle button to float cleanly on border */
+
+    .sidebar-header {
+        border-bottom: 1px solid #f1f5f9 !important;
+        padding: 0.85rem 1rem !important;
+        margin-bottom: 0.35rem !important;
+        position: relative !important;
+        overflow: visible !important;
+        transition: padding 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+        .navbar-brand {
+            padding: 0 !important;
+            gap: 0.65rem !important;
+
+            .logo-title {
+                font-size: 0.98rem !important;
+                font-weight: 700 !important;
+                letter-spacing: -0.02em !important;
+                color: #0f172a !important;
+                margin-left: 0 !important;
+                opacity: 1;
+                max-width: 180px;
+                white-space: nowrap;
+                overflow: hidden;
+                transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+                            max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+        }
+    }
+
+    /* Sidebar Toggle Button (floating round pill over right border) */
+    .sidebar-toggle {
+        position: absolute !important;
+        right: -13px !important;
+        top: 18px !important;
+        z-index: 1050 !important;
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #3a57e8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(58, 87, 232, 0.35) !important;
+        cursor: pointer !important;
+        padding: 0 !important;
+        border: 2px solid #ffffff !important;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s ease !important;
+
+        &:hover {
+            background: #2563eb !important;
+            transform: scale(1.1) !important;
+        }
+
+        .icon {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+
+            svg,
+            .icon-20 {
+                width: 14px !important;
+                height: 14px !important;
+                stroke-width: 2 !important;
+            }
+        }
+    }
+
+    .sidebar-body {
+        padding: 0 0.45rem !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* Prevent horizontal scrollbars strictly inside the scrolling body */
+.sidebar-body,
+#my-scrollbar,
+.scroll-content {
+    overflow-x: hidden !important;
+}
+
+.scrollbar-track-x {
+    display: none !important;
+}
+
+/* 3. Section Category Micro-Headers (HOME, etc.) */
+.navbar-nav.iq-main-menu {
+    padding: 0 !important;
+
+    .static-item .default-icon {
+        font-size: 0.64rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        color: #94a3b8 !important;
+        padding: 0.65rem 0.65rem 0.2rem !important;
+        display: block !important;
+    }
+
+    /* 4. Parent Section Item Link (Dashboard, Sales, Purchase, etc.) */
+    .nav-item {
+        margin-top: 1.5px !important;
+        margin-bottom: 1.5px !important;
+
+        > .nav-link {
+            padding: 0.44rem 0.65rem !important; /* Compact balanced padding */
+            border-radius: 6px !important;
+            font-size: 0.83rem !important;
+            font-weight: 500 !important;
+            color: #334155 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            transition: all 0.14s ease-in-out !important;
+
+            /* Icon box */
+            .icon {
+                width: 18px !important;
+                height: 18px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin-right: 0.65rem !important; /* Managed 10px spacing */
+                color: #64748b !important;
+                flex-shrink: 0 !important;
+                transition: color 0.14s ease !important;
+            }
+
+            /* Label */
+            .item-name {
+                flex: 1 !important;
+                margin-left: 0 !important; /* Override Hope UI $spacer gap */
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                font-size: 0.83rem !important;
+                opacity: 1;
+                max-width: 160px;
+                transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+                            max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Right Chevron */
+            .right-icon {
+                color: #94a3b8 !important;
+                font-size: 0.75rem !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin-left: 0.35rem !important;
+                opacity: 1;
+                transform: scale(1);
+                transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                            opacity 0.15s ease,
+                            color 0.14s ease !important;
+            }
+
+            /* Hover State */
+            &:hover {
+                background-color: #f8fafc !important;
+                color: #0f172a !important;
+
+                .icon {
+                    color: #1e293b !important;
+                }
+
+                .right-icon {
+                    color: #475569 !important;
+                }
+            }
+
+            /* Expanded / Open Accordion Header: Soft slate gray tint (NO solid blue clash!) */
+            &[aria-expanded="true"] {
+                background-color: #f1f5f9 !important;
+                color: #0f172a !important;
+                font-weight: 600 !important;
+
+                .icon {
+                    color: #2563eb !important;
+                }
+
+                .right-icon {
+                    color: #2563eb !important;
+                    transform: rotate(90deg) !important;
+                }
+            }
+
+            /* Single active top item (e.g. Dashboard) */
+            &.active:not([aria-expanded]) {
+                background-color: #3a57e8 !important;
+                color: #ffffff !important;
+                font-weight: 600 !important;
+
+                .icon {
+                    color: #ffffff !important;
+                }
+            }
+        }
+    }
+
+    /* 5. Submenu Tree: Tight Horizontal Alignment */
+    .sub-nav {
+        list-style: none !important;
+        margin: 0.15rem 0 0.35rem 1.35rem !important; /* Connected line right under parent icon */
+        padding: 0 0 0 0.55rem !important;
+        border-left: 1.5px solid #e2e8f0 !important;
+
+        .subnav-item-wrapper {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            margin-bottom: 2px !important;
+            border-radius: 5px !important;
+            position: relative !important;
+
+            .subnav-link {
+                flex: 1 !important;
+                display: flex !important;
+                align-items: center !important;
+                padding: 0.34rem 0.55rem !important;
+                border-radius: 5px !important;
+                font-size: 0.81rem !important;
+                color: #475569 !important;
+                font-weight: 500 !important;
+                text-decoration: none !important;
+                line-height: 1.3 !important;
+                transition: all 0.14s ease !important;
+                overflow: hidden !important;
+
+                .subnav-bullet {
+                    width: 4px !important;
+                    height: 4px !important;
+                    border-radius: 50% !important;
+                    background-color: #cbd5e1 !important;
+                    margin-right: 0.55rem !important;
+                    flex-shrink: 0 !important;
+                    transition: all 0.14s ease !important;
+                }
+
+                .subnav-label {
+                    flex: 1 !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                }
+
+                /* Mini Letter hidden in normal expanded mode */
+                .subnav-mini-letter {
+                    display: none !important;
+                }
+
+                &:hover {
+                    background-color: #f8fafc !important;
+                    color: #0f172a !important;
+
+                    .subnav-bullet {
+                        background-color: #2563eb !important;
+                        transform: scale(1.25) !important;
+                    }
+                }
+
+                /* Active Sub-item (e.g. Invoice) */
+                &.active {
+                    background-color: #eff6ff !important;
+                    color: #2563eb !important;
+                    font-weight: 600 !important;
+                    border-left: 2.5px solid #2563eb !important;
+                    border-top-left-radius: 2px !important;
+                    border-bottom-left-radius: 2px !important;
+
+                    .subnav-bullet {
+                        background-color: #2563eb !important;
+                        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+                    }
+                }
+            }
+
+            /* Discreet Hover-Only Quick-Create Action Button (+) */
+            .subnav-quick-add {
+                width: 20px !important;
+                height: 20px !important;
+                border-radius: 4px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                color: #94a3b8 !important;
+                background: transparent !important;
+                border: 1px solid transparent !important;
+                margin-right: 0.35rem !important;
+                text-decoration: none !important;
+                opacity: 0 !important;
+                transition: all 0.14s ease !important;
+
+                &:hover {
+                    opacity: 1 !important;
+                    color: #2563eb !important;
+                    background: #dbeafe !important;
+                    border-color: #bfdbfe !important;
+                    transform: scale(1.08) !important;
+                }
+            }
+
+            &:hover .subnav-quick-add {
+                opacity: 0.7 !important;
+            }
+        }
+    }
+}
+
+/* 6. Desktop Main Content Margins & Header Brand Alignment */
+@media (min-width: 1200px) {
+    .main-content {
+        margin-left: 260px !important;
+        transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .main-content .nav .navbar-brand {
+        display: none !important;
+    }
+
+    .sidebar.sidebar-mini + .main-content,
+    .sidebar.sidebar-mini ~ .main-content {
+        margin-left: 64px !important;
+        transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+}
+
+/* =========================================================================
+   7. MINI SIDEBAR / COLLAPSED STATE (sidebar-mini)
+   ========================================================================= */
+.sidebar.sidebar-mini,
+aside.sidebar-mini {
+    width: 64px !important;
+    max-width: 64px !important;
+    min-width: 64px !important;
+    overflow: visible !important;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    .sidebar-header {
+        padding: 0.85rem 0.25rem !important;
+        overflow: visible !important;
+
+        .navbar-brand {
+            justify-content: center !important;
+            padding: 0 !important;
+            margin: 0 !important;
+
+            .logo-title {
+                opacity: 0 !important;
+                max-width: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                pointer-events: none !important;
+            }
+        }
+    }
+
+    .sidebar-toggle {
+        right: -13px !important;
+
+        .icon,
+        .icon-20 {
+            transform: rotate(180deg) !important;
+        }
+    }
+
+    .sidebar-body {
+        padding: 0.5rem 0.25rem !important;
+        overflow-x: hidden !important;
+    }
+
+    .navbar-nav.iq-main-menu {
+        .static-item {
+            text-align: center !important;
+            margin: 0.45rem 0 0.3rem !important;
+            padding: 0 !important;
+
+            .default-icon {
+                display: none !important;
+            }
+
+            /* Clean minimalist separator replacing HOME */
+            &::after {
+                content: "";
+                display: block;
+                width: 20px;
+                height: 1.5px;
+                background-color: #e2e8f0;
+                border-radius: 2px;
+                margin: 0 auto;
+            }
+        }
+
+        .nav-item {
+            margin: 3px 0 !important;
+
+            > .nav-link {
+                justify-content: center !important;
+                padding: 0 !important;
+                width: 44px !important;
+                height: 44px !important;
+                margin: 0 auto !important;
+                border-radius: 8px !important;
+
+                .icon {
+                    margin: 0 !important;
+                    width: 20px !important;
+                    height: 20px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                }
+
+                .item-name {
+                    opacity: 0 !important;
+                    max-width: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    pointer-events: none !important;
+                }
+
+                .right-icon {
+                    opacity: 0 !important;
+                    max-width: 0 !important;
+                    display: none !important;
+                    pointer-events: none !important;
+                }
+
+                &:hover {
+                    background-color: #f1f5f9 !important;
+                    color: #0f172a !important;
+                }
+
+                &[aria-expanded="true"] {
+                    background-color: #eff6ff !important;
+                    color: #2563eb !important;
+                    border: 1px solid #dbeafe !important;
+
+                    .icon {
+                        color: #2563eb !important;
+                    }
+                }
+
+                &.active:not([aria-expanded]) {
+                    background-color: #3a57e8 !important;
+                    color: #ffffff !important;
+
+                    .icon {
+                        color: #ffffff !important;
+                    }
+                }
+            }
+
+            /* Accordion collapse container */
+            .accordion-collapse,
+            .collapse {
+                width: 100% !important;
+            }
+
+            /* Submenu Letter Badges in Mini Mode */
+            .sub-nav {
+                list-style: none !important;
+                margin: 0.35rem auto 0.45rem !important;
+                padding: 0 !important;
+                border-left: none !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 5px !important;
+                width: 100% !important;
+
+                .subnav-item-wrapper {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    border: none !important;
+
+                    /* Hide full labels and bullets */
+                    .subnav-bullet,
+                    .subnav-label,
+                    .subnav-quick-add {
+                        display: none !important;
+                    }
+
+                    .subnav-link {
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        width: 32px !important;
+                        height: 32px !important;
+                        border: none !important;
+                        background: transparent !important;
+                        text-decoration: none !important;
+
+                        /* Circular / Rounded letter badge */
+                        .subnav-mini-letter {
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            width: 30px !important;
+                            height: 30px !important;
+                            border-radius: 6px !important;
+                            font-size: 0.78rem !important;
+                            font-weight: 700 !important;
+                            color: #475569 !important;
+                            background-color: #f1f5f9 !important;
+                            border: 1px solid #e2e8f0 !important;
+                            transition: all 0.16s ease-in-out !important;
+                            box-sizing: border-box !important;
+                        }
+
+                        &:hover .subnav-mini-letter {
+                            background-color: #e2e8f0 !important;
+                            color: #0f172a !important;
+                            border-color: #cbd5e1 !important;
+                            transform: scale(1.08) !important;
+                        }
+
+                        /* Active Submodule Letter (e.g. Quotation or Invoice active) */
+                        &.active .subnav-mini-letter {
+                            background-color: #3a57e8 !important;
+                            color: #ffffff !important;
+                            border-color: #3a57e8 !important;
+                            box-shadow: 0 2px 6px rgba(58, 87, 232, 0.4) !important;
+                            transform: scale(1.05) !important;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

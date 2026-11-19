@@ -37,6 +37,8 @@ const Header = memo((props) => {
     const headerNavbar = useSelector(SettingSelector.header_navbar)
     const { mutate: logoutApi, isLoading } = useLogout();
     const currentUser = useSelector((state) => state.authReducer?.user);
+    const { activeFirm } = useSelector((state) => state.firmReducer || {});
+    const brandTitle = activeFirm?.trade_name || activeFirm?.firm_name || 'K.S. Engineering';
 
     const displayName = currentUser?.firstName
         ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim()
@@ -65,7 +67,7 @@ const Header = memo((props) => {
                 <Container fluid className="navbar-inner px-3">
                     <Link to="/dashboard" className="navbar-brand">
                         <Logo color={true} />
-                        <h4 className="logo-title">Hope UI</h4>
+                        <h4 className="logo-title">{brandTitle}</h4>
                     </Link>
                     <div className="sidebar-toggle" data-toggle="sidebar" data-active="true" onClick={minisidebar}>
                         <i className="icon">
