@@ -1044,3 +1044,478 @@ aside.sidebar-mini {
         }
     }
 }
+
+/* =========================================================================
+   8. MODERN & PROFESSIONAL ENTERPRISE HEADER
+   ========================================================================= */
+.iq-navbar {
+    min-height: 54px !important;
+    height: 54px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #eef2f6 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+    padding: 0 !important;
+    position: relative !important;
+    transition: all 0.2s ease !important;
+
+    .navbar-inner {
+        min-height: 54px !important;
+        height: 54px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        gap: 0.75rem !important;
+    }
+}
+
+/* Top Left Sidebar Toggle Arrow Button (Matches original Hope UI circular blue badge) */
+.sidebar-toggle-arrow {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: #3a57e8 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(58, 87, 232, 0.4), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+
+    svg {
+        stroke: #ffffff !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transform: rotate(0deg);
+    }
+
+    &:hover {
+        background-color: #2563eb !important;
+        transform: scale(1.08) !important;
+        box-shadow: 0 3px 8px rgba(37, 99, 235, 0.5) !important;
+    }
+}
+
+/* Hide header toggle arrow on full desktop (>= 1200px) because sidebar already has its own toggle button */
+@media (min-width: 1200px) {
+    .iq-navbar .sidebar-toggle-arrow {
+        display: none !important;
+    }
+}
+
+/* Show header toggle arrow on small / narrow screens (< 1200px) */
+@media (max-width: 1199.98px) {
+    .iq-navbar .sidebar-toggle-arrow {
+        display: inline-flex !important;
+    }
+}
+
+/* When sidebar is collapsed (sidebar-mini), arrow rotates to point right */
+aside.sidebar-mini ~ * .sidebar-toggle-arrow svg,
+.sidebar-mini .sidebar-toggle-arrow svg {
+    transform: rotate(180deg) !important;
+}
+
+/* Top Right 3 Horizontal Lines Toggle Button (Navbar.Toggle) */
+.mobile-nav-toggle,
+.navbar-toggler {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 7px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transition: all 0.15s ease !important;
+
+    .menu-icon {
+        color: #334155 !important;
+        transition: all 0.15s ease !important;
+    }
+
+    &:hover,
+    &:focus {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+
+        .menu-icon {
+            color: #2563eb !important;
+        }
+    }
+
+    &[aria-expanded="true"] {
+        background-color: #eff6ff !important;
+        border-color: #bfdbfe !important;
+
+        .menu-icon {
+            color: #2563eb !important;
+            transform: rotate(90deg);
+        }
+    }
+}
+
+/* Header Quick Search Bar (Desktop) */
+.header-search-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 220px !important;
+    max-width: 240px !important;
+    height: 34px !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 7px !important;
+    padding: 0 0.55rem !important;
+    transition: all 0.16s ease !important;
+
+    .search-icon {
+        color: #94a3b8 !important;
+        flex-shrink: 0 !important;
+        margin-right: 0.4rem !important;
+    }
+
+    .header-search-input {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-size: 0.78rem !important;
+        color: #1e293b !important;
+        outline: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+
+        &::placeholder {
+            color: #94a3b8 !important;
+            font-size: 0.78rem !important;
+        }
+
+        &:focus {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+    }
+
+    .search-shortcut {
+        background: #e2e8f0 !important;
+        color: #64748b !important;
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        padding: 0.1rem 0.3rem !important;
+        border-radius: 4px !important;
+        letter-spacing: 0.02em !important;
+        flex-shrink: 0 !important;
+        user-select: none !important;
+    }
+
+    &:hover {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    &:focus-within {
+        background-color: #ffffff !important;
+        border-color: #3a57e8 !important;
+        box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.1) !important;
+
+        .search-icon {
+            color: #3a57e8 !important;
+        }
+    }
+}
+
+/* Header Action Icon Buttons (Bell, etc.) */
+.header-icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #475569 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    position: relative !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+
+    &:hover {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    .notification-dot {
+        position: absolute !important;
+        top: 6px !important;
+        right: 6px !important;
+        width: 6px !important;
+        height: 6px !important;
+        border-radius: 50% !important;
+        background-color: #ef4444 !important;
+        border: 1.5px solid #ffffff !important;
+    }
+}
+
+/* User Avatar Initials Badge (Shared on Desktop & Mobile Drawer) */
+.user-avatar-badge {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #3a57e8 0%, #1e40af 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    letter-spacing: 0.03em !important;
+    position: relative !important;
+    box-shadow: 0 2px 4px rgba(58, 87, 232, 0.2) !important;
+    flex-shrink: 0 !important;
+
+    .online-indicator {
+        position: absolute !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        width: 8px !important;
+        height: 8px !important;
+        background-color: #10b981 !important;
+        border-radius: 50% !important;
+        border: 1.5px solid #ffffff !important;
+    }
+}
+
+/* Header User Profile Pill (Desktop) */
+.user-toggle-btn {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.15rem 0.45rem 0.15rem 0.15rem !important;
+    border-radius: 7px !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    background: transparent !important;
+
+    &:hover {
+        background-color: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    .caption {
+        line-height: 1.2 !important;
+
+        .caption-title {
+            font-size: 0.80rem !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            letter-spacing: -0.01em !important;
+        }
+
+        .caption-sub-title {
+            font-size: 0.68rem !important;
+            color: #64748b !important;
+            font-weight: 500 !important;
+        }
+    }
+
+    .user-chevron {
+        color: #94a3b8 !important;
+        transition: transform 0.2s ease !important;
+    }
+}
+
+.user-profile-dropdown.show .user-toggle-btn {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+
+    .user-chevron {
+        transform: rotate(180deg) !important;
+    }
+}
+
+.user-dropdown-menu {
+    border-radius: 10px !important;
+    padding: 0.35rem 0 !important;
+    min-width: 210px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.04) !important;
+
+    .dropdown-item {
+        font-size: 0.80rem !important;
+        color: #334155 !important;
+        padding: 0.45rem 0.85rem !important;
+        transition: all 0.12s ease !important;
+
+        &:hover {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+
+        &.text-danger:hover {
+            background-color: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+    }
+}
+
+.notification-dropdown-menu {
+    width: 280px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    overflow: hidden !important;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* =========================================================================
+   RESPONSIVE HEADER BEHAVIOR (< 992px)
+   ========================================================================= */
+@media (max-width: 991.98px) {
+    .iq-navbar {
+        height: 52px !important;
+        min-height: 52px !important;
+        position: relative !important;
+        z-index: 1020 !important;
+
+        .navbar-inner {
+            height: 52px !important;
+            min-height: 52px !important;
+            padding: 0 0.75rem !important;
+        }
+
+        /* Floating Elevated Card Dropdown */
+        .navbar-collapse {
+            position: absolute !important;
+            top: calc(100% + 6px) !important;
+            left: 8px !important;
+            right: 8px !important;
+            max-width: 400px !important;
+            margin-left: auto !important;
+            background: #ffffff !important;
+            border-radius: 12px !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08) !important;
+            padding: 0.75rem !important;
+            z-index: 1050 !important;
+            animation: headerDropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+
+            /* Mobile Search */
+            .mobile-search-box {
+                position: relative !important;
+                display: flex !important;
+                align-items: center !important;
+
+                .mobile-search-icon {
+                    position: absolute !important;
+                    left: 9px !important;
+                    color: #94a3b8 !important;
+                    pointer-events: none !important;
+                }
+
+                .mobile-search-input {
+                    height: 32px !important;
+                    padding-left: 28px !important;
+                    padding-right: 10px !important;
+                    font-size: 0.76rem !important;
+                    border-radius: 7px !important;
+                    background: #f8fafc !important;
+                    border: 1px solid #e2e8f0 !important;
+                    color: #1e293b !important;
+
+                    &:focus {
+                        background: #ffffff !important;
+                        border-color: #3b82f6 !important;
+                        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+                    }
+                }
+            }
+
+            /* Mobile Entity Row (Firm & Branch side-by-side) */
+            .mobile-entity-row {
+                .entity-switcher-container {
+                    display: flex !important;
+                    flex-direction: row !important;
+                    gap: 6px !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+
+                    .firm-dropdown,
+                    .branch-dropdown {
+                        flex: 1 1 50% !important;
+                        min-width: 0 !important;
+
+                        .entity-switcher-btn {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            height: 32px !important;
+                            padding: 0 0.5rem !important;
+                            font-size: 0.74rem !important;
+                            font-weight: 600 !important;
+                            border-radius: 7px !important;
+                            justify-content: space-between !important;
+
+                            span.text-truncate {
+                                max-width: 105px !important;
+                                font-size: 0.74rem !important;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .mobile-drawer-divider {
+                height: 1px !important;
+                background-color: #f1f5f9 !important;
+                margin: 0.5rem 0 !important;
+            }
+
+            /* Mobile User Identity Card */
+            .mobile-user-card {
+                background: #f8fafc !important;
+                border: 1px solid #f1f5f9 !important;
+                border-radius: 7px !important;
+                padding: 0.45rem 0.65rem !important;
+            }
+
+            /* Mobile Action Items (My Profile, Roles & Permissions, Sign Out) */
+            .mobile-action-links {
+                .mobile-action-item {
+                    height: 32px !important;
+                    padding: 0 0.6rem !important;
+                    border-radius: 6px !important;
+                    transition: background 0.12s ease !important;
+                    color: #334155 !important;
+
+                    &:hover {
+                        background-color: #f1f5f9 !important;
+                        color: #0f172a !important;
+                    }
+
+                    &.mobile-logout-item:hover {
+                        background-color: #fef2f2 !important;
+                        color: #dc2626 !important;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@keyframes headerDropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

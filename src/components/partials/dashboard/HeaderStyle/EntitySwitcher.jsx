@@ -11,11 +11,14 @@ import { localStorageKey } from '../../../../utilities/constant/constants';
 import api from '../../../../lib/axios';
 import './EntitySwitcher.css';
 
-const EntitySwitcher = () => {
+const EntitySwitcher = ({ idPrefix = '' }) => {
     const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const firmToggleId = idPrefix ? `${idPrefix}-firm-toggle` : 'firm-switcher-toggle';
+    const branchToggleId = idPrefix ? `${idPrefix}-branch-toggle` : 'branch-switcher-toggle';
 
     const { activeFirm, activeBranch, userFirms = [] } = useSelector((state) => state.firmReducer || {});
     const currentUser = useSelector((state) => state.authReducer?.user);
@@ -209,8 +212,8 @@ const EntitySwitcher = () => {
             {/* Firm Selector Dropdown */}
             <Dropdown className="firm-dropdown">
                 <Dropdown.Toggle
-                    id="firm-switcher-toggle"
-                    className="entity-switcher-btn firm-toggle d-flex align-items-center gap-2 rounded-pill text-truncate"
+                    id={firmToggleId}
+                    className="entity-switcher-btn firm-toggle d-flex align-items-center gap-2 rounded-3 text-truncate"
                     style={{ maxWidth: '250px' }}
                 >
                     <FaBuilding size={13} className="text-primary flex-shrink-0" />
@@ -310,8 +313,8 @@ const EntitySwitcher = () => {
             {/* Branch Selector Dropdown */}
             <Dropdown className="branch-dropdown">
                 <Dropdown.Toggle
-                    id="branch-switcher-toggle"
-                    className="entity-switcher-btn branch-toggle d-flex align-items-center gap-2 rounded-pill text-truncate"
+                    id={branchToggleId}
+                    className="entity-switcher-btn branch-toggle d-flex align-items-center gap-2 rounded-3 text-truncate"
                     style={{ maxWidth: '240px' }}
                 >
                     <FaMapMarkerAlt size={13} className="text-danger flex-shrink-0" />

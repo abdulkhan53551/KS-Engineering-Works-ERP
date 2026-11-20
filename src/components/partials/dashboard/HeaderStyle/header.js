@@ -1,41 +1,30 @@
-import React, { useEffect, Fragment, memo } from 'react'
-import { Navbar, Container, Nav, Dropdown } from 'react-bootstrap'
-import { Link } from 'react-router-dom'
-import CustomToggle from '../../../dropdowns'
-
-//img
-import flag1 from '../../../../assets/images/Flag/flag001.png'
-import flag2 from '../../../../assets/images/Flag/flag-02.png'
-import flag3 from '../../../../assets/images/Flag/flag-03.png'
-import flag4 from '../../../../assets/images/Flag/flag-04.png'
-import flag5 from '../../../../assets/images/Flag/flag-05.png'
-import flag6 from '../../../../assets/images/Flag/flag-06.png'
-import shapes1 from '../../../../assets/images/shapes/01.png'
-import shapes2 from '../../../../assets/images/shapes/02.png'
-import shapes3 from '../../../../assets/images/shapes/03.png'
-import shapes4 from '../../../../assets/images/shapes/04.png'
-import shapes5 from '../../../../assets/images/shapes/05.png'
-import avatars1 from '../../../../assets/images/avatars/01.png'
-import avatars2 from '../../../../assets/images/avatars/avtar_1.png'
-import avatars3 from '../../../../assets/images/avatars/avtar_2.png'
-import avatars4 from '../../../../assets/images/avatars/avtar_3.png'
-import avatars5 from '../../../../assets/images/avatars/avtar_4.png'
-import avatars6 from '../../../../assets/images/avatars/avtar_5.png'
-// logo
-import Logo from '../../components/logo'
+import React, { useEffect, Fragment, memo } from 'react';
+import { Navbar, Container, Nav, Dropdown } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import {
+    FiSearch,
+    FiBell,
+    FiUser,
+    FiLogOut,
+    FiChevronDown,
+    FiChevronRight,
+    FiCheckCircle,
+    FiShield,
+    FiMenu
+} from 'react-icons/fi';
+import CustomToggle from '../../../dropdowns';
+import Logo from '../../components/logo';
 
 // Redux Selector / Action
 import { useSelector } from 'react-redux';
-
-// Import selectors & action from setting store
-import * as SettingSelector from '../../../../store/setting/selectors'
-import { useLogout } from '../../../../views/auth/hooks/api.hooks'
-import EntitySwitcher from './EntitySwitcher'
+import * as SettingSelector from '../../../../store/setting/selectors';
+import { useLogout } from '../../../../views/auth/hooks/api.hooks';
+import EntitySwitcher from './EntitySwitcher';
 
 const Header = memo((props) => {
     const navbarHide = useSelector(SettingSelector.navbar_show); // array
-    const headerNavbar = useSelector(SettingSelector.header_navbar)
-    const { mutate: logoutApi, isLoading } = useLogout();
+    const headerNavbar = useSelector(SettingSelector.header_navbar);
+    const { mutate: logoutApi } = useLogout();
     const currentUser = useSelector((state) => state.authReducer?.user);
     const { activeFirm } = useSelector((state) => state.firmReducer || {});
     const brandTitle = activeFirm?.trade_name || activeFirm?.firm_name || 'K.S. Engineering';
@@ -45,245 +34,304 @@ const Header = memo((props) => {
         : (currentUser?.userName || 'User');
     const displayRole = currentUser?.roleName || currentUser?.role || 'Administrator';
 
-    useEffect(() => {
-        // navbarstylemode
-        if (headerNavbar === 'navs-sticky' || headerNavbar === 'nav-glass') {
-            window.onscroll = () => {
-                if (document.documentElement.scrollTop > 50) {
-                    document.getElementsByTagName('nav')[0].classList.add('menu-sticky')
-                } else {
-                    document.getElementsByTagName('nav')[0].classList.remove('menu-sticky')
-                }
-            }
-        }
+    const isAdmin = currentUser?.isSuperAdmin ||
+                    currentUser?.role === 'administrator' ||
+                    currentUser?.role === 'admin' ||
+                    currentUser?.roleSlug === 'super-admin' ||
+                    currentUser?.dataScope === 'GLOBAL';
 
-    })
+    // Generate dynamic user initials (e.g. "Sabir Khan" -> "SK")
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) {
+            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+        }
+        return name.slice(0, 2).toUpperCase();
+    };
+    const userInitials = getInitials(displayName);
+
+    useEffect(() => {
+        if (headerNavbar === 'navs-sticky' || headerNavbar === 'nav-glass') {
+            const handleScroll = () => {
+                const nav = document.getElementsByTagName('nav')[0];
+                if (nav) {
+                    if (document.documentElement.scrollTop > 50) {
+                        nav.classList.add('menu-sticky');
+                    } else {
+                        nav.classList.remove('menu-sticky');
+                    }
+                }
+            };
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+        }
+    }, [headerNavbar]);
+
     const minisidebar = () => {
-        document.getElementsByTagName('ASIDE')[0].classList.toggle('sidebar-mini')
-    }
+        const aside = document.getElementsByTagName('ASIDE')[0];
+        if (aside) {
+            aside.classList.toggle('sidebar-mini');
+        }
+    };
+
     return (
         <Fragment>
-            <Navbar expand="lg" variant="light" className={`nav iq-navbar ${headerNavbar} ${navbarHide.join(" ")}`} style={{ borderBottom: '1px solid #e9ecef' }}>
-                <Container fluid className="navbar-inner px-3">
-                    <Link to="/dashboard" className="navbar-brand">
-                        <Logo color={true} />
-                        <h4 className="logo-title">{brandTitle}</h4>
-                    </Link>
-                    <div className="sidebar-toggle" data-toggle="sidebar" data-active="true" onClick={minisidebar}>
-                        <i className="icon">
-                            <svg width="20px" height="20px" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+            <Navbar
+                expand="lg"
+                variant="light"
+                className={`nav iq-navbar ${headerNavbar} ${navbarHide.join(' ')}`}
+            >
+                <Container fluid className="navbar-inner px-2 px-sm-3">
+                    {/* Top-Left: Sidebar Toggle Arrow (Visible ONLY on small screens < 1200px to avoid duplicate on desktop) */}
+                    <div className="d-flex align-items-center flex-shrink-0">
+                        <div
+                            className="sidebar-toggle-arrow me-2 d-xl-none"
+                            onClick={minisidebar}
+                            role="button"
+                            title="Toggle Sidebar"
+                        >
+                            <svg
+                                width="15"
+                                height="15"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M4.25 12.2744L19.25 12.2744"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                                <path
+                                    d="M10.2998 18.2988L4.2498 12.2748L10.2998 6.24976"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
                             </svg>
-                        </i>
+                        </div>
+
+                        <Link to="/dashboard" className="navbar-brand d-flex align-items-center py-0 me-2 text-decoration-none">
+                            <Logo color={true} />
+                            <span className="logo-title ms-2 mb-0 font-size-13 fw-bold text-dark d-none d-sm-inline">
+                                {brandTitle}
+                            </span>
+                        </Link>
                     </div>
-                    <div className="input-group search-input">
-                        <span className="input-group-text" id="search-input">
-                            <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="11.7669" cy="11.7666" r="8.98856" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></circle>
-                                <path d="M18.0186 18.4851L21.5426 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
-                            </svg>
-                        </span>
-                        <input type="search" className="form-control" placeholder="Search..." />
+
+                    {/* Top-Right for Small Screens (< 992px): Notification Bell + 3-Line Menu */}
+                    <div className="d-flex align-items-center gap-1.5 d-lg-none">
+                        {/* Notification Bell */}
+                        <Dropdown className="notification-dropdown">
+                            <Dropdown.Toggle
+                                as={CustomToggle}
+                                variant="p-0 border-0 bg-transparent"
+                                role="button"
+                                title="System Notifications"
+                            >
+                                <div className="header-icon-btn">
+                                    <FiBell size={15} />
+                                    <span className="notification-dot" />
+                                </div>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu className="p-0 dropdown-menu-end notification-dropdown-menu shadow-lg border-0">
+                                <div className="py-2 px-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                                    <h6 className="mb-0 fw-bold font-size-12 text-dark">Notifications</h6>
+                                    <span className="badge bg-soft-primary text-primary font-size-10">0 Unread</span>
+                                </div>
+                                <div className="py-3 px-3 text-center text-muted">
+                                    <FiCheckCircle size={20} className="text-success mb-1 opacity-75" />
+                                    <p className="mb-0 fw-semibold font-size-12 text-dark">All caught up!</p>
+                                    <small className="font-size-11 text-muted">No pending alerts.</small>
+                                </div>
+                            </Dropdown.Menu>
+                        </Dropdown>
+
+                        {/* 3 Horizontal Lines Toggle Button */}
+                        <Navbar.Toggle aria-controls="navbarSupportedContent" className="mobile-nav-toggle p-0 border-0 shadow-none" title="Menu">
+                            <FiMenu size={18} className="menu-icon" />
+                        </Navbar.Toggle>
                     </div>
-                    <Navbar.Toggle aria-controls="navbarSupportedContent">
-                        <span className="navbar-toggler-icon">
-                            <span className="mt-2 navbar-toggler-bar bar1"></span>
-                            <span className="navbar-toggler-bar bar2"></span>
-                            <span className="navbar-toggler-bar bar3"></span>
-                        </span>
-                    </Navbar.Toggle>
+
+                    {/* Collapsible Area (Desktop: Inline Bar; Mobile: Floating Card Popover) */}
                     <Navbar.Collapse id="navbarSupportedContent">
-                        <EntitySwitcher />
-                        <Nav as="ul" className="mb-2 ms-auto navbar-list mb-lg-0 align-items-center">
-                            <Dropdown as="li" className="nav-item">
-                                <Dropdown.Toggle as={CustomToggle} variant="search-toggle nav-link">
-                                    <img src={flag1} className="img-fluid rounded-circle" alt="user" style={{ height: "30px", minWidth: "30px", width: "30px", }} />
-                                    <span className="bg-primary"></span>
+                        {/* Desktop-Only Center Utilities (>= 992px) */}
+                        <div className="d-none d-lg-flex align-items-center gap-2 me-auto">
+                            {/* Search */}
+                            <div className="header-search-wrapper">
+                                <FiSearch className="search-icon" size={13} />
+                                <input
+                                    type="search"
+                                    className="form-control header-search-input"
+                                    placeholder="Quick search..."
+                                />
+                                <span className="search-shortcut d-none d-xl-inline-block">⌘K</span>
+                            </div>
+
+                            {/* Entity Switcher */}
+                            <div className="entity-switcher-wrap">
+                                <EntitySwitcher idPrefix="desktop" />
+                            </div>
+                        </div>
+
+                        {/* Desktop-Only Right Utilities (>= 992px) */}
+                        <Nav as="ul" className="ms-auto navbar-list align-items-center mb-0 flex-row gap-2 d-none d-lg-flex">
+                            {/* Desktop Notification Bell */}
+                            <Dropdown as="li" className="nav-item notification-dropdown">
+                                <Dropdown.Toggle
+                                    as={CustomToggle}
+                                    variant="nav-link p-0 d-flex align-items-center"
+                                    role="button"
+                                    title="System Notifications"
+                                >
+                                    <div className="header-icon-btn">
+                                        <FiBell size={15} />
+                                        <span className="notification-dot" />
+                                    </div>
                                 </Dropdown.Toggle>
-                                <Dropdown.Menu className="p-0 sub-drop dropdown-menu-end">
-                                    <div className="m-0 border-0 shadow-none card">
-                                        <div className="p-0 ">
-                                            <ul className="list-group list-group-flush">
-                                                <li className="iq-sub-card list-group-item"><Link className="p-0" to="#"><img src={flag3} alt="img-flaf" className="img-fluid me-2" style={{ width: "15px", height: "15px", minWidth: "15px", }} />Italian</Link></li>
-                                                <li className="iq-sub-card list-group-item"><Link className="p-0" to="#"><img src={flag4} alt="img-flaf" className="img-fluid me-2" style={{ width: "15px", height: "15px", minWidth: "15px", }} />French</Link></li>
-                                                <li className="iq-sub-card list-group-item"><Link className="p-0" to="#"><img src={flag2} alt="img-flaf" className="img-fluid me-2" style={{ width: "15px", height: "15px", minWidth: "15px", }} />German</Link></li>
-                                                <li className="iq-sub-card list-group-item"><Link className="p-0" to="#"><img src={flag5} alt="img-flaf" className="img-fluid me-2" style={{ width: "15px", height: "15px", minWidth: "15px", }} />Spanish</Link></li>
-                                                <li className="iq-sub-card list-group-item"><Link className="p-0" to="#"><img src={flag6} alt="img-flaf" className="img-fluid me-2" style={{ width: "15px", height: "15px", minWidth: "15px", }} />Japanese</Link></li>
-                                            </ul>
-                                        </div>
+                                <Dropdown.Menu className="p-0 dropdown-menu-end notification-dropdown-menu shadow-lg border-0">
+                                    <div className="py-2 px-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                                        <h6 className="mb-0 fw-bold font-size-12 text-dark">Notifications</h6>
+                                        <span className="badge bg-soft-primary text-primary font-size-10">0 Unread</span>
+                                    </div>
+                                    <div className="py-3 px-3 text-center text-muted">
+                                        <FiCheckCircle size={20} className="text-success mb-1 opacity-75" />
+                                        <p className="mb-0 fw-semibold font-size-12 text-dark">All caught up!</p>
+                                        <small className="font-size-11 text-muted">No pending alerts.</small>
                                     </div>
                                 </Dropdown.Menu>
                             </Dropdown>
-                            <Dropdown as="li" className="nav-item">
-                                <Dropdown.Toggle as={CustomToggle} href="#" variant=" nav-link" id="notification-drop" data-bs-toggle="dropdown" >
-                                    <svg width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M19.7695 11.6453C19.039 10.7923 18.7071 10.0531 18.7071 8.79716V8.37013C18.7071 6.73354 18.3304 5.67907 17.5115 4.62459C16.2493 2.98699 14.1244 2 12.0442 2H11.9558C9.91935 2 7.86106 2.94167 6.577 4.5128C5.71333 5.58842 5.29293 6.68822 5.29293 8.37013V8.79716C5.29293 10.0531 4.98284 10.7923 4.23049 11.6453C3.67691 12.2738 3.5 13.0815 3.5 13.9557C3.5 14.8309 3.78723 15.6598 4.36367 16.3336C5.11602 17.1413 6.17846 17.6569 7.26375 17.7466C8.83505 17.9258 10.4063 17.9933 12.0005 17.9933C13.5937 17.9933 15.165 17.8805 16.7372 17.7466C17.8215 17.6569 18.884 17.1413 19.6363 16.3336C20.2118 15.6598 20.5 14.8309 20.5 13.9557C20.5 13.0815 20.3231 12.2738 19.7695 11.6453Z" fill="currentColor"></path>
-                                        <path opacity="0.4" d="M14.0088 19.2283C13.5088 19.1215 10.4627 19.1215 9.96275 19.2283C9.53539 19.327 9.07324 19.5566 9.07324 20.0602C9.09809 20.5406 9.37935 20.9646 9.76895 21.2335L9.76795 21.2345C10.2718 21.6273 10.8632 21.877 11.4824 21.9667C11.8123 22.012 12.1482 22.01 12.4901 21.9667C13.1083 21.877 13.6997 21.6273 14.2036 21.2345L14.2026 21.2335C14.5922 20.9646 14.8734 20.5406 14.8983 20.0602C14.8983 19.5566 14.4361 19.327 14.0088 19.2283Z" fill="currentColor"></path>
-                                    </svg>
-                                    <span className="bg-danger dots"></span>
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu className="p-0 sub-drop dropdown-menu-end" aria-labelledby="notification-drop">
-                                    <div className="m-0 shadow-none card">
-                                        <div className="py-3 card-header d-flex justify-content-between bg-primary">
-                                            <div className="header-title">
-                                                <h5 className="mb-0 text-white">All Notifications</h5>
-                                            </div>
-                                        </div>
-                                        <div className="p-0 card-body">
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes1} alt="" />
-                                                    <div className="ms-3 w-100">
-                                                        <h6 className="mb-0 ">Emma Watson Bni</h6>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <p className="mb-0">95 MB</p>
-                                                            <small className="float-right font-size-12">Just Now</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div className="">
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes2} alt="" />
-                                                    </div>
-                                                    <div className="ms-3 w-100">
-                                                        <h6 className="mb-0 ">New customer is join</h6>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <p className="mb-0">Cyst Bni</p>
-                                                            <small className="float-right font-size-12">5 days ago</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes3} alt="" />
-                                                    <div className="ms-3 w-100">
-                                                        <h6 className="mb-0 ">Two customer is left</h6>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <p className="mb-0">Cyst Bni</p>
-                                                            <small className="float-right font-size-12">2 days ago</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes4} alt="" />
-                                                    <div className="w-100 ms-3">
-                                                        <h6 className="mb-0 ">New Mail from Fenny</h6>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <p className="mb-0">Cyst Bni</p>
-                                                            <small className="float-right font-size-12">3 days ago</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        </div>
+
+                            {/* Desktop User Profile Pill */}
+                            <Dropdown as="li" className="nav-item user-profile-dropdown">
+                                <Dropdown.Toggle
+                                    as={CustomToggle}
+                                    variant="nav-link p-0 d-flex align-items-center user-toggle-btn"
+                                    role="button"
+                                    id="userProfileDropdown"
+                                >
+                                    <div className="user-avatar-badge" title={displayName}>
+                                        {userInitials}
+                                        <span className="online-indicator" />
                                     </div>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                            <Dropdown as="li" className="nav-item">
-                                <Dropdown.Toggle as={CustomToggle} href="#" variant="nav-link" id="mail-drop" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <svg width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path opacity="0.4" d="M22 15.94C22 18.73 19.76 20.99 16.97 21H16.96H7.05C4.27 21 2 18.75 2 15.96V15.95C2 15.95 2.006 11.524 2.014 9.298C2.015 8.88 2.495 8.646 2.822 8.906C5.198 10.791 9.447 14.228 9.5 14.273C10.21 14.842 11.11 15.163 12.03 15.163C12.95 15.163 13.85 14.842 14.56 14.262C14.613 14.227 18.767 10.893 21.179 8.977C21.507 8.716 21.989 8.95 21.99 9.367C22 11.576 22 15.94 22 15.94Z" fill="currentColor"></path>
-                                        <path d="M21.4759 5.67351C20.6099 4.04151 18.9059 2.99951 17.0299 2.99951H7.04988C5.17388 2.99951 3.46988 4.04151 2.60388 5.67351C2.40988 6.03851 2.50188 6.49351 2.82488 6.75151L10.2499 12.6905C10.7699 13.1105 11.3999 13.3195 12.0299 13.3195C12.0339 13.3195 12.0369 13.3195 12.0399 13.3195C12.0429 13.3195 12.0469 13.3195 12.0499 13.3195C12.6799 13.3195 13.3099 13.1105 13.8299 12.6905L21.2549 6.75151C21.5779 6.49351 21.6699 6.03851 21.4759 5.67351Z" fill="currentColor"></path>
-                                    </svg>
-                                    <span className="bg-primary count-mail"></span>
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu className="p-0 sub-drop dropdown-menu-end" aria-labelledby="mail-drop">
-                                    <div className="m-0 shadow-none card">
-                                        <div className="py-3 card-header d-flex justify-content-between bg-primary">
-                                            <div className="header-title">
-                                                <h5 className="mb-0 text-white">All Message</h5>
-                                            </div>
-                                        </div>
-                                        <div className="p-0 card-body ">
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div>
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes1} alt="" />
-                                                    </div>
-                                                    <div className=" w-100 ms-3">
-                                                        <h6 className="mb-0 ">Bni Emma Watson</h6>
-                                                        <small className="float-left font-size-12">13 Jun</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div>
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes2} alt="" />
-                                                    </div>
-                                                    <div className="ms-3">
-                                                        <h6 className="mb-0 ">Lorem Ipsum Watson</h6>
-                                                        <small className="float-left font-size-12">20 Apr</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div>
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes3} alt="" />
-                                                    </div>
-                                                    <div className="ms-3">
-                                                        <h6 className="mb-0 ">Why do we use it?</h6>
-                                                        <small className="float-left font-size-12">30 Jun</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div>
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes4} alt="" />
-                                                    </div>
-                                                    <div className="ms-3">
-                                                        <h6 className="mb-0 ">Variations Passages</h6>
-                                                        <small className="float-left font-size-12">12 Sep</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                            <Link to="#" className="iq-sub-card">
-                                                <div className="d-flex align-items-center">
-                                                    <div>
-                                                        <img className="p-1 avatar-40 rounded-pill bg-soft-primary" src={shapes5} alt="" />
-                                                    </div>
-                                                    <div className="ms-3">
-                                                        <h6 className="mb-0 ">Lorem Ipsum generators</h6>
-                                                        <small className="float-left font-size-12">5 Dec</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                            <Dropdown as="li" className="nav-item">
-                                <Dropdown.Toggle as={CustomToggle} variant=" nav-link py-0 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img src={avatars1} alt="User-Profile" className="theme-color-default-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <img src={avatars2} alt="User-Profile" className="theme-color-purple-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <img src={avatars3} alt="User-Profile" className="theme-color-blue-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <img src={avatars5} alt="User-Profile" className="theme-color-green-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <img src={avatars6} alt="User-Profile" className="theme-color-yellow-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <img src={avatars4} alt="User-Profile" className="theme-color-pink-img img-fluid avatar avatar-50 avatar-rounded" />
-                                    <div className="caption ms-3 d-none d-md-block ">
+                                    <div className="caption ms-2 d-none d-md-block text-start">
                                         <h6 className="mb-0 caption-title">{displayName}</h6>
                                         <p className="mb-0 caption-sub-title text-capitalize">{displayRole}</p>
                                     </div>
+                                    <FiChevronDown size={13} className="ms-1.5 text-muted user-chevron d-none d-md-inline-block" />
                                 </Dropdown.Toggle>
-                                <Dropdown.Menu className="dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                    <Dropdown.Item as={Link} to="/dashboard/app/user-profile">Profile</Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={logoutApi}>Logout</Dropdown.Item>
+                                <Dropdown.Menu className="dropdown-menu-end user-dropdown-menu shadow-lg border-0 py-1" style={{ minWidth: '200px' }}>
+                                    <div className="px-3 py-1.5 border-bottom">
+                                        <div className="fw-bold text-dark font-size-12">{displayName}</div>
+                                        <small className="text-muted text-truncate d-block font-size-11">
+                                            {currentUser?.email || displayRole}
+                                        </small>
+                                    </div>
+                                    <Dropdown.Item as={Link} to="/dashboard/app/user-profile" className="d-flex align-items-center gap-2 py-1.5 font-size-12">
+                                        <FiUser size={13} className="text-primary" />
+                                        <span>My Profile</span>
+                                    </Dropdown.Item>
+                                    {isAdmin && (
+                                        <Dropdown.Item as={Link} to="/dashboard/admin/roles-permissions" className="d-flex align-items-center gap-2 py-1.5 font-size-12">
+                                            <FiShield size={13} className="text-secondary" />
+                                            <span>Roles & Permissions</span>
+                                        </Dropdown.Item>
+                                    )}
+                                    <Dropdown.Divider className="my-1" />
+                                    <Dropdown.Item onClick={logoutApi} className="d-flex align-items-center gap-2 py-1.5 text-danger font-size-12">
+                                        <FiLogOut size={13} />
+                                        <span>Sign Out</span>
+                                    </Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         </Nav>
+
+                        {/* Mobile-Only Drawer Popover Content (< 992px) */}
+                        <div className="mobile-drawer-content d-lg-none">
+                            {/* 1. Quick Search */}
+                            <div className="mobile-search-box mb-2">
+                                <FiSearch className="mobile-search-icon" size={13} />
+                                <input
+                                    type="search"
+                                    className="form-control mobile-search-input"
+                                    placeholder="Quick search..."
+                                />
+                            </div>
+
+                            {/* 2. Side-by-Side Firm & Branch Switcher */}
+                            <div className="mobile-entity-row mb-2">
+                                <EntitySwitcher idPrefix="mobile" />
+                            </div>
+
+                            <div className="mobile-drawer-divider" />
+
+                            {/* 3. User Identity Strip */}
+                            <div className="mobile-user-card d-flex align-items-center justify-content-between p-2 mb-2 rounded-2">
+                                <div className="d-flex align-items-center gap-2 min-w-0">
+                                    <div className="user-avatar-badge flex-shrink-0">
+                                        {userInitials}
+                                        <span className="online-indicator" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="fw-semibold text-dark font-size-12 text-truncate">{displayName}</div>
+                                        <small className="text-muted font-size-10 text-truncate d-block">{currentUser?.email || displayRole}</small>
+                                    </div>
+                                </div>
+                                <span className="badge bg-soft-primary text-primary font-size-10 px-2 py-1 flex-shrink-0">
+                                    {displayRole}
+                                </span>
+                            </div>
+
+                            {/* 4. Action Links: Sleek SaaS clickable items */}
+                            <div className="mobile-action-links d-flex flex-column gap-1">
+                                <Link
+                                    to="/dashboard/app/user-profile"
+                                    className="mobile-action-item d-flex align-items-center justify-content-between text-decoration-none px-2 py-1.5 rounded-2"
+                                >
+                                    <div className="d-flex align-items-center gap-2">
+                                        <FiUser size={13} className="text-primary" />
+                                        <span className="font-size-12 fw-medium text-dark">My Profile</span>
+                                    </div>
+                                    <FiChevronRight size={13} className="text-muted" />
+                                </Link>
+
+                                {isAdmin && (
+                                    <Link
+                                        to="/dashboard/admin/roles-permissions"
+                                        className="mobile-action-item d-flex align-items-center justify-content-between text-decoration-none px-2 py-1.5 rounded-2"
+                                    >
+                                        <div className="d-flex align-items-center gap-2">
+                                            <FiShield size={13} className="text-secondary" />
+                                            <span className="font-size-12 fw-medium text-dark">Roles & Permissions</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-1.5">
+                                            <span className="badge bg-soft-info text-info font-size-9 px-1.5 py-0.5">Admin</span>
+                                            <FiChevronRight size={13} className="text-muted" />
+                                        </div>
+                                    </Link>
+                                )}
+
+                                <button
+                                    onClick={logoutApi}
+                                    type="button"
+                                    className="mobile-action-item mobile-logout-item d-flex align-items-center justify-content-between text-decoration-none px-2 py-1.5 rounded-2 border-0 bg-transparent w-100 text-start"
+                                >
+                                    <div className="d-flex align-items-center gap-2">
+                                        <FiLogOut size={13} className="text-danger" />
+                                        <span className="font-size-12 fw-medium text-danger">Sign Out</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
                     </Navbar.Collapse>
                 </Container>
             </Navbar>
         </Fragment>
-    )
-})
+    );
+});
 
-export default Header
+export default Header;
