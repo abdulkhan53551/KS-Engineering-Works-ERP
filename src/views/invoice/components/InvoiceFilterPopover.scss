@@ -1,0 +1,371 @@
+// =============================================================================
+// INVOICE FILTER POPOVER SCSS (Balanced Professional Master-Detail Overlay)
+// =============================================================================
+
+.invoice-filter-popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 1050;
+    width: 535px;
+    max-width: 95vw;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.05);
+    animation: filterPopoverSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top right;
+    user-select: none;
+    overflow: hidden;
+
+    @keyframes filterPopoverSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-6px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    // 1. Header (Compact Single-Line)
+    .filter-popover-header {
+        background: #fbfcfe;
+        border-bottom: 1px solid #f1f5f9;
+        height: 38px;
+
+        .btn-icon-round {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            border: none;
+            transition: all 0.15s ease;
+
+            &:hover {
+                background: #e2e8f0;
+                color: #0f172a;
+            }
+        }
+    }
+
+    // 2. Master-Detail Columns Body (Comfortable Height 275px)
+    .filter-popover-body {
+        height: 275px;
+        overflow: hidden !important;
+    }
+
+    // Left Column: Categories Navigation (Width 150px)
+    .filter-categories-nav {
+        width: 150px;
+        min-width: 150px;
+        background: #f8fafc;
+        border-right: 1px solid #edf2f7;
+        padding: 6px;
+        overflow-y: auto;
+        overflow-x: hidden !important;
+
+        &::-webkit-scrollbar {
+            width: 3px;
+        }
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .filter-category-btn {
+            width: 100%;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+            padding: 5px 8px;
+            margin-bottom: 2px;
+            font-size: 0.74rem;
+            font-weight: 500;
+            color: #475569;
+            background: transparent;
+            border: none;
+            border-left: 2.5px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+
+            &:hover {
+                background: #f1f5f9;
+                color: #0f172a;
+            }
+
+            &.active {
+                background: #ffffff;
+                color: #3a57e8;
+                font-weight: 600;
+                border-left-color: #3a57e8;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            }
+
+            .cat-icon-badge {
+                width: 19px;
+                height: 19px;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.6rem;
+
+                &.cat-purple { background: rgba(147, 51, 234, 0.1); color: #9333ea; }
+                &.cat-blue { background: rgba(58, 87, 232, 0.1); color: #3a57e8; }
+                &.cat-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+                &.cat-emerald { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                &.cat-amber { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                &.cat-cyan { background: rgba(6, 182, 212, 0.1); color: #0891b2; }
+            }
+
+            .cat-active-dot {
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+        }
+    }
+
+    // Right Column: Category Details Panel (Width ~385px)
+    .filter-options-panel {
+        flex: 1;
+        padding: 12px 14px;
+        overflow-y: auto;
+        overflow-x: hidden !important;
+        background: #ffffff;
+        box-sizing: border-box;
+
+        &::-webkit-scrollbar {
+            width: 3px;
+        }
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .filter-panel-section {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        .panel-micro-title {
+            font-size: 0.64rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+
+        .input-micro-label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #94a3b8;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        // Sleek Segmented Pill Cluster
+        .preset-pill-cluster {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            width: 100%;
+
+            .preset-pill {
+                height: 26px;
+                padding: 2px 10px;
+                border-radius: 6px;
+                font-size: 0.72rem;
+                font-weight: 500;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                color: #475569;
+                cursor: pointer;
+                transition: all 0.12s ease;
+                display: inline-flex;
+                align-items: center;
+                white-space: nowrap;
+
+                &:hover {
+                    background: #f1f5f9;
+                    border-color: #cbd5e1;
+                    color: #0f172a;
+                }
+
+                &.active {
+                    background: #3a57e8;
+                    color: #ffffff;
+                    border-color: #3a57e8;
+                    font-weight: 600;
+                    box-shadow: 0 1px 3px rgba(58, 87, 232, 0.25);
+                }
+            }
+        }
+
+        // Custom Compact Inputs
+        .flatpickr-compact,
+        .compact-input {
+            height: 29px !important;
+            padding: 3px 8px !important;
+            font-size: 0.74rem !important;
+            border-radius: 6px !important;
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #0f172a !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+
+            &:focus {
+                background: #ffffff !important;
+                border-color: #3a57e8 !important;
+                box-shadow: 0 0 0 2px rgba(58, 87, 232, 0.12) !important;
+            }
+        }
+
+        // Compact Option Rows (Status & E-Way)
+        .compact-radio-row {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 9px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            width: 100%;
+
+            &:hover {
+                background: #f8fafc;
+            }
+
+            &.selected {
+                background: rgba(58, 87, 232, 0.06);
+                border-color: rgba(58, 87, 232, 0.2);
+
+                .status-name {
+                    font-weight: 600;
+                    color: #3a57e8;
+                }
+            }
+
+            .status-name {
+                font-size: 0.74rem;
+                color: #334155;
+            }
+
+            .micro-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+        }
+
+        // Compact Overdue Alert
+        .compact-alert-card {
+            padding: 8px 10px;
+            border-radius: 7px;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            width: 100%;
+        }
+
+        // Parties Scroll List (Compact & Only Vertically Scrollable)
+        .parties-scroll-list {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden !important;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-right: 2px;
+            width: 100%;
+
+            &::-webkit-scrollbar {
+                width: 3px;
+            }
+            &::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            &::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+            }
+
+            .party-option-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 5px 8px;
+                border-radius: 6px;
+                background: transparent;
+                cursor: pointer;
+                transition: all 0.12s ease;
+                width: 100%;
+
+                &:hover {
+                    background: #f8fafc;
+                }
+
+                &.selected {
+                    background: rgba(58, 87, 232, 0.06);
+
+                    .party-name {
+                        color: #3a57e8;
+                        font-weight: 600;
+                    }
+                }
+
+                .party-name {
+                    font-size: 0.74rem;
+                    color: #1e293b;
+                }
+
+                .party-sub {
+                    font-size: 0.64rem;
+                    color: #94a3b8;
+                }
+            }
+        }
+    }
+
+    // 3. Footer (Clean 38px)
+    .filter-popover-footer {
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        height: 38px;
+    }
+}
+
+// Responsive mobile adjustment
+@media (max-width: 580px) {
+    .invoice-filter-popover {
+        width: calc(100vw - 20px);
+        right: -10px;
+
+        .filter-categories-nav {
+            width: 120px;
+            min-width: 120px;
+        }
+    }
+}

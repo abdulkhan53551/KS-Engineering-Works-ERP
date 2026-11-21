@@ -494,23 +494,23 @@
 
 /* 8. Dedicated Filter Refresh Button */
 .btn-filter-refresh {
-    width: 33px;
-    height: 33px;
+    width: 34px;
+    height: 34px;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     background-color: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 7px !important;
+    border-radius: 8px !important;
     color: #334155 !important;
     transition: all 0.18s ease-in-out !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
     cursor: pointer;
 
     svg {
-        width: 14px;
-        height: 14px;
+        width: 13px;
+        height: 13px;
         color: #334155 !important;
         display: block;
         transition: transform 0.25s ease, color 0.18s ease;
@@ -915,6 +915,321 @@
         color: #2563eb;
     }
 }
+
+/* ==========================================================================
+   11. Modern Enterprise Toolbar & Active Filters Bar
+   ========================================================================== */
+
+/* Unified Search Input (Zero WebKit duplicate 'x', smooth focus ring) */
+.invoice-search-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 250px;
+    height: 34px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    transition: all 0.18s ease-in-out;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+    &:hover {
+        border-color: #94a3b8;
+    }
+
+    &:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+
+        .search-leading-icon {
+            color: #2563eb;
+        }
+    }
+
+    .search-leading-icon {
+        position: absolute;
+        left: 10px;
+        color: #94a3b8;
+        pointer-events: none;
+        transition: color 0.15s ease;
+    }
+
+    .invoice-search-input {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        padding-left: 31px;
+        padding-right: 28px;
+        font-size: 0.81rem;
+        color: #0f172a;
+
+        &::-webkit-search-cancel-button,
+        &::-webkit-search-decoration,
+        &::-webkit-search-results-button,
+        &::-webkit-search-results-decoration {
+            display: none !important;
+            -webkit-appearance: none !important;
+        }
+
+        &::placeholder {
+            color: #94a3b8;
+            font-size: 0.79rem;
+        }
+    }
+
+    .search-clear-btn {
+        position: absolute;
+        right: 7px;
+        width: 18px;
+        height: 18px;
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        z-index: 5;
+        pointer-events: auto;
+        transition: all 0.15s ease;
+
+        &:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+    }
+}
+
+/* Filter Trigger Button */
+.btn-filter-trigger {
+    height: 34px !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 0 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    background-color: #ffffff !important;
+    color: #475569 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    transition: all 0.18s ease-in-out !important;
+
+    &:hover {
+        background-color: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+
+    &.active {
+        background-color: #eff6ff !important;
+        border-color: #93c5fd !important;
+        color: #1d4ed8 !important;
+        font-weight: 600 !important;
+
+        svg {
+            color: #2563eb !important;
+        }
+    }
+
+    .filter-count-badge {
+        font-size: 0.65rem;
+        background: #2563eb;
+        color: #ffffff;
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+}
+
+/* Dedicated Active Filters Bar (Sub-Bar with Color Accents) */
+.invoice-active-filters-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    animation: fadeInFilters 0.2s ease-out;
+
+    .active-filters-left {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .active-filters-lead {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-right: 4px;
+
+        .lead-icon {
+            color: #2563eb;
+        }
+
+        .lead-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .lead-count-badge {
+            font-size: 0.62rem;
+            padding: 0 5px;
+            height: 16px;
+            line-height: 16px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            color: #334155;
+            font-weight: 700;
+        }
+    }
+
+    .filter-chips-list {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        height: 25px;
+        padding: 0 8px 0 9px;
+        border-radius: 6px;
+        font-size: 0.73rem;
+        font-weight: 500;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+
+        .chip-label {
+            opacity: 0.75;
+            font-weight: 500;
+        }
+
+        .chip-value {
+            font-weight: 600;
+        }
+
+        .chip-close-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+            margin-left: 2px;
+            z-index: 5;
+            pointer-events: auto;
+            position: relative;
+            transition: all 0.15s ease;
+
+            &:hover {
+                opacity: 1;
+                background: rgba(0, 0, 0, 0.12);
+                color: #ef4444;
+            }
+        }
+
+        /* Color Variants */
+        &.chip-customer {
+            background: #faf5ff;
+            border-color: #e9d5ff;
+            color: #6b21a8;
+        }
+
+        &.chip-status {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        &.chip-overdue {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #be123c;
+        }
+
+        &.chip-date {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #047857;
+        }
+
+        &.chip-amount {
+            background: #fffbeb;
+            border-color: #fde68a;
+            color: #92400e;
+        }
+
+        &.chip-eway {
+            background: #ecfeff;
+            border-color: #a5f3fc;
+            color: #0e7490;
+        }
+
+        &.chip-search {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #334155;
+        }
+    }
+
+    .btn-clear-all-chips {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: none;
+        background: transparent;
+        color: #ef4444;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        margin-left: auto;
+
+        &:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+    }
+}
+
+@keyframes fadeInFilters {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 
 

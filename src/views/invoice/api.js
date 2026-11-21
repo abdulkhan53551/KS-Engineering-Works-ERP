@@ -11,7 +11,11 @@ export const getInvoicePagination = asyncHandler(async ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
@@ -20,6 +24,10 @@ export const getInvoicePagination = asyncHandler(async ({
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
+    if (partyId) params.partyId = partyId;
+    if (isOverdue !== '' && isOverdue !== undefined && isOverdue !== null) params.isOverdue = isOverdue;
+    if (minAmount !== '' && minAmount !== undefined && minAmount !== null) params.minAmount = minAmount;
+    if (maxAmount !== '' && maxAmount !== undefined && maxAmount !== null) params.maxAmount = maxAmount;
 
     const res = await api.request({
         url: '/invoice/pagination',
@@ -37,7 +45,11 @@ export const getInvoiceSummary = asyncHandler(async ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 } = {}) => {
     const params = {};
     if (search) params.search = search;
@@ -46,6 +58,10 @@ export const getInvoiceSummary = asyncHandler(async ({
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
+    if (partyId) params.partyId = partyId;
+    if (isOverdue !== '' && isOverdue !== undefined && isOverdue !== null) params.isOverdue = isOverdue;
+    if (minAmount !== '' && minAmount !== undefined && minAmount !== null) params.minAmount = minAmount;
+    if (maxAmount !== '' && maxAmount !== undefined && maxAmount !== null) params.maxAmount = maxAmount;
 
     const res = await api.request({
         url: '/invoice/summary',
@@ -65,7 +81,11 @@ export const getInvoice = asyncHandler(async ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
@@ -74,6 +94,10 @@ export const getInvoice = asyncHandler(async ({
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
+    if (partyId) params.partyId = partyId;
+    if (isOverdue !== '' && isOverdue !== undefined && isOverdue !== null) params.isOverdue = isOverdue;
+    if (minAmount !== '' && minAmount !== undefined && minAmount !== null) params.minAmount = minAmount;
+    if (maxAmount !== '' && maxAmount !== undefined && maxAmount !== null) params.maxAmount = maxAmount;
 
     const res = await api.request({
         url: '/invoice',

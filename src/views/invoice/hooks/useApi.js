@@ -9,7 +9,6 @@ import {
     getInvoiceById,
     getInvoicePagination,
     getInvoiceSummary,
-    getLastInvoice,
     getNextInvoiceNumber,
     getUnmappedEwayBillByInvoiceId,
     getUnmappedInvoiceChallanByInvoiceId,
@@ -34,11 +33,15 @@ export const useInvoicePagination = ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 }) => {
     return useQuery({
-        queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
-        queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount],
+        queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount }),
         keepPreviousData: true,
         staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
@@ -66,11 +69,15 @@ export const useInvoiceSummary = ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 } = {}) => {
     return useQuery({
-        queryKey: ["invoiceSummary", search, trash, paymentStatus, startDate, endDate, hasEwayBill],
-        queryFn: () => getInvoiceSummary({ search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        queryKey: ["invoiceSummary", search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount],
+        queryFn: () => getInvoiceSummary({ search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount }),
         keepPreviousData: true,
         staleTime: 30 * 1000,
         select: (result) => result?.data ?? {
@@ -94,11 +101,15 @@ export const useInvoice = ({
     paymentStatus = '',
     startDate = '',
     endDate = '',
-    hasEwayBill = ''
+    hasEwayBill = '',
+    partyId = '',
+    isOverdue = '',
+    minAmount = '',
+    maxAmount = ''
 }) => {
     return useQuery({
-        queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
-        queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount],
+        queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill, partyId, isOverdue, minAmount, maxAmount }),
         keepPreviousData: true,
         staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {

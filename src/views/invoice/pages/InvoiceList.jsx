@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Row, Col, Table, Button, Form, Spinner, FormCheck, InputGroup, OverlayTrigger, Tooltip, Badge, Dropdown, Overlay } from 'react-bootstrap';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { Row, Col, Table, Button, Form, Spinner, FormCheck, OverlayTrigger, Tooltip, Badge, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
 import {
@@ -15,23 +15,22 @@ import {
     FaMoneyCheckAlt,
     FaHistory,
     FaFilter,
-    FaCheck,
-    FaCalendarAlt,
     FaBan,
     FaEye,
     FaFileInvoiceDollar,
     FaCheckCircle,
     FaClock,
     FaLayerGroup,
-    FaEllipsisV,
     FaPlus
 } from 'react-icons/fa';
-import Flatpickr from 'react-flatpickr';
-import 'flatpickr/dist/flatpickr.css';
 import './invoice-list-modern.scss';
 import QuickPaymentModal from '../../payments/components/modals/QuickPaymentModal';
 import InvoicePaymentHistoryModal from '../../payments/components/modals/InvoicePaymentHistoryModal';
 import CancelInvoiceModal from '../components/CancelInvoiceModal';
+import InvoiceFilterPopover from '../components/InvoiceFilterPopover';
+import InvoiceActiveFiltersBar from '../components/InvoiceActiveFiltersBar';
+import { useInvoiceActiveChips } from '../hooks/useInvoiceActiveChips';
+import { useParties } from '../../party/hooks/usePartyApi';
 import {
     useBulkDeleteInvoices,
     useBulkRestoreInvoices,
@@ -105,7 +104,6 @@ const InvoiceList = () => {
         handleSearch,
         clearSearch,
         handlePageChange,
-        handlePageSizeChange,
         handleTabChange: handlePaginationTabChange
     } = useListPagination({
         initialPageSize: 10
@@ -114,25 +112,41 @@ const InvoiceList = () => {
     // Invoice Filters Hook (Synchronized with URL query parameters)
     const {
         statusFilter,
+        partyId,
+        isOverdue,
+        minAmount,
+        maxAmount,
         startDate,
         endDate,
         ewayBillFilter,
         datePreset,
-        hasActiveFilters,
-        tempStartDate,
-        setTempStartDate,
-        tempEndDate,
-        setTempEndDate,
+        activeFilterCount,
         handleStatusChange,
-        handleEwayBillChange,
-        handleDatePresetChange,
-        handleApplyCustomDates,
+        handleRemoveFilter,
         handleResetFilters,
-        getDateLabel
+        getDateLabel,
+        updateFilterParams
     } = useInvoiceFilters({
         clearSearch,
         onFilterChange: () => handleDeselectAll?.()
     });
+
+    // Master-Detail Filter Popover State & Anchor Ref
+    const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const filterBtnRef = useRef(null);
+
+    // Fetch active parties for active chip display
+    const { data: partiesForChips = [] } = useParties({
+        page: 1,
+        pageSize: 250,
+        trash: false
+    });
+
+    const activePartyName = useMemo(() => {
+        if (!partyId) return '';
+        const found = partiesForChips.find((p) => String(p.id) === String(partyId));
+        return found ? (found.displayName || found.display_name || found.legalName || found.legal_name) : `Party #${partyId}`;
+    }, [partiesForChips, partyId]);
 
     // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
     const {
@@ -157,7 +171,11 @@ const InvoiceList = () => {
         paymentStatus: statusFilter,
         startDate,
         endDate,
-        hasEwayBill: ewayBillFilter
+        hasEwayBill: ewayBillFilter,
+        partyId,
+        isOverdue,
+        minAmount,
+        maxAmount
     });
 
     const {
@@ -173,7 +191,11 @@ const InvoiceList = () => {
         paymentStatus: statusFilter,
         startDate,
         endDate,
-        hasEwayBill: ewayBillFilter
+        hasEwayBill: ewayBillFilter,
+        partyId,
+        isOverdue,
+        minAmount,
+        maxAmount
     });
 
     // Dedicated Financial KPI Summary Query (Independent of page/pageSize, 100% reactive to all filters)
@@ -196,7 +218,11 @@ const InvoiceList = () => {
         paymentStatus: statusFilter,
         startDate,
         endDate,
-        hasEwayBill: ewayBillFilter
+        hasEwayBill: ewayBillFilter,
+        partyId,
+        isOverdue,
+        minAmount,
+        maxAmount
     });
 
     const isFetching = isListFetching || isPaginationFetching || isSummaryFetching;
@@ -210,8 +236,6 @@ const InvoiceList = () => {
 
     // Column Sorting Custom Hook
     const {
-        sortConfig,
-        setSortConfig,
         handleSort,
         renderSortIcon,
         sortedList
@@ -243,6 +267,24 @@ const InvoiceList = () => {
         handlePaginationTabChange(trashState);
         handleDeselectAll();
     }, [handlePaginationTabChange, handleDeselectAll]);
+
+    // Dynamic Active Filter Chips Hook
+    const activeFilterChips = useInvoiceActiveChips({
+        partyId,
+        activePartyName,
+        statusFilter,
+        isOverdue,
+        startDate,
+        endDate,
+        datePreset,
+        minAmount,
+        maxAmount,
+        ewayBillFilter,
+        search,
+        getDateLabel,
+        handleRemoveFilter,
+        clearSearch
+    });
 
     const { pageStart, pageEnd, total: totalItems } = pagination;
 
@@ -474,233 +516,76 @@ const InvoiceList = () => {
 
                                     {/* Right Side: Search & Filter Controls Group */}
                                     <div className="d-flex align-items-center flex-wrap gap-2">
-                                        {/* Search Input */}
-                                        <InputGroup size="sm" style={{ width: '250px' }} className="shadow-none">
-                                            <InputGroup.Text className="bg-white border-end-0 text-muted ps-2.5 pe-1" style={{ borderTopLeftRadius: '7px', borderBottomLeftRadius: '7px', height: '33px' }}>
-                                                <FaSearch size={11} />
-                                            </InputGroup.Text>
-                                            <Form.Control
-                                                type="search"
-                                                placeholder="Search invoice no, party..."
+                                        {/* Unified Search Input (Zero WebKit duplicate 'x', smooth focus ring) */}
+                                        <div className="invoice-search-wrapper">
+                                            <FaSearch size={11} className="search-leading-icon" />
+                                            <input
+                                                type="text"
+                                                className="invoice-search-input"
+                                                placeholder="Search invoice no, party, PO..."
                                                 value={search}
                                                 onChange={handleSearch}
-                                                className="border-start-0 border-end-0 ps-1"
-                                                style={{ fontSize: '0.82rem', height: '33px' }}
+                                                aria-label="Search invoices"
                                             />
                                             {search && (
-                                                <Button
-                                                    variant="white"
-                                                    className="bg-white border border-start-0 text-muted px-2"
-                                                    onClick={clearSearch}
+                                                <button
+                                                    type="button"
+                                                    className="search-clear-btn"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        clearSearch();
+                                                    }}
                                                     title="Clear search"
-                                                    style={{ height: '33px', borderTopRightRadius: '7px', borderBottomRightRadius: '7px' }}
+                                                    aria-label="Clear search"
                                                 >
-                                                    <FaTimes size={10} />
-                                                </Button>
+                                                    <FaTimes size={9} />
+                                                </button>
                                             )}
-                                        </InputGroup>
+                                        </div>
 
-                                        {/* Date Range Dropdown with Presets & Custom Pickers */}
-                                        <Dropdown align="end" autoClose="outside">
-                                            <Dropdown.Toggle
-                                                size="sm"
+                                        {/* Master-Detail Filter Button & Floating Overlay */}
+                                        <div className="position-relative">
+                                            <Button
+                                                ref={filterBtnRef}
                                                 variant="light"
-                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${datePreset || startDate || endDate ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
-                                                style={{ fontSize: '0.82rem', borderRadius: '7px', height: '33px' }}
-                                            >
-                                                <FaCalendarAlt size={11} className={datePreset || startDate || endDate ? 'text-primary' : 'text-muted'} />
-                                                <span className="text-truncate">{getDateLabel()}</span>
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu align="end" className="shadow-lg border-0 p-3" style={{ width: '340px', zIndex: 1060 }}>
-                                                <div className="text-muted text-uppercase fw-bold mb-2" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
-                                                    Quick Presets
-                                                </div>
-                                                <div className="d-flex flex-wrap gap-1.5 mb-3">
-                                                    <Button
-                                                        variant={datePreset === 'today' ? 'primary' : 'light'}
-                                                        size="sm"
-                                                        className="py-1 px-2.5 border"
-                                                        style={{ fontSize: '0.76rem' }}
-                                                        onClick={() => handleDatePresetChange('today')}
-                                                    >
-                                                        Today
-                                                    </Button>
-                                                    <Button
-                                                        variant={datePreset === 'thisMonth' ? 'primary' : 'light'}
-                                                        size="sm"
-                                                        className="py-1 px-2.5 border"
-                                                        style={{ fontSize: '0.76rem' }}
-                                                        onClick={() => handleDatePresetChange('thisMonth')}
-                                                    >
-                                                        This Month
-                                                    </Button>
-                                                    <Button
-                                                        variant={datePreset === 'lastMonth' ? 'primary' : 'light'}
-                                                        size="sm"
-                                                        className="py-1 px-2.5 border"
-                                                        style={{ fontSize: '0.76rem' }}
-                                                        onClick={() => handleDatePresetChange('lastMonth')}
-                                                    >
-                                                        Last Month
-                                                    </Button>
-                                                    <Button
-                                                        variant={datePreset === 'thisFY' ? 'primary' : 'light'}
-                                                        size="sm"
-                                                        className="py-1 px-2.5 border"
-                                                        style={{ fontSize: '0.76rem' }}
-                                                        onClick={() => handleDatePresetChange('thisFY')}
-                                                    >
-                                                        Current FY
-                                                    </Button>
-                                                </div>
-
-                                                <Dropdown.Divider className="my-2" />
-
-                                                <div className="custom-date-range-box rounded-3">
-                                                    <div className="d-flex align-items-center justify-content-between mb-2">
-                                                        <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
-                                                            Custom Range
-                                                        </span>
-                                                        {(tempStartDate || tempEndDate) && (
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-link btn-sm p-0 text-muted text-decoration-none"
-                                                                style={{ fontSize: '0.70rem' }}
-                                                                onClick={() => {
-                                                                    setTempStartDate('');
-                                                                    setTempEndDate('');
-                                                                }}
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <Row className="g-2">
-                                                        <Col xs={6} className="from-date-col">
-                                                            <Form.Label className="text-muted small mb-1 d-flex align-items-center gap-1" style={{ fontSize: '0.70rem', fontWeight: 600 }}>
-                                                                <FaCalendarAlt size={9} className="text-primary" />
-                                                                <span>From Date</span>
-                                                            </Form.Label>
-                                                            <div className="modern-date-field">
-                                                                <Flatpickr
-                                                                    value={tempStartDate ? moment(tempStartDate).toDate() : null}
-                                                                    onChange={(dates) => {
-                                                                        const formatted = dates[0] ? moment(dates[0]).format('YYYY-MM-DD') : '';
-                                                                        setTempStartDate(formatted);
-                                                                    }}
-                                                                    options={{
-                                                                        dateFormat: 'Y-m-d',
-                                                                        altInput: true,
-                                                                        altFormat: 'd/m/Y',
-                                                                        altInputClass: 'form-control form-control-sm modern-date-input',
-                                                                        allowInput: false,
-                                                                        disableMobile: true,
-                                                                        static: true
-                                                                    }}
-                                                                    className="form-control form-control-sm modern-date-input"
-                                                                    placeholder="Select date"
-                                                                />
-                                                                <FaCalendarAlt className="modern-date-icon" size={11} />
-                                                            </div>
-                                                        </Col>
-                                                        <Col xs={6} className="to-date-col">
-                                                            <Form.Label className="text-muted small mb-1 d-flex align-items-center gap-1" style={{ fontSize: '0.70rem', fontWeight: 600 }}>
-                                                                <FaCalendarAlt size={9} className="text-primary" />
-                                                                <span>To Date</span>
-                                                            </Form.Label>
-                                                            <div className="modern-date-field">
-                                                                <Flatpickr
-                                                                    value={tempEndDate ? moment(tempEndDate).toDate() : null}
-                                                                    onChange={(dates) => {
-                                                                        const formatted = dates[0] ? moment(dates[0]).format('YYYY-MM-DD') : '';
-                                                                        setTempEndDate(formatted);
-                                                                    }}
-                                                                    options={{
-                                                                        dateFormat: 'Y-m-d',
-                                                                        altInput: true,
-                                                                        altFormat: 'd/m/Y',
-                                                                        altInputClass: 'form-control form-control-sm modern-date-input',
-                                                                        allowInput: false,
-                                                                        disableMobile: true,
-                                                                        static: true,
-                                                                        minDate: tempStartDate ? moment(tempStartDate).toDate() : undefined
-                                                                    }}
-                                                                    className="form-control form-control-sm modern-date-input"
-                                                                    placeholder="Select date"
-                                                                />
-                                                                <FaCalendarAlt className="modern-date-icon" size={11} />
-                                                            </div>
-                                                        </Col>
-                                                    </Row>
-                                                </div>
-                                                <div className="d-flex justify-content-between align-items-center pt-2">
-                                                    {(startDate || endDate || datePreset) ? (
-                                                        <Button
-                                                            variant="link"
-                                                            size="sm"
-                                                            className="p-0 text-danger text-decoration-none"
-                                                            style={{ fontSize: '0.76rem' }}
-                                                            onClick={() => {
-                                                                handleDatePresetChange('all');
-                                                                setTempStartDate('');
-                                                                setTempEndDate('');
-                                                            }}
-                                                        >
-                                                            Clear Date
-                                                        </Button>
-                                                    ) : <span />}
-                                                    <Button
-                                                        variant="primary"
-                                                        size="sm"
-                                                        className="px-3 py-1"
-                                                        style={{ fontSize: '0.78rem' }}
-                                                        onClick={handleApplyCustomDates}
-                                                    >
-                                                        Apply
-                                                    </Button>
-                                                </div>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
-
-                                        {/* E-Way Bill Filter */}
-                                        <Dropdown>
-                                            <Dropdown.Toggle
                                                 size="sm"
-                                                variant="light"
-                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${ewayBillFilter ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
-                                                style={{ fontSize: '0.82rem', borderRadius: '7px', height: '33px' }}
+                                                className={`btn-filter-trigger ${isFilterPopoverOpen || activeFilterCount > 0 ? 'active' : ''}`}
+                                                onClick={() => setIsFilterPopoverOpen((prev) => !prev)}
+                                                title="Open Advanced Filters"
+                                                aria-expanded={isFilterPopoverOpen}
                                             >
-                                                <span className="text-truncate">
-                                                    {ewayBillFilter === 'true' ? 'With E-Way' : ewayBillFilter === 'false' ? 'Without E-Way' : 'All E-Way'}
-                                                </span>
-                                            </Dropdown.Toggle>
-                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '165px', zIndex: 1060 }}>
-                                                <Dropdown.Item
-                                                    active={!ewayBillFilter}
-                                                    onClick={() => handleEwayBillChange('')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span>All E-Way Bills</span>
-                                                    {!ewayBillFilter && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                                <Dropdown.Item
-                                                    active={ewayBillFilter === 'true'}
-                                                    onClick={() => handleEwayBillChange('true')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span>With E-Way Bill</span>
-                                                    {ewayBillFilter === 'true' && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                                <Dropdown.Item
-                                                    active={ewayBillFilter === 'false'}
-                                                    onClick={() => handleEwayBillChange('false')}
-                                                    className="d-flex align-items-center justify-content-between py-1.5"
-                                                >
-                                                    <span>Without E-Way Bill</span>
-                                                    {ewayBillFilter === 'false' && <FaCheck size={11} className="text-primary" />}
-                                                </Dropdown.Item>
-                                            </Dropdown.Menu>
-                                        </Dropdown>
+                                                <FaFilter size={11} />
+                                                <span>Filter</span>
+                                                {activeFilterCount > 0 && (
+                                                    <span className="filter-count-badge">
+                                                        {activeFilterCount}
+                                                    </span>
+                                                )}
+                                            </Button>
+
+                                            {/* Floating Master-Detail Overlay Popover (Zero Table Shift) */}
+                                            <InvoiceFilterPopover
+                                                isOpen={isFilterPopoverOpen}
+                                                onClose={() => setIsFilterPopoverOpen(false)}
+                                                anchorRef={filterBtnRef}
+                                                filters={{
+                                                    statusFilter,
+                                                    partyId,
+                                                    isOverdue,
+                                                    minAmount,
+                                                    maxAmount,
+                                                    startDate,
+                                                    endDate,
+                                                    ewayBillFilter,
+                                                    datePreset
+                                                }}
+                                                onApplyFilters={(newFilters) => {
+                                                    updateFilterParams(newFilters);
+                                                }}
+                                                onResetFilters={handleResetFilters}
+                                            />
+                                        </div>
 
                                         {/* Refresh Button */}
                                         <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-refresh-invoices">Refresh invoices</Tooltip>}>
@@ -712,104 +597,17 @@ const InvoiceList = () => {
                                                 aria-label="Refresh invoices"
                                                 title="Refresh invoices"
                                             >
-                                                <FaSyncAlt size={14} />
+                                                <FaSyncAlt size={13} />
                                             </button>
                                         </OverlayTrigger>
-
-                                        {/* Reset Filters Button */}
-                                        {hasActiveFilters && (
-                                            <Button
-                                                variant="outline-danger"
-                                                size="sm"
-                                                onClick={handleResetFilters}
-                                                className="d-flex align-items-center gap-1.5 px-2.5 shadow-none"
-                                                style={{ height: '33px', borderRadius: '7px', fontSize: '0.8rem' }}
-                                                title="Reset all filters"
-                                            >
-                                                <FaUndo size={10} />
-                                                <span>Reset</span>
-                                            </Button>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Active Filter Chips / Badges Row */}
-                                {hasActiveFilters && (
-                                    <div className="d-flex align-items-center gap-2 flex-wrap pt-2.5 mt-2.5 border-top">
-                                        <span className="text-muted small fw-semibold" style={{ fontSize: '0.74rem' }}>
-                                            <FaFilter size={10} className="me-1 text-primary" /> Active Filters:
-                                        </span>
-                                        {statusFilter && (
-                                            <Badge
-                                                bg="soft-primary"
-                                                text="primary"
-                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-primary border-opacity-25 rounded-pill"
-                                                style={{ fontSize: '0.75rem' }}
-                                            >
-                                                Status: {statusFilter === 'PAID' ? 'Paid' : statusFilter === 'PARTIAL' ? 'Partially Paid' : 'Pending'}
-                                                <FaTimes
-                                                    className="cursor-pointer ms-1 hover-opacity"
-                                                    size={9}
-                                                    onClick={() => handleStatusChange('')}
-                                                />
-                                            </Badge>
-                                        )}
-                                        {(startDate || endDate || datePreset) && (
-                                            <Badge
-                                                bg="soft-warning"
-                                                text="dark"
-                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-warning border-opacity-25 rounded-pill"
-                                                style={{ fontSize: '0.75rem' }}
-                                            >
-                                                Date: {getDateLabel()}
-                                                <FaTimes
-                                                    className="cursor-pointer ms-1 hover-opacity"
-                                                    size={9}
-                                                    onClick={() => handleDatePresetChange('all')}
-                                                />
-                                            </Badge>
-                                        )}
-                                        {ewayBillFilter && (
-                                            <Badge
-                                                bg="soft-info"
-                                                text="dark"
-                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border border-info border-opacity-25 rounded-pill"
-                                                style={{ fontSize: '0.75rem' }}
-                                            >
-                                                E-Way: {ewayBillFilter === 'true' ? 'With E-Way' : 'No E-Way'}
-                                                <FaTimes
-                                                    className="cursor-pointer ms-1 hover-opacity"
-                                                    size={9}
-                                                    onClick={() => handleEwayBillChange('')}
-                                                />
-                                            </Badge>
-                                        )}
-                                        {search && (
-                                            <Badge
-                                                bg="soft-secondary"
-                                                text="dark"
-                                                className="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 fw-medium border rounded-pill"
-                                                style={{ fontSize: '0.75rem' }}
-                                            >
-                                                Search: "{search}"
-                                                <FaTimes
-                                                    className="cursor-pointer ms-1 hover-opacity"
-                                                    size={9}
-                                                    onClick={clearSearch}
-                                                />
-                                            </Badge>
-                                        )}
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            onClick={handleResetFilters}
-                                            className="p-0 text-danger text-decoration-none small ms-1"
-                                            style={{ fontSize: '0.74rem' }}
-                                        >
-                                            Clear all
-                                        </Button>
-                                    </div>
-                                )}
+                                {/* Modern Active Filter Chips Bar (Modular Component) */}
+                                <InvoiceActiveFiltersBar
+                                    chips={activeFilterChips}
+                                    onResetAll={handleResetFilters}
+                                />
                             </div>
 
                             <div

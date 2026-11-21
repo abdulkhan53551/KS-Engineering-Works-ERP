@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import moment from 'moment';
 
 /**
  * Custom hook to manage Invoice list filters synchronized with URL search params.
- * Handles payment status, date presets, custom date range, and e-way bill status.
+ * Handles payment status, customer/party, overdue aging, date presets, custom date range,
+ * amount bounds, and e-way bill status.
  */
 export const useInvoiceFilters = ({
     clearSearch,
@@ -24,17 +25,10 @@ export const useInvoiceFilters = ({
     const endDate = searchParams.get('endDate') || '';
     const ewayBillFilter = searchParams.get('ewayBill') || '';
     const datePreset = searchParams.get('datePreset') || '';
-    const search = searchParams.get('search') || '';
-
-    // Local temporary states for custom date range picker inputs
-    const [tempStartDate, setTempStartDate] = useState(startDate);
-    const [tempEndDate, setTempEndDate] = useState(endDate);
-
-    // Keep temporary date inputs synced when URL date filters change (e.g. Back/Forward/Reset)
-    useEffect(() => {
-        setTempStartDate(startDate);
-        setTempEndDate(endDate);
-    }, [startDate, endDate]);
+    const partyId = searchParams.get('partyId') || '';
+    const isOverdue = searchParams.get('isOverdue') || '';
+    const minAmount = searchParams.get('minAmount') || '';
+    const maxAmount = searchParams.get('maxAmount') || '';
 
     // Helper to safely update filter params in URL and reset pagination page to 1
     const updateFilterParams = useCallback((updates) => {
@@ -59,63 +53,6 @@ export const useInvoiceFilters = ({
         updateFilterParams({ status });
     }, [updateFilterParams]);
 
-    const handleEwayBillChange = useCallback((val) => {
-        updateFilterParams({ ewayBill: val });
-    }, [updateFilterParams]);
-
-    const handleDatePresetChange = useCallback((preset) => {
-        if (preset === 'today') {
-            const today = moment().format('YYYY-MM-DD');
-            updateFilterParams({
-                datePreset: 'today',
-                startDate: today,
-                endDate: today
-            });
-        } else if (preset === 'thisMonth') {
-            const start = moment().startOf('month').format('YYYY-MM-DD');
-            const end = moment().endOf('month').format('YYYY-MM-DD');
-            updateFilterParams({
-                datePreset: 'thisMonth',
-                startDate: start,
-                endDate: end
-            });
-        } else if (preset === 'lastMonth') {
-            const start = moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-            const end = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
-            updateFilterParams({
-                datePreset: 'lastMonth',
-                startDate: start,
-                endDate: end
-            });
-        } else if (preset === 'thisFY') {
-            const currentMonth = moment().month(); // 0-indexed (April is 3)
-            const startYear = currentMonth >= 3 ? moment().year() : moment().year() - 1;
-            const start = moment(`${startYear}-04-01`).format('YYYY-MM-DD');
-            const end = moment(`${startYear + 1}-03-31`).format('YYYY-MM-DD');
-            updateFilterParams({
-                datePreset: 'thisFY',
-                startDate: start,
-                endDate: end
-            });
-        } else if (preset === 'all') {
-            updateFilterParams({
-                datePreset: '',
-                startDate: '',
-                endDate: ''
-            });
-            setTempStartDate('');
-            setTempEndDate('');
-        }
-    }, [updateFilterParams]);
-
-    const handleApplyCustomDates = useCallback(() => {
-        updateFilterParams({
-            datePreset: 'custom',
-            startDate: tempStartDate,
-            endDate: tempEndDate
-        });
-    }, [updateFilterParams, tempStartDate, tempEndDate]);
-
     const getDateLabel = useCallback(() => {
         if (datePreset === 'today') return 'Today';
         if (datePreset === 'thisMonth') return 'This Month';
@@ -126,6 +63,17 @@ export const useInvoiceFilters = ({
         if (endDate) return `Until ${moment(endDate).format('DD MMM')}`;
         return 'All Dates';
     }, [datePreset, startDate, endDate]);
+
+    // Remove single filter helper
+    const handleRemoveFilter = useCallback((key) => {
+        if (key === 'dates') {
+            updateFilterParams({ datePreset: '', startDate: '', endDate: '' });
+        } else if (key === 'amount') {
+            updateFilterParams({ minAmount: '', maxAmount: '' });
+        } else {
+            updateFilterParams({ [key]: '' });
+        }
+    }, [updateFilterParams]);
 
     const handleResetFilters = useCallback(() => {
         if (typeof clearSearch === 'function') {
@@ -142,33 +90,37 @@ export const useInvoiceFilters = ({
             }
             return next;
         }, { replace: true });
-        setTempStartDate('');
-        setTempEndDate('');
         onFilterChangeRef.current?.();
     }, [clearSearch, setSearchParams]);
 
-    const hasActiveFilters = Boolean(search || statusFilter || startDate || endDate || ewayBillFilter);
+    // Active filter dimension counter (for badge on toolbar button)
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (partyId) count += 1;
+        if (statusFilter) count += 1;
+        if (isOverdue === 'true') count += 1;
+        if (startDate || endDate || datePreset) count += 1;
+        if (minAmount || maxAmount) count += 1;
+        if (ewayBillFilter !== '') count += 1;
+        return count;
+    }, [partyId, statusFilter, isOverdue, startDate, endDate, datePreset, minAmount, maxAmount, ewayBillFilter]);
 
     return {
         // Active filter state values
         statusFilter,
+        partyId,
+        isOverdue,
+        minAmount,
+        maxAmount,
         startDate,
         endDate,
         ewayBillFilter,
         datePreset,
-        hasActiveFilters,
-
-        // Custom Date inputs
-        tempStartDate,
-        setTempStartDate,
-        tempEndDate,
-        setTempEndDate,
+        activeFilterCount,
 
         // Filter Actions
         handleStatusChange,
-        handleEwayBillChange,
-        handleDatePresetChange,
-        handleApplyCustomDates,
+        handleRemoveFilter,
         handleResetFilters,
         getDateLabel,
         updateFilterParams

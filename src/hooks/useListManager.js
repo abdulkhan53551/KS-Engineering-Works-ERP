@@ -81,10 +81,19 @@ export const useListPagination = ({
 
     // Sync debounced search to URL
     const isInitialMount = useRef(true);
+    const isClearingRef = useRef(false);
+
     useEffect(() => {
         if (!syncUrl) return;
         if (isInitialMount.current) {
             isInitialMount.current = false;
+            return;
+        }
+
+        if (isClearingRef.current) {
+            if (debouncedSearch === '') {
+                isClearingRef.current = false;
+            }
             return;
         }
 
@@ -155,11 +164,13 @@ export const useListPagination = ({
     }, [setIsTrash]);
 
     const handleSearch = useCallback((e) => {
+        isClearingRef.current = false;
         const val = e && typeof e === 'object' && 'target' in e ? e.target.value : (e || '');
         setSearch(val);
     }, []);
 
     const clearSearch = useCallback(() => {
+        isClearingRef.current = true;
         setSearch('');
         if (syncUrl) {
             updateUrlParams((params) => {
