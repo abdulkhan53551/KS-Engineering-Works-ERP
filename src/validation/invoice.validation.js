@@ -4,7 +4,7 @@ import Decimal from 'decimal.js';
 
 // Schema: Create a new invoice
 export const invoiceValidationSchema = (isEditMode) => Joi.object({
-    invoiceNo: Joi.string().max(255).required(),
+    invoiceNo: Joi.string().max(255).allow(null, '').optional(),
     invoiceDate: Joi.date().required(),
 
     dueDays: Joi.number().integer().min(0).required(),
@@ -144,16 +144,7 @@ export const invoiceValidationSchema = (isEditMode) => Joi.object({
     roundOffManual: Joi.boolean().optional(),
     other: Joi.number().precision(2).allow(null, 0),
 
-    paymentStatusId: Joi.number().integer().min(1).required().messages({
-        'number.base': 'Please select a Payment Status',
-        'number.min': 'Please select a Payment Status',
-        'any.required': 'Payment Status is required'
-    }),
-    paymentModeId: Joi.number().integer().min(1).required().messages({
-        'number.base': 'Please select a Payment Mode',
-        'number.min': 'Please select a Payment Mode',
-        'any.required': 'Payment Mode is required'
-    })
+    paymentStatusId: Joi.number().integer().min(1).allow(null, '').optional()
 })
     .custom(validateCreateOrUpdateCustom)
     .messages({ 'any.invalid': '{{#customMessage}}' })

@@ -151,8 +151,7 @@ const useFormInit = (props) => {
                     other: invoice.other ?? 0,
 
                     // Payment Section
-                    paymentStatusId: invoice.paymentStatusId,
-                    paymentModeId: invoice.paymentModeId
+                    paymentStatusId: invoice.paymentStatusId
                 };
 
                 reset({ ...cleanedInvoice });
@@ -239,8 +238,7 @@ const useFormInit = (props) => {
                     other: invoice.other ?? 0,
 
                     // Payment Section (Default to PENDING)
-                    paymentStatusId: pendingStatusId,
-                    paymentModeId: invoice.paymentModeId || 1
+                    paymentStatusId: pendingStatusId
                 };
 
                 reset({ ...duplicatedInvoice });

@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck } from 'react-bootstrap';
+import { Row, Col, Table, Button, Form, InputGroup, OverlayTrigger, Tooltip, Badge, Image, FormCheck, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Card from '../../../components/Card';
-import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle, FaSyncAlt } from 'react-icons/fa';
+import { FaPen, FaTrash, FaEye, FaPlus, FaSearch, FaTimes, FaSort, FaSortAlphaUpAlt, FaSortAlphaDownAlt, FaPhoneAlt, FaEnvelope, FaCopy, FaCheck, FaUndo, FaExclamationTriangle, FaSyncAlt, FaBookOpen, FaUsers } from 'react-icons/fa';
 import PageLoader from '../../../components/PageLoader';
 import PaginationBar from '../../../components/PaginationBar';
 import {
@@ -18,11 +18,26 @@ import GstBadge from '../components/GstBadge';
 import PartyDetailsDrawer from '../components/PartyDetailsDrawer';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
-import defaultLogo from '../../../assets/images/shapes/01.png';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { useListPagination, useRowSelection } from '../../../hooks/useListManager';
 import useTrashActions from '../../../hooks/useTrashActions';
+import TableActionMenu, { useTableActionMenu } from '../../../components/common/TableActionMenu';
+
+// Modern unified ERP table styling for 60fps/120fps GPU performance
+import '../../invoice/pages/invoice-list-modern.scss';
+
+/**
+ * Extract 2-letter initials for lightweight CSS avatar
+ */
+const getPartyInitials = (party) => {
+    const name = party?.displayName || party?.legalName || party?.partyCode || 'P';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+};
 
 /**
  * Format date string safely to DD/MM/YYYY, hh:mm A
@@ -78,6 +93,15 @@ const PartyList = () => {
     } = useListPagination({
         initialPageSize: 10
     });
+
+    // Single-instance Action Menu state & handlers (prevents multi-menu stacking & clipping via Portal)
+    const {
+        activeMenu: activeActionMenu,
+        toggleMenu,
+        closeMenu,
+        isOpen: isActionMenuOpen,
+        tableWrapperProps
+    } = useTableActionMenu([page, pageSize, debouncedSearch, statusFilter, gstFilter, isTrash]);
 
     // Queries & Mutations
     const queryParams = {
@@ -249,7 +273,7 @@ const PartyList = () => {
 
     // Clear all filters
     const handleClearFilters = () => {
-        setSearchTerm('');
+        handleClearSearch();
         setStatusFilter('');
         setGstFilter('');
         setPage(1);
@@ -261,169 +285,201 @@ const PartyList = () => {
         <>
             <Row>
                 <Col sm="12">
-                    <Card>
-                        {/* 1. Header with Title, Count, TrashTabFilter and Add Button */}
-                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <Card className="shadow-sm border-0">
+                        {/* 1. Header with Title Icon, Subtitle, TrashTabFilter and Add Button */}
+                        <Card.Header className="d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4 bg-white border-bottom">
                             <div className="header-title d-flex align-items-center gap-3">
-                                <div className="d-flex align-items-center gap-2">
-                                    <h4 className="card-title mb-0">Party List</h4>
-                                    {!isLoading && total > 0 && (
-                                        <Badge bg="soft-primary" className="text-primary fw-semibold px-2 py-1">
-                                            {total} Total
-                                        </Badge>
-                                    )}
+                                <div className="invoice-title-icon-pill">
+                                    <FaUsers size={18} />
                                 </div>
+                                <div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <h4 className="card-title mb-0 fw-bold text-dark">Party Directory</h4>
+                                        {!isLoading && total > 0 && (
+                                            <Badge bg="soft-primary" className="text-primary fw-semibold px-2.5 py-1 rounded-pill" style={{ fontSize: '0.74rem' }}>
+                                                {total} Total
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <p className="text-muted small mb-0 mt-0.5" style={{ fontSize: '0.78rem' }}>
+                                        Customer & vendor master records, GST compliance, contacts & account ledgers
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="d-flex align-items-center gap-2.5 flex-wrap">
                                 <TrashTabFilter
                                     isTrash={isTrash}
                                     onTabChange={handleTabChange}
                                     trashLabel="Recycle Bin"
                                 />
-                            </div>
-                            {!isTrash && (
-                                <div className="d-flex align-items-center gap-2">
-                                    <Link to="/parties/create" className="btn btn-primary btn-sm d-flex align-items-center gap-1.5 shadow-sm">
-                                        <FaPlus size={12} />
+                                {!isTrash && (
+                                    <Button
+                                        as={Link}
+                                        to="/parties/create"
+                                        variant="primary"
+                                        className="d-flex align-items-center gap-1.5 px-3 py-2 shadow-sm fw-semibold"
+                                        style={{ borderRadius: '7px', fontSize: '0.82rem' }}
+                                    >
+                                        <FaPlus size={11} />
                                         <span>Add Party</span>
-                                    </Link>
-                                </div>
-                            )}
+                                    </Button>
+                                )}
+                            </div>
                         </Card.Header>
+
+                        {/* Bulk Action Bar */}
+                        <BulkActionBar
+                            selectedCount={selectedCount}
+                            isTrash={isTrash}
+                            onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
+                                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: false });
+                                handleDeselectAll();
+                            })}
+                            onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
+                                bulkRestoreParties({ ids: selectedIds });
+                                handleDeselectAll();
+                            })}
+                            onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
+                                bulkDeleteParties({ ids: selectedIds, isPermanentDelete: true });
+                                handleDeselectAll();
+                            })}
+                            onDeselectAll={handleDeselectAll}
+                        />
 
                         <Card.Body className="px-0">
                             {/* Loader Indicator for background refetches */}
                             <PageLoader loading={isPartiesFetching && !isLoading} />
 
-                            {/* 2. Controls & Filter Bar */}
-                            <Col className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
-                                {/* Show Entries Selector */}
-                                <div className="d-flex align-items-center">
-                                    <Form.Label className="mb-0 text-muted small">Show</Form.Label>
-                                    <Form.Select
-                                        className="form-select-sm"
-                                        style={{ marginLeft: '0.5rem', marginRight: '0.5rem', width: '5.8rem', minWidth: '5.8rem' }}
-                                        value={pageSize}
-                                        onChange={(e) => {
-                                            setPageSize(Number(e.target.value));
-                                            setPage(1);
-                                        }}
-                                        aria-label=".form-select-sm example"
-                                    >
-                                        <option value="10">10</option>
-                                        <option value="25">25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </Form.Select>
-                                    <Form.Label className="mb-0 text-muted small">entries</Form.Label>
-                                </div>
-
-                                {/* Filters & Search */}
-                                <div className="d-flex align-items-center flex-wrap gap-2">
-                                    {/* Status Filter */}
-                                    <Form.Select
-                                        size="sm"
-                                        style={{ width: '8.5rem' }}
-                                        value={statusFilter}
-                                        onChange={(e) => {
-                                            setStatusFilter(e.target.value);
-                                            setPage(1);
-                                        }}
-                                    >
-                                        <option value="">All Status</option>
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="INACTIVE">Inactive</option>
-                                    </Form.Select>
-
-                                    {/* GST Status Filter */}
-                                    <Form.Select
-                                        size="sm"
-                                        style={{ width: '8.5rem' }}
-                                        value={gstFilter}
-                                        onChange={(e) => {
-                                            setGstFilter(e.target.value);
-                                            setPage(1);
-                                        }}
-                                    >
-                                        <option value="">All GST</option>
-                                        <option value="true">Registered</option>
-                                        <option value="false">Unregistered</option>
-                                    </Form.Select>
-
-                                    {/* Search Input */}
-                                    <InputGroup size="sm" style={{ width: '19rem' }}>
-                                        <InputGroup.Text className="bg-white border-end-0">
-                                            <FaSearch className="text-muted" size={12} />
-                                        </InputGroup.Text>
-                                        <Form.Control
-                                            type="search"
-                                            placeholder="Search parties..."
-                                            value={searchTerm}
-                                            onChange={handleSearch}
-                                            className="border-start-0 border-end-0 ps-0"
-                                            style={{ fontSize: '0.84rem' }}
-                                        />
-                                        {searchTerm && (
-                                            <Button
-                                                variant="outline-secondary"
-                                                className="bg-white border-start-0 border-end-0 px-2"
-                                                onClick={handleClearSearch}
-                                                title="Clear search"
+                            {/* 2. Modern Filter Ribbon */}
+                            <div className="px-4 py-3 bg-white border-bottom">
+                                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2.5">
+                                    {/* Left Side: Modern Segmented Status Tabs */}
+                                    {!isTrash ? (
+                                        <div className="segmented-status-tabs">
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${!statusFilter ? 'active' : ''}`}
+                                                onClick={() => { setStatusFilter(''); setPage(1); }}
                                             >
-                                                <FaTimes size={11} className="text-muted" />
-                                            </Button>
-                                        )}
-                                        <OverlayTrigger placement="top" overlay={<Tooltip>Refresh list</Tooltip>}>
-                                            <Button
-                                                variant="outline-secondary"
-                                                className="bg-white border-start-0 px-2.5 d-flex align-items-center"
+                                                All
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${statusFilter === 'ACTIVE' ? 'active' : ''}`}
+                                                onClick={() => { setStatusFilter('ACTIVE'); setPage(1); }}
+                                            >
+                                                Active
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`status-tab-btn ${statusFilter === 'INACTIVE' ? 'active' : ''}`}
+                                                onClick={() => { setStatusFilter('INACTIVE'); setPage(1); }}
+                                            >
+                                                Inactive
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="d-flex align-items-center gap-2 text-danger small fw-semibold">
+                                            <FaTrash size={12} />
+                                            <span>Recycle Bin (Deleted Records)</span>
+                                        </div>
+                                    )}
+
+                                    {/* Right Side: Search & Filter Controls Group */}
+                                    <div className="d-flex align-items-center flex-wrap gap-2">
+                                        {/* Search Input */}
+                                        <InputGroup size="sm" style={{ width: '250px' }} className="shadow-none">
+                                            <InputGroup.Text className="bg-white border-end-0 text-muted ps-2.5 pe-1" style={{ borderTopLeftRadius: '7px', borderBottomLeftRadius: '7px', height: '33px' }}>
+                                                <FaSearch size={11} />
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Search parties..."
+                                                value={searchTerm}
+                                                onChange={handleSearch}
+                                                className="border-start-0 ps-1"
+                                                style={{ borderTopRightRadius: searchTerm ? '0' : '7px', borderBottomRightRadius: searchTerm ? '0' : '7px', height: '33px', fontSize: '0.82rem' }}
+                                            />
+                                            {searchTerm && (
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    className="border-start-0 bg-white text-muted px-2"
+                                                    style={{ borderTopRightRadius: '7px', borderBottomRightRadius: '7px', height: '33px' }}
+                                                    onClick={handleClearSearch}
+                                                >
+                                                    <FaTimes size={10} />
+                                                </Button>
+                                            )}
+                                        </InputGroup>
+
+                                        {/* GST Filter */}
+                                        <Dropdown>
+                                            <Dropdown.Toggle
+                                                size="sm"
+                                                variant="light"
+                                                className={`border d-flex align-items-center gap-1.5 shadow-none ${gstFilter !== '' ? 'border-primary text-primary fw-semibold bg-soft-primary' : 'text-secondary bg-white'}`}
+                                                style={{ fontSize: '0.82rem', borderRadius: '7px', height: '33px' }}
+                                            >
+                                                <span>{gstFilter === 'true' ? 'GST Registered' : gstFilter === 'false' ? 'Unregistered' : 'All GST'}</span>
+                                            </Dropdown.Toggle>
+                                            <Dropdown.Menu className="shadow-lg border-0 py-1" style={{ minWidth: '160px', zIndex: 1060 }}>
+                                                <Dropdown.Item active={gstFilter === ''} onClick={() => { setGstFilter(''); setPage(1); }}>
+                                                    All GST
+                                                </Dropdown.Item>
+                                                <Dropdown.Item active={gstFilter === 'true'} onClick={() => { setGstFilter('true'); setPage(1); }}>
+                                                    Registered
+                                                </Dropdown.Item>
+                                                <Dropdown.Item active={gstFilter === 'false'} onClick={() => { setGstFilter('false'); setPage(1); }}>
+                                                    Unregistered
+                                                </Dropdown.Item>
+                                            </Dropdown.Menu>
+                                        </Dropdown>
+
+                                        {/* Refresh Button */}
+                                        <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-refresh-parties">Refresh parties</Tooltip>}>
+                                            <button
+                                                type="button"
+                                                className={`btn-filter-refresh ${isFetching ? 'is-refreshing' : ''}`}
                                                 onClick={handleRefresh}
                                                 disabled={isFetching}
+                                                aria-label="Refresh parties"
+                                                title="Refresh parties"
                                             >
-                                                <FaSyncAlt size={11} className={isFetching ? 'fa-spin text-primary' : 'text-muted'} />
-                                            </Button>
+                                                <FaSyncAlt size={14} />
+                                            </button>
                                         </OverlayTrigger>
-                                    </InputGroup>
 
-                                    {/* Reset Filters button */}
-                                    {hasActiveFilters && (
-                                        <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            onClick={handleClearFilters}
-                                            className="d-flex align-items-center gap-1"
-                                            style={{ fontSize: '0.78rem' }}
-                                        >
-                                            <FaTimes size={10} />
-                                            <span>Clear</span>
-                                        </Button>
-                                    )}
+                                        {/* Reset Filters */}
+                                        {hasActiveFilters && (
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={handleClearFilters}
+                                                className="d-flex align-items-center gap-1.5 px-2.5 shadow-none"
+                                                style={{ height: '33px', borderRadius: '7px', fontSize: '0.8rem' }}
+                                                title="Reset all filters"
+                                            >
+                                                <FaUndo size={10} />
+                                                <span>Reset</span>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                            </Col>
-
-                            {/* Bulk Action Bar */}
-                            <div className="px-4">
-                                <BulkActionBar
-                                    selectedCount={selectedCount}
-                                    isTrash={isTrash}
-                                    onBulkDelete={() => confirmBulkSoftDelete(selectedCount, () => {
-                                        bulkDeleteParties({ ids: selectedIds, isPermanentDelete: false });
-                                        handleDeselectAll();
-                                    })}
-                                    onBulkRestore={() => confirmBulkRestore(selectedCount, () => {
-                                        bulkRestoreParties({ ids: selectedIds });
-                                        handleDeselectAll();
-                                    })}
-                                    onBulkPermanentDelete={() => confirmBulkPermanentDelete(selectedCount, () => {
-                                        bulkDeleteParties({ ids: selectedIds, isPermanentDelete: true });
-                                        handleDeselectAll();
-                                    })}
-                                    onDeselectAll={handleDeselectAll}
-                                />
                             </div>
 
-                            {/* 3. Table Content with Thin Header, Zebra Striping and Bordered Columns */}
-                            <div className="table-responsive">
-                                <Table className="table-sortable ms-1 me-1 align-middle mb-0" striped bordered hover responsive>
-                                    <thead className="light">
+                            {/* 3. Table Content with Modern Isolated-Row GPU Styling (Zero CPU spike on hover) */}
+                            <div
+                                className={`invoice-table-wrapper table-responsive position-relative ${isFetching && !isLoading ? 'is-fetching-data' : ''}`}
+                                {...tableWrapperProps}
+                            >
+                                {isFetching && !isLoading && (
+                                    <div className="table-progress-bar">
+                                        <div className="table-progress-line" />
+                                    </div>
+                                )}
+                                <Table id="party-list-table" className="invoice-modern-table align-middle mb-0" hover role="grid">
+                                    <thead>
                                         <tr style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                                             <th style={{ width: '40px' }} className="text-center">
                                                 <FormCheck
@@ -588,7 +644,7 @@ const PartyList = () => {
                                                     <div className="text-danger mb-2">
                                                         Failed to load parties. Please try again.
                                                     </div>
-                                                    <Button variant="outline-primary" size="sm" onClick={() => refetch()}>
+                                                    <Button variant="outline-primary" size="sm" onClick={handleRefresh}>
                                                         Retry
                                                     </Button>
                                                 </td>
@@ -647,18 +703,46 @@ const PartyList = () => {
                                                             {party.id}
                                                         </td>
 
-                                                        {/* 2. Logo Column */}
+                                                        {/* 2. Logo / Avatar Column (High-Performance CSS Initials) */}
                                                         <td className="text-center" style={{ padding: '0.45rem 0.3rem' }}>
-                                                            <Image
-                                                                className="bg-soft-primary rounded img-fluid avatar-35 p-1"
-                                                                src={party.logoUrl || party.logo || defaultLogo}
-                                                                alt={party.displayName || 'Party Logo'}
-                                                                onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.src = defaultLogo;
+                                                            <div
+                                                                className="rounded d-inline-flex align-items-center justify-content-center overflow-hidden bg-soft-primary"
+                                                                style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    border: '1px solid rgba(58, 87, 232, 0.2)',
+                                                                    flexShrink: 0
                                                                 }}
-                                                                style={{ width: '32px', height: '32px', objectFit: 'cover' }}
-                                                            />
+                                                            >
+                                                                {party.logoUrl || party.logo ? (
+                                                                    <img
+                                                                        src={party.logoUrl || party.logo}
+                                                                        alt={party.displayName || 'Party Logo'}
+                                                                        loading="lazy"
+                                                                        decoding="async"
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            if (e.currentTarget.nextElementSibling) {
+                                                                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                ) : null}
+                                                                <span
+                                                                    className="fw-bold text-primary"
+                                                                    style={{
+                                                                        display: (party.logoUrl || party.logo) ? 'none' : 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '0.74rem',
+                                                                        letterSpacing: '0.02em',
+                                                                        lineHeight: 1
+                                                                    }}
+                                                                >
+                                                                    {getPartyInitials(party)}
+                                                                </span>
+                                                            </div>
                                                         </td>
 
                                                         {/* 3. Party Code */}
@@ -803,74 +887,49 @@ const PartyList = () => {
                                                         )}
 
                                                         {/* 11. Action Buttons */}
-                                                        <td className="text-center" style={{ padding: '0.45rem 0.5rem' }}>
-                                                            <div className="d-inline-flex align-items-center gap-1">
+                                                        <td className="text-center" style={{ padding: '0.65rem 0.5rem' }}>
+                                                            <div className="action-btn-group">
                                                                 {!isTrash ? (
                                                                     <>
-                                                                        {/* Quick View Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Quick View</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-info"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => handleQuickView(party)}
-                                                                            >
-                                                                                <FaEye size={11} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
+                                                                        {/* Primary Action: Quick View */}
+                                                                        <Button
+                                                                            variant="light"
+                                                                            size="sm"
+                                                                            className="btn-action-primary-pdf"
+                                                                            onClick={() => handleQuickView(party)}
+                                                                            title="Quick View Party Details"
+                                                                        >
+                                                                            <FaEye size={11} className="text-secondary" />
+                                                                        </Button>
 
-                                                                        {/* Edit Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Edit Party</Tooltip>}>
-                                                                            <Link to={`/parties/${party.id}/edit`}>
-                                                                                <Button
-                                                                                    variant="outline-success"
-                                                                                    size="sm"
-                                                                                    className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                >
-                                                                                    <FaPen size={10} />
-                                                                                </Button>
-                                                                            </Link>
-                                                                        </OverlayTrigger>
-
-                                                                        {/* Delete Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Move to Bin</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-danger"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                disabled={isDeleting}
-                                                                                onClick={() => confirmSoftDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: false }))}
-                                                                            >
-                                                                                <FaTrash size={10} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
+                                                                        {/* Secondary Actions 3-Dots Menu */}
+                                                                        <TableActionMenu.Trigger
+                                                                            isActive={isActionMenuOpen(party.id)}
+                                                                            id={`party-actions-${party.id}`}
+                                                                            onClick={(e) => toggleMenu(party.id, party, e.currentTarget)}
+                                                                        />
                                                                     </>
                                                                 ) : (
-                                                                    <>
-                                                                        {/* Restore Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Restore Party</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-success"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => confirmRestore(party.displayName || party.legalName || party.partyCode, () => restoreParty(party.id))}
-                                                                            >
-                                                                                <FaUndo size={10} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
-
-                                                                        {/* Permanent Delete Button */}
-                                                                        <OverlayTrigger placement="top" overlay={<Tooltip>Delete Permanently</Tooltip>}>
-                                                                            <Button
-                                                                                variant="outline-danger"
-                                                                                size="sm"
-                                                                                className="p-1 px-2 d-inline-flex align-items-center justify-content-center"
-                                                                                onClick={() => confirmPermanentDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: true }))}
-                                                                            >
-                                                                                <FaExclamationTriangle size={10} />
-                                                                            </Button>
-                                                                        </OverlayTrigger>
-                                                                    </>
+                                                                    <div className="d-flex align-items-center gap-1">
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            className="btn-action-trash text-success"
+                                                                            onClick={() => confirmRestore(party.displayName || party.legalName || party.partyCode, () => restoreParty(party.id))}
+                                                                            title="Restore Party"
+                                                                        >
+                                                                            <FaUndo size={10} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="btn-action-trash text-danger"
+                                                                            onClick={() => confirmPermanentDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: true }))}
+                                                                            title="Delete Permanently"
+                                                                        >
+                                                                            <FaExclamationTriangle size={10} />
+                                                                        </Button>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -882,11 +941,32 @@ const PartyList = () => {
                                 </Table>
                             </div>
 
-                            {/* 4. Pagination Footer */}
+                            {/* 4. Modern Pagination Footer with Rows Per Page */}
                             {!isLoading && total > 0 && (
-                                <div className="d-flex justify-content-between align-items-center flex-wrap px-3 py-3 border-top gap-2" style={{ marginLeft: '1rem', marginRight: '1rem' }}>
-                                    <div className="text-muted small">
-                                        Showing {pageStart} to {pageEnd} of {total} entries
+                                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 py-3 px-4 border-top">
+                                    <div className="d-flex align-items-center gap-3 text-muted small">
+                                        <span>
+                                            Showing <strong className="text-dark">{pageStart}</strong> to <strong className="text-dark">{pageEnd}</strong> of <strong className="text-dark">{total}</strong> entries
+                                        </span>
+                                        <div className="d-flex align-items-center gap-1.5 ms-2 ps-3 border-start">
+                                            <span className="text-secondary" style={{ fontSize: '0.78rem' }}>Rows per page:</span>
+                                            <Form.Select
+                                                size="sm"
+                                                className="form-select-sm border shadow-none"
+                                                style={{ width: '4.5rem', borderRadius: '6px', fontSize: '0.8rem', padding: '0.2rem 1.5rem 0.2rem 0.5rem' }}
+                                                value={pageSize}
+                                                onChange={(e) => {
+                                                    setPageSize(Number(e.target.value));
+                                                    setPage(1);
+                                                    handleDeselectAll();
+                                                }}
+                                            >
+                                                <option value="10">10</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </Form.Select>
+                                        </div>
                                     </div>
 
                                     <PaginationBar
@@ -902,6 +982,45 @@ const PartyList = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Single Table-Level Action Menu Overlay */}
+            <TableActionMenu.Overlay
+                activeMenu={activeActionMenu}
+                onClose={closeMenu}
+            >
+                {(party) => (
+                    <>
+                        <Dropdown.Item
+                            as={Link}
+                            to={`/parties/${party.id}/ledger`}
+                            className="d-flex align-items-center gap-2"
+                        >
+                            <FaBookOpen size={12} className="text-muted" />
+                            <span>View Account Ledger</span>
+                        </Dropdown.Item>
+
+                        <Dropdown.Item
+                            as={Link}
+                            to={`/parties/${party.id}/edit`}
+                            className="d-flex align-items-center gap-2"
+                        >
+                            <FaPen size={12} className="text-muted" />
+                            <span>Edit Party</span>
+                        </Dropdown.Item>
+
+                        <Dropdown.Divider className="my-1" />
+
+                        <Dropdown.Item
+                            className="d-flex align-items-center gap-2 text-danger"
+                            disabled={isDeleting}
+                            onClick={() => confirmSoftDelete(party.displayName || party.legalName || party.partyCode, () => deleteParty({ id: party.id, isPermanentDelete: false }))}
+                        >
+                            <FaTrash size={12} />
+                            <span>Move to Bin</span>
+                        </Dropdown.Item>
+                    </>
+                )}
+            </TableActionMenu.Overlay>
 
             {/* Quick View Details Offcanvas Drawer */}
             <PartyDetailsDrawer

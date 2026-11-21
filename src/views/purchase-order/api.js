@@ -3,10 +3,13 @@ import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
 // Get purchase order
-export const getPurchaseOrderPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getPurchaseOrderPagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', trash = false, startDate = '', endDate = '' }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
+    if (status) params.status = status;
     if (trash) params.trash = trash;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
 
     const res = await api.request({
         url: '/purchase-order/pagination',
@@ -18,13 +21,34 @@ export const getPurchaseOrderPagination = asyncHandler(async ({ page = 1, pageSi
 });
 
 // Get purchase order
-export const getPurchaseOrder = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getPurchaseOrder = asyncHandler(async ({ page = 1, pageSize = 10, search = '', status = '', trash = false, startDate = '', endDate = '' }) => {
     const params = { page, pageSize };
     if (search) params.search = search;
+    if (status) params.status = status;
     if (trash) params.trash = trash;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
 
     const res = await api.request({
         url: '/purchase-order',
+        method: requestMethod.GET,
+        params
+    });
+
+    return res.data;
+});
+
+// Get purchase order executive financial summary
+export const getPurchaseOrderSummary = asyncHandler(async ({ search = '', status = '', trash = false, startDate = '', endDate = '' } = {}) => {
+    const params = {};
+    if (search) params.search = search;
+    if (status) params.status = status;
+    if (trash) params.trash = trash;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    const res = await api.request({
+        url: '/purchase-order/summary',
         method: requestMethod.GET,
         params
     });

@@ -80,6 +80,7 @@ export const useCreatEwayBill = () => {
                 toast.success(res.message || "Eway bill created successfully.");
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillPagination'] });
+                queryClient.invalidateQueries({ queryKey: ['unmappedEwayBill'] });
                 navigate(`/sales/eway-bill/${id}/edit`, { replace: true });
             }
         }

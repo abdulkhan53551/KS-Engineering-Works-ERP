@@ -341,34 +341,19 @@ export const cancelLeave = asyncHandler(async (id) => {
    PAYROLL, SALARY TEMPLATES & SETTINGS APIS
    ========================================================================= */
 
-export const fetchPayrollSettings = asyncHandler(async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.firmId) query.append("firmId", params.firmId);
-
-    const headers = {};
-    if (params.firmId && params.firmId !== 'all') {
-        headers['x-firm-id'] = params.firmId;
-    }
-
+export const fetchPayrollSettings = asyncHandler(async () => {
     const res = await api.request({
-        url: `/payroll/settings?${query.toString()}`,
-        method: requestMethod.GET,
-        headers
+        url: `/payroll/settings`,
+        method: requestMethod.GET
     });
     return res.data;
 });
 
 export const updatePayrollSettings = asyncHandler(async (data) => {
-    const headers = {};
-    if (data?.firmId && data.firmId !== 'all') {
-        headers['x-firm-id'] = data.firmId;
-    }
-
     const res = await api.request({
         url: `/payroll/settings`,
         method: requestMethod.PUT,
-        data,
-        headers
+        data
     });
     return res.data;
 });

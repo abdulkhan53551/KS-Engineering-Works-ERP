@@ -21,6 +21,18 @@ import './UserAssignmentsModal.css';
 
 const FIRMS_QUERY_PARAMS = { page: 1, pageSize: 100 };
 
+// Standard role hierarchy fallback for strict subordination checks
+const ROLE_HIERARCHY_FALLBACK = {
+    'super-admin': ['administrator', 'admin', 'manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'administrator': ['manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'admin': ['manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'manager': ['supervisor', 'employee'],
+    'supervisor': ['employee'],
+    'auditor': [],
+    'viewer': [],
+    'employee': []
+};
+
 const UserAssignmentsModal = ({ show, onClose, user }) => {
     const userId = user?.id;
     const currentUser = useSelector((state) => state.authReducer?.user);
@@ -47,11 +59,55 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
         return (userFirms || []).filter(f => f.id !== 'all');
     }, [isCallerSuperAdmin, firmsList, userFirms]);
 
-    // Filter available roles based on caller persona
+    const isSelf = Boolean(userId && currentUser?.id && userId === currentUser.id);
+
+    // Filter available roles based on caller persona & strict role hierarchy
     const availableRoles = useMemo(() => {
         if (isCallerSuperAdmin) return rolesList;
-        return (rolesList || []).filter(r => (r.slug || '').toLowerCase() !== 'super-admin');
-    }, [isCallerSuperAdmin, rolesList]);
+
+        const callerRoleId = Number(
+            currentUser?.roleId ||
+            currentUser?.role_id ||
+            rolesList.find(r => (r.slug || '').toLowerCase() === (currentUser?.role || currentUser?.roleSlug || '').toLowerCase())?.id
+        );
+        const callerRoleSlug = (currentUser?.role || currentUser?.roleSlug || rolesList.find(r => Number(r.id) === callerRoleId)?.slug || '').toLowerCase();
+
+        // Build transitive descendant map from rolesList
+        const childrenMap = new Map();
+        (rolesList || []).forEach(r => childrenMap.set(Number(r.id), []));
+        (rolesList || []).forEach(r => {
+            const pId = Number(r.parent_role_id || r.parentRoleId);
+            if (pId && childrenMap.has(pId)) {
+                childrenMap.get(pId).push(Number(r.id));
+            }
+        });
+
+        const visited = new Set();
+        if (callerRoleId && childrenMap.has(callerRoleId)) {
+            const queue = [...(childrenMap.get(callerRoleId) || [])];
+            while (queue.length > 0) {
+                const cur = queue.shift();
+                if (!visited.has(cur)) {
+                    visited.add(cur);
+                    (childrenMap.get(cur) || []).forEach(child => {
+                        if (!visited.has(child)) queue.push(child);
+                    });
+                }
+            }
+        }
+
+        // Standard hierarchy fallback by slug
+        const allowedSlugs = ROLE_HIERARCHY_FALLBACK[callerRoleSlug] || [];
+        allowedSlugs.forEach(targetSlug => {
+            const targetRole = (rolesList || []).find(tr => (tr.slug || '').toLowerCase() === targetSlug);
+            if (targetRole && Number(targetRole.id) !== callerRoleId) {
+                visited.add(Number(targetRole.id));
+            }
+        });
+
+        // Non-super-admins may ONLY assign roles strictly subordinate to their own active role
+        return (rolesList || []).filter(r => visited.has(Number(r.id)));
+    }, [isCallerSuperAdmin, rolesList, currentUser]);
 
     const [rows, setRows] = useState([]);
     const [firmBranchesMap, setFirmBranchesMap] = useState({});
@@ -309,6 +365,9 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
 
     // Save assignments to server
     const handleSave = () => {
+        if (isSelf && !isCallerSuperAdmin) {
+            return;
+        }
         if (!isSuperAdmin && hasDuplicates) return;
 
         const validAssignments = isSuperAdmin ? [] : rows
@@ -422,6 +481,16 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                     </div>
                 ) : (
                     <>
+                        {/* Self-Modification Restricted Alert */}
+                        {isSelf && !isCallerSuperAdmin && (
+                            <Alert variant="danger" className="d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 shadow-none border-danger border-opacity-25">
+                                <FaExclamationTriangle className="flex-shrink-0 text-danger" size={16} />
+                                <span style={{ fontSize: '0.84rem' }}>
+                                    <strong>Security Policy:</strong> You cannot modify your own firm, branch, or role assignments. Please contact a higher administrator if your access needs adjustment.
+                                </span>
+                            </Alert>
+                        )}
+
                         {/* Global Super Admin Toggle Card: Only visible to platform Super Administrators */}
                         {isCallerSuperAdmin && (
                             <div className={`p-3 mb-3 rounded-3 border transition-all ${isSuperAdmin ? 'bg-danger-subtle border-danger' : 'bg-white border-light-subtle'}`}>
@@ -529,6 +598,7 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                                             variant="primary"
                                             size="sm"
                                             onClick={handleAddRow}
+                                            disabled={isSelf && !isCallerSuperAdmin}
                                             className="d-flex align-items-center gap-1.5 px-3 py-1.5 fw-semibold shadow-sm"
                                         >
                                             <FaPlus size={11} />
@@ -832,9 +902,9 @@ const UserAssignmentsModal = ({ show, onClose, user }) => {
                     <Button
                         variant="primary"
                         onClick={handleSave}
-                        disabled={isSaving || isLoadingAssignments || (!isSuperAdmin && hasDuplicates) || (!isCallerSuperAdmin && initialIsSuperAdmin)}
+                        disabled={isSaving || isLoadingAssignments || (!isSuperAdmin && hasDuplicates) || (!isCallerSuperAdmin && initialIsSuperAdmin) || (isSelf && !isCallerSuperAdmin)}
                         className="px-4 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm"
-                        title={(!isSuperAdmin && hasDuplicates) ? "Please resolve duplicate assignments before saving" : (!isCallerSuperAdmin && initialIsSuperAdmin) ? "Super Administrator accounts cannot be modified by firm administrators" : ""}
+                        title={(isSelf && !isCallerSuperAdmin) ? "You cannot modify your own role assignments" : (!isSuperAdmin && hasDuplicates) ? "Please resolve duplicate assignments before saving" : (!isCallerSuperAdmin && initialIsSuperAdmin) ? "Super Administrator accounts cannot be modified by firm administrators" : ""}
                     >
                         {isSaving ? (
                             <>

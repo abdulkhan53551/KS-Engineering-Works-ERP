@@ -276,12 +276,16 @@ input.no-spinners,
         z-index: 3;
     }
 
-    .form-control.flatpickrdate:focus ~ label,
     .form-control.flatpickrdate:not(:placeholder-shown) ~ label,
     &.has-value label {
         transform: scale(0.85) translateY(-1rem) translateX(0.75rem) !important;
         background-color: #ffffff !important;
         opacity: 1 !important;
+        color: #212529 !important;
+    }
+
+    .form-control.flatpickrdate:focus ~ label,
+    &.has-value .form-control.flatpickrdate:focus ~ label {
         color: #3a57e8 !important;
     }
 
