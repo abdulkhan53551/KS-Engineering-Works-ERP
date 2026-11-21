@@ -2,16 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Dropdown, Badge, Form } from 'react-bootstrap';
 import { useSelector, useDispatch, batch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import { FaBuilding, FaMapMarkerAlt, FaSearch, FaCheck, FaTimes, FaCog } from 'react-icons/fa';
 import { setActiveFirm, setActiveBranch } from '../../../../store/firm.slice';
-import { updateActiveRole } from '../../../../store/auth.slice';
+import { updateActiveRole, setAccessToken } from '../../../../store/auth.slice';
+import { localStorageKey } from '../../../../utilities/constant/constants';
 import api from '../../../../lib/axios';
 import './EntitySwitcher.css';
 
 const EntitySwitcher = () => {
     const dispatch = useDispatch();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const { activeFirm, activeBranch, userFirms = [] } = useSelector((state) => state.firmReducer || {});
     const currentUser = useSelector((state) => state.authReducer?.user);
@@ -20,8 +24,29 @@ const EntitySwitcher = () => {
     const [firmSearch, setFirmSearch] = useState('');
     const [branchSearch, setBranchSearch] = useState('');
 
-    const handleFirmChange = (firm) => {
+    const isDashboard = location.pathname === '/dashboard' || location.pathname === '/' || location.pathname === '';
+
+    const handleFirmChange = async (firm) => {
         if (firm.id === activeFirm?.id) return;
+
+        // If user is anywhere other than Dashboard, confirm reset to prevent any cross-tenant data inconsistencies
+        if (!isDashboard) {
+            const result = await Swal.fire({
+                title: 'Switch Business Firm?',
+                text: 'Switching firms will reset your current workspace and redirect you to the Dashboard to prevent cross-firm data conflicts. Any unsaved changes will be discarded. Do you wish to continue?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3a57e8',
+                cancelButtonColor: '#c03221',
+                confirmButtonText: 'Yes, switch & go to Dashboard',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
 
         // Invalidate and cancel all in-flight queries
         queryClient.cancelQueries();
@@ -53,21 +78,53 @@ const EntitySwitcher = () => {
             }
         });
 
-        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
-        api.get('/auth/me').then((res) => {
-            const updatedUser = res.data?.data?.user;
-            if (updatedUser) {
-                dispatch(updateActiveRole(updatedUser));
+        // Switch cryptographic token context on backend (re-issues signed accessToken)
+        api.post('/auth/switch-context', {
+            firmId: firm.id === 'all' ? 'all' : firm.id,
+            branchId: defaultBranch?.id || null
+        }).then((res) => {
+            const switchData = res.data?.data;
+            if (switchData?.accessToken) {
+                dispatch(setAccessToken(switchData.accessToken));
+                localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, switchData.accessToken);
             }
-        }).catch(() => {});
+            if (switchData?.user) {
+                dispatch(updateActiveRole(switchData.user));
+            }
+        }).catch((err) => {
+            console.error('Error switching firm context:', err);
+        });
 
         setFirmSearch('');
+
+        if (!isDashboard) {
+            navigate('/dashboard');
+        }
     };
 
-    const handleBranchChange = (branch) => {
+    const handleBranchChange = async (branch) => {
         const currentBranchId = activeBranch?.id || null;
         const newBranchId = branch?.id || null;
         if (currentBranchId === newBranchId) return;
+
+        // If user is anywhere other than Dashboard, confirm reset to prevent any location data inconsistencies
+        if (!isDashboard) {
+            const result = await Swal.fire({
+                title: 'Switch Branch / Location?',
+                text: 'Switching branches will reset your current workspace and redirect you to the Dashboard to prevent location data conflicts. Any unsaved changes will be discarded. Do you wish to continue?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3a57e8',
+                cancelButtonColor: '#c03221',
+                confirmButtonText: 'Yes, switch & go to Dashboard',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+        }
 
         queryClient.cancelQueries();
         queryClient.clear();
@@ -93,15 +150,37 @@ const EntitySwitcher = () => {
             }
         });
 
-        // Trigger background fetch of /auth/me with new tenant headers to refresh exact permissions
-        api.get('/auth/me').then((res) => {
-            const updatedUser = res.data?.data?.user;
-            if (updatedUser) {
-                dispatch(updateActiveRole(updatedUser));
-            }
-        }).catch(() => {});
+        // Switch cryptographic token context on backend (re-issues signed accessToken)
+        if (activeFirm?.id && activeFirm.id !== 'all') {
+            api.post('/auth/switch-context', {
+                firmId: activeFirm.id,
+                branchId: newBranchId
+            }).then((res) => {
+                const switchData = res.data?.data;
+                if (switchData?.accessToken) {
+                    dispatch(setAccessToken(switchData.accessToken));
+                    localStorage.setItem(localStorageKey.ACCESS_TOKEN_KEY, switchData.accessToken);
+                }
+                if (switchData?.user) {
+                    dispatch(updateActiveRole(switchData.user));
+                }
+            }).catch((err) => {
+                console.error('Error switching branch context:', err);
+            });
+        } else {
+            api.get('/auth/me').then((res) => {
+                const updatedUser = res.data?.data?.user;
+                if (updatedUser) {
+                    dispatch(updateActiveRole(updatedUser));
+                }
+            }).catch(() => {});
+        }
 
         setBranchSearch('');
+
+        if (!isDashboard) {
+            navigate('/dashboard');
+        }
     };
 
     const isConsolidatedMode = activeFirm?.id === 'all';

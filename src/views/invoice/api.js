@@ -3,10 +3,23 @@ import { requestMethod } from "../../utilities/api/constants";
 import { asyncHandler } from "../../utilities/asyncHandler";
 
 // Get invoice pagination
-export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getInvoicePagination = asyncHandler(async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
 
     const res = await api.request({
         url: '/invoice/pagination',
@@ -17,11 +30,50 @@ export const getInvoicePagination = asyncHandler(async ({ page = 1, pageSize = 1
     return res.data;
 });
 
+// Get invoice financial KPI summary
+export const getInvoiceSummary = asyncHandler(async ({
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+} = {}) => {
+    const params = {};
+    if (search) params.search = search;
+    if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
+
+    const res = await api.request({
+        url: '/invoice/summary',
+        method: requestMethod.GET,
+        params
+    });
+
+    return res.data;
+});
+
 // Get invoice list
-export const getInvoice = asyncHandler(async ({ page = 1, pageSize = 10, search = '', trash = false }) => {
+export const getInvoice = asyncHandler(async ({
+    page = 1,
+    pageSize = 10,
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     const params = { page, pageSize };
     if (search) params.search = search;
     if (trash) params.trash = trash;
+    if (paymentStatus) params.paymentStatus = paymentStatus;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (hasEwayBill !== '' && hasEwayBill !== undefined && hasEwayBill !== null) params.hasEwayBill = hasEwayBill;
 
     const res = await api.request({
         url: '/invoice',
@@ -83,6 +135,18 @@ export const restoreInvoice = asyncHandler(async (id) => {
     return res.data;
 });
 
+// Cancel invoice
+export const cancelInvoice = asyncHandler(async (payload) => {
+    const id = (typeof payload === 'object' && payload !== null) ? (payload.id || payload.invoiceId) : payload;
+    const cancelReason = (typeof payload === 'object' && payload !== null) ? (payload.cancelReason || '') : '';
+    const res = await api.request({
+        url: `/invoice/${id}/cancel`,
+        method: requestMethod.PATCH,
+        data: { cancelReason }
+    });
+    return res.data;
+});
+
 // Bulk delete invoices (Soft delete or Permanent delete)
 export const bulkDeleteInvoices = asyncHandler(async ({ ids = [], isPermanentDelete = false }) => {
     const res = await api.request({
@@ -104,9 +168,13 @@ export const bulkRestoreInvoices = asyncHandler(async ({ ids = [] }) => {
 });
 
 // Get unmapped invoice challan by invoice id
-export const getUnmappedInvoiceChallanByInvoiceId = asyncHandler(async (id) => {
+export const getUnmappedInvoiceChallanByInvoiceId = asyncHandler(async (id, partyId = null) => {
+    let url = `/invoice-challan/invoice/${id}?includeUnmappedChallans=true`;
+    if (partyId) {
+        url += `&partyId=${partyId}`;
+    }
     const res = await api.request({
-        url: `/invoice-challan/invoice/${id}?includeUnmappedChallans=true`,
+        url,
         method: requestMethod.GET
     });
 

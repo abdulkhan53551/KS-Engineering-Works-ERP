@@ -33,6 +33,7 @@ const selectUsersPagination = (result) => {
   const totalPages = Number(innerPagination?.totalPages ?? metaData?.totalPages ?? (total && pageSizeNum ? Math.ceil(total / pageSizeNum) : 1));
   const activeCount = Number(metaData?.activeCount ?? 0);
   const trashCount = Number(metaData?.trashCount ?? 0);
+  const pendingCount = Number(metaData?.pendingCount ?? 0);
 
   const pageNum = Number(innerPagination?.page ?? 1);
   const pageStart = total === 0 ? 0 : (pageNum - 1) * pageSizeNum + 1;
@@ -46,6 +47,7 @@ const selectUsersPagination = (result) => {
     totalPages,
     activeCount,
     trashCount,
+    pendingCount,
     pageStart,
     pageEnd
   };

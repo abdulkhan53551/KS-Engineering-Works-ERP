@@ -430,3 +430,28 @@ export const deletePartyBranch = asyncHandler(async (partyId, branchId) => {
     return res.data;
 });
 
+/* =========================================================================
+   6. PARTY LEDGER STATEMENT API
+   ========================================================================= */
+
+/**
+ * Get Party Ledger Statement
+ * Endpoint: GET /parties/:partyId/ledger
+ */
+export const getPartyLedger = asyncHandler(async ({ partyId, startDate, endDate, branchId }) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (branchId) params.branchId = branchId;
+
+    const res = await api.request({
+        url: `/parties/${partyId}/ledger`,
+        method: requestMethod.GET,
+        params
+    });
+
+    return res.data;
+});
+
+
+

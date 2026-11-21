@@ -8,12 +8,14 @@ import {
     getInvoice,
     getInvoiceById,
     getInvoicePagination,
+    getInvoiceSummary,
     getLastInvoice,
     getNextInvoiceNumber,
     getUnmappedEwayBillByInvoiceId,
     getUnmappedInvoiceChallanByInvoiceId,
     getUnmappedPurchaseOrderByInvoiceId,
     restoreInvoice,
+    cancelInvoice,
     updateInvoice
 } from "../api";
 import { toast } from "react-toastify";
@@ -24,11 +26,21 @@ import { useUIManager } from "../../../contexts/UIManagerContext";
 import { useState } from "react";
 
 // Get invoice pagination
-export const useInvoicePagination = ({ page, pageSize, search, trash = false }) => {
+export const useInvoicePagination = ({
+    page,
+    pageSize,
+    search,
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
     return useQuery({
-        queryKey: ["invoicePagination", page, pageSize, search, trash],
-        queryFn: () => getInvoicePagination({ page, pageSize, search, trash }),
+        queryKey: ["invoicePagination", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoicePagination({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const pagination = result?.data?.pagination ?? {};
             const total = pagination.total ?? 0;
@@ -47,12 +59,48 @@ export const useInvoicePagination = ({ page, pageSize, search, trash = false }) 
     });
 };
 
-// Get invoice
-export const useInvoice = ({ page, pageSize, search, trash = false }) => {
+// Get invoice financial KPI summary (database-wide, all pages matching active filters)
+export const useInvoiceSummary = ({
+    search = '',
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+} = {}) => {
     return useQuery({
-        queryKey: ["invoiceList", page, pageSize, search, trash],
-        queryFn: () => getInvoice({ page, pageSize, search, trash }),
+        queryKey: ["invoiceSummary", search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoiceSummary({ search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
         keepPreviousData: true,
+        staleTime: 30 * 1000,
+        select: (result) => result?.data ?? {
+            totalInvoiced: 0,
+            totalPaid: 0,
+            totalBalance: 0,
+            fullyPaidCount: 0,
+            partialCount: 0,
+            unpaidCount: 0,
+            totalCount: 0
+        }
+    });
+};
+
+// Get invoice
+export const useInvoice = ({
+    page,
+    pageSize,
+    search,
+    trash = false,
+    paymentStatus = '',
+    startDate = '',
+    endDate = '',
+    hasEwayBill = ''
+}) => {
+    return useQuery({
+        queryKey: ["invoiceList", page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill],
+        queryFn: () => getInvoice({ page, pageSize, search, trash, paymentStatus, startDate, endDate, hasEwayBill }),
+        keepPreviousData: true,
+        staleTime: 30 * 1000, // 30s fresh cache prevents redundant window refocus refetches
         select: (result) => {
             const paymentStatusColor = {
                 PENDING: 'bg-warning',
@@ -154,14 +202,14 @@ export const useInvoiceById = (id = 0) => {
 };
 
 // Create invoice
-export const useCreateInvoice = () => {
+export const useCreateInvoice = (options = {}) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationKey: ["createInvoice"],
         mutationFn: createInvoice,
-        onSuccess: (res) => {
+        onSuccess: (res, variables) => {
             if (res.success) {
                 const id = res.data?.id;
                 toast.success(res.message || "Invoice created successfully.");
@@ -170,24 +218,32 @@ export const useCreateInvoice = () => {
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
-                navigate(`/sales/invoice/${id}/edit`, { replace: true });
+
+                if (typeof options.onSuccess === 'function') {
+                    options.onSuccess(res, variables);
+                } else {
+                    navigate(`/sales/invoice/${id}/edit`, { replace: true });
+                }
             }
         },
         onError: (err) => {
             const message = err?.response?.data?.message || err?.message || "Failed to create invoice.";
             toast.error(message);
+            if (typeof options.onError === 'function') {
+                options.onError(err);
+            }
         }
     });
 };
 
 // Update invoice
-export const useUpdateInvoice = (id) => {
+export const useUpdateInvoice = (id, options = {}) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationKey: ["updateInvoice"],
+        mutationKey: ["updateInvoice", id],
         mutationFn: (data) => updateInvoice(id, data),
-        onSuccess: (res) => {
+        onSuccess: (res, variables) => {
             if (res.success) {
                 toast.success(res.message || "Invoice updated successfully.");
                 queryClient.invalidateQueries({ queryKey: ['invoiceList'] });
@@ -199,11 +255,18 @@ export const useUpdateInvoice = (id) => {
                 queryClient.invalidateQueries({ queryKey: ['invoiceChallanList'] });
                 queryClient.invalidateQueries({ queryKey: ['purchaseOrderList'] });
                 queryClient.invalidateQueries({ queryKey: ['ewayBillList'] });
+
+                if (typeof options.onSuccess === 'function') {
+                    options.onSuccess(res, variables);
+                }
             }
         },
         onError: (err) => {
             const message = err?.response?.data?.message || err?.message || "Failed to update invoice.";
             toast.error(message);
+            if (typeof options.onError === 'function') {
+                options.onError(err);
+            }
         }
     });
 };
@@ -269,6 +332,41 @@ export const useRestoreInvoice = () => {
     });
 };
 
+// Cancel invoice
+export const useCancelInvoice = () => {
+    const queryClient = useQueryClient();
+    const dispatch = useDispatch();
+    const { closeModal } = useUIManager();
+
+    return useMutation({
+        mutationKey: ["cancelInvoice"],
+        mutationFn: (payload) => cancelInvoice(payload),
+        onSuccess: (res) => {
+            dispatch(clearLoading());
+            closeModal();
+            toast.success(res.message || "Invoice cancelled successfully.");
+            queryClient.invalidateQueries({ queryKey: ["invoiceList"] });
+            queryClient.invalidateQueries({ queryKey: ["invoicePagination"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceById"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedInvoiceChallan"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedPurchaseOrder"] });
+            queryClient.invalidateQueries({ queryKey: ["unmappedEwayBill"] });
+            queryClient.invalidateQueries({ queryKey: ["invoiceChallanList"] });
+            queryClient.invalidateQueries({ queryKey: ["purchaseOrderList"] });
+            queryClient.invalidateQueries({ queryKey: ["ewayBillList"] });
+        },
+        onError: (error) => {
+            dispatch(clearLoading());
+            closeModal();
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to cancel invoice.";
+            toast.error(message);
+        }
+    });
+};
+
 // Bulk delete invoices (Soft delete or Permanent delete)
 export const useBulkDeleteInvoices = () => {
     const queryClient = useQueryClient();
@@ -327,12 +425,18 @@ export const useBulkRestoreInvoices = () => {
     });
 };
 
-// Get unmapped invoice challan by invoice id
-export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
+// Get unmapped invoice challan by invoice id (scoped optionally by party)
+export const useUnmappedInvoiceChallanByInvoiceId = (id = 0, partyId = null, options = {}) => {
+    // If 2nd parameter is options object (backward compatibility)
+    const actualPartyId = (typeof partyId === 'object' && partyId !== null) ? null : partyId;
+    const actualOptions = (typeof partyId === 'object' && partyId !== null) ? partyId : options;
+
     return useQuery({
-        queryKey: ["unmappedInvoiceChallan", id],
-        queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id),
+        queryKey: ["unmappedInvoiceChallan", id, actualPartyId],
+        queryFn: () => getUnmappedInvoiceChallanByInvoiceId(id, actualPartyId),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...actualOptions,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.challanId,
@@ -341,6 +445,8 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
                 isInvoiced: item.isInvoiced,
                 invoiceId: item.invoiceId,
                 customerName: item.customerName,
+                vehicleNo: item.vehicleNo,
+                totalQuantity: item.totalQuantity,
             })) ?? [];
 
             return structuredData;
@@ -349,11 +455,13 @@ export const useUnmappedInvoiceChallanByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped purchase order by invoice id
-export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
+export const useUnmappedPurchaseOrderByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedPurchaseOrder", id],
         queryFn: () => getUnmappedPurchaseOrderByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.poId,
@@ -370,11 +478,13 @@ export const useUnmappedPurchaseOrderByInvoiceId = (id = 0) => {
 }
 
 // Get unmapped eway bill by invoice id
-export const useUnmappedEwayBillByInvoiceId = (id = 0) => {
+export const useUnmappedEwayBillByInvoiceId = (id = 0, options = {}) => {
     return useQuery({
         queryKey: ["unmappedEwayBill", id],
         queryFn: () => getUnmappedEwayBillByInvoiceId(id),
         staleTime: 5 * 60 * 1000,
+        refetchOnMount: true,
+        ...options,
         select: (result) => {
             const structuredData = result?.data?.map(item => ({
                 documentId: item.ewayBillId,

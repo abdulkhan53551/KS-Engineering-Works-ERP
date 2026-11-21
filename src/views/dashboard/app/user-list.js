@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     Row,
     Col,
@@ -50,7 +50,8 @@ import {
     Trash2,
     RefreshCw,
     UserX,
-    Inbox
+    Inbox,
+    XCircle
 } from 'lucide-react';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
 import BulkActionBar from '../../../components/trash/BulkActionBar';
@@ -79,6 +80,18 @@ import UserAssignmentsModal from '../../users/components/UserAssignmentsModal';
 import './user-list.css';
 
 const FIRMS_DROPDOWN_PARAMS = { page: 1, pageSize: 100 };
+
+// Standard role hierarchy fallback for strict subordination checks
+const ROLE_HIERARCHY_FALLBACK = {
+    'super-admin': ['administrator', 'admin', 'manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'administrator': ['manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'admin': ['manager', 'supervisor', 'employee', 'auditor', 'viewer'],
+    'manager': ['supervisor', 'employee'],
+    'supervisor': ['employee'],
+    'auditor': [],
+    'viewer': [],
+    'employee': []
+};
 
 const UserList = () => {
     // Current logged-in user from Redux
@@ -154,6 +167,15 @@ const UserList = () => {
             } else if (sortConfig.key === 'email') {
                 aVal = (a.email || '').toLowerCase();
                 bVal = (b.email || '').toLowerCase();
+            } else if (sortConfig.key === 'status') {
+                const getStatusWeight = (item) => {
+                    if (item.approvalStatus === 'PENDING') return 1;
+                    if (item.approvalStatus === 'APPROVED') return item.isActive ? 2 : 3;
+                    if (item.approvalStatus === 'REJECTED') return 4;
+                    return 5;
+                };
+                aVal = getStatusWeight(a);
+                bVal = getStatusWeight(b);
             } else if (sortConfig.key === 'createdAt' || sortConfig.key === 'deletedAt') {
                 aVal = new Date(aVal || 0).getTime();
                 bVal = new Date(bVal || 0).getTime();
@@ -180,6 +202,115 @@ const UserList = () => {
     const { data: roles = [] } = useRoles();
     const { data: firmsList = [] } = useGetFirms(FIRMS_DROPDOWN_PARAMS);
 
+    const isCallerSuperAdmin = Boolean(
+        currentUser?.isSuperAdmin ||
+        (currentUser?.role || '').toLowerCase() === 'super-admin'
+    );
+
+    // Build role hierarchy map for transitive subordinates
+    const roleDescendantsMap = useMemo(() => {
+        const map = new Map();
+        if (!roles || roles.length === 0) return map;
+
+        const childrenMap = new Map();
+        roles.forEach(r => childrenMap.set(Number(r.id), []));
+        roles.forEach(r => {
+            const pId = Number(r.parent_role_id || r.parentRoleId);
+            if (pId && childrenMap.has(pId)) {
+                childrenMap.get(pId).push(Number(r.id));
+            }
+        });
+
+        roles.forEach(r => {
+            const numId = Number(r.id);
+            const visited = new Set();
+            const queue = [...(childrenMap.get(numId) || [])];
+            while (queue.length > 0) {
+                const cur = queue.shift();
+                if (!visited.has(cur)) {
+                    visited.add(cur);
+                    (childrenMap.get(cur) || []).forEach(child => {
+                        if (!visited.has(child)) queue.push(child);
+                    });
+                }
+            }
+
+            // Fallback enrichment using static role hierarchy
+            const slug = (r.slug || '').toLowerCase();
+            const fallbackSlugs = ROLE_HIERARCHY_FALLBACK[slug] || [];
+            fallbackSlugs.forEach(targetSlug => {
+                const targetRole = roles.find(tr => (tr.slug || '').toLowerCase() === targetSlug);
+                if (targetRole && Number(targetRole.id) !== numId) {
+                    visited.add(Number(targetRole.id));
+                }
+            });
+
+            map.set(numId, visited);
+        });
+        return map;
+    }, [roles]);
+
+    const canManageUser = useCallback((targetUser) => {
+        if (!targetUser) return false;
+        if (targetUser.id === currentUserId) return false;
+        if (isCallerSuperAdmin) return true;
+
+        const targetIsSuperAdmin = Boolean(
+            targetUser.isSuperAdmin ||
+            targetUser.is_super_admin ||
+            (targetUser.roleSlug || targetUser.role_slug || '').toLowerCase() === 'super-admin'
+        );
+        if (targetIsSuperAdmin) return false;
+
+        // Resolve caller role ID & slug
+        const callerRoleId = Number(
+            currentUser?.roleId ||
+            currentUser?.role_id ||
+            roles.find(r => (r.slug || '').toLowerCase() === (currentUser?.role || currentUser?.roleSlug || '').toLowerCase())?.id
+        );
+        const callerRoleSlug = (currentUser?.role || currentUser?.roleSlug || roles.find(r => Number(r.id) === callerRoleId)?.slug || '').toLowerCase();
+
+        // Resolve target role ID & slug
+        const targetRoleId = Number(
+            targetUser?.roleId ||
+            targetUser?.role_id ||
+            roles.find(r => (r.slug || '').toLowerCase() === (targetUser?.roleSlug || targetUser?.role_slug || '').toLowerCase() || r.name === (targetUser?.roleName || targetUser?.role_name))?.id
+        );
+        const targetRoleSlug = (targetUser?.roleSlug || targetUser?.role_slug || roles.find(r => Number(r.id) === targetRoleId)?.slug || '').toLowerCase();
+
+        // If target has no assigned role yet (fresh registration / unassigned), firm admins can manage
+        if (!targetRoleId || isNaN(targetRoleId)) {
+            return true;
+        }
+
+        // Peers cannot manage peers
+        if (callerRoleId && targetRoleId && callerRoleId === targetRoleId) return false;
+        if (callerRoleSlug && targetRoleSlug && callerRoleSlug === targetRoleSlug) return false;
+
+        // Check descendant map
+        if (callerRoleId && roleDescendantsMap.has(callerRoleId)) {
+            if (roleDescendantsMap.get(callerRoleId).has(targetRoleId)) {
+                return true;
+            }
+        }
+
+        // Check fallback slug hierarchy
+        if (callerRoleSlug && targetRoleSlug) {
+            const allowedDescendants = ROLE_HIERARCHY_FALLBACK[callerRoleSlug] || [];
+            if (allowedDescendants.includes(targetRoleSlug)) {
+                return true;
+            }
+        }
+
+        return false;
+    }, [currentUserId, isCallerSuperAdmin, currentUser, roles, roleDescendantsMap]);
+
+    const isSelectableUser = useCallback((u) => {
+        if (!u) return false;
+        if (u.id === currentUserId) return false;
+        return canManageUser(u);
+    }, [currentUserId, canManageUser]);
+
     // List manager for row selection
     const {
         selectedIds,
@@ -188,10 +319,12 @@ const UserList = () => {
         handleDeselectAll,
         isAllSelected,
         isIndeterminate,
-        selectedCount
+        selectedCount,
+        selectableCount
     } = useListManager({
         items: sortedUsers,
-        idKey: 'id'
+        idKey: 'id',
+        isSelectable: isSelectableUser
     });
 
     // Mutations
@@ -263,9 +396,37 @@ const UserList = () => {
     const handleOpenAssignmentsModal = (user) => setAssignmentsModal({ show: true, user });
     const handleCloseAssignmentsModal = () => setAssignmentsModal({ show: false, user: null });
 
+    // Filtered roles available for registration approval based on caller rank
+    const availableApproveRoles = useMemo(() => {
+        if (isCallerSuperAdmin) return roles;
+
+        const callerRoleId = Number(
+            currentUser?.roleId ||
+            currentUser?.role_id ||
+            roles.find(r => (r.slug || '').toLowerCase() === (currentUser?.role || currentUser?.roleSlug || '').toLowerCase())?.id
+        );
+        const callerRoleSlug = (currentUser?.role || currentUser?.roleSlug || roles.find(r => Number(r.id) === callerRoleId)?.slug || '').toLowerCase();
+
+        return (roles || []).filter(r => {
+            const targetId = Number(r.id);
+            const targetSlug = (r.slug || '').toLowerCase();
+            if (targetSlug === 'super-admin' || targetId === callerRoleId || targetSlug === callerRoleSlug) return false;
+
+            if (callerRoleId && roleDescendantsMap.has(callerRoleId)) {
+                if (roleDescendantsMap.get(callerRoleId).has(targetId)) return true;
+            }
+
+            const allowed = ROLE_HIERARCHY_FALLBACK[callerRoleSlug] || [];
+            return allowed.includes(targetSlug);
+        });
+    }, [isCallerSuperAdmin, roles, currentUser, roleDescendantsMap]);
+
     // Approval & Re-Approval
     const handleOpenApproveModal = (user) => {
-        const defaultRole = roles.find(r => r.id === user.roleId) || roles.find(r => r.slug === 'employee') || roles[0];
+        const targetRoleId = Number(user.roleId || user.role_id);
+        const defaultRole = availableApproveRoles.find(r => Number(r.id) === targetRoleId) ||
+            availableApproveRoles.find(r => r.slug === 'employee') ||
+            availableApproveRoles[0];
         setApproveModal({
             show: true,
             user,
@@ -456,17 +617,67 @@ const UserList = () => {
     };
 
 
-    const getApprovalBadge = (status) => {
-        switch (status) {
-            case 'APPROVED':
-                return <Badge bg="soft-success" className="text-success border border-success-subtle px-2 py-1">Approved</Badge>;
-            case 'PENDING':
-                return <Badge bg="soft-warning" className="text-warning border border-warning-subtle px-2 py-1">Pending</Badge>;
-            case 'REJECTED':
-                return <Badge bg="soft-danger" className="text-danger border border-danger-subtle px-2 py-1">Rejected</Badge>;
-            default:
-                return <Badge bg="light" className="text-muted border px-2 py-1">{status || 'Unknown'}</Badge>;
+    const renderSmartStatus = (u, isSelf, canManage) => {
+        if (u.approvalStatus === 'PENDING') {
+            return (
+                <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>Registration is awaiting administrator approval & role assignment</Tooltip>}
+                >
+                    <span className="badge bg-soft-warning text-warning border border-warning-subtle d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" style={{ fontSize: '0.74rem', fontWeight: 600 }}>
+                        <Clock size={11} className="flex-shrink-0" />
+                        Pending
+                    </span>
+                </OverlayTrigger>
+            );
         }
+
+        if (u.approvalStatus === 'REJECTED') {
+            return (
+                <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>Registration was rejected. Use action button to Re-Approve.</Tooltip>}
+                >
+                    <span className="badge bg-soft-danger text-danger border border-danger-subtle d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" style={{ fontSize: '0.74rem', fontWeight: 600 }}>
+                        <XCircle size={11} className="flex-shrink-0" />
+                        Rejected
+                    </span>
+                </OverlayTrigger>
+            );
+        }
+
+        // Operational user (approvalStatus === 'APPROVED') -> Show Active/Inactive Switch
+        return (
+            <OverlayTrigger
+                placement="top"
+                overlay={
+                    <Tooltip>
+                        {isSelf
+                            ? 'You cannot deactivate your own account'
+                            : !canManage
+                                ? 'Requires higher administrator rank to toggle status'
+                                : u.isActive
+                                    ? 'Click to deactivate account'
+                                    : 'Click to activate account'}
+                    </Tooltip>
+                }
+            >
+                <div className="d-inline-flex align-items-center">
+                    <Form.Check
+                        type="switch"
+                        id={`user-status-${u.id}`}
+                        checked={Boolean(u.isActive)}
+                        onChange={() => handleToggleStatus(u)}
+                        disabled={isSelf || !canManage || isTogglingStatus}
+                        label={
+                            <span className={`ul-active-label ${u.isActive ? 'ul-active-label--on' : 'ul-active-label--off'}`}>
+                                {u.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        }
+                    />
+                </div>
+            </OverlayTrigger>
+        );
     };
 
     const renderDataScopeBadge = (rawScope) => {
@@ -627,17 +838,29 @@ const UserList = () => {
                     </p>
                 </div>
                 <div className="ul-header-actions">
-                    <Link
-                        to="/dashboard/admin/approvals"
-                        className="btn btn-sm ul-header-btn"
-                        style={{ borderColor: '#f59e0b', color: '#b45309', background: '#fffbeb' }}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (tabIsTrash) setTabIsTrash(false);
+                            setStatusFilter(statusFilter === 'PENDING' ? '' : 'PENDING');
+                            setPageState(1);
+                        }}
+                        className={`btn btn-sm ul-header-btn ${statusFilter === 'PENDING' ? 'active' : ''}`}
+                        style={
+                            statusFilter === 'PENDING'
+                                ? { borderColor: '#d97706', background: '#fef3c7', color: '#92400e', fontWeight: 600 }
+                                : { borderColor: '#f59e0b', color: '#b45309', background: '#fffbeb' }
+                        }
+                        title={statusFilter === 'PENDING' ? 'Showing Pending Registrations (click to view all)' : 'Filter by Pending Registration Approvals'}
                     >
                         <UserCheck2 size={14} />
-                        <span>Approvals</span>
+                        <span>{statusFilter === 'PENDING' ? 'Showing Pending' : 'Pending Approvals'}</span>
                         {pendingCount > 0 && (
-                            <Badge bg="warning" text="dark" pill style={{ fontSize: '0.65rem' }}>{pendingCount}</Badge>
+                            <Badge bg={statusFilter === 'PENDING' ? 'dark' : 'warning'} text={statusFilter === 'PENDING' ? 'white' : 'dark'} pill style={{ fontSize: '0.65rem' }}>
+                                {pendingCount}
+                            </Badge>
                         )}
-                    </Link>
+                    </button>
                     <button
                         type="button"
                         onClick={handleRefresh}
@@ -840,13 +1063,30 @@ const UserList = () => {
                             <thead>
                                 <tr>
                                     <th style={{ width: '40px' }} className="text-center px-2">
-                                        <Form.Check
-                                            type="checkbox"
-                                            checked={isAllSelected}
-                                            ref={(el) => el && (el.indeterminate = isIndeterminate)}
-                                            onChange={handleSelectAll}
-                                            disabled={loadingUsers || sortedUsers.length === 0}
-                                        />
+                                        <OverlayTrigger
+                                            placement="top"
+                                            overlay={
+                                                <Tooltip>
+                                                    {loadingUsers
+                                                        ? 'Loading users...'
+                                                        : selectableCount === 0
+                                                            ? 'No selectable users on this page'
+                                                            : isAllSelected
+                                                                ? 'Deselect all manageable users'
+                                                                : 'Select all manageable users'}
+                                                </Tooltip>
+                                            }
+                                        >
+                                            <div className="d-inline-block">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    ref={(el) => el && (el.indeterminate = isIndeterminate)}
+                                                    onChange={handleSelectAll}
+                                                    disabled={loadingUsers || selectableCount === 0}
+                                                />
+                                            </div>
+                                        </OverlayTrigger>
                                     </th>
                                     <th style={{ width: '50px' }} className="ul-th-sortable text-center px-2" onClick={() => handleSort('id')}>
                                         ID {renderSortIcon('id')}
@@ -860,12 +1100,9 @@ const UserList = () => {
                                     <th style={{ minWidth: '220px' }}>
                                         Access & Roles
                                     </th>
-                                    <th style={{ width: '100px' }} className="ul-th-sortable" onClick={() => handleSort('approvalStatus')}>
-                                        Approval {renderSortIcon('approvalStatus')}
-                                    </th>
                                     {!tabIsTrash ? (
-                                        <th style={{ width: '85px' }} className="ul-th-sortable" onClick={() => handleSort('isActive')}>
-                                            Status {renderSortIcon('isActive')}
+                                        <th style={{ width: '135px' }} className="ul-th-sortable" onClick={() => handleSort('status')}>
+                                            Status {renderSortIcon('status')}
                                         </th>
                                     ) : (
                                         <th style={{ width: '140px' }} className="ul-th-sortable" onClick={() => handleSort('deletedAt')}>
@@ -881,7 +1118,7 @@ const UserList = () => {
                             <tbody>
                                 {loadingUsers ? (
                                     <tr>
-                                        <td colSpan="9">
+                                        <td colSpan="8">
                                             <div className="ul-loading-state">
                                                 <Spinner animation="border" variant="primary" size="sm" className="me-2" />
                                                 <span className="ul-loading-text">Loading user directory...</span>
@@ -890,7 +1127,7 @@ const UserList = () => {
                                     </tr>
                                 ) : sortedUsers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="9">
+                                        <td colSpan="8">
                                             <div className="ul-empty-state">
                                                 <div className="ul-empty-icon">
                                                     {tabIsTrash ? <Inbox size={26} /> : <UserX size={26} />}
@@ -916,18 +1153,37 @@ const UserList = () => {
                                 ) : (
                                     sortedUsers.map((u) => {
                                         const isSelf = u.id === currentUserId;
+                                        const canManage = canManageUser(u);
                                         const isChecked = selectedIds.includes(u.id);
+                                        const isSelectable = !isSelf && canManage;
 
                                         return (
                                             <tr key={u.id} className={isChecked ? 'ul-row-selected' : ''}>
                                                 {/* Select Checkbox */}
                                                 <td className="text-center px-2" style={{ width: '40px' }}>
-                                                    <Form.Check
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => handleSelectRow(u.id)}
-                                                        disabled={isSelf && !tabIsTrash}
-                                                    />
+                                                    <OverlayTrigger
+                                                        placement="top"
+                                                        overlay={
+                                                            <Tooltip>
+                                                                {isSelf
+                                                                    ? 'Security Policy: Cannot perform bulk actions on your own account'
+                                                                    : !canManage
+                                                                        ? 'Requires higher administrator rank to select this user'
+                                                                        : isChecked
+                                                                            ? 'Click to deselect user'
+                                                                            : 'Click to select user'}
+                                                            </Tooltip>
+                                                        }
+                                                    >
+                                                        <div className="d-inline-block">
+                                                            <Form.Check
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={() => handleSelectRow(u.id)}
+                                                                disabled={!isSelectable}
+                                                            />
+                                                        </div>
+                                                    </OverlayTrigger>
                                                 </td>
 
                                                 {/* User ID */}
@@ -1063,41 +1319,10 @@ const UserList = () => {
                                                     )}
                                                 </td>
 
-                                                {/* Approval Status */}
-                                                <td>
-                                                    {getApprovalBadge(u.approvalStatus)}
-                                                </td>
-
-                                                {/* Active Switch (Active Tab) or Deleted Detail (Trash Tab) */}
+                                                {/* Smart Status (Active Tab) or Deleted Detail (Trash Tab) */}
                                                 {!tabIsTrash ? (
                                                     <td>
-                                                        <OverlayTrigger
-                                                            placement="top"
-                                                            overlay={
-                                                                <Tooltip>
-                                                                    {isSelf
-                                                                        ? 'You cannot deactivate your own account'
-                                                                        : u.isActive
-                                                                            ? 'Click to deactivate account'
-                                                                            : 'Click to activate account'}
-                                                                </Tooltip>
-                                                            }
-                                                        >
-                                                            <div className="d-inline-block">
-                                                                <Form.Check
-                                                                    type="switch"
-                                                                    id={`user-status-${u.id}`}
-                                                                    checked={Boolean(u.isActive)}
-                                                                    onChange={() => handleToggleStatus(u)}
-                                                                    disabled={isSelf || isTogglingStatus}
-                                                                    label={
-                                                                        <span className={`ul-active-label ${u.isActive ? 'ul-active-label--on' : 'ul-active-label--off'}`}>
-                                                                            {u.isActive ? 'Active' : 'Inactive'}
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        </OverlayTrigger>
+                                                        {renderSmartStatus(u, isSelf, canManage)}
                                                     </td>
                                                 ) : (
                                                     <td>
@@ -1174,7 +1399,7 @@ const UserList = () => {
                                                             {u.approvalStatus === 'APPROVED' && !isSelf && (
                                                                 <OverlayTrigger
                                                                     placement="top"
-                                                                    overlay={<Tooltip>Reject / Revoke Account Access</Tooltip>}
+                                                                    overlay={<Tooltip>{!canManage ? 'Requires higher administrator rank' : 'Reject / Revoke Account Access'}</Tooltip>}
                                                                 >
                                                                     <span>
                                                                         <Button
@@ -1183,7 +1408,7 @@ const UserList = () => {
                                                                             style={{ width: '32px', height: '32px', padding: 0 }}
                                                                             className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                             onClick={() => handleRejectUser(u)}
-                                                                            disabled={isRejectingUser}
+                                                                            disabled={!canManage || isRejectingUser}
                                                                         >
                                                                             <FaUserTimes size={13} />
                                                                         </Button>
@@ -1194,7 +1419,15 @@ const UserList = () => {
                                                             {/* Manage User Access & Roles */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={<Tooltip>Manage User Access & Roles</Tooltip>}
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {isSelf
+                                                                            ? 'Security Policy: Cannot modify own role assignments'
+                                                                            : !canManage
+                                                                                ? 'Requires higher administrator rank to manage this user'
+                                                                                : 'Manage User Access & Roles'}
+                                                                    </Tooltip>
+                                                                }
                                                             >
                                                                 <span>
                                                                     <Button
@@ -1203,6 +1436,7 @@ const UserList = () => {
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                         onClick={() => handleOpenAssignmentsModal(u)}
+                                                                        disabled={isSelf || !canManage}
                                                                         title="Manage User Access & Roles"
                                                                     >
                                                                         <FaUserShield size={13} />
@@ -1213,7 +1447,15 @@ const UserList = () => {
                                                             {/* Generate Password Reset Link */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={<Tooltip>Generate Password Reset Link</Tooltip>}
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {isSelf
+                                                                            ? 'Use Profile to change your own password'
+                                                                            : !canManage
+                                                                                ? 'Requires higher administrator rank to reset password'
+                                                                                : 'Generate Password Reset Link'}
+                                                                    </Tooltip>
+                                                                }
                                                             >
                                                                 <span>
                                                                     <Button
@@ -1222,7 +1464,7 @@ const UserList = () => {
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                         onClick={() => handleGenerateReset(u)}
-                                                                        disabled={isGeneratingReset}
+                                                                        disabled={isSelf || !canManage || isGeneratingReset}
                                                                     >
                                                                         <FaKey size={13} />
                                                                     </Button>
@@ -1234,7 +1476,11 @@ const UserList = () => {
                                                                 placement="top"
                                                                 overlay={
                                                                     <Tooltip>
-                                                                        {isSelf ? 'Cannot trash own account' : 'Move to Recycle Bin'}
+                                                                        {isSelf
+                                                                            ? 'Cannot trash own account'
+                                                                            : !canManage
+                                                                                ? 'Requires higher administrator rank to delete this user'
+                                                                                : 'Move to Recycle Bin'}
                                                                     </Tooltip>
                                                                 }
                                                             >
@@ -1245,7 +1491,7 @@ const UserList = () => {
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                         onClick={() => handleSingleDelete(u)}
-                                                                        disabled={isSelf || isDeletingUser}
+                                                                        disabled={isSelf || !canManage || isDeletingUser}
                                                                     >
                                                                         <FaTrash size={12} />
                                                                     </Button>
@@ -1257,7 +1503,15 @@ const UserList = () => {
                                                             {/* Restore */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={<Tooltip>Restore to Active Directory</Tooltip>}
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {isSelf
+                                                                            ? 'Cannot restore own account'
+                                                                            : !canManage
+                                                                                ? 'Requires higher administrator rank to restore this user'
+                                                                                : 'Restore to Active Directory'}
+                                                                    </Tooltip>
+                                                                }
                                                             >
                                                                 <span>
                                                                     <Button
@@ -1266,7 +1520,7 @@ const UserList = () => {
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                         onClick={() => handleRestore(u)}
-                                                                        disabled={isRestoringUser}
+                                                                        disabled={isSelf || !canManage || isRestoringUser}
                                                                     >
                                                                         <FaUndo size={12} />
                                                                     </Button>
@@ -1276,7 +1530,13 @@ const UserList = () => {
                                                             {/* Delete Permanently */}
                                                             <OverlayTrigger
                                                                 placement="top"
-                                                                overlay={<Tooltip>Permanently Purge Record</Tooltip>}
+                                                                overlay={
+                                                                    <Tooltip>
+                                                                        {!isCallerSuperAdmin
+                                                                            ? 'Permanent deletion requires Super Administrator rank'
+                                                                            : 'Permanently Purge Record'}
+                                                                    </Tooltip>
+                                                                }
                                                             >
                                                                 <span>
                                                                     <Button
@@ -1285,7 +1545,7 @@ const UserList = () => {
                                                                         style={{ width: '32px', height: '32px', padding: 0 }}
                                                                         className="d-inline-flex align-items-center justify-content-center shadow-none"
                                                                         onClick={() => handlePermanentDelete(u)}
-                                                                        disabled={isDeletingUser}
+                                                                        disabled={!isCallerSuperAdmin || isDeletingUser}
                                                                     >
                                                                         <FaExclamationTriangle size={12} />
                                                                     </Button>
@@ -1373,7 +1633,7 @@ const UserList = () => {
                                     }
                                 >
                                     <option value="">-- Select a Role --</option>
-                                    {roles.map((r) => (
+                                    {availableApproveRoles.map((r) => (
                                         <option key={r.id} value={r.id}>
                                             {r.name} {r.slug === 'super-admin' ? '(Super Admin)' : ''}
                                         </option>

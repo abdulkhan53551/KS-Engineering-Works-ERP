@@ -28,7 +28,8 @@ import {
     createPartyBranch,
     updatePartyBranch,
     setDefaultPartyBranch,
-    deletePartyBranch
+    deletePartyBranch,
+    getPartyLedger
 } from "../api";
 import { toast } from "react-toastify";
 import { clearLoading } from "../../../store/uiModal.slice";
@@ -543,4 +544,23 @@ export const useDeletePartyBranch = (partyId) => {
         }
     });
 };
+
+/* =========================================================================
+   6. PARTY LEDGER HOOK
+   ========================================================================= */
+
+/**
+ * Hook to fetch Party Ledger Statement
+ */
+export const usePartyLedger = ({ partyId, startDate, endDate, branchId, enabled = true } = {}) => {
+    return useQuery({
+        queryKey: ["partyLedger", partyId, { startDate, endDate, branchId }],
+        queryFn: () => getPartyLedger({ partyId, startDate, endDate, branchId }),
+        enabled: Boolean(partyId) && enabled,
+        staleTime: 30 * 1000,
+        select: (result) => result?.data ?? result
+    });
+};
+
+
 

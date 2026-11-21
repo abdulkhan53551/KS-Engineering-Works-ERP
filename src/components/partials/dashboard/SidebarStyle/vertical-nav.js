@@ -481,18 +481,6 @@ const VerticalNav = memo((props) => {
                         </Link>
                     </li>
                 )}
-                {isSuperAdmin && (
-                    <li className="nav-item">
-                        <Link className={`${location.pathname === '/admin/approvals' ? 'active' : ''} nav-link`} to="/admin/approvals">
-                            <i className="icon">
-                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor" />
-                                </svg>
-                            </i>
-                            <span className="item-name">Approvals</span>
-                        </Link>
-                    </li>
-                )}
                 {(isSuperAdmin || can('users', 'read')) && (
                     <li className="nav-item">
                         <Link className={`${location.pathname === '/admin/roles-permissions' || location.pathname === '/dashboard/admin/roles-permissions' ? 'active' : ''} nav-link`} to="/dashboard/admin/roles-permissions">
@@ -528,6 +516,50 @@ const VerticalNav = memo((props) => {
                     <Accordion.Collapse eventKey="sidebar-sales">
                         <ul className="sub-nav">
                             <li className="nav-item">
+                                <Link className={`${location.pathname.includes('/sales/quotation') ? 'active' : ''} nav-link`} to="/sales/quotation">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Quotation</span>
+                                    <Link className="me-2" to={`/sales/quotation/create`}>
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
+                                <Link className={`${location.pathname.includes('/sales/proforma-invoice') ? 'active' : ''} nav-link`} to="/sales/proforma-invoice">
+                                    <i className="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <span className="item-name">Proforma Invoice</span>
+                                    <Link className="me-2" to={`/sales/proforma-invoice/create`}>
+                                        <Button
+                                            className="d-flex align-items-center justify-content-center p-1 rounded"
+                                            style={{ transition: 'all 0.2s ease' }}
+                                        >
+                                            <MdAddBox
+                                                size={20}
+                                                color="white"
+                                                className="transition-colors"
+                                            />
+                                        </Button>
+                                    </Link>
+                                </Link>
                                 <Link className={`${location.pathname.includes('/sales/invoice') ? 'active' : ''} nav-link`} to="/sales/invoice">
                                     <i className="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
