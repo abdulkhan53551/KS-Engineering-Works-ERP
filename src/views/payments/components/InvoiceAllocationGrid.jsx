@@ -130,6 +130,7 @@ const InvoiceAllocationGrid = ({
                     <tbody>
                         {unpaidInvoices.map((inv) => {
                             const invId = inv.id || inv.invoiceId;
+                            const alloc = allocations[invId] || {};
                             const row = rowDetails[invId] || {
                                 allocatedAmount: 0,
                                 tdsAmount: 0,
@@ -232,7 +233,7 @@ const InvoiceAllocationGrid = ({
                                             <input
                                                 type="text"
                                                 disabled={disabled || !hasWriteOff}
-                                                value={row.writeOffReason || ''}
+                                                value={alloc.writeOffReason !== undefined ? alloc.writeOffReason : (row.writeOffReason || '')}
                                                 onChange={(e) => updateAllocationRow(invId, 'writeOffReason', e.target.value)}
                                                 placeholder={hasWriteOff ? 'Reason required *' : 'Reason if write-off > 0'}
                                                 className={`form-control table-ctrl-text ${row.isWriteOffMissingReason ? 'is-invalid-field' : ''}`}

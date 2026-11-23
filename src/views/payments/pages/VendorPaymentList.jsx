@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     Container,
     Row,
@@ -23,6 +23,7 @@ import {
     FaCheckCircle,
     FaWallet,
     FaEye,
+    FaPen,
     FaFilePdf,
     FaBan,
     FaArrowUp,
@@ -34,6 +35,7 @@ import {
 } from 'react-icons/fa';
 import moment from 'moment';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
+import EditPaymentMetadataModal from '../components/modals/EditPaymentMetadataModal';
 import useVendorPaymentList from '../hooks/useVendorPaymentList';
 import { useRowSelection } from '../../../hooks/useListManager';
 import { useTrashActions } from '../../../hooks/useTrashActions';
@@ -77,6 +79,9 @@ const VendorPaymentList = () => {
         bulkDeleteMutation,
         bulkRestoreMutation
     } = useVendorPaymentList();
+
+    // Edit metadata modal state
+    const [editModalPayment, setEditModalPayment] = useState(null);
 
     // Row Multi-Check Selection
     const {
@@ -570,6 +575,22 @@ const VendorPaymentList = () => {
 
                                                     {!isTrash ? (
                                                         <>
+                                                            {/* Edit Metadata */}
+                                                            {!isCancelled && (
+                                                                <OverlayTrigger overlay={<Tooltip>Edit Details (Date, Bank, Ref, Notes)</Tooltip>}>
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="d-inline-flex align-items-center justify-content-center"
+                                                                        style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                        title="Edit Payment Details"
+                                                                        onClick={() => setEditModalPayment(item)}
+                                                                    >
+                                                                        <FaPen size={11} />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                            )}
+
                                                             {/* Cancel Payment Voucher */}
                                                             {!isCancelled && (
                                                                 <OverlayTrigger overlay={<Tooltip>Cancel Voucher & Rollback Bills</Tooltip>}>
@@ -729,6 +750,13 @@ const VendorPaymentList = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Edit Metadata Modal */}
+            <EditPaymentMetadataModal
+                show={Boolean(editModalPayment)}
+                onHide={() => setEditModalPayment(null)}
+                payment={editModalPayment}
+            />
         </Container>
     );
 };

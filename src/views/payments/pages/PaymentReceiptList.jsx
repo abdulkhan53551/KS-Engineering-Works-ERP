@@ -16,6 +16,7 @@ import { downloadPaymentPdf } from '../api';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import CancelPaymentModal from '../components/modals/CancelPaymentModal';
 import ApplyAdvanceModal from '../components/modals/ApplyAdvanceModal';
+import EditPaymentMetadataModal from '../components/modals/EditPaymentMetadataModal';
 import { useRowSelection } from '../../../hooks/useListManager';
 import { useTrashActions } from '../../../hooks/useTrashActions';
 import TrashTabFilter from '../../../components/trash/TrashTabFilter';
@@ -25,6 +26,7 @@ import {
     FaSearch,
     FaFileDownload,
     FaEye,
+    FaPen,
     FaTimesCircle,
     FaReceipt,
     FaMoneyBillWave,
@@ -78,6 +80,9 @@ const PaymentReceiptList = () => {
 
     // Cancel modal state
     const [cancelModalState, setCancelModalState] = useState({ show: false, payment: null });
+
+    // Edit Metadata modal state
+    const [editModalState, setEditModalState] = useState({ show: false, payment: null });
 
     // Apply Advance modal state
     const [applyAdvanceReceipt, setApplyAdvanceReceipt] = useState(null);
@@ -684,6 +689,22 @@ const PaymentReceiptList = () => {
                                                                 </Button>
                                                             </OverlayTrigger>
 
+                                                            {/* Edit Metadata (Date, Bank, UTR, Note) */}
+                                                            {!isCancelled && (
+                                                                <OverlayTrigger overlay={<Tooltip>Edit Details (Date, Bank, Ref, Notes)</Tooltip>}>
+                                                                    <Button
+                                                                        variant="outline-secondary"
+                                                                        size="sm"
+                                                                        className="d-inline-flex align-items-center justify-content-center"
+                                                                        style={{ width: '30px', height: '30px', borderRadius: '7px', padding: 0 }}
+                                                                        onClick={() => setEditModalState({ show: true, payment: item })}
+                                                                        title="Edit Payment Details"
+                                                                    >
+                                                                        <FaPen size={11} />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                            )}
+
                                                             {/* Cancel Action (only for active receipts) */}
                                                             {!isCancelled && (
                                                                 <OverlayTrigger overlay={<Tooltip>Cancel & Rollback Invoices</Tooltip>}>
@@ -804,6 +825,13 @@ const PaymentReceiptList = () => {
                 show={cancelModalState.show}
                 onHide={() => setCancelModalState({ show: false, payment: null })}
                 payment={cancelModalState.payment}
+            />
+
+            {/* Edit Metadata Modal */}
+            <EditPaymentMetadataModal
+                show={editModalState.show}
+                onHide={() => setEditModalState({ show: false, payment: null })}
+                payment={editModalState.payment}
             />
 
             {/* Apply Advance Modal */}

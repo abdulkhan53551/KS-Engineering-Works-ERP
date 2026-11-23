@@ -230,6 +230,20 @@ export const bulkRestorePayments = asyncHandler(async ({ ids = [] }) => {
 });
 
 /**
+ * Update non-financial metadata for a payment (receipt or vendor payment)
+ * Endpoint: PATCH /payments/:id
+ * Payload: { paymentDate, paymentModeId, bankName, referenceNo, referenceDate, notes }
+ */
+export const updatePaymentMetadata = asyncHandler(async ({ id, ...data }) => {
+    const res = await api.request({
+        url: `/payments/${id}`,
+        method: requestMethod.PATCH,
+        data
+    });
+    return res.data;
+});
+
+/**
  * Download printable Receipt Voucher PDF
  * Endpoint: GET /payments/receipts/:id/pdf
  */

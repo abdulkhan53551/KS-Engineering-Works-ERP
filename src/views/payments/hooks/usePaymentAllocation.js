@@ -84,7 +84,8 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
             const allocCash = toDec(alloc.allocatedAmount);
             const tds = toDec(alloc.tdsAmount);
             const writeOff = toDec(alloc.writeOffAmount);
-            const reason = (alloc.writeOffReason || "").trim();
+            const rawReason = alloc.writeOffReason ?? "";
+            const isMissingReason = writeOff.gt(0) && !rawReason.trim();
 
             const balanceDue = toDec(inv.balanceAmount ?? inv.balance_amount ?? inv.total ?? 0);
             const totalSettled = allocCash.plus(tds).plus(writeOff);
@@ -99,7 +100,7 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
                 errors.push(`Invoice ${inv.invoiceNo || inv.invoice_no}: Settled amount ₹${totalSettled.toFixed(2)} exceeds balance due ₹${balanceDue.toFixed(2)}.`);
             }
 
-            if (writeOff.gt(0) && !reason) {
+            if (isMissingReason) {
                 errors.push(`Invoice ${inv.invoiceNo || inv.invoice_no}: Reason is required when write-off discount is applied.`);
             }
 
@@ -107,12 +108,12 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
                 allocatedAmount: allocCash.toNumber(),
                 tdsAmount: tds.toNumber(),
                 writeOffAmount: writeOff.toNumber(),
-                writeOffReason: reason,
+                writeOffReason: rawReason,
                 balanceDue: balanceDue.toNumber(),
                 totalSettled: totalSettled.toNumber(),
                 remainingBalance: Math.max(0, remainingBalance.toNumber()),
                 isOverSettled,
-                isWriteOffMissingReason: writeOff.gt(0) && !reason
+                isWriteOffMissingReason: isMissingReason
             };
         });
 
@@ -175,7 +176,7 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
                     allocatedAmount: row.allocatedAmount,
                     tdsAmount: row.tdsAmount,
                     writeOffAmount: row.writeOffAmount,
-                    writeOffReason: row.writeOffAmount > 0 ? row.writeOffReason : undefined
+                    writeOffReason: row.writeOffAmount > 0 ? (row.writeOffReason?.trim() || undefined) : undefined
                 });
             }
         });

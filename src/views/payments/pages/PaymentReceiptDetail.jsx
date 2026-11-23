@@ -6,16 +6,14 @@ import { downloadPaymentPdf } from '../api';
 import PaymentStatusBadge from '../components/PaymentStatusBadge';
 import CancelPaymentModal from '../components/modals/CancelPaymentModal';
 import ApplyAdvanceModal from '../components/modals/ApplyAdvanceModal';
+import EditPaymentMetadataModal from '../components/modals/EditPaymentMetadataModal';
 import {
     FaArrowLeft,
     FaFileDownload,
     FaTimesCircle,
-    FaReceipt,
-    FaMoneyBillWave,
+    FaPen,
     FaFileInvoice,
     FaInfoCircle,
-    FaCheckCircle,
-    FaUniversity,
     FaBolt
 } from 'react-icons/fa';
 import moment from 'moment';
@@ -31,6 +29,8 @@ const PaymentReceiptDetail = () => {
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [showApplyAdvanceModal, setShowApplyAdvanceModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const { data: payment, isLoading, isError, error } = usePaymentById(id);
 
@@ -65,7 +65,6 @@ const PaymentReceiptDetail = () => {
     const unallocatedAmount = Number(payment.unallocatedAmount || payment.unallocated_amount || 0);
     const isCancelled = (payment.status || '').toUpperCase() === 'CANCELLED';
     const allocations = payment.allocations || [];
-    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownload = async () => {
         if (isDownloading) return;
@@ -159,6 +158,19 @@ const PaymentReceiptDetail = () => {
                                     </>
                                 )}
                             </Button>
+
+                            {!isCancelled && (
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => setShowEditModal(true)}
+                                    className="d-flex align-items-center shadow-sm"
+                                    style={{ fontSize: '0.84rem', fontWeight: 500 }}
+                                >
+                                    <FaPen size={11} style={{ marginRight: '0.45rem' }} />
+                                    <span>Edit Details</span>
+                                </Button>
+                            )}
 
                             {!isCancelled && (
                                 <Button
@@ -367,6 +379,15 @@ const PaymentReceiptDetail = () => {
                 onHide={() => setCancelModalOpen(false)}
                 payment={payment}
             />
+
+            {/* Edit Metadata Modal */}
+            {payment && (
+                <EditPaymentMetadataModal
+                    show={showEditModal}
+                    onHide={() => setShowEditModal(false)}
+                    payment={payment}
+                />
+            )}
 
             {/* Apply Advance Modal */}
             {payment && (

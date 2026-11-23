@@ -21,7 +21,8 @@ import {
     deletePayment,
     restorePayment,
     bulkDeletePayments,
-    bulkRestorePayments
+    bulkRestorePayments,
+    updatePaymentMetadata
 } from "../api";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
@@ -576,6 +577,33 @@ export const useApplyCustomerAdvance = () => {
         },
         onError: (err) => {
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to apply advance adjustment.";
+            toast.error(errorMsg);
+        }
+    });
+};
+
+/**
+ * Hook to update non-financial payment metadata (date, bank name, payment mode, reference no, notes).
+ * Preserves total amount, party, and invoice allocation balances.
+ */
+export const useUpdatePaymentMetadata = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["updatePaymentMetadata"],
+        mutationFn: updatePaymentMetadata,
+        onSuccess: (res) => {
+            toast.success(res?.message || "Payment details updated successfully.");
+            queryClient.invalidateQueries({ queryKey: ["payments"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["paymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPayments"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsMeta"] });
+            queryClient.invalidateQueries({ queryKey: ["vendorPaymentsSummary"] });
+            queryClient.invalidateQueries({ queryKey: ["payment"] });
+        },
+        onError: (err) => {
+            const errorMsg = err?.response?.data?.message || err?.message || "Failed to update payment details.";
             toast.error(errorMsg);
         }
     });
