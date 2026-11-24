@@ -22,8 +22,15 @@ export const useVendorBillDetail = () => {
     const sgst = Number(bill?.sgst || 0);
     const igst = Number(bill?.igst || 0);
     const totalGst = cgst + sgst + igst;
-    const vendor = bill?.party || {};
-    const vendorName = bill?.partyName || vendor.displayName || vendor.legalName || 'Vendor';
+    const vendorName = bill?.vendorName || 'Vendor';
+    const vendor = bill?.party || {
+        id: bill?.partyId,
+        displayName: vendorName,
+        legalName: bill?.vendorLegalName || vendorName,
+        gstin: bill?.vendorGstin,
+        phone: bill?.vendorMobile,
+        email: bill?.vendorEmail
+    };
     const payments = bill?.payments || bill?.paymentAllocations || bill?.allocations || [];
 
     // Sums for payment table

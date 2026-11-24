@@ -119,9 +119,11 @@ export const useVendorBillForm = ({ mode = 'create' } = {}) => {
             const dDate = rawDDate ? moment(rawDDate).toDate() : moment().add(30, 'days').toDate();
             const days = existingBill.dueDays !== undefined ? existingBill.dueDays : moment(dDate).diff(moment(bDate), 'days');
 
+            const vendorName = existingBill.vendorName || '';
+
             reset({
                 partyId: existingBill.partyId || existingBill.party_id,
-                vendorName: existingBill.partyName || existingBill.party?.displayName || existingBill.party?.legalName || '',
+                vendorName,
                 branchId: existingBill.branchId || null,
                 billNo: existingBill.billNo || existingBill.bill_no || '',
                 billDate: bDate,
@@ -132,8 +134,19 @@ export const useVendorBillForm = ({ mode = 'create' } = {}) => {
                 notes: existingBill.notes || ''
             });
 
-            if (existingBill.party) {
-                setSelectedParty(existingBill.party);
+            const resolvedPartyId = existingBill.partyId || existingBill.party_id;
+            if (resolvedPartyId) {
+                setSelectedParty({
+                    id: resolvedPartyId,
+                    displayName: vendorName,
+                    legalName: existingBill.vendorLegalName || vendorName,
+                    gstin: existingBill.vendorGstin,
+                    mobile: existingBill.vendorMobile,
+                    phone: existingBill.vendorMobile,
+                    email: existingBill.vendorEmail,
+                    branchId: existingBill.branchId || null,
+                    branchName: existingBill.branchName || null
+                });
             }
         }
     }, [isEdit, existingBill, reset]);

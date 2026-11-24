@@ -299,8 +299,8 @@ const PaymentReceiptDetail = () => {
                                     <th className="py-2.5 px-3 text-end">Invoice Total</th>
                                     <th className="py-2.5 px-3 text-end">Cash Allocated</th>
                                     <th className="py-2.5 px-3 text-end">TDS Deducted</th>
-                                    <th className="py-2.5 px-3 text-end">Write-off / Disc.</th>
-                                    <th className="py-2.5 px-3">Write-off Reason</th>
+                                    <th className="py-2.5 px-3 text-end">Deduction / Adj.</th>
+                                    <th className="py-2.5 px-3">Adjustment Reason</th>
                                     <th className="py-2.5 px-3 text-end">Total Settled</th>
                                 </tr>
                             </thead>

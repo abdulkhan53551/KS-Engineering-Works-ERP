@@ -58,6 +58,8 @@ const VendorPaymentForm = ({ mode = 'create' }) => {
         calculations,
         updateAllocationRow,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         referenceLabel,
         referencePlaceholder,
         handleSelectParty,
@@ -546,7 +548,7 @@ const VendorPaymentForm = ({ mode = 'create' }) => {
 
                                 {calculations.totalWriteOff > 0 && (
                                     <div className="d-flex justify-content-between mb-2 small text-muted">
-                                        <span>Discounts / Write-Off:</span>
+                                        <span>Deductions &amp; Adjustments:</span>
                                         <span className="font-monospace text-dark">
                                             ₹{calculations.totalWriteOff.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </span>
@@ -668,6 +670,8 @@ const VendorPaymentForm = ({ mode = 'create' }) => {
                                         calculations={calculations}
                                         updateAllocationRow={updateAllocationRow}
                                         handlePayFull={handlePayFull}
+                                        handleSettleRemaining={handleSettleRemaining}
+                                        handleSettleAllRemaining={handleSettleAllRemaining}
                                         disabled={isView || isCancelled}
                                     />
                                 ) : (

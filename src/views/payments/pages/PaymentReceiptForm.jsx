@@ -79,6 +79,8 @@ const PaymentReceiptForm = () => {
         calculations,
         updateAllocationRow,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         getAllocationsPayload
     } = usePaymentAllocation(unpaidInvoices, watchTotalAmount);
 
@@ -287,6 +289,8 @@ const PaymentReceiptForm = () => {
                             calculations={calculations}
                             updateAllocationRow={updateAllocationRow}
                             handlePayFull={handlePayFull}
+                            handleSettleRemaining={handleSettleRemaining}
+                            handleSettleAllRemaining={handleSettleAllRemaining}
                             disabled={isCreating}
                         />
                     ) : (
