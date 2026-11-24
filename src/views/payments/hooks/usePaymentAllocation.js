@@ -124,10 +124,11 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
             errors.push(`Total cash allocated (₹${totalCashAllocated.toFixed(2)}) exceeds received cash by ₹${excess.toFixed(2)}.`);
         }
 
-        const isValid = errors.length === 0 && totalReceivedDec.gt(0);
+        const totalSettlement = totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff);
+        const isValid = errors.length === 0 && (totalReceivedDec.gt(0) || totalSettlement.gt(0));
 
         // Check if cash is fully allocated and there are rows with remaining balance
-        const isCashFullyAllocated = totalReceivedDec.gt(0) && totalCashAllocated.gte(totalReceivedDec.minus(0.01));
+        const isCashFullyAllocated = totalCashAllocated.gte(totalReceivedDec) && totalReceivedDec.gt(0);
         const activeRowsWithBalance = unpaidInvoices.filter((inv) => {
             const row = rowDetails[inv.id || inv.invoiceId];
             return row && row.remainingBalance > 0 && (row.allocatedAmount > 0 || row.tdsAmount > 0 || row.writeOffAmount > 0);
@@ -138,7 +139,7 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
             totalCashAllocated: totalCashAllocated.toNumber(),
             totalTdsDeducted: totalTdsDeducted.toNumber(),
             totalWriteOff: totalWriteOff.toNumber(),
-            totalSettlement: totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff).toNumber(),
+            totalSettlement: totalSettlement.toNumber(),
             unallocatedAdvance: Math.max(0, unallocatedAdvance.toNumber()),
             isCashOverAllocated,
             isCashFullyAllocated,
