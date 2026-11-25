@@ -39,9 +39,9 @@ export const createPaymentValidationSchema = Joi.object({
         "number.base": "Please select a valid customer.",
         "any.required": "Customer is required."
     }),
-    totalAmount: Joi.number().positive().precision(2).required().messages({
+    totalAmount: Joi.number().min(0).precision(2).empty("").default(0).required().messages({
         "number.base": "Total received amount must be a number.",
-        "number.positive": "Total received amount must be greater than zero.",
+        "number.min": "Total received amount cannot be negative.",
         "any.required": "Total received amount is required."
     }),
     paymentModeId: Joi.number().integer().positive().required().messages({

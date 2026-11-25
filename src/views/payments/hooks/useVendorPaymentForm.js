@@ -134,6 +134,8 @@ export const useVendorPaymentForm = ({ mode = 'create' } = {}) => {
         updateAllocationRow,
         clearAllocations,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         getAllocationsPayload
     } = useVendorPaymentAllocation(effectiveBills, watchTotalAmount);
 
@@ -367,6 +369,8 @@ export const useVendorPaymentForm = ({ mode = 'create' } = {}) => {
         calculations,
         updateAllocationRow,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         referenceLabel,
         referencePlaceholder,
         handleSelectParty,

@@ -120,16 +120,28 @@ export const useVendorPaymentAllocation = (unpaidBills = [], totalAmountDisburse
             errors.push(`Total cash allocated (₹${totalCashAllocated.toFixed(2)}) exceeds disbursed amount by ₹${excess.toFixed(2)}.`);
         }
 
-        const isValid = errors.length === 0 && totalDisbursedDec.gt(0);
+        const isCashFullyAllocated = totalCashAllocated.gte(totalDisbursedDec) && totalDisbursedDec.gt(0);
+
+        // Find active rows (where some allocation/deduction happened) that still have remaining balance
+        const activeRowsWithBalance = unpaidBills.filter((bill) => {
+            const billId = bill.id || bill.vendorBillId;
+            const row = rowDetails[billId];
+            return row && row.remainingBalance > 0 && (row.allocatedAmount > 0 || row.tdsAmount > 0 || row.writeOffAmount > 0);
+        });
+
+        const totalSettlement = totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff);
+        const isValid = errors.length === 0 && (totalDisbursedDec.gt(0) || totalSettlement.gt(0));
 
         return {
             totalDisbursed: totalDisbursedDec.toNumber(),
             totalCashAllocated: totalCashAllocated.toNumber(),
             totalTdsDeducted: totalTdsDeducted.toNumber(),
             totalWriteOff: totalWriteOff.toNumber(),
-            totalSettlement: totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff).toNumber(),
+            totalSettlement: totalSettlement.toNumber(),
             unallocatedAdvance: Math.max(0, unallocatedAdvance.toNumber()),
             isCashOverAllocated,
+            isCashFullyAllocated,
+            activeRowsWithBalanceCount: activeRowsWithBalance.length,
             rowDetails,
             errors,
             isValid
@@ -159,6 +171,50 @@ export const useVendorPaymentAllocation = (unpaidBills = [], totalAmountDisburse
         updateAllocationRow(billId, "allocatedAmount", amountToAllocate.toNumber());
     }, [allocations, calculations.totalCashAllocated, totalDisbursedDec, updateAllocationRow]);
 
+    // Smart 1-click helper: Settle remaining balance as commercial deduction/adjustment
+    const handleSettleRemaining = useCallback((bill, reason = "Settlement Adjustment") => {
+        const billId = bill.id || bill.vendorBillId;
+        const balanceDue = toDec(bill.balanceAmount ?? bill.balance_amount ?? bill.total ?? 0);
+
+        const currentAlloc = allocations[billId] || {};
+        const currentCash = toDec(currentAlloc.allocatedAmount);
+        const currentTds = toDec(currentAlloc.tdsAmount);
+        const currentWriteOff = toDec(currentAlloc.writeOffAmount);
+
+        // Calculate exact remaining balance
+        const remaining = Decimal.max(0, balanceDue.minus(currentCash).minus(currentTds).minus(currentWriteOff));
+
+        if (remaining.gt(0)) {
+            const newWriteOff = currentWriteOff.plus(remaining);
+            let finalReason = reason;
+
+            const existingReason = (currentAlloc.writeOffReason || "").trim();
+            if (existingReason && !existingReason.includes(remaining.toFixed(2))) {
+                finalReason = `${existingReason} + Adj (₹${remaining.toFixed(2)})`;
+            }
+
+            setAllocations((prev) => ({
+                ...prev,
+                [billId]: {
+                    ...(prev[billId] || { allocatedAmount: 0, tdsAmount: 0 }),
+                    writeOffAmount: newWriteOff.toNumber(),
+                    writeOffReason: finalReason
+                }
+            }));
+        }
+    }, [allocations]);
+
+    // Settle all active partially-paid rows that still have remaining balance
+    const handleSettleAllRemaining = useCallback((defaultReason = "Settlement Adjustment") => {
+        unpaidBills.forEach((bill) => {
+            const billId = bill.id || bill.vendorBillId;
+            const row = calculations.rowDetails[billId];
+            if (row && row.remainingBalance > 0 && (row.allocatedAmount > 0 || row.tdsAmount > 0 || row.writeOffAmount > 0)) {
+                handleSettleRemaining(bill, defaultReason);
+            }
+        });
+    }, [unpaidBills, calculations.rowDetails, handleSettleRemaining]);
+
     // Build clean API allocations payload
     const getAllocationsPayload = useCallback(() => {
         const payload = [];
@@ -185,6 +241,8 @@ export const useVendorPaymentAllocation = (unpaidBills = [], totalAmountDisburse
         setAllocationRow,
         clearAllocations,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         getAllocationsPayload
     };
 };

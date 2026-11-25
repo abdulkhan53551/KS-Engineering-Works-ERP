@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, Table, Button, Badge, Form } from 'react-bootstrap';
-import { FaFileInvoiceDollar, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaBolt } from 'react-icons/fa';
+import { FaFileInvoiceDollar, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaBolt, FaCheckDouble } from 'react-icons/fa';
 import moment from 'moment';
 
 /**
  * Vendor Bill Allocation Grid Component
- * Allows allocating cash disbursements, TDS deductions, and discounts across unpaid vendor bills.
+ * Allows allocating cash disbursements, TDS deductions, and commercial deductions/adjustments across unpaid vendor bills.
  */
 const VendorBillAllocationGrid = ({
     unpaidBills = [],
@@ -14,6 +14,8 @@ const VendorBillAllocationGrid = ({
     calculations = {},
     updateAllocationRow,
     handlePayFull,
+    handleSettleRemaining,
+    handleSettleAllRemaining,
     disabled = false
 }) => {
     const { rowDetails = {} } = calculations;
@@ -104,6 +106,43 @@ const VendorBillAllocationGrid = ({
                 </div>
             </Card.Header>
 
+            {/* Smart Auto-Settlement Assistant Banner when cash is fully allocated but some rows have remaining balance */}
+            {calculations.isCashFullyAllocated && calculations.activeRowsWithBalanceCount > 0 && (
+                <div
+                    className="mx-3 mt-3 mb-2 p-2.5 px-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                    style={{
+                        backgroundColor: '#f0f7ff',
+                        border: '1px solid #c7dffd'
+                    }}
+                >
+                    <div className="d-flex align-items-center">
+                        <FaInfoCircle className="flex-shrink-0 me-2" size={15} style={{ color: '#0284c7' }} />
+                        <span className="small text-dark" style={{ fontSize: '0.80rem' }}>
+                            <strong style={{ color: '#0c4a6e' }}>Disbursed cash of ₹{Number(calculations.totalDisbursed).toLocaleString('en-IN', { minimumFractionDigits: 2 })} is 100% allocated.</strong>
+                            <span className="text-muted ms-1">
+                                ({calculations.activeRowsWithBalanceCount} {calculations.activeRowsWithBalanceCount === 1 ? 'bill has' : 'bills have'} remaining balance from deductions or adjustments)
+                            </span>
+                        </span>
+                    </div>
+                    {handleSettleAllRemaining && (
+                        <Button
+                            size="sm"
+                            style={{
+                                fontSize: '0.74rem',
+                                padding: '0.24rem 0.7rem',
+                                backgroundColor: '#0284c7',
+                                borderColor: '#0284c7'
+                            }}
+                            className="fw-bold d-inline-flex align-items-center shadow-sm text-white"
+                            onClick={() => handleSettleAllRemaining('Settlement Adjustment')}
+                        >
+                            <FaCheckDouble size={10} style={{ marginRight: '0.35rem' }} />
+                            <span>Auto-Settle Remaining</span>
+                        </Button>
+                    )}
+                </div>
+            )}
+
             <div className="table-responsive">
                 <Table hover className="align-middle mb-0 text-nowrap" style={{ fontSize: '0.82rem' }}>
                     <thead className="bg-light text-muted text-uppercase" style={{ fontSize: '0.70rem', letterSpacing: '0.04em' }}>
@@ -111,10 +150,10 @@ const VendorBillAllocationGrid = ({
                             <th className="py-2.5 px-3">Bill Details</th>
                             <th className="py-2.5 px-2 text-end">Original Total</th>
                             <th className="py-2.5 px-2 text-end">Balance Due</th>
-                            <th className="py-2.5 px-2 text-center" style={{ width: '80px' }}>Action</th>
+                            <th className="py-2.5 px-2 text-center" style={{ width: '135px' }}>Action</th>
                             <th className="py-2.5 px-2 text-end" style={{ width: '135px' }}>Allocated Cash (₹)</th>
                             <th className="py-2.5 px-2 text-end" style={{ width: '105px' }}>TDS (₹)</th>
-                            <th className="py-2.5 px-2 text-end" style={{ width: '115px' }}>Discount/Write-Off (₹)</th>
+                            <th className="py-2.5 px-2 text-end" style={{ width: '135px' }}>Deduction / Adj. (₹)</th>
                             <th className="py-2.5 px-3 text-end" style={{ width: '120px' }}>Remaining Due</th>
                         </tr>
                     </thead>
@@ -162,28 +201,51 @@ const VendorBillAllocationGrid = ({
                                         ₹{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </td>
 
-                                    {/* Pay Full Auto-fill Button */}
+                                    {/* Action Buttons: Pay Full & Settle Balance */}
                                     <td className="px-2 py-2 text-center">
-                                        <Button
-                                            variant={isFullySettled ? 'success' : 'outline-primary'}
-                                            size="sm"
-                                            className="px-2 py-0.5 d-inline-flex align-items-center gap-1"
-                                            style={{ fontSize: '0.70rem', borderRadius: '4px' }}
-                                            disabled={disabled || balanceDue <= 0}
-                                            onClick={() => handlePayFull(bill)}
-                                        >
-                                            {isFullySettled ? (
-                                                <>
-                                                    <FaCheckCircle size={10} />
-                                                    <span>Settled</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaBolt size={10} />
-                                                    <span>Pay Full</span>
-                                                </>
+                                        <div className="d-flex align-items-center justify-content-center gap-1">
+                                            <Button
+                                                variant={isFullySettled ? 'success' : 'outline-primary'}
+                                                size="sm"
+                                                className="px-2 py-0.5 d-inline-flex align-items-center gap-1"
+                                                style={{ fontSize: '0.70rem', borderRadius: '4px' }}
+                                                disabled={disabled || balanceDue <= 0 || isFullySettled}
+                                                onClick={() => handlePayFull(bill)}
+                                            >
+                                                {isFullySettled ? (
+                                                    <>
+                                                        <FaCheckCircle size={10} />
+                                                        <span>Settled</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FaBolt size={10} />
+                                                        <span>Pay Full</span>
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            {!isFullySettled && remaining > 0 && handleSettleRemaining && (
+                                                <Button
+                                                    variant="outline-warning"
+                                                    size="sm"
+                                                    disabled={disabled}
+                                                    onClick={() => handleSettleRemaining(bill, 'Settlement Adjustment')}
+                                                    className="px-2 py-0.5 d-inline-flex align-items-center gap-1"
+                                                    style={{
+                                                        fontSize: '0.70rem',
+                                                        borderRadius: '4px',
+                                                        color: '#b45309',
+                                                        borderColor: '#f59e0b',
+                                                        backgroundColor: '#fffbeb'
+                                                    }}
+                                                    title={`Zero out remaining ₹${remaining.toFixed(2)} as adjustment`}
+                                                >
+                                                    <FaCheckDouble size={9} />
+                                                    <span>Settle ₹{Math.round(remaining)}</span>
+                                                </Button>
                                             )}
-                                        </Button>
+                                        </div>
                                     </td>
 
                                     {/* Allocated Cash Input */}
@@ -240,7 +302,7 @@ const VendorBillAllocationGrid = ({
                                             <Form.Control
                                                 type="text"
                                                 size="sm"
-                                                placeholder="Write-off reason *"
+                                                placeholder="Reason if deduction > 0 *"
                                                 value={writeOffReason}
                                                 isInvalid={isWriteOffMissingReason}
                                                 disabled={disabled}
