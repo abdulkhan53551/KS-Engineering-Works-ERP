@@ -341,8 +341,18 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
     };
 
     const handleClearAmount = () => {
-        setValue('totalAmount', '', { shouldValidate: true, shouldDirty: true });
-        setValue('allocatedAmount', '', { shouldValidate: true });
+        setValue('totalAmount', '0', { shouldValidate: true, shouldDirty: true });
+        setValue('allocatedAmount', '0', { shouldValidate: true });
+        clearErrors();
+    };
+
+    const handleSettleAsAdjustment = () => {
+        setValue('totalAmount', '0', { shouldValidate: true, shouldDirty: true });
+        setValue('allocatedAmount', '0', { shouldValidate: true });
+        setValue('tdsAmount', '');
+        setValue('writeOffAmount', String(balanceDue), { shouldValidate: true, shouldDirty: true });
+        setValue('writeOffReason', 'Settlement Adjustment / Round-off', { shouldValidate: true, shouldDirty: true });
+        setShowDeductions(true);
         clearErrors();
     };
 
@@ -440,6 +450,21 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                                     title="Clear field"
                                 >
                                     <FaTimes size={9} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="quick-action-pill"
+                                    style={{
+                                        backgroundColor: '#fffbeb',
+                                        borderColor: '#fde68a',
+                                        color: '#b45309',
+                                        fontWeight: 600
+                                    }}
+                                    onClick={handleSettleAsAdjustment}
+                                    title="Zero cash - settle remaining balance as adjustment"
+                                >
+                                    <FaBolt size={9} className="me-1" />
+                                    Settle as Adj
                                 </button>
                             </div>
                         </div>
@@ -761,7 +786,7 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                             variant="primary"
                             size="sm"
                             type="submit"
-                            disabled={isPending || isDeductionOverSettled || totalCashInput <= 0 || !resolvedPartyId}
+                            disabled={isPending || isDeductionOverSettled || (totalCashInput <= 0 && totalSettled <= 0) || !resolvedPartyId}
                             className="btn-modal-submit"
                         >
                             {isPending ? (
@@ -772,7 +797,11 @@ const QuickPaymentModal = ({ show, onHide, invoice }) => {
                             ) : (
                                 <>
                                     <FaSave size={12} className="me-1" />
-                                    <span>Record Payment • ₹{totalCashInput > 0 ? totalCashInput.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}</span>
+                                    <span>
+                                        {totalCashInput > 0
+                                            ? `Record Payment • ₹${totalCashInput.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                                            : `Settle & Close • ₹${totalSettled.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                                    </span>
                                 </>
                             )}
                         </Button>

@@ -430,7 +430,7 @@ const VendorPaymentDetail = () => {
                                             <th>Bill Date</th>
                                             <th className="text-end">Cash Allocated</th>
                                             <th className="text-end">TDS Deducted</th>
-                                            <th className="text-end">Write-Off</th>
+                                            <th className="text-end">Deduction / Adj.</th>
                                             <th className="text-end">Total Settled</th>
                                         </tr>
                                     </thead>

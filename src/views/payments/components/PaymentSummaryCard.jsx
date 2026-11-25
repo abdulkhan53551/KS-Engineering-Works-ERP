@@ -92,12 +92,12 @@ const PaymentSummaryCard = ({
                         </>
                     )}
 
-                    {/* Write-offs */}
+                    {/* Deductions & Adjustments */}
                     {totalWriteOff > 0 && (
                         <>
                             <div className="dock-divider" />
                             <div className="dock-metric">
-                                <span className="metric-label">Write-off / Discount</span>
+                                <span className="metric-label">Deductions &amp; Adjustments</span>
                                 <span className="metric-value text-warning">
                                     ₹{Number(totalWriteOff).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
