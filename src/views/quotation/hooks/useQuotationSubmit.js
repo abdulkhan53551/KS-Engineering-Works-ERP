@@ -96,8 +96,8 @@ export const useQuotationSubmit = ({
             : (formData.revisionNo !== undefined ? formData.revisionNo : (quotationData?.revisionNo !== undefined ? quotationData.revisionNo : 0));
 
         const payload = {
-            firmId: activeFirm?.id ? Number(activeFirm.id) : undefined,
-            firmBranchId: activeBranch?.id ? Number(activeBranch.id) : undefined,
+            firmId: (activeFirm?.id && activeFirm.id !== 'all' && !isNaN(activeFirm.id)) ? Number(activeFirm.id) : undefined,
+            firmBranchId: (activeBranch?.id && activeBranch.id !== 'all' && !isNaN(activeBranch.id)) ? Number(activeBranch.id) : undefined,
             quotationNo: formData.quotationNo || undefined,
             revisionNo: targetRevNo,
             quotationDate: formData.quotationDate ? moment(formData.quotationDate).format('YYYY-MM-DD') : moment().format('YYYY-MM-DD'),
