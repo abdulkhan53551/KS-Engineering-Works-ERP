@@ -270,7 +270,7 @@ const VendorBillList = () => {
                                     const paid = Number(bill.paidAmount || bill.paid_amount || 0);
                                     const balance = Number(bill.balanceAmount ?? bill.balance_amount ?? (total - paid));
                                     const totalGst = Number(bill.cgst || 0) + Number(bill.sgst || 0) + Number(bill.igst || 0);
-                                    const vendorName = bill.partyName || bill.party?.displayName || bill.party?.legalName || 'Vendor';
+                                    const vendorName = bill.vendorName || 'Vendor';
                                     const isPaid = (bill.paymentStatus || bill.payment_status || bill.status || '').toUpperCase() === 'PAID';
 
                                     return (

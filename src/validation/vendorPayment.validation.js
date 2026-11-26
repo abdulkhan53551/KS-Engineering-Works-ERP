@@ -38,9 +38,9 @@ export const createVendorPaymentValidationSchema = Joi.object({
         "number.base": "Please select a valid vendor.",
         "any.required": "Vendor is required."
     }),
-    totalAmount: Joi.number().positive().precision(2).required().messages({
+    totalAmount: Joi.number().min(0).precision(2).empty("").default(0).required().messages({
         "number.base": "Total disbursement amount must be a number.",
-        "number.positive": "Total disbursement amount must be greater than zero.",
+        "number.min": "Total disbursement amount cannot be negative.",
         "any.required": "Total disbursement amount is required."
     }),
     paymentModeId: Joi.number().integer().positive().required().messages({

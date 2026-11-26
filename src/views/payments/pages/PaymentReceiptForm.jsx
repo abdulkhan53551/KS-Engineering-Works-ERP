@@ -79,6 +79,8 @@ const PaymentReceiptForm = () => {
         calculations,
         updateAllocationRow,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         getAllocationsPayload
     } = usePaymentAllocation(unpaidInvoices, watchTotalAmount);
 
@@ -112,7 +114,7 @@ const PaymentReceiptForm = () => {
             paymentDate: formData.paymentDate,
             partyId: Number(formData.partyId),
             firmId: effectiveFirmId,
-            totalAmount: Number(formData.totalAmount),
+            totalAmount: Number(formData.totalAmount || 0),
             paymentModeId: Number(formData.paymentModeId),
             referenceNo: formData.referenceNo ? formData.referenceNo.trim() : undefined,
             referenceDate: formData.referenceDate || undefined,
@@ -287,6 +289,8 @@ const PaymentReceiptForm = () => {
                             calculations={calculations}
                             updateAllocationRow={updateAllocationRow}
                             handlePayFull={handlePayFull}
+                            handleSettleRemaining={handleSettleRemaining}
+                            handleSettleAllRemaining={handleSettleAllRemaining}
                             disabled={isCreating}
                         />
                     ) : (

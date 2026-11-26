@@ -1,7 +1,7 @@
 import React,{useEffect} from 'react'
 
-import L from '../../node_modules/leaflet/dist/leaflet-src'
-import '../../node_modules/leaflet/dist/leaflet.css'
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // img
 import Leaflet1 from '../assets/images/vectormap/cloudy.png';

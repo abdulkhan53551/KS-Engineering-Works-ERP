@@ -55,6 +55,10 @@ export async function getAuthPublicKey() {
  * @returns {Promise<object>} - { encryptedData: "..." }
  */
 export async function encryptAuthCredentials(credentials) {
+    if (!credentials || credentials.encryptedData) {
+        return credentials;
+    }
+
     // Failsafe: Check Web Crypto API support
     if (!window?.crypto?.subtle) {
         console.warn('Web Crypto API not available. Falling back to standard transmission.');

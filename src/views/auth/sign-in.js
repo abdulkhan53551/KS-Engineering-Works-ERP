@@ -17,7 +17,6 @@ import { joiResolver } from "@hookform/resolvers/joi";
 import { signinSchema } from '../../validation/auth.validation'
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { encryptAuthCredentials } from '../../utilities/crypto/rsaCrypto';
 // import Toast from '../../utilities/toast'
 
 const SignIn = () => {
@@ -59,12 +58,8 @@ const SignIn = () => {
       wakeUpServer();
    }, []);
 
-   // Handle form submit with RSA in-flight credential encryption
-   const onSubmit = async (data) => {
-      if (!isPending) {
-         const payload = await encryptAuthCredentials(data);
-         loginApi(payload);
-      }
+   const onSubmit = (data) => {
+      loginApi(data);
    };
 
    return (

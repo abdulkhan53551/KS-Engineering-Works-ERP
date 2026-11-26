@@ -49,8 +49,8 @@ import topImage from '../assets/images/dashboard/top-image.jpg'
 import github from '../assets/images/brands/23.png'
 
 //prism
-import '../../node_modules/prismjs/prism';
-import '../../node_modules/prismjs/themes/prism-okaidia.css'
+import 'prismjs';
+import 'prismjs/themes/prism-okaidia.css';
 
 // SliderTab
 import SliderTab from '../plugins/slider-tabs'

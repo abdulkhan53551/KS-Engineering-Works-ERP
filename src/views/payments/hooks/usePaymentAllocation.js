@@ -124,23 +124,33 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
             errors.push(`Total cash allocated (₹${totalCashAllocated.toFixed(2)}) exceeds received cash by ₹${excess.toFixed(2)}.`);
         }
 
-        const isValid = errors.length === 0 && totalReceivedDec.gt(0);
+        const totalSettlement = totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff);
+        const isValid = errors.length === 0 && (totalReceivedDec.gt(0) || totalSettlement.gt(0));
+
+        // Check if cash is fully allocated and there are rows with remaining balance
+        const isCashFullyAllocated = totalCashAllocated.gte(totalReceivedDec) && totalReceivedDec.gt(0);
+        const activeRowsWithBalance = unpaidInvoices.filter((inv) => {
+            const row = rowDetails[inv.id || inv.invoiceId];
+            return row && row.remainingBalance > 0 && (row.allocatedAmount > 0 || row.tdsAmount > 0 || row.writeOffAmount > 0);
+        });
 
         return {
             totalReceived: totalReceivedDec.toNumber(),
             totalCashAllocated: totalCashAllocated.toNumber(),
             totalTdsDeducted: totalTdsDeducted.toNumber(),
             totalWriteOff: totalWriteOff.toNumber(),
-            totalSettlement: totalCashAllocated.plus(totalTdsDeducted).plus(totalWriteOff).toNumber(),
+            totalSettlement: totalSettlement.toNumber(),
             unallocatedAdvance: Math.max(0, unallocatedAdvance.toNumber()),
             isCashOverAllocated,
+            isCashFullyAllocated,
+            activeRowsWithBalanceCount: activeRowsWithBalance.length,
             rowDetails,
             errors,
             isValid
         };
     }, [allocations, unpaidInvoices, totalReceivedDec]);
 
-    // Handler to auto-settle an invoice ("Pay Full")
+    // Handler to auto-settle an invoice with available cash ("Pay Full")
     const handlePayFull = useCallback((invoice) => {
         const invId = invoice.id || invoice.invoiceId;
         const balanceDue = toDec(invoice.balanceAmount ?? invoice.balance_amount ?? invoice.total ?? 0);
@@ -162,6 +172,50 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
 
         updateAllocationRow(invId, "allocatedAmount", amountToAllocate.toNumber());
     }, [allocations, calculations.totalCashAllocated, totalReceivedDec, updateAllocationRow]);
+
+    // Smart 1-click helper: Settle remaining balance as adjustment/discount (zeroes out the invoice!)
+    const handleSettleRemaining = useCallback((invoice, reason = "Settlement Adjustment") => {
+        const invId = invoice.id || invoice.invoiceId;
+        const balanceDue = toDec(invoice.balanceAmount ?? invoice.balance_amount ?? invoice.total ?? 0);
+
+        const currentAlloc = allocations[invId] || {};
+        const currentCash = toDec(currentAlloc.allocatedAmount);
+        const currentTds = toDec(currentAlloc.tdsAmount);
+        const currentWriteOff = toDec(currentAlloc.writeOffAmount);
+
+        // Calculate exact remaining balance
+        const remaining = Decimal.max(0, balanceDue.minus(currentCash).minus(currentTds).minus(currentWriteOff));
+
+        if (remaining.gt(0)) {
+            const newWriteOff = currentWriteOff.plus(remaining);
+            let finalReason = reason;
+
+            const existingReason = (currentAlloc.writeOffReason || "").trim();
+            if (existingReason && !existingReason.includes(remaining.toFixed(2))) {
+                finalReason = `${existingReason} + Adj (₹${remaining.toFixed(2)})`;
+            }
+
+            setAllocations((prev) => ({
+                ...prev,
+                [invId]: {
+                    ...(prev[invId] || { allocatedAmount: 0, tdsAmount: 0 }),
+                    writeOffAmount: newWriteOff.toNumber(),
+                    writeOffReason: finalReason
+                }
+            }));
+        }
+    }, [allocations]);
+
+    // Settle all active partially-paid rows that still have remaining balance
+    const handleSettleAllRemaining = useCallback((defaultReason = "Settlement Adjustment") => {
+        unpaidInvoices.forEach((inv) => {
+            const invId = inv.id || inv.invoiceId;
+            const row = calculations.rowDetails[invId];
+            if (row && row.remainingBalance > 0 && (row.allocatedAmount > 0 || row.tdsAmount > 0 || row.writeOffAmount > 0)) {
+                handleSettleRemaining(inv, defaultReason);
+            }
+        });
+    }, [unpaidInvoices, calculations.rowDetails, handleSettleRemaining]);
 
     // Build clean API allocations payload
     const getAllocationsPayload = useCallback(() => {
@@ -189,6 +243,8 @@ export const usePaymentAllocation = (unpaidInvoices = [], totalAmountReceived = 
         setAllocationRow,
         clearAllocations,
         handlePayFull,
+        handleSettleRemaining,
+        handleSettleAllRemaining,
         getAllocationsPayload
     };
 };

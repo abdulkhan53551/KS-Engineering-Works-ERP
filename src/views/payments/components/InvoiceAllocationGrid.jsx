@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, Table, Button, Badge } from 'react-bootstrap';
-import { FaFileInvoice, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaBolt } from 'react-icons/fa';
+import { FaFileInvoice, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaBolt, FaCheckDouble } from 'react-icons/fa';
 import moment from 'moment';
 
 /**
  * Invoice Allocation Matrix Component
- * Allows allocating cash, TDS deductions, and write-off discounts across unpaid invoices.
+ * Allows allocating cash, TDS deductions, and universal commercial deductions/adjustments across unpaid invoices.
  */
 const InvoiceAllocationGrid = ({
     unpaidInvoices = [],
@@ -14,6 +14,8 @@ const InvoiceAllocationGrid = ({
     calculations = {},
     updateAllocationRow,
     handlePayFull,
+    handleSettleRemaining,
+    handleSettleAllRemaining,
     disabled = false
 }) => {
     const { rowDetails = {} } = calculations;
@@ -100,17 +102,55 @@ const InvoiceAllocationGrid = ({
                             </span>
                         </div>
                         <span className="text-muted" style={{ fontSize: '0.72rem' }}>
-                            Distribute funds, deduct TDS, or record invoice write-offs
+                            Allocate cash, deduct TDS, or record commercial deductions &amp; adjustments
                         </span>
                     </div>
                 </div>
                 <div className="d-flex align-items-center gap-2">
                     <span className="text-muted small d-none d-md-inline" style={{ fontSize: '0.74rem' }}>
-                        Tip: Click <strong>"Pay Full"</strong> to automatically allocate remaining balance.
+                        Tip: Click <strong>"Pay Full"</strong> for cash or <strong>"Settle"</strong> for remaining adjustments.
                     </span>
                     <span className="step-pill">Step 3</span>
                 </div>
             </Card.Header>
+
+            {/* Smart Auto-Settlement Assistant Banner when cash is fully allocated but some rows have remaining balance */}
+            {calculations.isCashFullyAllocated && calculations.activeRowsWithBalanceCount > 0 && (
+                <div
+                    className="allocation-assistant-banner mx-3 mt-3 mb-2 p-2.5 px-3 rounded-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                    style={{
+                        backgroundColor: '#f0f7ff',
+                        border: '1px solid #c7dffd',
+                        borderRadius: '8px'
+                    }}
+                >
+                    <div className="assistant-text d-flex align-items-center">
+                        <FaInfoCircle className="assistant-icon flex-shrink-0 me-2" size={15} style={{ color: '#2563eb' }} />
+                        <span className="small" style={{ fontSize: '0.80rem', color: '#1e3a8a' }}>
+                            <strong style={{ color: '#0f172a' }}>Cash of ₹{Number(calculations.totalReceived).toLocaleString('en-IN', { minimumFractionDigits: 2 })} is 100% allocated.</strong>
+                            <span className="assistant-subtext ms-1" style={{ color: '#475569' }}>
+                                ({calculations.activeRowsWithBalanceCount} {calculations.activeRowsWithBalanceCount === 1 ? 'invoice has' : 'invoices have'} remaining balance from deductions or adjustments)
+                            </span>
+                        </span>
+                    </div>
+                    {handleSettleAllRemaining && (
+                        <Button
+                            size="sm"
+                            className="btn-auto-settle fw-bold d-inline-flex align-items-center shadow-sm text-white"
+                            style={{
+                                fontSize: '0.74rem',
+                                padding: '0.24rem 0.75rem',
+                                backgroundColor: '#2563eb',
+                                borderColor: '#1d4ed8'
+                            }}
+                            onClick={() => handleSettleAllRemaining('Settlement Adjustment')}
+                        >
+                            <FaCheckDouble size={10} style={{ marginRight: '0.35rem' }} />
+                            <span>Auto-Settle Remaining</span>
+                        </Button>
+                    )}
+                </div>
+            )}
 
             <div className="table-responsive">
                 <Table className="align-middle allocation-table mb-0">
@@ -121,10 +161,10 @@ const InvoiceAllocationGrid = ({
                             <th style={{ minWidth: '115px' }} className="text-end">Balance Due</th>
                             <th style={{ minWidth: '155px' }}>Cash to Allocate (₹)</th>
                             <th style={{ minWidth: '135px' }}>TDS Deducted (₹)</th>
-                            <th style={{ minWidth: '145px' }}>Write-Off / Disc. (₹)</th>
-                            <th style={{ minWidth: '160px' }}>Write-Off Reason</th>
+                            <th style={{ minWidth: '150px' }}>Deduction / Adj. (₹)</th>
+                            <th style={{ minWidth: '185px' }}>Adjustment Reason</th>
                             <th style={{ minWidth: '125px' }} className="text-end">Net Remaining</th>
-                            <th style={{ minWidth: '110px' }} className="text-center">Quick Action</th>
+                            <th style={{ minWidth: '140px' }} className="text-center">Quick Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,7 +248,7 @@ const InvoiceAllocationGrid = ({
                                         </div>
                                     </td>
 
-                                    {/* Write-off Input */}
+                                    {/* Deduction / Adjustment Input */}
                                     <td>
                                         <div className="table-input-wrapper">
                                             <span className="input-prefix">₹</span>
@@ -226,7 +266,7 @@ const InvoiceAllocationGrid = ({
                                         </div>
                                     </td>
 
-                                    {/* Write-off Reason Input */}
+                                    {/* Adjustment Reason Input */}
                                     <td>
                                         <div className="table-input-wrapper">
                                             <input
@@ -234,7 +274,7 @@ const InvoiceAllocationGrid = ({
                                                 disabled={disabled || !hasWriteOff}
                                                 value={row.writeOffReason || ''}
                                                 onChange={(e) => updateAllocationRow(invId, 'writeOffReason', e.target.value)}
-                                                placeholder={hasWriteOff ? 'Reason required *' : 'Reason if write-off > 0'}
+                                                placeholder={hasWriteOff ? 'Reason required *' : 'Reason if deduction > 0'}
                                                 className={`form-control table-ctrl-text ${row.isWriteOffMissingReason ? 'is-invalid-field' : ''}`}
                                             />
                                         </div>
@@ -259,18 +299,40 @@ const InvoiceAllocationGrid = ({
                                         )}
                                     </td>
 
-                                    {/* Pay Full Quick Button */}
+                                    {/* Quick Actions (Pay Full & Settle Balance) */}
                                     <td className="text-center">
-                                        <Button
-                                            variant={isFullySettled ? "outline-secondary" : "outline-primary"}
-                                            size="sm"
-                                            disabled={disabled || isFullySettled}
-                                            onClick={() => handlePayFull(inv)}
-                                            className="btn-pay-full d-inline-flex align-items-center"
-                                        >
-                                            <FaBolt size={10} style={{ marginRight: '0.35rem' }} />
-                                            <span>Pay Full</span>
-                                        </Button>
+                                        <div className="d-flex align-items-center justify-content-center gap-1">
+                                            <Button
+                                                variant={isFullySettled ? "outline-secondary" : "outline-primary"}
+                                                size="sm"
+                                                disabled={disabled || isFullySettled}
+                                                onClick={() => handlePayFull(inv)}
+                                                className="btn-pay-full d-inline-flex align-items-center"
+                                                title="Allocate remaining cash to this invoice"
+                                            >
+                                                <FaBolt size={10} style={{ marginRight: '0.3rem' }} />
+                                                <span>Pay Full</span>
+                                            </Button>
+
+                                            {!isFullySettled && row.remainingBalance > 0 && handleSettleRemaining && (
+                                                <Button
+                                                    variant="outline-warning"
+                                                    size="sm"
+                                                    disabled={disabled}
+                                                    onClick={() => handleSettleRemaining(inv, 'Settlement Adjustment')}
+                                                    className="btn-pay-full btn-settle-balance d-inline-flex align-items-center"
+                                                    style={{
+                                                        color: '#b45309',
+                                                        borderColor: '#f59e0b',
+                                                        backgroundColor: '#fffbeb'
+                                                    }}
+                                                    title={`Zero out remaining ₹${row.remainingBalance.toFixed(2)} as adjustment`}
+                                                >
+                                                    <FaCheckDouble size={10} style={{ marginRight: '0.25rem' }} />
+                                                    <span>Settle ₹{Math.round(row.remainingBalance)}</span>
+                                                </Button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             );
